@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: musica-api
+    runtime: node
+    plan: free
+    buildCommand: pnpm -w --filter api build
+    preDeployCommand: pnpm -w db:push
+    startCommand: pnpm -w --filter api start:prod
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "3000"
+      - key: DATABASE_URL
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_ACCESS_TOKEN
+        sync: false
+      - key: SUPABASE_PROJECT_REF
+        sync: false
+      - key: SUPABASE_DB_PASSWORD
+        sync: false

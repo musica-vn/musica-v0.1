@@ -1,0 +1,24 @@
+{
+  "name": "musica-v0.1",
+  "version": "1.0.0",
+  "description": "",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm -r --parallel dev",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "pnpm -r lint",
+    "gen:openapi": "pnpm --filter api build && pnpm --filter api gen:openapi",
+    "gen:types": "pnpm gen:openapi && pnpm --filter web gen:types",
+    "db:start": "pnpm --filter api db:start",
+    "db:stop": "pnpm --filter api db:stop",
+    "db:status": "pnpm --filter api db:status",
+    "db:pull": "pnpm --filter api db:pull",
+    "db:push": "pnpm --filter api db:push",
+    "db:diff": "pnpm --filter api db:diff"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@11.1.1"
+}

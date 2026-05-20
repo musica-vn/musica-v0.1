@@ -1,0 +1,3 @@
+[build]
+  command = "pnpm -w --filter web build"
+  publish = "dist"
