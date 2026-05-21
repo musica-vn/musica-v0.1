@@ -1,0 +1,12 @@
+- [x] Scope MVP rõ ràng: licensing marketplace, certificate PDF; không mở streaming/payment thật.
+- [x] RBAC đúng 4 roles và enforce ở BE guards cho routes admin/buyer.
+- [ ] Response envelope + `requestId` đúng chuẩn `@musica/contracts` cho mọi endpoint.
+- [ ] List endpoints trả `meta.pagination` theo chuẩn.
+- [x] Supabase schema khớp ERD (`users`, `roles`, `user_roles`, `tracks`, `certificates`) và seed demo chạy được.
+- [ ] Storage buckets đúng phân tầng và không public originals/certificates.
+- [ ] Swagger `/docs` hiển thị đủ routes MVP tối thiểu theo `rest-api-mvp.md`.
+- [ ] Smoke tests API pass: login admin/buyer, catalog published-only, checkout tạo certificate, buyer chỉ thấy certificates của mình.
+- [ ] FE role-based portals hoạt động: Super Admin (admins), Admin (users/tracks/certs), Buyer (catalog/checkout/history/download).
+- [ ] Deploy demo thành công: Netlify ↔ Render ↔ Supabase remote; end-to-end flow mua và tải certificate hoạt động.
+- [ ] Hardening pass: RLS/policies tối thiểu cho buyer certificates + negative RBAC checks.
+

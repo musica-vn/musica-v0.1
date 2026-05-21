@@ -8,9 +8,10 @@ import { ApiResponseInterceptor } from './common/api-response.interceptor';
 import { ExamplesModule } from './examples/examples.module';
 import { HealthModule } from './health/health.module';
 import { RequestIdMiddleware } from './common/request-id.middleware';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true }), HealthModule, ExamplesModule],
+  imports: [ConfigModule.forRoot({ isGlobal: true }), HealthModule, ExamplesModule, AuthModule],
   controllers: [AppController],
   providers: [
     AppService,
