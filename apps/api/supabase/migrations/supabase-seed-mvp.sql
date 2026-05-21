@@ -93,8 +93,6 @@ inserted_tracks as (
     duration,
     status,
     usage_rights,
-    original_audio_key,
-    preview_audio_key,
     created_by
   )
   select
@@ -105,8 +103,6 @@ inserted_tracks as (
     st.duration,
     st.status::public.track_status,
     st.usage_rights,
-    'audio-originals/' || replace(lower(st.title), ' ', '-') || '.wav',
-    'audio-previews/' || replace(lower(st.title), ' ', '-') || '.mp3',
     ap.admin_id
   from seed_tracks st
   join public.users au on au.email = st.artist_email
@@ -167,4 +163,3 @@ values (
 on conflict (code) do update set html_template = excluded.html_template;
 
 commit;
-

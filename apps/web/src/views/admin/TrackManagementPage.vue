@@ -8,7 +8,7 @@ import InputText from 'primevue/inputtext'
 import Dropdown from 'primevue/dropdown'
 import Dialog from 'primevue/dialog'
 import Message from 'primevue/message'
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { ApiClientError } from '../../shared/api/http'
 import type { Track, TrackSortValue, TrackStatus } from '../../features/tracks/tracks.types'
 import {
@@ -52,7 +52,7 @@ const totalItems = ref(0)
 
 const pagination = reactive({
   page: 1,
-  pageSize: 20,
+  pageSize: 10,
 })
 
 const filters = reactive<{
@@ -169,6 +169,11 @@ const parseDuration = (value: string): number | undefined => {
   return Number.isFinite(num) ? num : undefined
 }
 
+const createDurationDisplay = computed(() => {
+  const parsed = parseDuration(createForm.duration)
+  return parsed === undefined ? null : formatDuration(Math.max(0, Math.round(parsed)))
+})
+
 const setError = (error: unknown) => {
   if (error instanceof ApiClientError) {
     errorMessage.value = `${error.code}: ${error.message}`
@@ -205,6 +210,22 @@ const ensurePreviewAudioUrl = async (track: Track) => {
   } finally {
     previewAudioLoading.value = { ...previewAudioLoading.value, [track.id]: false }
   }
+}
+
+const prewarmPreviewAudioUrls = async (tracks: Track[]) => {
+  const candidates = tracks.filter((track) => track.previewAudioKey)
+  const concurrency = 2
+  let index = 0
+
+  const worker = async () => {
+    while (index < candidates.length) {
+      const current = candidates[index]
+      index += 1
+      await ensurePreviewAudioUrl(current)
+    }
+  }
+
+  await Promise.all(Array.from({ length: Math.min(concurrency, candidates.length) }, () => worker()))
 }
 
 const resetCreateForm = () => {
@@ -364,6 +385,7 @@ const fetchTracks = async () => {
 
     rows.value = data.items
     totalItems.value = meta.pagination.totalItems
+    void prewarmPreviewAudioUrls(data.items.slice(0, 6))
     // #region debug-point A:tracks-fetch-success
     fetch('http://127.0.0.1:7777/event', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionId: 'track-admin-runtime', runId: 'pre-fix', hypothesisId: 'A', location: 'TrackManagementPage.vue:fetchTracks:success', msg: '[DEBUG] tracks fetch success', data: { itemCount: data.items.length, totalItems: meta.pagination.totalItems }, ts: Date.now() }) }).catch(() => {})
     // #endregion
@@ -590,6 +612,9 @@ const openUploadDialog = (track: Track, mode: TrackAudioMode) => {
 const onUploadFileChange = (event: Event) => {
   const file = extractEventFile(event)
   uploadFile.value = file
+  uploadStatus.value = 'idle'
+  uploadResult.value = null
+  uploadError.value = null
 
   if (file) {
     try {
@@ -617,7 +642,14 @@ const submitUpload = async () => {
   // #endregion
 
   try {
-    const data = await uploadTrackAudioFile(selectedTrack.value.id, uploadFile.value, uploadMode.value)
+    const { data } =
+      uploadMode.value === 'original'
+        ? await getOriginalUploadUrl(selectedTrack.value.id)
+        : await getPreviewUploadUrl(selectedTrack.value.id)
+
+    uploadStatus.value = 'uploading'
+    await uploadToSignedUrl(data.uploadUrl, uploadFile.value)
+    previewAudioUrls.value = {}
 
     uploadResult.value = data
     uploadStatus.value = 'done'
@@ -636,6 +668,31 @@ const submitUpload = async () => {
 }
 
 onMounted(fetchTracks)
+
+let keywordDebounceTimer: number | null = null
+let filtersDebounceTimer: number | null = null
+
+watch(
+  () => filters.keyword,
+  () => {
+    if (keywordDebounceTimer) window.clearTimeout(keywordDebounceTimer)
+    keywordDebounceTimer = window.setTimeout(() => {
+      pagination.page = 1
+      void fetchTracks()
+    }, 450)
+  },
+)
+
+watch(
+  () => [filters.sort, filters.status, filters.genre] as const,
+  () => {
+    if (filtersDebounceTimer) window.clearTimeout(filtersDebounceTimer)
+    filtersDebounceTimer = window.setTimeout(() => {
+      pagination.page = 1
+      void fetchTracks()
+    }, 180)
+  },
+)
 </script>
 
 <template>
@@ -685,7 +742,6 @@ onMounted(fetchTracks)
                   <InputText
                     v-model="filters.keyword"
                     placeholder="Track or author"
-                    @keydown.enter="() => { pagination.page = 1; fetchTracks() }"
                   />
                 </span>
               </label>
@@ -702,22 +758,6 @@ onMounted(fetchTracks)
                 <InputText v-model="filters.genre" placeholder="Genre" />
               </label>
             </div>
-            <div class="filters-panel__actions">
-              <Button :disabled="isLoading" label="Apply" severity="secondary" @click="() => { pagination.page = 1; fetchTracks() }" />
-              <Button
-                :disabled="isLoading"
-                label="Reset"
-                text
-                @click="() => {
-                  filters.keyword = ''
-                  filters.sort = defaultSort
-                  filters.status = ''
-                  filters.genre = ''
-                  pagination.page = 1
-                  fetchTracks()
-                }"
-              />
-            </div>
           </div>
         </div>
 
@@ -733,9 +773,10 @@ onMounted(fetchTracks)
           paginator
           lazy
           :rows="pagination.pageSize"
+          :rowsPerPageOptions="[10]"
           :first="tableFirst"
           :totalRecords="totalItems"
-          @page="(e) => { pagination.page = e.page + 1; pagination.pageSize = e.rows; fetchTracks() }"
+          @page="(e) => { pagination.page = e.page + 1; void fetchTracks() }"
         >
           <Column header="Track">
             <template #body="{ data }">
@@ -758,18 +799,11 @@ onMounted(fetchTracks)
                       :audio-url="previewAudioUrls[data.id] ?? null"
                       compact
                       :disabled="!data.previewAudioKey"
+                      :right-label="formatDuration(data.duration)"
                       @mouseenter="ensurePreviewAudioUrl(data)"
                     />
                   </div>
                 </div>
-              </div>
-            </template>
-          </Column>
-          <Column header="Details">
-            <template #body="{ data }">
-              <div class="cell-stack">
-                <span class="cell-title">{{ formatDuration(data.duration) }}</span>
-                <span class="cell-subtitle">{{ data.previewAudioKey ? 'Preview ready' : 'No preview yet' }}</span>
               </div>
             </template>
           </Column>
@@ -803,46 +837,68 @@ onMounted(fetchTracks)
 
     <Dialog v-model:visible="createDialogVisible" modal header="Create Track" class="dialog">
       <div class="form">
-        <div class="form-grid">
-          <label class="form-field">
-            <span class="form-field__label">Title</span>
-            <InputText v-model="createForm.title" />
+        <section class="form-section">
+          <div class="form-section__title">
+            <i class="pi pi-align-left" />
+            <span>Metadata</span>
+          </div>
+          <div class="form-grid">
+            <label class="form-field">
+              <span class="form-field__label">Title</span>
+              <InputText v-model="createForm.title" />
+            </label>
+
+            <label class="form-field">
+              <span class="form-field__label">Artist ID</span>
+              <InputText v-model="createForm.artistId" />
+            </label>
+
+            <label class="form-field">
+              <span class="form-field__label">Author Name</span>
+              <InputText v-model="createForm.authorName" />
+            </label>
+
+            <label class="form-field">
+              <span class="form-field__label">Genre</span>
+              <InputText v-model="createForm.genre" />
+            </label>
+          </div>
+        </section>
+
+        <section class="form-section">
+          <div class="form-section__title">
+            <i class="pi pi-volume-up" />
+            <span>Audio</span>
+          </div>
+
+          <label class="form-field form-field--wide">
+            <span class="form-field__label">Original MP3</span>
+            <div class="file-input">
+              <i class="pi pi-upload" />
+              <input type="file" accept=".mp3,audio/*" @change="(event) => void handleCreateAudioFileChange('original', event)" />
+            </div>
+            <span class="form-field__hint">Bắt buộc. Duration được đọc tự động từ file này.</span>
+            <div class="file-meta">
+              <span v-if="createOriginalFile" class="file-pill">{{ createOriginalFile.name }}</span>
+              <span v-if="createDurationDisplay" class="file-pill file-pill--muted">
+                <i class="pi pi-clock" />
+                <span>{{ createDurationDisplay }}</span>
+              </span>
+            </div>
           </label>
 
-          <label class="form-field">
-            <span class="form-field__label">Artist ID</span>
-            <InputText v-model="createForm.artistId" />
+          <label class="form-field form-field--wide">
+            <span class="form-field__label">Preview MP3</span>
+            <div class="file-input">
+              <i class="pi pi-headphones" />
+              <input type="file" accept=".mp3,audio/*" @change="(event) => void handleCreateAudioFileChange('preview', event)" />
+            </div>
+            <span class="form-field__hint">Tùy chọn. Dùng cho waveform và nghe thử trong admin.</span>
+            <div class="file-meta">
+              <span v-if="createPreviewFile" class="file-pill">{{ createPreviewFile.name }}</span>
+            </div>
           </label>
-
-          <label class="form-field">
-            <span class="form-field__label">Author Name</span>
-            <InputText v-model="createForm.authorName" />
-          </label>
-
-          <label class="form-field">
-            <span class="form-field__label">Genre</span>
-            <InputText v-model="createForm.genre" />
-          </label>
-        </div>
-
-        <label class="form-field form-field--wide">
-          <span class="form-field__label">Original MP3</span>
-          <input type="file" accept=".mp3,audio/*" @change="(event) => void handleCreateAudioFileChange('original', event)" />
-          <span class="form-field__hint">Bắt buộc. Duration được đọc tự động từ file này.</span>
-          <span v-if="createOriginalFile" class="file-pill">{{ createOriginalFile.name }}</span>
-        </label>
-
-        <label class="form-field form-field--wide">
-          <span class="form-field__label">Preview MP3</span>
-          <input type="file" accept=".mp3,audio/*" @change="(event) => void handleCreateAudioFileChange('preview', event)" />
-          <span class="form-field__hint">Tùy chọn. Dùng cho waveform và nghe thử trong admin.</span>
-          <span v-if="createPreviewFile" class="file-pill">{{ createPreviewFile.name }}</span>
-        </label>
-
-        <label class="form-field form-field--wide">
-          <span class="form-field__label">Duration (seconds)</span>
-          <InputText v-model="createForm.duration" readonly />
-        </label>
+        </section>
 
         <div class="form-field form-field--wide">
           <span class="form-field__label">Usage Rights</span>
@@ -1016,8 +1072,19 @@ onMounted(fetchTracks)
       <div class="form">
         <label class="form-field form-field--wide">
           <span class="form-field__label">File</span>
-          <input type="file" accept=".mp3,audio/*" @change="onUploadFileChange" />
-          <span class="form-field__hint">Chỉ nhận audio/mp3 cho bucket private của track.</span>
+          <div class="file-input">
+            <i :class="uploadMode === 'original' ? 'pi pi-upload' : 'pi pi-headphones'" />
+            <input type="file" accept=".mp3,audio/*" :disabled="uploadStatus === 'requesting' || uploadStatus === 'uploading'" @change="onUploadFileChange" />
+          </div>
+          <span class="form-field__hint">File key sẽ được cấp tự động (N.mp3) sau khi bấm Upload.</span>
+          <div class="file-meta">
+            <span v-if="uploadFile" class="file-pill">{{ uploadFile.name }}</span>
+            <Tag
+              v-if="uploadStatus !== 'idle'"
+              :value="uploadStatus === 'requesting' ? 'Requesting' : uploadStatus === 'uploading' ? 'Uploading' : uploadStatus === 'done' ? 'Done' : 'Error'"
+              :severity="uploadStatus === 'done' ? 'success' : uploadStatus === 'error' ? 'danger' : 'info'"
+            />
+          </div>
         </label>
 
         <Message v-if="uploadError" severity="error">{{ uploadError }}</Message>
@@ -1054,10 +1121,11 @@ onMounted(fetchTracks)
   padding: 24px 28px;
   border-radius: 24px;
   background:
-    radial-gradient(circle at top left, rgba(109, 74, 255, 0.18), transparent 34%),
-    linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(244, 240, 255, 0.96));
-  border: 1px solid rgba(109, 74, 255, 0.08);
-  box-shadow: 0 18px 40px rgba(38, 27, 80, 0.08);
+    radial-gradient(circle at top left, rgba(109, 74, 255, 0.22), transparent 38%),
+    radial-gradient(circle at 60% 120%, rgba(192, 132, 252, 0.14), transparent 44%),
+    linear-gradient(135deg, var(--admin-surface-0), var(--admin-surface-2));
+  border: 1px solid var(--admin-border);
+  box-shadow: var(--admin-elev-2);
 }
 
 .eyebrow {
@@ -1065,8 +1133,8 @@ onMounted(fetchTracks)
   align-items: center;
   padding: 6px 10px;
   border-radius: 999px;
-  background: rgba(109, 74, 255, 0.1);
-  color: #6d4aff;
+  background: var(--accent-bg);
+  color: var(--accent);
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -1082,7 +1150,7 @@ onMounted(fetchTracks)
 .hero-copy {
   max-width: 760px;
   margin: 0;
-  color: #6b7280;
+  color: var(--admin-muted);
 }
 
 .hero-actions {
@@ -1100,9 +1168,17 @@ onMounted(fetchTracks)
 .summary-card {
   padding: 18px;
   border-radius: 20px;
-  background: #fff;
-  border: 1px solid #ece9f8;
-  box-shadow: 0 14px 30px rgba(38, 27, 80, 0.06);
+  background: var(--admin-surface-0);
+  border: 1px solid var(--admin-border);
+  box-shadow: var(--admin-elev-1);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.summary-card:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--admin-elev-2), var(--admin-glow);
 }
 
 .summary-card__meta {
@@ -1113,7 +1189,7 @@ onMounted(fetchTracks)
 }
 
 .summary-card__title {
-  color: #6b7280;
+  color: var(--admin-muted);
   font-size: 13px;
   font-weight: 600;
 }
@@ -1125,8 +1201,9 @@ onMounted(fetchTracks)
   width: 38px;
   height: 38px;
   border-radius: 12px;
-  background: rgba(109, 74, 255, 0.12);
-  color: #6d4aff;
+  background: var(--accent-bg);
+  color: var(--accent);
+  box-shadow: 0 0 0 1px rgba(124, 92, 255, 0.12);
 }
 
 .summary-card__value {
@@ -1137,7 +1214,7 @@ onMounted(fetchTracks)
 
 .summary-card__desc {
   margin-top: 8px;
-  color: #6b7280;
+  color: var(--admin-muted);
   font-size: 13px;
 }
 
@@ -1160,7 +1237,7 @@ onMounted(fetchTracks)
 
 .panel-copy {
   margin-top: 6px;
-  color: #6b7280;
+  color: var(--admin-muted);
   font-size: 14px;
 }
 
@@ -1178,9 +1255,54 @@ onMounted(fetchTracks)
   gap: 16px;
   width: 100%;
   padding: 14px 16px;
-  border: 1px solid #ece9f8;
+  border: 1px solid var(--admin-border);
   border-radius: 18px;
-  background: linear-gradient(180deg, #fcfbff, #f8f6ff);
+  background: linear-gradient(180deg, var(--admin-surface-2), var(--admin-surface-1));
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.06);
+}
+
+.filters-panel__fields {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 0.8fr 0.8fr;
+  gap: 12px;
+  width: 100%;
+  align-items: end;
+}
+
+.filter-field {
+  display: grid;
+  gap: 6px;
+}
+
+.filter-field--search {
+  min-width: 220px;
+}
+
+.filter-search :deep(.p-inputtext) {
+  padding-left: 36px;
+}
+
+.filters-panel :deep(.p-inputtext),
+.filters-panel :deep(.p-dropdown) {
+  width: 100%;
+}
+
+.filters-panel :deep(.p-inputtext) {
+  border-radius: 14px;
+}
+
+.filters-panel :deep(.p-dropdown) {
+  border-radius: 14px;
+}
+
+.cell-subtitle--mono {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 980px) {
+  .filters-panel__fields {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
 .filters-panel__fields {
@@ -1208,7 +1330,7 @@ onMounted(fetchTracks)
 .filter-field__label {
   font-size: 12px;
   font-weight: 700;
-  color: #6b7280;
+  color: var(--admin-muted);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
@@ -1220,18 +1342,35 @@ onMounted(fetchTracks)
 .dashboard-table:deep(.p-datatable-table-container) {
   border-radius: 18px;
   overflow: hidden;
+  background: var(--admin-surface-1);
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.12);
 }
 
-.dashboard-table:deep(thead th) {
-  background: #faf9fe;
-  color: #6b7280;
+.dashboard-table:deep(.p-datatable-thead > tr > th) {
+  background: var(--admin-surface-2) !important;
+  color: var(--admin-muted) !important;
+  border-color: var(--admin-border) !important;
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
 
-.dashboard-table:deep(tbody tr) {
-  background: #fff;
+.dashboard-table:deep(.p-datatable-tbody > tr) {
+  background: var(--admin-surface-0) !important;
+  transition: background 0.18s ease;
+}
+
+.dashboard-table:deep(.p-datatable-tbody > tr:nth-child(even)) {
+  background: var(--admin-surface-1) !important;
+}
+
+.dashboard-table:deep(.p-datatable-tbody > tr:hover) {
+  background: color-mix(in srgb, var(--accent) 14%, var(--admin-surface-0)) !important;
+}
+
+.dashboard-table:deep(.p-datatable-tbody > tr > td) {
+  background: transparent !important;
+  border-color: var(--admin-border) !important;
 }
 
 .row-actions {
@@ -1267,7 +1406,7 @@ onMounted(fetchTracks)
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
-  color: #6b7280;
+  color: var(--admin-muted);
   font-size: 12px;
 }
 
@@ -1312,11 +1451,11 @@ onMounted(fetchTracks)
 
 .cell-title {
   font-weight: 600;
-  color: #111827;
+  color: var(--text-h);
 }
 
 .cell-subtitle {
-  color: #6b7280;
+  color: var(--admin-muted);
   font-size: 12px;
 }
 
@@ -1339,6 +1478,27 @@ onMounted(fetchTracks)
   gap: 14px;
 }
 
+.form-section {
+  display: grid;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid var(--admin-border);
+  background: linear-gradient(180deg, var(--admin-surface-2), var(--admin-surface-1));
+}
+
+.form-section__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 800;
+  color: var(--text-h);
+}
+
+.form-section__title i {
+  color: var(--accent);
+}
+
 .form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1357,13 +1517,13 @@ onMounted(fetchTracks)
 .form-field__label {
   font-size: 12px;
   font-weight: 700;
-  color: #6b7280;
+  color: var(--admin-muted);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
 
 .form-field__hint {
-  color: #6b7280;
+  color: var(--admin-muted);
   font-size: 12px;
 }
 
@@ -1374,9 +1534,9 @@ onMounted(fetchTracks)
 }
 
 .right-chip {
-  border: 1px solid #ddd6fe;
-  background: #f8f6ff;
-  color: #5b21b6;
+  border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--admin-border));
+  background: color-mix(in srgb, var(--accent) 10%, var(--admin-surface-2));
+  color: color-mix(in srgb, var(--accent) 88%, var(--text-h));
   border-radius: 999px;
   padding: 8px 12px;
   font-size: 12px;
@@ -1389,8 +1549,8 @@ onMounted(fetchTracks)
 }
 
 .right-chip--active {
-  background: #6d4aff;
-  border-color: #6d4aff;
+  background: color-mix(in srgb, var(--accent) 78%, #6d4aff);
+  border-color: color-mix(in srgb, var(--accent) 78%, #6d4aff);
   color: #fff;
 }
 
@@ -1400,10 +1560,42 @@ onMounted(fetchTracks)
   width: fit-content;
   padding: 6px 10px;
   border-radius: 999px;
-  background: rgba(109, 74, 255, 0.1);
-  color: #5b21b6;
+  background: var(--accent-bg);
+  color: color-mix(in srgb, var(--accent) 88%, var(--text-h));
   font-size: 12px;
   font-weight: 600;
+  gap: 8px;
+}
+
+.file-pill--muted {
+  background: color-mix(in srgb, var(--admin-surface-2) 72%, var(--accent-bg));
+  color: var(--admin-muted);
+}
+
+.file-meta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.file-input {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px dashed color-mix(in srgb, var(--admin-border) 70%, var(--accent));
+  background: var(--admin-surface-0);
+}
+
+.file-input i {
+  color: var(--accent);
+}
+
+.file-input input[type='file'] {
+  width: 100%;
 }
 
 .upload-result {
@@ -1436,14 +1628,14 @@ onMounted(fetchTracks)
 
 .detail-subtitle {
   margin-top: 6px;
-  color: #6b7280;
+  color: var(--admin-muted);
 }
 
 .detail-wave {
   padding: 18px;
   border-radius: 20px;
-  background: linear-gradient(180deg, #faf9fe, #f5f3ff);
-  border: 1px solid #ece9f8;
+  background: linear-gradient(180deg, var(--admin-surface-2), var(--admin-surface-1));
+  border: 1px solid var(--admin-border);
 }
 
 .detail-wave__meta {
@@ -1451,7 +1643,7 @@ onMounted(fetchTracks)
   gap: 14px;
   margin-top: 12px;
   flex-wrap: wrap;
-  color: #6b7280;
+  color: var(--admin-muted);
   font-size: 13px;
 }
 
@@ -1464,8 +1656,8 @@ onMounted(fetchTracks)
 .detail-card {
   padding: 18px;
   border-radius: 18px;
-  border: 1px solid #ece9f8;
-  background: #fff;
+  border: 1px solid var(--admin-border);
+  background: var(--admin-surface-0);
 }
 
 .detail-card--wide {
@@ -1480,7 +1672,7 @@ onMounted(fetchTracks)
 
 .detail-kv {
   margin-top: 8px;
-  color: #374151;
+  color: var(--text);
   word-break: break-word;
 }
 
@@ -1497,10 +1689,20 @@ onMounted(fetchTracks)
   align-items: center;
   gap: 8px;
   padding: 6px 12px 6px 8px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--admin-border);
   border-radius: 999px;
-  background: #f3f4f6;
-  color: #6b7280;
+  background: var(--admin-surface-2);
+  color: var(--admin-muted);
+  cursor: pointer;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    background 0.18s ease;
+}
+
+.status-toggle:hover {
+  box-shadow: var(--admin-glow);
+  transform: translateY(-1px);
 }
 
 .status-toggle--published {
@@ -1588,4 +1790,3 @@ onMounted(fetchTracks)
   }
 }
 </style>
-

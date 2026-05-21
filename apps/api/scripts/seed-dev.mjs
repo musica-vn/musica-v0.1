@@ -292,8 +292,6 @@ const main = async () => {
       duration: t.duration,
       status: t.status,
       usage_rights: t.usage_rights,
-      original_audio_key: `audio-originals/${t.title.toLowerCase().replaceAll(' ', '-')}.wav`,
-      preview_audio_key: `audio-previews/${t.title.toLowerCase().replaceAll(' ', '-')}.mp3`,
       created_by: admin01.id,
     }
   })

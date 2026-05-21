@@ -1,6 +1,5 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { randomUUID } from 'crypto';
 import { SupabaseService } from '../supabase/supabase.service';
 import { buildPaginationMeta } from '../common/pagination-meta';
 import type { PaginationMeta } from '@musica/contracts';
@@ -79,6 +78,26 @@ export class TracksService {
     private readonly supabaseService: SupabaseService,
     private readonly configService: ConfigService,
   ) {}
+
+  private async allocateNextStorageKey(bucket: string): Promise<string> {
+    const { data, error } = await this.supabaseService.client.rpc(
+      'allocate_storage_index',
+      { p_bucket: bucket },
+    );
+
+    if (error) {
+      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    if (typeof data !== 'number') {
+      throw new HttpException(
+        'Invalid allocate_storage_index response',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+
+    return `${data}.mp3`;
+  }
 
   async listAdminTracks(
     query: AdminTracksListQueryDto,
@@ -265,9 +284,6 @@ export class TracksService {
   async createOriginalUploadUrl(
     trackId: string,
   ): Promise<{ uploadUrl: string; fileKey: string }> {
-    // #region debug-point B:tracks-service-original-upload-start
-    fetch('http://127.0.0.1:7777/event', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionId: 'track-admin-runtime', runId: 'pre-fix', hypothesisId: 'B', location: 'tracks.service.ts:createOriginalUploadUrl:start', msg: '[DEBUG] original upload url start', data: { trackId }, ts: Date.now() }) }).catch(() => {});
-    // #endregion
     await this.getTrackById(trackId);
 
     const bucket = this.configService.get<string>(
@@ -280,15 +296,12 @@ export class TracksService {
       );
     }
 
-    const fileKey = `tracks/${trackId}/original/${randomUUID()}.mp3`;
+    const fileKey = await this.allocateNextStorageKey(bucket);
     const { data, error } = await this.supabaseService.client.storage
       .from(bucket)
       .createSignedUploadUrl(fileKey);
 
     if (error || !data) {
-      // #region debug-point B:tracks-service-original-upload-error
-      fetch('http://127.0.0.1:7777/event', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionId: 'track-admin-runtime', runId: 'pre-fix', hypothesisId: 'B', location: 'tracks.service.ts:createOriginalUploadUrl:error', msg: '[DEBUG] original upload url error', data: { error: error?.message ?? 'unknown', bucket, fileKey }, ts: Date.now() }) }).catch(() => {});
-      // #endregion
       throw new HttpException(
         error?.message ?? 'Failed to create signed upload URL',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -307,18 +320,12 @@ export class TracksService {
       );
     }
 
-    // #region debug-point B:tracks-service-original-upload-success
-    fetch('http://127.0.0.1:7777/event', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionId: 'track-admin-runtime', runId: 'pre-fix', hypothesisId: 'B', location: 'tracks.service.ts:createOriginalUploadUrl:success', msg: '[DEBUG] original upload url success', data: { bucket, fileKey, hasSignedUrl: Boolean(data.signedUrl) }, ts: Date.now() }) }).catch(() => {});
-    // #endregion
     return { uploadUrl: data.signedUrl, fileKey };
   }
 
   async createPreviewUploadUrl(
     trackId: string,
   ): Promise<{ uploadUrl: string; fileKey: string }> {
-    // #region debug-point B:tracks-service-preview-upload-start
-    fetch('http://127.0.0.1:7777/event', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionId: 'track-admin-runtime', runId: 'pre-fix', hypothesisId: 'B', location: 'tracks.service.ts:createPreviewUploadUrl:start', msg: '[DEBUG] preview upload url start', data: { trackId }, ts: Date.now() }) }).catch(() => {});
-    // #endregion
     await this.getTrackById(trackId);
 
     const bucket = this.configService.get<string>(
@@ -331,15 +338,12 @@ export class TracksService {
       );
     }
 
-    const fileKey = `tracks/${trackId}/preview/${randomUUID()}.mp3`;
+    const fileKey = await this.allocateNextStorageKey(bucket);
     const { data, error } = await this.supabaseService.client.storage
       .from(bucket)
       .createSignedUploadUrl(fileKey);
 
     if (error || !data) {
-      // #region debug-point B:tracks-service-preview-upload-error
-      fetch('http://127.0.0.1:7777/event', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionId: 'track-admin-runtime', runId: 'pre-fix', hypothesisId: 'B', location: 'tracks.service.ts:createPreviewUploadUrl:error', msg: '[DEBUG] preview upload url error', data: { error: error?.message ?? 'unknown', bucket, fileKey }, ts: Date.now() }) }).catch(() => {});
-      // #endregion
       throw new HttpException(
         error?.message ?? 'Failed to create signed upload URL',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -358,9 +362,6 @@ export class TracksService {
       );
     }
 
-    // #region debug-point B:tracks-service-preview-upload-success
-    fetch('http://127.0.0.1:7777/event', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionId: 'track-admin-runtime', runId: 'pre-fix', hypothesisId: 'B', location: 'tracks.service.ts:createPreviewUploadUrl:success', msg: '[DEBUG] preview upload url success', data: { bucket, fileKey, hasSignedUrl: Boolean(data.signedUrl) }, ts: Date.now() }) }).catch(() => {});
-    // #endregion
     return { uploadUrl: data.signedUrl, fileKey };
   }
 
@@ -369,30 +370,50 @@ export class TracksService {
   ): Promise<{ playbackUrl: string }> {
     const track = await this.getTrackById(trackId);
 
-    if (!track.previewAudioKey) {
-      throw new HttpException('Preview audio is not available', HttpStatus.NOT_FOUND);
+    const audioKey = track.previewAudioKey ?? track.originalAudioKey;
+    if (!audioKey) {
+      throw new HttpException('Audio is not available', HttpStatus.NOT_FOUND);
     }
 
-    const bucket = this.configService.get<string>('STORAGE_BUCKET_PREVIEW_AUDIO');
-    if (!bucket) {
+    const previewBucket = this.configService.get<string>(
+      'STORAGE_BUCKET_PREVIEW_AUDIO',
+    );
+    const originalBucket = this.configService.get<string>(
+      'STORAGE_BUCKET_ORIGINAL_AUDIO',
+    );
+
+    if (!previewBucket || !originalBucket) {
       throw new HttpException(
-        'Missing STORAGE_BUCKET_PREVIEW_AUDIO',
+        'Missing STORAGE_BUCKET_PREVIEW_AUDIO or STORAGE_BUCKET_ORIGINAL_AUDIO',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
 
     const expiresInSeconds = 60 * 15;
-    const { data, error } = await this.supabaseService.client.storage
-      .from(bucket)
-      .createSignedUrl(track.previewAudioKey, expiresInSeconds);
+    const trySignedUrl = async (bucket: string) =>
+      this.supabaseService.client.storage
+        .from(bucket)
+        .createSignedUrl(audioKey, expiresInSeconds);
 
-    if (error || !data) {
-      throw new HttpException(
-        error?.message ?? 'Failed to create signed playback URL',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+    const previewResult = await trySignedUrl(previewBucket);
+    if (previewResult.data?.signedUrl) {
+      return { playbackUrl: previewResult.data.signedUrl };
     }
 
-    return { playbackUrl: data.signedUrl };
+    const originalResult = await trySignedUrl(originalBucket);
+    if (originalResult.data?.signedUrl) {
+      return { playbackUrl: originalResult.data.signedUrl };
+    }
+
+    const errorMessage =
+      previewResult.error?.message ??
+      originalResult.error?.message ??
+      'Failed to create signed playback URL';
+
+    if (errorMessage === 'Object not found') {
+      throw new HttpException('Audio object not found', HttpStatus.NOT_FOUND);
+    }
+
+    throw new HttpException(errorMessage, HttpStatus.INTERNAL_SERVER_ERROR);
   }
 }

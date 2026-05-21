@@ -6,6 +6,7 @@ import {
   IsOptional,
   IsString,
   IsUUID,
+  Max,
   Min,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
@@ -13,6 +14,13 @@ import { PaginationQueryDto } from '../common/pagination.dto';
 import { TrackDto } from './track.dto';
 
 export class AdminTracksListQueryDto extends PaginationQueryDto {
+  @ApiPropertyOptional({ type: Number, default: 10, minimum: 1, maximum: 10 })
+  @Transform(({ value }) => (value === undefined ? 10 : Number(value)))
+  @IsInt()
+  @Min(1)
+  @Max(10)
+  pageSize = 10;
+
   @ApiPropertyOptional({
     enum: [
       'createdAt:desc',
@@ -40,7 +48,7 @@ export class AdminTracksListQueryDto extends PaginationQueryDto {
     'genre:asc',
     'genre:desc',
   ])
-  sort?:
+  declare sort?:
     | 'createdAt:desc'
     | 'createdAt:asc'
     | 'updatedAt:desc'

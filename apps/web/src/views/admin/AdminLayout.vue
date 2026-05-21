@@ -29,7 +29,7 @@ const items = computed<MenuItem[]>(() => [
   },
   {
     label: 'Track Management',
-    icon: 'pi pi-music',
+    icon: 'pi pi-wave-pulse',
     command: async () => router.push('/admin/tracks'),
   },
   {
