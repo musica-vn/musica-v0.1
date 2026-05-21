@@ -8,14 +8,18 @@ import {
 import type { Request, Response } from 'express';
 import type { ApiErrorResponse } from '@musica/contracts';
 
-const getErrorMessage = (exception: HttpException, responseBody: unknown): string => {
+const getErrorMessage = (
+  exception: HttpException,
+  responseBody: unknown,
+): string => {
   if (typeof responseBody === 'string') return responseBody;
 
   if (typeof responseBody === 'object' && responseBody !== null) {
     if ('message' in responseBody) {
       const message = (responseBody as { message?: unknown }).message;
       if (typeof message === 'string') return message;
-      if (Array.isArray(message)) return message.filter((x) => typeof x === 'string').join(', ');
+      if (Array.isArray(message))
+        return message.filter((x) => typeof x === 'string').join(', ');
     }
   }
 
@@ -30,7 +34,9 @@ export class ApiExceptionFilter implements ExceptionFilter {
     const request = httpContext.getRequest<Request>();
 
     const requestId =
-      typeof response.locals.requestId === 'string' ? response.locals.requestId : '';
+      typeof response.locals.requestId === 'string'
+        ? response.locals.requestId
+        : '';
 
     const timestamp = new Date().toISOString();
 

@@ -52,6 +52,230 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/auth/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Login bằng email/password */
+        post: operations["AuthController_login"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/tracks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List tracks (admin) */
+        get: operations["AdminTracksController_list"];
+        put?: never;
+        /** Create track metadata (admin) */
+        post: operations["AdminTracksController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/tracks/{trackId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get track detail (admin) */
+        get: operations["AdminTracksController_detail"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update track metadata (admin) */
+        patch: operations["AdminTracksController_update"];
+        trace?: never;
+    };
+    "/admin/tracks/{trackId}/original-upload-url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Get signed upload URL for original audio (admin) */
+        post: operations["AdminTracksController_originalUploadUrl"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/tracks/{trackId}/preview-upload-url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Get signed upload URL for preview audio (admin) */
+        post: operations["AdminTracksController_previewUploadUrl"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/tracks/{trackId}/preview-playback-url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get signed playback URL for preview audio (admin) */
+        get: operations["AdminTracksController_previewPlaybackUrl"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/tracks/{trackId}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Publish track (admin) */
+        patch: operations["AdminTracksController_publish"];
+        trace?: never;
+    };
+    "/admin/tracks/{trackId}/hide": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Hide track (admin) */
+        patch: operations["AdminTracksController_hide"];
+        trace?: never;
+    };
+    "/admin/certificates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List certificates (admin) */
+        get: operations["AdminCertificatesController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/certificates/template": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get certificate HTML template (admin) */
+        get: operations["AdminCertificatesController_getTemplate"];
+        /** Update certificate HTML template (admin) */
+        put: operations["AdminCertificatesController_updateTemplate"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/certificates/{certificateId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get certificate detail (admin) */
+        get: operations["AdminCertificatesController_detail"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/certificates/{certificateId}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get signed download URL for certificate PDF (admin) */
+        get: operations["AdminCertificatesController_download"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/certificates/{certificateId}/render-html": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Render certificate HTML (admin) */
+        get: operations["AdminCertificatesController_renderHtml"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -81,6 +305,249 @@ export interface components {
             statusCode: number;
             data: components["schemas"]["ExampleListDataDto"];
             meta: components["schemas"]["ExampleListMetaDto"];
+            /** @example 2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a */
+            requestId: string;
+            /** @example 2026-05-20T00:00:00.000Z */
+            timestamp: string;
+        };
+        AuthLoginRequestDto: {
+            /** @example admin01@musica.local */
+            email: string;
+            /** @example Password123! */
+            password: string;
+        };
+        AuthUserDto: {
+            id: string;
+            email: string;
+            fullName: string;
+            /** @enum {string} */
+            status: "ACTIVE" | "LOCKED" | "DELETED";
+        };
+        AuthLoginDataDto: {
+            accessToken: string;
+            /** @example Bearer */
+            tokenType: string;
+            /** @example 604800 */
+            expiresInSeconds: number;
+            user: components["schemas"]["AuthUserDto"];
+            /**
+             * @example [
+             *       "ADMIN"
+             *     ]
+             */
+            roles: string[];
+        };
+        AuthLoginResponseDto: {
+            /** @example true */
+            success: boolean;
+            /** @example 200 */
+            statusCode: number;
+            data: components["schemas"]["AuthLoginDataDto"];
+            /** @example 2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a */
+            requestId: string;
+            /** @example 2026-05-20T00:00:00.000Z */
+            timestamp: string;
+        };
+        TrackDto: {
+            id: string;
+            title: string;
+            artistId: string;
+            authorName?: Record<string, never> | null;
+            genre?: Record<string, never> | null;
+            duration?: Record<string, never> | null;
+            /** @enum {string} */
+            status: "HIDDEN" | "PUBLISHED";
+            usageRights: string[];
+            originalAudioKey?: Record<string, never> | null;
+            previewAudioKey?: Record<string, never> | null;
+            createdBy: string;
+            createdAt: string;
+            updatedAt: string;
+        };
+        AdminTracksListDataDto: {
+            items: components["schemas"]["TrackDto"][];
+        };
+        PaginationInfoDto: {
+            page: number;
+            pageSize: number;
+            totalItems: number;
+            totalPages: number;
+            hasNextPage: boolean;
+            hasPrevPage: boolean;
+        };
+        PaginationMetaDto: {
+            pagination: components["schemas"]["PaginationInfoDto"];
+        };
+        AdminTracksListResponseDto: {
+            /** @example true */
+            success: boolean;
+            /** @example 200 */
+            statusCode: number;
+            data: components["schemas"]["AdminTracksListDataDto"];
+            meta: components["schemas"]["PaginationMetaDto"];
+            /** @example 2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a */
+            requestId: string;
+            /** @example 2026-05-20T00:00:00.000Z */
+            timestamp: string;
+        };
+        AdminCreateTrackRequestDto: {
+            title: string;
+            artistId: string;
+            authorName?: string;
+            genre?: string;
+            duration?: number;
+            usageRights?: string[];
+        };
+        AdminTrackResponseDto: {
+            /** @example true */
+            success: boolean;
+            /** @example 200 */
+            statusCode: number;
+            data: components["schemas"]["TrackDto"];
+            /** @example 2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a */
+            requestId: string;
+            /** @example 2026-05-20T00:00:00.000Z */
+            timestamp: string;
+        };
+        AdminUpdateTrackRequestDto: {
+            title?: string;
+            artistId?: string;
+            authorName?: string;
+            genre?: string;
+            duration?: number;
+            usageRights?: string[];
+        };
+        AdminTrackUploadUrlResponseDataDto: {
+            uploadUrl: string;
+            fileKey: string;
+        };
+        AdminTrackUploadUrlResponseDto: {
+            /** @example true */
+            success: boolean;
+            /** @example 200 */
+            statusCode: number;
+            data: components["schemas"]["AdminTrackUploadUrlResponseDataDto"];
+            /** @example 2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a */
+            requestId: string;
+            /** @example 2026-05-20T00:00:00.000Z */
+            timestamp: string;
+        };
+        AdminTrackPlaybackUrlResponseDataDto: {
+            playbackUrl: string;
+        };
+        AdminTrackPlaybackUrlResponseDto: {
+            /** @example true */
+            success: boolean;
+            /** @example 200 */
+            statusCode: number;
+            data: components["schemas"]["AdminTrackPlaybackUrlResponseDataDto"];
+            /** @example 2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a */
+            requestId: string;
+            /** @example 2026-05-20T00:00:00.000Z */
+            timestamp: string;
+        };
+        CertificateListItemDto: {
+            id: string;
+            trackId: string;
+            buyerId: string;
+            artistId: string;
+            trackSnapshotName: string;
+            buyerSnapshotName: string;
+            artistSnapshotName: string;
+            /** @enum {string} */
+            status: "ACTIVE";
+            createdAt: string;
+            validFrom: string;
+            validUntil?: Record<string, never> | null;
+            buyerEmail?: Record<string, never> | null;
+        };
+        AdminCertificatesListDataDto: {
+            items: components["schemas"]["CertificateListItemDto"][];
+        };
+        AdminCertificatesListResponseDto: {
+            /** @example true */
+            success: boolean;
+            /** @example 200 */
+            statusCode: number;
+            data: components["schemas"]["AdminCertificatesListDataDto"];
+            meta: components["schemas"]["PaginationMetaDto"];
+            /** @example 2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a */
+            requestId: string;
+            /** @example 2026-05-20T00:00:00.000Z */
+            timestamp: string;
+        };
+        CertificateTemplateDto: {
+            /** @example DEFAULT */
+            code: string;
+            htmlTemplate: string;
+            updatedAt: string;
+        };
+        AdminCertificateTemplateResponseDto: {
+            /** @example true */
+            success: boolean;
+            /** @example 200 */
+            statusCode: number;
+            data: components["schemas"]["CertificateTemplateDto"];
+            /** @example 2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a */
+            requestId: string;
+            /** @example 2026-05-20T00:00:00.000Z */
+            timestamp: string;
+        };
+        UpdateCertificateTemplateRequestDto: {
+            htmlTemplate: string;
+        };
+        CertificateDetailDto: {
+            id: string;
+            trackId: string;
+            buyerId: string;
+            artistId: string;
+            selectedUsageRights: string[];
+            trackSnapshotName: string;
+            buyerSnapshotName: string;
+            artistSnapshotName: string;
+            pdfFileKey: string;
+            /** @enum {string} */
+            status: "ACTIVE";
+            validFrom: string;
+            validUntil?: Record<string, never> | null;
+            createdAt: string;
+            buyerEmail?: Record<string, never> | null;
+        };
+        AdminCertificateDetailResponseDto: {
+            /** @example true */
+            success: boolean;
+            /** @example 200 */
+            statusCode: number;
+            data: components["schemas"]["CertificateDetailDto"];
+            /** @example 2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a */
+            requestId: string;
+            /** @example 2026-05-20T00:00:00.000Z */
+            timestamp: string;
+        };
+        CertificateDownloadUrlDataDto: {
+            downloadUrl: string;
+            fileName: string;
+        };
+        AdminCertificateDownloadUrlResponseDto: {
+            /** @example true */
+            success: boolean;
+            /** @example 200 */
+            statusCode: number;
+            data: components["schemas"]["CertificateDownloadUrlDataDto"];
+            /** @example 2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a */
+            requestId: string;
+            /** @example 2026-05-20T00:00:00.000Z */
+            timestamp: string;
+        };
+        CertificateRenderedHtmlDto: {
+            html: string;
+        };
+        AdminCertificateRenderedHtmlResponseDto: {
+            /** @example true */
+            success: boolean;
+            /** @example 200 */
+            statusCode: number;
+            data: components["schemas"]["CertificateRenderedHtmlDto"];
             /** @example 2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a */
             requestId: string;
             /** @example 2026-05-20T00:00:00.000Z */
@@ -149,6 +616,366 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ExampleListResponseDto"];
+                };
+            };
+        };
+    };
+    AuthController_login: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AuthLoginRequestDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthLoginResponseDto"];
+                };
+            };
+        };
+    };
+    AdminTracksController_list: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                q?: string;
+                sort?: string;
+                status?: "HIDDEN" | "PUBLISHED";
+                genre?: string;
+                artistId?: string;
+                keyword?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminTracksListResponseDto"];
+                };
+            };
+        };
+    };
+    AdminTracksController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminCreateTrackRequestDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminTrackResponseDto"];
+                };
+            };
+        };
+    };
+    AdminTracksController_detail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                trackId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminTrackResponseDto"];
+                };
+            };
+        };
+    };
+    AdminTracksController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                trackId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminUpdateTrackRequestDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminTrackResponseDto"];
+                };
+            };
+        };
+    };
+    AdminTracksController_originalUploadUrl: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                trackId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminTrackUploadUrlResponseDto"];
+                };
+            };
+        };
+    };
+    AdminTracksController_previewUploadUrl: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                trackId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminTrackUploadUrlResponseDto"];
+                };
+            };
+        };
+    };
+    AdminTracksController_previewPlaybackUrl: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                trackId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminTrackPlaybackUrlResponseDto"];
+                };
+            };
+        };
+    };
+    AdminTracksController_publish: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                trackId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminTrackResponseDto"];
+                };
+            };
+        };
+    };
+    AdminTracksController_hide: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                trackId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminTrackResponseDto"];
+                };
+            };
+        };
+    };
+    AdminCertificatesController_list: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                q?: string;
+                sort?: string;
+                buyerKeyword?: string;
+                trackKeyword?: string;
+                artistId?: string;
+                status?: "ACTIVE";
+                fromDate?: string;
+                toDate?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminCertificatesListResponseDto"];
+                };
+            };
+        };
+    };
+    AdminCertificatesController_getTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminCertificateTemplateResponseDto"];
+                };
+            };
+        };
+    };
+    AdminCertificatesController_updateTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateCertificateTemplateRequestDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminCertificateTemplateResponseDto"];
+                };
+            };
+        };
+    };
+    AdminCertificatesController_detail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                certificateId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminCertificateDetailResponseDto"];
+                };
+            };
+        };
+    };
+    AdminCertificatesController_download: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                certificateId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminCertificateDownloadUrlResponseDto"];
+                };
+            };
+        };
+    };
+    AdminCertificatesController_renderHtml: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                certificateId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminCertificateRenderedHtmlResponseDto"];
                 };
             };
         };

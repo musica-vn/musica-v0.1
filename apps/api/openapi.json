@@ -88,6 +88,722 @@
           "examples"
         ]
       }
+    },
+    "/auth/login": {
+      "post": {
+        "operationId": "AuthController_login",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthLoginRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthLoginResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Login bằng email/password",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/admin/tracks": {
+      "get": {
+        "operationId": "AdminTracksController_list",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "createdAt:desc",
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "HIDDEN",
+                "PUBLISHED"
+              ]
+            }
+          },
+          {
+            "name": "genre",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "artistId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "keyword",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminTracksListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List tracks (admin)",
+        "tags": [
+          "Admin - Tracks"
+        ]
+      },
+      "post": {
+        "operationId": "AdminTracksController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminCreateTrackRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminTrackResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create track metadata (admin)",
+        "tags": [
+          "Admin - Tracks"
+        ]
+      }
+    },
+    "/admin/tracks/{trackId}": {
+      "get": {
+        "operationId": "AdminTracksController_detail",
+        "parameters": [
+          {
+            "name": "trackId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminTrackResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get track detail (admin)",
+        "tags": [
+          "Admin - Tracks"
+        ]
+      },
+      "patch": {
+        "operationId": "AdminTracksController_update",
+        "parameters": [
+          {
+            "name": "trackId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminUpdateTrackRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminTrackResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update track metadata (admin)",
+        "tags": [
+          "Admin - Tracks"
+        ]
+      }
+    },
+    "/admin/tracks/{trackId}/original-upload-url": {
+      "post": {
+        "operationId": "AdminTracksController_originalUploadUrl",
+        "parameters": [
+          {
+            "name": "trackId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminTrackUploadUrlResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get signed upload URL for original audio (admin)",
+        "tags": [
+          "Admin - Tracks"
+        ]
+      }
+    },
+    "/admin/tracks/{trackId}/preview-upload-url": {
+      "post": {
+        "operationId": "AdminTracksController_previewUploadUrl",
+        "parameters": [
+          {
+            "name": "trackId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminTrackUploadUrlResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get signed upload URL for preview audio (admin)",
+        "tags": [
+          "Admin - Tracks"
+        ]
+      }
+    },
+    "/admin/tracks/{trackId}/preview-playback-url": {
+      "get": {
+        "operationId": "AdminTracksController_previewPlaybackUrl",
+        "parameters": [
+          {
+            "name": "trackId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminTrackPlaybackUrlResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get signed playback URL for preview audio (admin)",
+        "tags": [
+          "Admin - Tracks"
+        ]
+      }
+    },
+    "/admin/tracks/{trackId}/publish": {
+      "patch": {
+        "operationId": "AdminTracksController_publish",
+        "parameters": [
+          {
+            "name": "trackId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminTrackResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Publish track (admin)",
+        "tags": [
+          "Admin - Tracks"
+        ]
+      }
+    },
+    "/admin/tracks/{trackId}/hide": {
+      "patch": {
+        "operationId": "AdminTracksController_hide",
+        "parameters": [
+          {
+            "name": "trackId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminTrackResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Hide track (admin)",
+        "tags": [
+          "Admin - Tracks"
+        ]
+      }
+    },
+    "/admin/certificates": {
+      "get": {
+        "operationId": "AdminCertificatesController_list",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "createdAt:desc",
+              "type": "string"
+            }
+          },
+          {
+            "name": "buyerKeyword",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "trackKeyword",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "artistId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ACTIVE"
+              ]
+            }
+          },
+          {
+            "name": "fromDate",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "toDate",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminCertificatesListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List certificates (admin)",
+        "tags": [
+          "Admin - Certificates"
+        ]
+      }
+    },
+    "/admin/certificates/template": {
+      "get": {
+        "operationId": "AdminCertificatesController_getTemplate",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminCertificateTemplateResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get certificate HTML template (admin)",
+        "tags": [
+          "Admin - Certificates"
+        ]
+      },
+      "put": {
+        "operationId": "AdminCertificatesController_updateTemplate",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCertificateTemplateRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminCertificateTemplateResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update certificate HTML template (admin)",
+        "tags": [
+          "Admin - Certificates"
+        ]
+      }
+    },
+    "/admin/certificates/{certificateId}": {
+      "get": {
+        "operationId": "AdminCertificatesController_detail",
+        "parameters": [
+          {
+            "name": "certificateId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminCertificateDetailResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get certificate detail (admin)",
+        "tags": [
+          "Admin - Certificates"
+        ]
+      }
+    },
+    "/admin/certificates/{certificateId}/download": {
+      "get": {
+        "operationId": "AdminCertificatesController_download",
+        "parameters": [
+          {
+            "name": "certificateId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminCertificateDownloadUrlResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get signed download URL for certificate PDF (admin)",
+        "tags": [
+          "Admin - Certificates"
+        ]
+      }
+    },
+    "/admin/certificates/{certificateId}/render-html": {
+      "get": {
+        "operationId": "AdminCertificatesController_renderHtml",
+        "parameters": [
+          {
+            "name": "certificateId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminCertificateRenderedHtmlResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Render certificate HTML (admin)",
+        "tags": [
+          "Admin - Certificates"
+        ]
+      }
     }
   },
   "info": {
@@ -99,6 +815,13 @@
   "tags": [],
   "servers": [],
   "components": {
+    "securitySchemes": {
+      "bearer": {
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "type": "http"
+      }
+    },
     "schemas": {
       "ExampleItemDto": {
         "type": "object",
@@ -202,6 +925,806 @@
           "statusCode",
           "data",
           "meta",
+          "requestId",
+          "timestamp"
+        ]
+      },
+      "AuthLoginRequestDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "admin01@musica.local"
+          },
+          "password": {
+            "type": "string",
+            "example": "Password123!"
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ]
+      },
+      "AuthUserDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "LOCKED",
+              "DELETED"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "fullName",
+          "status"
+        ]
+      },
+      "AuthLoginDataDto": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string"
+          },
+          "tokenType": {
+            "type": "string",
+            "example": "Bearer"
+          },
+          "expiresInSeconds": {
+            "type": "number",
+            "example": 604800
+          },
+          "user": {
+            "$ref": "#/components/schemas/AuthUserDto"
+          },
+          "roles": {
+            "example": [
+              "ADMIN"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "accessToken",
+          "tokenType",
+          "expiresInSeconds",
+          "user",
+          "roles"
+        ]
+      },
+      "AuthLoginResponseDto": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "statusCode": {
+            "type": "number",
+            "example": 200
+          },
+          "data": {
+            "$ref": "#/components/schemas/AuthLoginDataDto"
+          },
+          "requestId": {
+            "type": "string",
+            "example": "2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a"
+          },
+          "timestamp": {
+            "type": "string",
+            "example": "2026-05-20T00:00:00.000Z"
+          }
+        },
+        "required": [
+          "success",
+          "statusCode",
+          "data",
+          "requestId",
+          "timestamp"
+        ]
+      },
+      "TrackDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "artistId": {
+            "type": "string"
+          },
+          "authorName": {
+            "type": "object",
+            "nullable": true
+          },
+          "genre": {
+            "type": "object",
+            "nullable": true
+          },
+          "duration": {
+            "type": "object",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "HIDDEN",
+              "PUBLISHED"
+            ]
+          },
+          "usageRights": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "originalAudioKey": {
+            "type": "object",
+            "nullable": true
+          },
+          "previewAudioKey": {
+            "type": "object",
+            "nullable": true
+          },
+          "createdBy": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "artistId",
+          "status",
+          "usageRights",
+          "createdBy",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "AdminTracksListDataDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TrackDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "PaginationInfoDto": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "number"
+          },
+          "pageSize": {
+            "type": "number"
+          },
+          "totalItems": {
+            "type": "number"
+          },
+          "totalPages": {
+            "type": "number"
+          },
+          "hasNextPage": {
+            "type": "boolean"
+          },
+          "hasPrevPage": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "page",
+          "pageSize",
+          "totalItems",
+          "totalPages",
+          "hasNextPage",
+          "hasPrevPage"
+        ]
+      },
+      "PaginationMetaDto": {
+        "type": "object",
+        "properties": {
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationInfoDto"
+          }
+        },
+        "required": [
+          "pagination"
+        ]
+      },
+      "AdminTracksListResponseDto": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "statusCode": {
+            "type": "number",
+            "example": 200
+          },
+          "data": {
+            "$ref": "#/components/schemas/AdminTracksListDataDto"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PaginationMetaDto"
+          },
+          "requestId": {
+            "type": "string",
+            "example": "2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a"
+          },
+          "timestamp": {
+            "type": "string",
+            "example": "2026-05-20T00:00:00.000Z"
+          }
+        },
+        "required": [
+          "success",
+          "statusCode",
+          "data",
+          "meta",
+          "requestId",
+          "timestamp"
+        ]
+      },
+      "AdminCreateTrackRequestDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "artistId": {
+            "type": "string"
+          },
+          "authorName": {
+            "type": "string"
+          },
+          "genre": {
+            "type": "string"
+          },
+          "duration": {
+            "type": "number"
+          },
+          "usageRights": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "title",
+          "artistId"
+        ]
+      },
+      "AdminTrackResponseDto": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "statusCode": {
+            "type": "number",
+            "example": 200
+          },
+          "data": {
+            "$ref": "#/components/schemas/TrackDto"
+          },
+          "requestId": {
+            "type": "string",
+            "example": "2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a"
+          },
+          "timestamp": {
+            "type": "string",
+            "example": "2026-05-20T00:00:00.000Z"
+          }
+        },
+        "required": [
+          "success",
+          "statusCode",
+          "data",
+          "requestId",
+          "timestamp"
+        ]
+      },
+      "AdminUpdateTrackRequestDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "artistId": {
+            "type": "string"
+          },
+          "authorName": {
+            "type": "string"
+          },
+          "genre": {
+            "type": "string"
+          },
+          "duration": {
+            "type": "number"
+          },
+          "usageRights": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "AdminTrackUploadUrlResponseDataDto": {
+        "type": "object",
+        "properties": {
+          "uploadUrl": {
+            "type": "string"
+          },
+          "fileKey": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "uploadUrl",
+          "fileKey"
+        ]
+      },
+      "AdminTrackUploadUrlResponseDto": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "statusCode": {
+            "type": "number",
+            "example": 200
+          },
+          "data": {
+            "$ref": "#/components/schemas/AdminTrackUploadUrlResponseDataDto"
+          },
+          "requestId": {
+            "type": "string",
+            "example": "2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a"
+          },
+          "timestamp": {
+            "type": "string",
+            "example": "2026-05-20T00:00:00.000Z"
+          }
+        },
+        "required": [
+          "success",
+          "statusCode",
+          "data",
+          "requestId",
+          "timestamp"
+        ]
+      },
+      "AdminTrackPlaybackUrlResponseDataDto": {
+        "type": "object",
+        "properties": {
+          "playbackUrl": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "playbackUrl"
+        ]
+      },
+      "AdminTrackPlaybackUrlResponseDto": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "statusCode": {
+            "type": "number",
+            "example": 200
+          },
+          "data": {
+            "$ref": "#/components/schemas/AdminTrackPlaybackUrlResponseDataDto"
+          },
+          "requestId": {
+            "type": "string",
+            "example": "2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a"
+          },
+          "timestamp": {
+            "type": "string",
+            "example": "2026-05-20T00:00:00.000Z"
+          }
+        },
+        "required": [
+          "success",
+          "statusCode",
+          "data",
+          "requestId",
+          "timestamp"
+        ]
+      },
+      "CertificateListItemDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "trackId": {
+            "type": "string"
+          },
+          "buyerId": {
+            "type": "string"
+          },
+          "artistId": {
+            "type": "string"
+          },
+          "trackSnapshotName": {
+            "type": "string"
+          },
+          "buyerSnapshotName": {
+            "type": "string"
+          },
+          "artistSnapshotName": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE"
+            ]
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "validFrom": {
+            "type": "string"
+          },
+          "validUntil": {
+            "type": "object",
+            "nullable": true
+          },
+          "buyerEmail": {
+            "type": "object",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "trackId",
+          "buyerId",
+          "artistId",
+          "trackSnapshotName",
+          "buyerSnapshotName",
+          "artistSnapshotName",
+          "status",
+          "createdAt",
+          "validFrom"
+        ]
+      },
+      "AdminCertificatesListDataDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CertificateListItemDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "AdminCertificatesListResponseDto": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "statusCode": {
+            "type": "number",
+            "example": 200
+          },
+          "data": {
+            "$ref": "#/components/schemas/AdminCertificatesListDataDto"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PaginationMetaDto"
+          },
+          "requestId": {
+            "type": "string",
+            "example": "2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a"
+          },
+          "timestamp": {
+            "type": "string",
+            "example": "2026-05-20T00:00:00.000Z"
+          }
+        },
+        "required": [
+          "success",
+          "statusCode",
+          "data",
+          "meta",
+          "requestId",
+          "timestamp"
+        ]
+      },
+      "CertificateTemplateDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "DEFAULT"
+          },
+          "htmlTemplate": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "htmlTemplate",
+          "updatedAt"
+        ]
+      },
+      "AdminCertificateTemplateResponseDto": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "statusCode": {
+            "type": "number",
+            "example": 200
+          },
+          "data": {
+            "$ref": "#/components/schemas/CertificateTemplateDto"
+          },
+          "requestId": {
+            "type": "string",
+            "example": "2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a"
+          },
+          "timestamp": {
+            "type": "string",
+            "example": "2026-05-20T00:00:00.000Z"
+          }
+        },
+        "required": [
+          "success",
+          "statusCode",
+          "data",
+          "requestId",
+          "timestamp"
+        ]
+      },
+      "UpdateCertificateTemplateRequestDto": {
+        "type": "object",
+        "properties": {
+          "htmlTemplate": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "htmlTemplate"
+        ]
+      },
+      "CertificateDetailDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "trackId": {
+            "type": "string"
+          },
+          "buyerId": {
+            "type": "string"
+          },
+          "artistId": {
+            "type": "string"
+          },
+          "selectedUsageRights": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "trackSnapshotName": {
+            "type": "string"
+          },
+          "buyerSnapshotName": {
+            "type": "string"
+          },
+          "artistSnapshotName": {
+            "type": "string"
+          },
+          "pdfFileKey": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE"
+            ]
+          },
+          "validFrom": {
+            "type": "string"
+          },
+          "validUntil": {
+            "type": "object",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "buyerEmail": {
+            "type": "object",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "trackId",
+          "buyerId",
+          "artistId",
+          "selectedUsageRights",
+          "trackSnapshotName",
+          "buyerSnapshotName",
+          "artistSnapshotName",
+          "pdfFileKey",
+          "status",
+          "validFrom",
+          "createdAt"
+        ]
+      },
+      "AdminCertificateDetailResponseDto": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "statusCode": {
+            "type": "number",
+            "example": 200
+          },
+          "data": {
+            "$ref": "#/components/schemas/CertificateDetailDto"
+          },
+          "requestId": {
+            "type": "string",
+            "example": "2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a"
+          },
+          "timestamp": {
+            "type": "string",
+            "example": "2026-05-20T00:00:00.000Z"
+          }
+        },
+        "required": [
+          "success",
+          "statusCode",
+          "data",
+          "requestId",
+          "timestamp"
+        ]
+      },
+      "CertificateDownloadUrlDataDto": {
+        "type": "object",
+        "properties": {
+          "downloadUrl": {
+            "type": "string"
+          },
+          "fileName": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "downloadUrl",
+          "fileName"
+        ]
+      },
+      "AdminCertificateDownloadUrlResponseDto": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "statusCode": {
+            "type": "number",
+            "example": 200
+          },
+          "data": {
+            "$ref": "#/components/schemas/CertificateDownloadUrlDataDto"
+          },
+          "requestId": {
+            "type": "string",
+            "example": "2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a"
+          },
+          "timestamp": {
+            "type": "string",
+            "example": "2026-05-20T00:00:00.000Z"
+          }
+        },
+        "required": [
+          "success",
+          "statusCode",
+          "data",
+          "requestId",
+          "timestamp"
+        ]
+      },
+      "CertificateRenderedHtmlDto": {
+        "type": "object",
+        "properties": {
+          "html": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "html"
+        ]
+      },
+      "AdminCertificateRenderedHtmlResponseDto": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "statusCode": {
+            "type": "number",
+            "example": 200
+          },
+          "data": {
+            "$ref": "#/components/schemas/CertificateRenderedHtmlDto"
+          },
+          "requestId": {
+            "type": "string",
+            "example": "2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a"
+          },
+          "timestamp": {
+            "type": "string",
+            "example": "2026-05-20T00:00:00.000Z"
+          }
+        },
+        "required": [
+          "success",
+          "statusCode",
+          "data",
           "requestId",
           "timestamp"
         ]

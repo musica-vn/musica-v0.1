@@ -14,7 +14,9 @@ export type ApiEnvelopePayload<TData, TMeta = undefined> = {
   meta?: TMeta;
 };
 
-const isEnvelopePayload = (value: unknown): value is ApiEnvelopePayload<unknown> =>
+const isEnvelopePayload = (
+  value: unknown,
+): value is ApiEnvelopePayload<unknown> =>
   typeof value === 'object' &&
   value !== null &&
   'data' in value &&
@@ -32,7 +34,9 @@ export class ApiResponseInterceptor implements NestInterceptor {
     return next.handle().pipe(
       map((value) => {
         const requestId =
-          typeof response.locals.requestId === 'string' ? response.locals.requestId : '';
+          typeof response.locals.requestId === 'string'
+            ? response.locals.requestId
+            : '';
 
         const timestamp = new Date().toISOString();
         const statusCode = response.statusCode;

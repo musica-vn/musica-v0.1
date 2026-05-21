@@ -37,10 +37,12 @@ export class ExamplesController {
   listExamples(
     @Query() query: PaginationQueryDto,
   ): ApiEnvelopePayload<{ items: ExampleItem[] }, PaginationMeta> {
-    const items: ExampleItem[] = Array.from({ length: 128 }).map((_, index) => ({
-      id: String(index + 1),
-      name: `Example ${index + 1}`,
-    }));
+    const items: ExampleItem[] = Array.from({ length: 128 }).map(
+      (_, index) => ({
+        id: String(index + 1),
+        name: `Example ${index + 1}`,
+      }),
+    );
 
     const start = (query.page - 1) * query.pageSize;
     const end = start + query.pageSize;

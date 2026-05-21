@@ -42,6 +42,66 @@ pnpm dev
 ### Swagger
 - Swagger UI: `http://localhost:3000/docs`
 
+## Admin Tracks & Certificates (BE)
+### Auth
+- `POST /auth/login` -> lấy `accessToken` (Bearer) cho các API admin
+
+### Tracks (Admin)
+- `GET /admin/tracks` (pagination + filters: `status`, `genre`, `artistId`, `keyword`)
+- `POST /admin/tracks`
+- `GET /admin/tracks/:trackId`
+- `PATCH /admin/tracks/:trackId`
+- `POST /admin/tracks/:trackId/original-upload-url`
+- `POST /admin/tracks/:trackId/preview-upload-url`
+- `PATCH /admin/tracks/:trackId/publish`
+- `PATCH /admin/tracks/:trackId/hide`
+
+### Certificates (Admin)
+- `GET /admin/certificates` (pagination + filters: `buyerKeyword`, `trackKeyword`, `artistId`, `status`, `fromDate`, `toDate`)
+- `GET /admin/certificates/:certificateId`
+- `GET /admin/certificates/:certificateId/download`
+- `GET /admin/certificates/template`
+- `PUT /admin/certificates/template`
+- `GET /admin/certificates/:certificateId/render-html`
+
+### Env vars (BE)
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `JWT_SECRET`
+- `STORAGE_BUCKET_ORIGINAL_AUDIO`
+- `STORAGE_BUCKET_PREVIEW_AUDIO`
+- `STORAGE_BUCKET_CERTIFICATES`
+
+## Local run: Dev / Pro
+### BE env selection
+- BE load env theo thứ tự: `.env.${NODE_ENV}` rồi fallback `.env`
+- Mặc định nếu không set `NODE_ENV` thì dùng `development` (tức ưu tiên `.env.development`)
+
+### Dev (ưu tiên)
+- Mục tiêu: FE local + BE local, DB vẫn dùng Supabase remote qua `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`
+- Chuẩn bị:
+  - Tạo `apps/api/.env.development` (copy từ `apps/api/.env`) và đảm bảo có đủ env vars ở mục Env vars (BE)
+  - Tạo `apps/web/.env.development`:
+    - `VITE_API_BASE_URL=http://localhost:3000`
+- Chạy:
+  - `pnpm.cmd dev`
+
+### Pro (local, connect Supabase remote)
+- Chuẩn bị:
+  - Tạo `apps/api/.env.production` (copy từ `apps/api/.env`)
+  - Tạo `apps/web/.env.production`:
+    - `VITE_API_BASE_URL=http://localhost:3000`
+- Chạy (PowerShell):
+  - `$env:NODE_ENV='production'`
+  - `pnpm.cmd -C apps/api start`
+  - `pnpm.cmd -C apps/web build`
+  - `pnpm.cmd -C apps/web preview`
+
+## Mock data (seed dev)
+- Chạy seeding vào DB đang cấu hình trong `apps/api/.env*`:
+  - `pnpm.cmd -C apps/api seed:dev`
+- Script sẽ xoá và tạo lại các records có email `*@musica.local` và track title có hậu tố `(Seed)` để đảm bảo idempotent.
+
 ### Generate OpenAPI + FE types
 ```bash
 pnpm gen:openapi

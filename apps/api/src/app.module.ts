@@ -9,9 +9,21 @@ import { ExamplesModule } from './examples/examples.module';
 import { HealthModule } from './health/health.module';
 import { RequestIdMiddleware } from './common/request-id.middleware';
 import { AuthModule } from './auth/auth.module';
+import { TracksModule } from './tracks/tracks.module';
+import { CertificatesModule } from './certificates/certificates.module';
 
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true }), HealthModule, ExamplesModule, AuthModule],
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: [`.env.${process.env.NODE_ENV ?? 'development'}`, '.env'],
+    }),
+    HealthModule,
+    ExamplesModule,
+    AuthModule,
+    TracksModule,
+    CertificatesModule,
+  ],
   controllers: [AppController],
   providers: [
     AppService,

@@ -1,5 +1,8 @@
 begin;
 
+delete from public.certificate_templates
+where code = 'DEFAULT';
+
 delete from public.certificates
 where buyer_id in (select id from public.users where email like '%@musica.local')
    or artist_id in (select id from public.users where email like '%@musica.local')
@@ -155,6 +158,13 @@ from seed_certificates sc
 join inserted_tracks it on it.title = sc.track_title
 join public.users bu on bu.email = sc.buyer_email
 join public.users au on au.id = it.artist_id;
+
+insert into public.certificate_templates (code, html_template)
+values (
+  'DEFAULT',
+  '<!doctype html><html><head><meta charset="utf-8" /><title>Certificate</title></head><body><h1>License Certificate</h1><p>Certificate ID: {{certificateId}}</p><p>Track: {{trackSnapshotName}}</p><p>Buyer: {{buyerSnapshotName}}</p><p>Artist: {{artistSnapshotName}}</p><p>Usage Rights: {{selectedUsageRights}}</p><p>Valid From: {{validFrom}}</p><p>Valid Until: {{validUntil}}</p><p>Issued At: {{createdAt}}</p></body></html>'
+)
+on conflict (code) do update set html_template = excluded.html_template;
 
 commit;
 
