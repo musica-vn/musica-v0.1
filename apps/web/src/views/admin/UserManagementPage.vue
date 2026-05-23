@@ -32,6 +32,45 @@ const first = computed(() => (page.value - 1) * pageSize.value)
 const errorMessage = ref<string | null>(null)
 const isActionLoading = ref(false)
 
+const confirmDialogVisible = ref(false)
+const confirmTitle = ref('Confirm')
+const confirmMessage = ref('')
+const confirmConfirmLabel = ref('Confirm')
+const confirmConfirmSeverity = ref('warning')
+const confirmAction = ref<null | (() => Promise<void>)>(null)
+
+const openConfirm = (payload: {
+  title: string
+  message: string
+  confirmLabel: string
+  confirmSeverity: string
+  action: () => Promise<void>
+}) => {
+  confirmTitle.value = payload.title
+  confirmMessage.value = payload.message
+  confirmConfirmLabel.value = payload.confirmLabel
+  confirmConfirmSeverity.value = payload.confirmSeverity
+  confirmAction.value = payload.action
+  confirmDialogVisible.value = true
+}
+
+const cancelConfirm = () => {
+  confirmDialogVisible.value = false
+  confirmAction.value = null
+}
+
+const submitConfirm = async () => {
+  if (!confirmAction.value) return
+  confirmDialogVisible.value = false
+  isActionLoading.value = true
+  try {
+    await confirmAction.value()
+  } finally {
+    isActionLoading.value = false
+    confirmAction.value = null
+  }
+}
+
 const load = async () => {
   errorMessage.value = null
   try {
@@ -143,24 +182,37 @@ const submitEdit = async () => {
 
 const toggleLock = async (row: ManagedUser) => {
   const nextStatus = row.status === 'ACTIVE' ? 'LOCKED' : 'ACTIVE'
-  const ok = window.confirm(nextStatus === 'LOCKED' ? 'Khoá user này?' : 'Mở khoá user này?')
-  if (!ok) return
-  isActionLoading.value = true
-  try {
-    await managedUsersStore.setStatus(row.id, nextStatus)
-    row.status = nextStatus
-  } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : 'Cập nhật status thất bại'
-  } finally {
-    isActionLoading.value = false
-  }
+  openConfirm({
+    title: 'Xác nhận',
+    message: nextStatus === 'LOCKED' ? 'Khoá user này?' : 'Mở khoá user này?',
+    confirmLabel: nextStatus === 'LOCKED' ? 'Lock' : 'Unlock',
+    confirmSeverity: nextStatus === 'LOCKED' ? 'danger' : 'secondary',
+    action: async () => {
+      try {
+        await managedUsersStore.setStatus(row.id, nextStatus)
+        row.status = nextStatus
+      } catch (error) {
+        errorMessage.value = error instanceof Error ? error.message : 'Cập nhật status thất bại'
+      }
+    },
+  })
 }
 
 const removeUser = async (row: ManagedUser) => {
-  const ok = window.confirm('Xoá user này? (soft delete)')
-  if (!ok) return
-  await managedUsersStore.removeOne(row.id)
-  await load()
+  openConfirm({
+    title: 'Xác nhận',
+    message: 'Xoá user này? (soft delete)',
+    confirmLabel: 'Delete',
+    confirmSeverity: 'danger',
+    action: async () => {
+      try {
+        await managedUsersStore.removeOne(row.id)
+        await load()
+      } catch (error) {
+        errorMessage.value = error instanceof Error ? error.message : 'Xoá user thất bại'
+      }
+    },
+  })
 }
 </script>
 
@@ -253,8 +305,8 @@ const removeUser = async (row: ManagedUser) => {
           <Password v-model="createForm.password" toggleMask class="w-full" :feedback="false" />
         </div>
         <div class="dialogActions">
-          <Button label="Cancel" severity="secondary" @click="createDialogVisible = false" />
-          <Button label="Create" @click="submitCreate" />
+          <Button label="Cancel" size="small" severity="secondary" @click="createDialogVisible = false" />
+          <Button label="Create" size="small" @click="submitCreate" />
         </div>
       </div>
     </Dialog>
@@ -275,8 +327,18 @@ const removeUser = async (row: ManagedUser) => {
           <Password v-model="editForm.password" toggleMask class="w-full" :feedback="false" />
         </div>
         <div class="dialogActions">
-          <Button label="Cancel" severity="secondary" @click="editDialogVisible = false" />
-          <Button label="Save" @click="submitEdit" />
+          <Button label="Cancel" size="small" severity="secondary" @click="editDialogVisible = false" />
+          <Button label="Save" size="small" @click="submitEdit" />
+        </div>
+      </div>
+    </Dialog>
+
+    <Dialog v-model:visible="confirmDialogVisible" modal :header="confirmTitle" class="dialog">
+      <div class="form">
+        <div>{{ confirmMessage }}</div>
+        <div class="dialogActions">
+          <Button label="Cancel" size="small" severity="secondary" @click="cancelConfirm" />
+          <Button :label="confirmConfirmLabel" size="small" :severity="confirmConfirmSeverity" @click="submitConfirm" />
         </div>
       </div>
     </Dialog>
