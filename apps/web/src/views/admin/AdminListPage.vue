@@ -28,6 +28,7 @@ const pageSize = ref(20)
 const first = computed(() => (page.value - 1) * pageSize.value)
 
 const errorMessage = ref<string | null>(null)
+const isMutating = ref(false)
 
 const load = async () => {
   errorMessage.value = null
@@ -73,6 +74,7 @@ const openCreate = () => {
 const submitCreate = async () => {
   createError.value = null
   try {
+    isMutating.value = true
     await adminsStore.createOne(createForm.value)
     createDialogVisible.value = false
     await load()
@@ -82,6 +84,8 @@ const submitCreate = async () => {
       return
     }
     createError.value = error instanceof Error ? error.message : 'Tạo admin thất bại'
+  } finally {
+    isMutating.value = false
   }
 }
 
@@ -117,6 +121,7 @@ const submitEdit = async () => {
       roleCode: editForm.value.roleCode,
     }
     if (editForm.value.password.length > 0) payload.password = editForm.value.password
+    isMutating.value = true
     await adminsStore.updateOne(editingAdminId.value, payload)
     editDialogVisible.value = false
     await load()
@@ -126,29 +131,68 @@ const submitEdit = async () => {
       return
     }
     editError.value = error instanceof Error ? error.message : 'Cập nhật admin thất bại'
+  } finally {
+    isMutating.value = false
   }
 }
 
-const toggleLock = async (row: AdminUser) => {
+const lockConfirmVisible = ref(false)
+const lockError = ref<string | null>(null)
+const lockTarget = ref<AdminUser | null>(null)
+const lockNextStatus = ref<'ACTIVE' | 'LOCKED'>('LOCKED')
+
+const openLockConfirm = (row: AdminUser) => {
   if (isSuperAdminRow(row)) return
-  const nextStatus = row.status === 'ACTIVE' ? 'LOCKED' : 'ACTIVE'
-  const ok = window.confirm(
-    nextStatus === 'LOCKED' ? 'Khoá admin này?' : 'Mở khoá admin này?',
-  )
-  if (!ok) return
-  await adminsStore.setStatus(row.id, nextStatus)
-  await load()
+  lockError.value = null
+  lockTarget.value = row
+  lockNextStatus.value = row.status === 'ACTIVE' ? 'LOCKED' : 'ACTIVE'
+  lockConfirmVisible.value = true
 }
 
-const removeAdmin = async (row: AdminUser) => {
-  if (isSuperAdminRow(row)) return
-  const ok = window.confirm('Xoá admin này? (soft delete)')
-  if (!ok) return
-  await adminsStore.removeOne(row.id)
-  if (row.id === authStore.user?.id) {
-    authStore.logout()
+const confirmLock = async () => {
+  if (!lockTarget.value) return
+  lockError.value = null
+  try {
+    isMutating.value = true
+    await adminsStore.setStatus(lockTarget.value.id, lockNextStatus.value)
+    lockConfirmVisible.value = false
+    lockTarget.value = null
+    await load()
+  } catch (error) {
+    lockError.value = error instanceof Error ? error.message : 'Cập nhật trạng thái thất bại'
+  } finally {
+    isMutating.value = false
   }
-  await load()
+}
+
+const deleteConfirmVisible = ref(false)
+const deleteError = ref<string | null>(null)
+const deleteTarget = ref<AdminUser | null>(null)
+
+const openDeleteConfirm = (row: AdminUser) => {
+  if (isSuperAdminRow(row)) return
+  deleteError.value = null
+  deleteTarget.value = row
+  deleteConfirmVisible.value = true
+}
+
+const confirmDelete = async () => {
+  if (!deleteTarget.value) return
+  deleteError.value = null
+  try {
+    isMutating.value = true
+    await adminsStore.removeOne(deleteTarget.value.id)
+    if (deleteTarget.value.id === authStore.user?.id) {
+      authStore.logout()
+    }
+    deleteConfirmVisible.value = false
+    deleteTarget.value = null
+    await load()
+  } catch (error) {
+    deleteError.value = error instanceof Error ? error.message : 'Xoá admin thất bại'
+  } finally {
+    isMutating.value = false
+  }
 }
 
 const roleOptions = [{ label: 'ADMIN', value: 'ADMIN' as const }]
@@ -169,9 +213,14 @@ const roleOptions = [{ label: 'ADMIN', value: 'ADMIN' as const }]
               placeholder="Status"
               class="status"
             />
-            <Button label="Search" severity="secondary" @click="load" />
+            <Button label="Search" severity="secondary" :disabled="adminsStore.isLoading || isMutating" @click="load" />
           </div>
-          <Button label="Create Admin" icon="pi pi-plus" @click="openCreate" />
+          <Button
+            label="Create Admin"
+            icon="pi pi-plus"
+            :disabled="adminsStore.isLoading || isMutating"
+            @click="openCreate"
+          />
         </div>
 
         <div v-if="errorMessage" class="error">{{ errorMessage }}</div>
@@ -184,7 +233,7 @@ const roleOptions = [{ label: 'ADMIN', value: 'ADMIN' as const }]
           :rows="pageSize"
           :first="first"
           :totalRecords="adminsStore.totalItems"
-          :loading="adminsStore.isLoading"
+          :loading="adminsStore.isLoading || isMutating"
           @page="onPage"
         >
           <Column field="fullName" header="Tên tài khoản" />
@@ -198,7 +247,7 @@ const roleOptions = [{ label: 'ADMIN', value: 'ADMIN' as const }]
             <template #body="{ data }">
               <Tag
                 :value="data.status"
-                :severity="data.status === 'ACTIVE' ? 'success' : data.status === 'LOCKED' ? 'warning' : 'danger'"
+                :severity="data.status === 'ACTIVE' ? 'success' : data.status === 'LOCKED' ? 'danger' : 'secondary'"
               />
             </template>
           </Column>
@@ -214,22 +263,22 @@ const roleOptions = [{ label: 'ADMIN', value: 'ADMIN' as const }]
                   label="Edit"
                   size="small"
                   severity="secondary"
-                  :disabled="isSuperAdminRow(data)"
+                  :disabled="isSuperAdminRow(data) || adminsStore.isLoading || isMutating"
                   @click="openEdit(data)"
                 />
                 <Button
                   :label="data.status === 'ACTIVE' ? 'Lock' : 'Unlock'"
                   size="small"
                   severity="warning"
-                  :disabled="isSuperAdminRow(data)"
-                  @click="toggleLock(data)"
+                  :disabled="isSuperAdminRow(data) || adminsStore.isLoading || isMutating"
+                  @click="openLockConfirm(data)"
                 />
                 <Button
                   label="Delete"
                   size="small"
                   severity="danger"
-                  :disabled="isSuperAdminRow(data)"
-                  @click="removeAdmin(data)"
+                  :disabled="isSuperAdminRow(data) || adminsStore.isLoading || isMutating"
+                  @click="openDeleteConfirm(data)"
                 />
               </div>
             </template>
@@ -237,6 +286,40 @@ const roleOptions = [{ label: 'ADMIN', value: 'ADMIN' as const }]
         </DataTable>
       </template>
     </Card>
+
+    <Dialog v-model:visible="lockConfirmVisible" modal header="Xác nhận" class="dialog">
+      <div class="form">
+        <div v-if="lockError" class="error">{{ lockError }}</div>
+        <div>
+          <div>
+            {{
+              lockNextStatus === 'LOCKED'
+                ? 'Bạn có chắc muốn khoá admin này?'
+                : 'Bạn có chắc muốn mở khoá admin này?'
+            }}
+          </div>
+          <div class="confirmEmail">{{ lockTarget?.email }}</div>
+        </div>
+      </div>
+      <template #footer>
+        <Button label="Cancel" severity="secondary" :disabled="isMutating" @click="lockConfirmVisible = false" />
+        <Button label="Confirm" :loading="isMutating" @click="confirmLock" />
+      </template>
+    </Dialog>
+
+    <Dialog v-model:visible="deleteConfirmVisible" modal header="Xác nhận" class="dialog">
+      <div class="form">
+        <div v-if="deleteError" class="error">{{ deleteError }}</div>
+        <div>
+          <div>Bạn có chắc muốn xoá admin này?</div>
+          <div class="confirmEmail">{{ deleteTarget?.email }}</div>
+        </div>
+      </div>
+      <template #footer>
+        <Button label="Cancel" severity="secondary" :disabled="isMutating" @click="deleteConfirmVisible = false" />
+        <Button label="Delete" severity="danger" :loading="isMutating" @click="confirmDelete" />
+      </template>
+    </Dialog>
 
     <Dialog v-model:visible="createDialogVisible" modal header="Create Admin" class="dialog">
       <div class="form">
@@ -340,5 +423,11 @@ const roleOptions = [{ label: 'ADMIN', value: 'ADMIN' as const }]
 .error {
   color: #b91c1c;
   font-size: 14px;
+}
+
+.confirmEmail {
+  margin-top: 6px;
+  font-size: 13px;
+  opacity: 0.8;
 }
 </style>
