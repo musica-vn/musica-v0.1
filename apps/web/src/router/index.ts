@@ -9,8 +9,7 @@ import AdminLayout from '../views/admin/AdminLayout.vue'
 import AdminDashboardPage from '../views/admin/AdminDashboardPage.vue'
 import AdminListPage from '../views/admin/AdminListPage.vue'
 import TrackManagementPage from '../views/admin/TrackManagementPage.vue'
-import BuyerManagementPage from '../views/admin/BuyerManagementPage.vue'
-import ArtistManagementPage from '../views/admin/ArtistManagementPage.vue'
+import UserManagementPage from '../views/admin/UserManagementPage.vue'
 import CertificateManagementPage from '../views/admin/CertificateManagementPage.vue'
 
 export const router = createRouter({
@@ -27,10 +26,24 @@ export const router = createRouter({
       children: [
         { path: '', redirect: '/admin/dashboard' },
         { path: 'dashboard', component: AdminDashboardPage, meta: { title: 'Dashboard' } },
-        { path: 'admins', component: AdminListPage, meta: { title: 'Admin List' } },
+        {
+          path: 'admins',
+          component: AdminListPage,
+          meta: { title: 'Admin List', requiresSuperAdmin: true },
+        },
         { path: 'tracks', component: TrackManagementPage, meta: { title: 'Track Management' } },
-        { path: 'users/buyers', component: BuyerManagementPage, meta: { title: 'User Management - Buyers' } },
-        { path: 'users/artists', component: ArtistManagementPage, meta: { title: 'User Management - Artists' } },
+        {
+          path: 'users/buyers',
+          component: UserManagementPage,
+          props: { initialRole: 'BUYER' },
+          meta: { title: 'User Management - Buyers' },
+        },
+        {
+          path: 'users/artists',
+          component: UserManagementPage,
+          props: { initialRole: 'ARTIST' },
+          meta: { title: 'User Management - Artists' },
+        },
         { path: 'certificates', component: CertificateManagementPage, meta: { title: 'Certificate Management' } },
       ],
     },
@@ -47,6 +60,11 @@ router.beforeEach((to) => {
   if (to.meta.requiresAdmin) {
     if (!authStore.isAuthenticated) return '/login'
     if (!authStore.isAdmin) return '/landing'
+  }
+
+  if (to.meta.requiresSuperAdmin) {
+    if (!authStore.isAuthenticated) return '/login'
+    if (!authStore.isSuperAdmin) return '/landing'
   }
 
   if (to.name === 'landing' && !authStore.isAuthenticated) {

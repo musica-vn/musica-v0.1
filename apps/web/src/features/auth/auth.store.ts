@@ -49,6 +49,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   const isAuthenticated = computed(() => typeof accessToken.value === 'string' && accessToken.value.length > 0)
   const isAdmin = computed(() => roles.value.includes('ADMIN') || roles.value.includes('SUPER_ADMIN'))
+  const isSuperAdmin = computed(() => roles.value.includes('SUPER_ADMIN'))
 
   const init = () => {
     const persisted = readPersistedAuth()
@@ -85,6 +86,5 @@ export const useAuthStore = defineStore('auth', () => {
 
   init()
 
-  return { accessToken, user, roles, isAuthenticated, isAdmin, login: doLogin, logout }
+  return { accessToken, user, roles, isAuthenticated, isAdmin, isSuperAdmin, login: doLogin, logout }
 })
-

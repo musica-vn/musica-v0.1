@@ -9,9 +9,18 @@ import { ExamplesModule } from './examples/examples.module';
 import { HealthModule } from './health/health.module';
 import { RequestIdMiddleware } from './common/request-id.middleware';
 import { AuthModule } from './auth/auth.module';
+import { AdminUsersModule } from './admin-users/admin-users.module';
+import { ManagedUsersModule } from './managed-users/managed-users.module';
 
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true }), HealthModule, ExamplesModule, AuthModule],
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    HealthModule,
+    ExamplesModule,
+    AuthModule,
+    AdminUsersModule,
+    ManagedUsersModule,
+  ],
   controllers: [AppController],
   providers: [
     AppService,

@@ -10,6 +10,7 @@ const main = async (): Promise<void> => {
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Musica API')
     .setVersion('1.0.0')
+    .addBearerAuth()
     .build();
 
   const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);

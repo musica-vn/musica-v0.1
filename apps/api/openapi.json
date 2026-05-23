@@ -88,6 +88,464 @@
           "examples"
         ]
       }
+    },
+    "/auth/login": {
+      "post": {
+        "operationId": "AuthController_login",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthLoginRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthLoginResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Login bằng email/password",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/admin/users/admins": {
+      "get": {
+        "operationId": "AdminUsersController_listAdmins",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "createdAt:desc",
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ACTIVE",
+                "LOCKED",
+                "DELETED"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminUserListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin-users"
+        ]
+      },
+      "post": {
+        "operationId": "AdminUsersController_createAdmin",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAdminUserRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin-users"
+        ]
+      }
+    },
+    "/admin/users/admins/{adminId}": {
+      "patch": {
+        "operationId": "AdminUsersController_updateAdmin",
+        "parameters": [
+          {
+            "name": "adminId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAdminUserRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin-users"
+        ]
+      },
+      "delete": {
+        "operationId": "AdminUsersController_deleteAdmin",
+        "parameters": [
+          {
+            "name": "adminId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin-users"
+        ]
+      }
+    },
+    "/admin/users/admins/{adminId}/status": {
+      "patch": {
+        "operationId": "AdminUsersController_updateAdminStatus",
+        "parameters": [
+          {
+            "name": "adminId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAdminUserStatusRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin-users"
+        ]
+      }
+    },
+    "/admin/users": {
+      "get": {
+        "operationId": "ManagedUsersController_listUsers",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "createdAt:desc",
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ACTIVE",
+                "LOCKED",
+                "DELETED"
+              ]
+            }
+          },
+          {
+            "name": "roleCode",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "BUYER",
+                "ARTIST"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagedUserListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "managed-users"
+        ]
+      },
+      "post": {
+        "operationId": "ManagedUsersController_createUser",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateManagedUserRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "managed-users"
+        ]
+      }
+    },
+    "/admin/users/{userId}": {
+      "patch": {
+        "operationId": "ManagedUsersController_updateUser",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateManagedUserRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "managed-users"
+        ]
+      },
+      "delete": {
+        "operationId": "ManagedUsersController_deleteUser",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "managed-users"
+        ]
+      }
+    },
+    "/admin/users/{userId}/status": {
+      "patch": {
+        "operationId": "ManagedUsersController_updateUserStatus",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateManagedUserStatusRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "managed-users"
+        ]
+      }
     }
   },
   "info": {
@@ -99,6 +557,13 @@
   "tags": [],
   "servers": [],
   "components": {
+    "securitySchemes": {
+      "bearer": {
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "type": "http"
+      }
+    },
     "schemas": {
       "ExampleItemDto": {
         "type": "object",
@@ -205,6 +670,343 @@
           "requestId",
           "timestamp"
         ]
+      },
+      "AuthLoginRequestDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "admin01@musica.local"
+          },
+          "password": {
+            "type": "string",
+            "example": "Password123!"
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ]
+      },
+      "AuthUserDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "LOCKED",
+              "DELETED"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "fullName",
+          "status"
+        ]
+      },
+      "AuthLoginDataDto": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string"
+          },
+          "tokenType": {
+            "type": "string",
+            "example": "Bearer"
+          },
+          "expiresInSeconds": {
+            "type": "number",
+            "example": 604800
+          },
+          "user": {
+            "$ref": "#/components/schemas/AuthUserDto"
+          },
+          "roles": {
+            "example": [
+              "ADMIN"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "accessToken",
+          "tokenType",
+          "expiresInSeconds",
+          "user",
+          "roles"
+        ]
+      },
+      "AuthLoginResponseDto": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "statusCode": {
+            "type": "number",
+            "example": 200
+          },
+          "data": {
+            "$ref": "#/components/schemas/AuthLoginDataDto"
+          },
+          "requestId": {
+            "type": "string",
+            "example": "2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a"
+          },
+          "timestamp": {
+            "type": "string",
+            "example": "2026-05-20T00:00:00.000Z"
+          }
+        },
+        "required": [
+          "success",
+          "statusCode",
+          "data",
+          "requestId",
+          "timestamp"
+        ]
+      },
+      "AdminUserDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "LOCKED",
+              "DELETED"
+            ]
+          },
+          "roleCodes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "fullName",
+          "email",
+          "status",
+          "roleCodes",
+          "createdAt"
+        ]
+      },
+      "AdminUserListDataDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminUserDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "AdminUserListMetaDto": {
+        "type": "object",
+        "properties": {
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationDto"
+          }
+        },
+        "required": [
+          "pagination"
+        ]
+      },
+      "AdminUserListResponseDto": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "statusCode": {
+            "type": "number",
+            "example": 200
+          },
+          "data": {
+            "$ref": "#/components/schemas/AdminUserListDataDto"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/AdminUserListMetaDto"
+          },
+          "requestId": {
+            "type": "string",
+            "example": "2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a"
+          },
+          "timestamp": {
+            "type": "string",
+            "example": "2026-05-20T00:00:00.000Z"
+          }
+        },
+        "required": [
+          "success",
+          "statusCode",
+          "data",
+          "meta",
+          "requestId",
+          "timestamp"
+        ]
+      },
+      "CreateAdminUserRequestDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpdateAdminUserRequestDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpdateAdminUserStatusRequestDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "ManagedUserDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "LOCKED",
+              "DELETED"
+            ]
+          },
+          "roleCodes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "BUYER",
+                "ARTIST"
+              ]
+            }
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "fullName",
+          "email",
+          "status",
+          "roleCodes",
+          "createdAt"
+        ]
+      },
+      "ManagedUserListDataDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ManagedUserDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "ManagedUserListMetaDto": {
+        "type": "object",
+        "properties": {
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationDto"
+          }
+        },
+        "required": [
+          "pagination"
+        ]
+      },
+      "ManagedUserListResponseDto": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "statusCode": {
+            "type": "number",
+            "example": 200
+          },
+          "data": {
+            "$ref": "#/components/schemas/ManagedUserListDataDto"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ManagedUserListMetaDto"
+          },
+          "requestId": {
+            "type": "string",
+            "example": "2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a"
+          },
+          "timestamp": {
+            "type": "string",
+            "example": "2026-05-20T00:00:00.000Z"
+          }
+        },
+        "required": [
+          "success",
+          "statusCode",
+          "data",
+          "meta",
+          "requestId",
+          "timestamp"
+        ]
+      },
+      "CreateManagedUserRequestDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpdateManagedUserRequestDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpdateManagedUserStatusRequestDto": {
+        "type": "object",
+        "properties": {}
       }
     }
   }

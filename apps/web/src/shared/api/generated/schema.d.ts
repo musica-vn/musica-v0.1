@@ -52,6 +52,119 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/auth/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Login bằng email/password */
+        post: operations["AuthController_login"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/users/admins": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AdminUsersController_listAdmins"];
+        put?: never;
+        post: operations["AdminUsersController_createAdmin"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/users/admins/{adminId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["AdminUsersController_deleteAdmin"];
+        options?: never;
+        head?: never;
+        patch: operations["AdminUsersController_updateAdmin"];
+        trace?: never;
+    };
+    "/admin/users/admins/{adminId}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["AdminUsersController_updateAdminStatus"];
+        trace?: never;
+    };
+    "/admin/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ManagedUsersController_listUsers"];
+        put?: never;
+        post: operations["ManagedUsersController_createUser"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/users/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["ManagedUsersController_deleteUser"];
+        options?: never;
+        head?: never;
+        patch: operations["ManagedUsersController_updateUser"];
+        trace?: never;
+    };
+    "/admin/users/{userId}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["ManagedUsersController_updateUserStatus"];
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -86,6 +199,104 @@ export interface components {
             /** @example 2026-05-20T00:00:00.000Z */
             timestamp: string;
         };
+        AuthLoginRequestDto: {
+            /** @example admin01@musica.local */
+            email: string;
+            /** @example Password123! */
+            password: string;
+        };
+        AuthUserDto: {
+            id: string;
+            email: string;
+            fullName: string;
+            /** @enum {string} */
+            status: "ACTIVE" | "LOCKED" | "DELETED";
+        };
+        AuthLoginDataDto: {
+            accessToken: string;
+            /** @example Bearer */
+            tokenType: string;
+            /** @example 604800 */
+            expiresInSeconds: number;
+            user: components["schemas"]["AuthUserDto"];
+            /**
+             * @example [
+             *       "ADMIN"
+             *     ]
+             */
+            roles: string[];
+        };
+        AuthLoginResponseDto: {
+            /** @example true */
+            success: boolean;
+            /** @example 200 */
+            statusCode: number;
+            data: components["schemas"]["AuthLoginDataDto"];
+            /** @example 2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a */
+            requestId: string;
+            /** @example 2026-05-20T00:00:00.000Z */
+            timestamp: string;
+        };
+        AdminUserDto: {
+            id: string;
+            fullName: string;
+            email: string;
+            /** @enum {string} */
+            status: "ACTIVE" | "LOCKED" | "DELETED";
+            roleCodes: string[];
+            createdAt: string;
+        };
+        AdminUserListDataDto: {
+            items: components["schemas"]["AdminUserDto"][];
+        };
+        AdminUserListMetaDto: {
+            pagination: components["schemas"]["PaginationDto"];
+        };
+        AdminUserListResponseDto: {
+            /** @example true */
+            success: boolean;
+            /** @example 200 */
+            statusCode: number;
+            data: components["schemas"]["AdminUserListDataDto"];
+            meta: components["schemas"]["AdminUserListMetaDto"];
+            /** @example 2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a */
+            requestId: string;
+            /** @example 2026-05-20T00:00:00.000Z */
+            timestamp: string;
+        };
+        CreateAdminUserRequestDto: Record<string, never>;
+        UpdateAdminUserRequestDto: Record<string, never>;
+        UpdateAdminUserStatusRequestDto: Record<string, never>;
+        ManagedUserDto: {
+            id: string;
+            fullName: string;
+            email: string;
+            /** @enum {string} */
+            status: "ACTIVE" | "LOCKED" | "DELETED";
+            roleCodes: ("BUYER" | "ARTIST")[];
+            createdAt: string;
+        };
+        ManagedUserListDataDto: {
+            items: components["schemas"]["ManagedUserDto"][];
+        };
+        ManagedUserListMetaDto: {
+            pagination: components["schemas"]["PaginationDto"];
+        };
+        ManagedUserListResponseDto: {
+            /** @example true */
+            success: boolean;
+            /** @example 200 */
+            statusCode: number;
+            data: components["schemas"]["ManagedUserListDataDto"];
+            meta: components["schemas"]["ManagedUserListMetaDto"];
+            /** @example 2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a */
+            requestId: string;
+            /** @example 2026-05-20T00:00:00.000Z */
+            timestamp: string;
+        };
+        CreateManagedUserRequestDto: Record<string, never>;
+        UpdateManagedUserRequestDto: Record<string, never>;
+        UpdateManagedUserStatusRequestDto: Record<string, never>;
     };
     responses: never;
     parameters: never;
@@ -150,6 +361,252 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ExampleListResponseDto"];
                 };
+            };
+        };
+    };
+    AuthController_login: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AuthLoginRequestDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthLoginResponseDto"];
+                };
+            };
+        };
+    };
+    AdminUsersController_listAdmins: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                q?: string;
+                sort?: string;
+                status?: "ACTIVE" | "LOCKED" | "DELETED";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminUserListResponseDto"];
+                };
+            };
+        };
+    };
+    AdminUsersController_createAdmin: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateAdminUserRequestDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminUsersController_deleteAdmin: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                adminId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminUsersController_updateAdmin: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                adminId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateAdminUserRequestDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminUsersController_updateAdminStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                adminId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateAdminUserStatusRequestDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ManagedUsersController_listUsers: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                q?: string;
+                sort?: string;
+                status?: "ACTIVE" | "LOCKED" | "DELETED";
+                roleCode?: "BUYER" | "ARTIST";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManagedUserListResponseDto"];
+                };
+            };
+        };
+    };
+    ManagedUsersController_createUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateManagedUserRequestDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ManagedUsersController_deleteUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ManagedUsersController_updateUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateManagedUserRequestDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ManagedUsersController_updateUserStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateManagedUserStatusRequestDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
