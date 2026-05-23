@@ -16,44 +16,51 @@ const logout = async () => {
   await router.replace('/login')
 }
 
-const items = computed<MenuItem[]>(() => [
-  {
-    label: 'Dashboard',
-    icon: 'pi pi-home',
-    command: async () => router.push('/admin/dashboard'),
-  },
-  {
-    label: 'Admin List',
-    icon: 'pi pi-shield',
-    command: async () => router.push('/admin/admins'),
-  },
-  {
-    label: 'Track Management',
-    icon: 'pi pi-music',
-    command: async () => router.push('/admin/tracks'),
-  },
-  {
-    label: 'User Management',
-    icon: 'pi pi-users',
-    items: [
-      {
-        label: 'Buyers',
-        icon: 'pi pi-user',
-        command: async () => router.push('/admin/users/buyers'),
-      },
-      {
-        label: 'Artists',
-        icon: 'pi pi-star',
-        command: async () => router.push('/admin/users/artists'),
-      },
-    ],
-  },
-  {
-    label: 'Certificate Management',
-    icon: 'pi pi-file-pdf',
-    command: async () => router.push('/admin/certificates'),
-  },
-])
+const items = computed<MenuItem[]>(() => {
+  const base: MenuItem[] = [
+    {
+      label: 'Dashboard',
+      icon: 'pi pi-home',
+      command: async () => router.push('/admin/dashboard'),
+    },
+    {
+      label: 'Track Management',
+      icon: 'pi pi-music',
+      command: async () => router.push('/admin/tracks'),
+    },
+    {
+      label: 'User Management',
+      icon: 'pi pi-users',
+      items: [
+        {
+          label: 'Buyers',
+          icon: 'pi pi-user',
+          command: async () => router.push('/admin/users/buyers'),
+        },
+        {
+          label: 'Artists',
+          icon: 'pi pi-star',
+          command: async () => router.push('/admin/users/artists'),
+        },
+      ],
+    },
+    {
+      label: 'Certificate Management',
+      icon: 'pi pi-file-pdf',
+      command: async () => router.push('/admin/certificates'),
+    },
+  ]
+
+  if (authStore.isSuperAdmin) {
+    base.splice(1, 0, {
+      label: 'Admin List',
+      icon: 'pi pi-shield',
+      command: async () => router.push('/admin/admins'),
+    })
+  }
+
+  return base
+})
 
 const pageTitle = computed(() => (typeof route.meta.title === 'string' ? route.meta.title : 'Admin'))
 </script>

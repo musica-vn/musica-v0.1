@@ -109,3 +109,68 @@ export const apiPost = async <TData, TBody = unknown, TMeta = undefined>(
     throw error
   }
 }
+
+export const apiPatch = async <TData, TBody = unknown, TMeta = undefined>(
+  url: string,
+  body?: TBody,
+  config?: AxiosRequestConfig,
+): Promise<ApiOkResult<TData, TMeta>> => {
+  try {
+    const response = await httpClient.patch<ApiResponse<TData, TMeta>>(url, body, config)
+
+    if (isApiSuccessResponse<TData, TMeta>(response.data)) {
+      const baseResult = {
+        data: response.data.data,
+        statusCode: response.data.statusCode,
+        requestId: response.data.requestId,
+        timestamp: response.data.timestamp,
+      }
+
+      const metaResult = response.data.meta === undefined ? {} : { meta: response.data.meta as TMeta }
+
+      return { ...baseResult, ...metaResult } as ApiOkResult<TData, TMeta>
+    }
+
+    throw new ApiClientError(response.data)
+  } catch (error) {
+    if (error instanceof ApiClientError) throw error
+
+    if (error instanceof AxiosError && isApiErrorResponse(error.response?.data)) {
+      throw new ApiClientError(error.response?.data)
+    }
+
+    throw error
+  }
+}
+
+export const apiDelete = async <TData, TMeta = undefined>(
+  url: string,
+  config?: AxiosRequestConfig,
+): Promise<ApiOkResult<TData, TMeta>> => {
+  try {
+    const response = await httpClient.delete<ApiResponse<TData, TMeta>>(url, config)
+
+    if (isApiSuccessResponse<TData, TMeta>(response.data)) {
+      const baseResult = {
+        data: response.data.data,
+        statusCode: response.data.statusCode,
+        requestId: response.data.requestId,
+        timestamp: response.data.timestamp,
+      }
+
+      const metaResult = response.data.meta === undefined ? {} : { meta: response.data.meta as TMeta }
+
+      return { ...baseResult, ...metaResult } as ApiOkResult<TData, TMeta>
+    }
+
+    throw new ApiClientError(response.data)
+  } catch (error) {
+    if (error instanceof ApiClientError) throw error
+
+    if (error instanceof AxiosError && isApiErrorResponse(error.response?.data)) {
+      throw new ApiClientError(error.response?.data)
+    }
+
+    throw error
+  }
+}
