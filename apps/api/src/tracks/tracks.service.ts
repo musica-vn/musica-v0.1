@@ -6,7 +6,11 @@ import type { PaginationMeta } from '@musica/contracts';
 import type { ApiEnvelopePayload } from '../common/api-response.interceptor';
 import {
   AdminCreateTrackRequestDto,
+  AdminConfirmTrackAudioUploadRequestDto,
   AdminTracksListQueryDto,
+  AdminTracksSummaryQueryDto,
+  TRACK_USAGE_RIGHT_VALUES,
+  type TrackUsageRight,
   AdminUpdateTrackRequestDto,
 } from './admin-tracks.dto';
 import { TrackDto } from './track.dto';
@@ -27,6 +31,9 @@ type DbTrackRow = {
   updated_at: string;
 };
 
+const isTrackUsageRight = (value: string): value is TrackUsageRight =>
+  TRACK_USAGE_RIGHT_VALUES.includes(value as TrackUsageRight);
+
 const mapTrackRowToDto = (row: DbTrackRow): TrackDto => ({
   id: row.id,
   title: row.title,
@@ -35,7 +42,7 @@ const mapTrackRowToDto = (row: DbTrackRow): TrackDto => ({
   genre: row.genre,
   duration: row.duration,
   status: row.status,
-  usageRights: row.usage_rights ?? [],
+  usageRights: (row.usage_rights ?? []).filter(isTrackUsageRight),
   originalAudioKey: row.original_audio_key,
   previewAudioKey: row.preview_audio_key,
   createdBy: row.created_by,
@@ -105,38 +112,23 @@ export class TracksService {
     // #region debug-point A:tracks-service-list-start
     fetch('http://127.0.0.1:7777/event', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionId: 'track-admin-runtime', runId: 'pre-fix', hypothesisId: 'A', location: 'tracks.service.ts:listAdminTracks:start', msg: '[DEBUG] tracks service list start', data: { page: query.page, pageSize: query.pageSize, keyword: query.keyword, q: query.q, status: query.status, genre: query.genre, artistId: query.artistId, sort: query.sort }, ts: Date.now() }) }).catch(() => {});
     // #endregion
-    const keyword =
-      typeof query.keyword === 'string' && query.keyword.trim().length > 0
-        ? normalizeKeyword(query.keyword)
-        : typeof query.q === 'string' && query.q.trim().length > 0
-          ? normalizeKeyword(query.q)
-          : undefined;
-
     const { column, ascending } = parseSort(query.sort);
     const from = (query.page - 1) * query.pageSize;
     const to = from + query.pageSize - 1;
 
-    let requestBuilder = this.supabaseService.client
-      .from('tracks')
-      .select('*', { count: 'exact' })
-      .order(column, { ascending });
+    const requestBuilder = this.applyTrackAdminFilters(
+      this.supabaseService.client
+        .from('tracks')
+        .select('*', { count: 'exact' })
+        .order(column, { ascending }),
+      query,
+    );
 
-    if (query.status)
-      requestBuilder = requestBuilder.eq('status', query.status);
-    if (query.genre) requestBuilder = requestBuilder.eq('genre', query.genre);
-    if (query.artistId)
-      requestBuilder = requestBuilder.eq('artist_id', query.artistId);
-
-    if (keyword) {
-      const escaped = keyword.replaceAll(',', ' ');
-      requestBuilder = requestBuilder.or(
-        `title.ilike.%${escaped}%,author_name.ilike.%${escaped}%`,
-      );
-    }
-
-    const { data, error, count } = await requestBuilder
-      .range(from, to)
-      .returns<DbTrackRow[]>();
+    const { data, error, count } = (await requestBuilder.range(from, to)) as {
+      data: DbTrackRow[] | null;
+      error: { message: string } | null;
+      count: number | null;
+    };
 
     if (error) {
       // #region debug-point A:tracks-service-list-error
@@ -155,6 +147,65 @@ export class TracksService {
       data: { items: (data ?? []).map(mapTrackRowToDto) },
       meta,
     };
+  }
+
+  async getAdminTracksSummary(
+    query: AdminTracksSummaryQueryDto,
+  ): Promise<{ total: number; published: number; hidden: number }> {
+    const [total, published, hidden] = await Promise.all([
+      this.countTracksByStatus(query),
+      this.countTracksByStatus(query, 'PUBLISHED'),
+      this.countTracksByStatus(query, 'HIDDEN'),
+    ]);
+
+    return { total, published, hidden };
+  }
+
+  private applyTrackAdminFilters(
+    requestBuilder: any,
+    query: Pick<
+      AdminTracksSummaryQueryDto,
+      'keyword' | 'q' | 'genre' | 'artistId'
+    > & { status?: 'HIDDEN' | 'PUBLISHED' },
+  ) {
+    const keyword =
+      typeof query.keyword === 'string' && query.keyword.trim().length > 0
+        ? normalizeKeyword(query.keyword)
+        : typeof query.q === 'string' && query.q.trim().length > 0
+          ? normalizeKeyword(query.q)
+          : undefined;
+
+    if (query.status) requestBuilder = requestBuilder.eq('status', query.status);
+    if (query.genre) requestBuilder = requestBuilder.eq('genre', query.genre);
+    if (query.artistId)
+      requestBuilder = requestBuilder.eq('artist_id', query.artistId);
+
+    if (keyword) {
+      const escaped = keyword.replaceAll(',', ' ');
+      requestBuilder = requestBuilder.or(
+        `title.ilike.%${escaped}%,author_name.ilike.%${escaped}%`,
+      );
+    }
+
+    return requestBuilder;
+  }
+
+  private async countTracksByStatus(
+    query: AdminTracksSummaryQueryDto,
+    status?: 'HIDDEN' | 'PUBLISHED',
+  ): Promise<number> {
+    const requestBuilder = this.applyTrackAdminFilters(
+      this.supabaseService.client.from('tracks').select('id', { count: 'exact' }),
+      { ...query, status },
+    );
+
+    const { count, error } = await requestBuilder.limit(1);
+
+    if (error) {
+      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    return typeof count === 'number' ? count : 0;
   }
 
   async createTrack(
@@ -363,6 +414,35 @@ export class TracksService {
     }
 
     return { uploadUrl: data.signedUrl, fileKey };
+  }
+
+  async confirmTrackAudioUpload(
+    trackId: string,
+    payload: AdminConfirmTrackAudioUploadRequestDto,
+  ): Promise<TrackDto> {
+    await this.getTrackById(trackId);
+
+    const updatePayload =
+      payload.mode === 'original'
+        ? { original_audio_key: payload.fileKey }
+        : { preview_audio_key: payload.fileKey };
+
+    const { data, error } = await this.supabaseService.client
+      .from('tracks')
+      .update(updatePayload)
+      .eq('id', trackId)
+      .select('*')
+      .maybeSingle<DbTrackRow>();
+
+    if (error) {
+      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    if (!data) {
+      throw new HttpException('TRACK_NOT_FOUND', HttpStatus.NOT_FOUND);
+    }
+
+    return mapTrackRowToDto(data);
   }
 
   async createPreviewPlaybackUrl(

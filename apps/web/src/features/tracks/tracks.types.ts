@@ -1,5 +1,11 @@
 export type TrackStatus = 'HIDDEN' | 'PUBLISHED'
 
+export type TrackUsageRight =
+  | 'REPRODUCTION_RIGHT'
+  | 'COMMUNICATION_TO_PUBLIC_RIGHT'
+  | 'DERIVATIVE_WORK_RIGHT'
+  | 'DISTRIBUTION_RIGHT'
+
 export type TrackSortValue =
   | 'createdAt:desc'
   | 'createdAt:asc'
@@ -20,7 +26,7 @@ export type Track = {
   genre: string | null
   duration: number | null
   status: TrackStatus
-  usageRights: string[]
+  usageRights: TrackUsageRight[]
   originalAudioKey: string | null
   previewAudioKey: string | null
   createdBy: string
@@ -42,13 +48,25 @@ export type AdminTracksListData = {
   items: Track[]
 }
 
+export type AdminTracksSummaryQuery = {
+  keyword?: string
+  genre?: string
+  artistId?: string
+}
+
+export type AdminTracksSummaryData = {
+  total: number
+  published: number
+  hidden: number
+}
+
 export type AdminCreateTrackBody = {
   title: string
   artistId: string
   authorName?: string
   genre?: string
   duration?: number
-  usageRights?: string[]
+  usageRights?: TrackUsageRight[]
 }
 
 export type AdminUpdateTrackBody = Partial<AdminCreateTrackBody>
@@ -60,4 +78,9 @@ export type SignedUploadUrlData = {
 
 export type SignedPlaybackUrlData = {
   playbackUrl: string
+}
+
+export type ConfirmTrackAudioUploadBody = {
+  mode: 'original' | 'preview'
+  fileKey: string
 }

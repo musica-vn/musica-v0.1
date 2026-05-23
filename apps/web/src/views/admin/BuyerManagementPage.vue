@@ -20,15 +20,15 @@ const rows: BuyerItem[] = [
 <template>
   <div class="page">
     <Card>
-      <template #title>User Management - Buyers</template>
-      <template #subtitle>Dummy data</template>
+      <template #title>Quản lý người mua</template>
+      <template #subtitle>Dữ liệu mẫu</template>
       <template #content>
         <DataTable :value="rows" size="small">
           <Column field="email" header="Email" />
-          <Column field="fullName" header="Full Name" />
-          <Column header="Status">
+          <Column field="fullName" header="Họ và tên" />
+          <Column header="Trạng thái">
             <template #body="{ data }">
-              <Tag :value="data.status" :severity="data.status === 'ACTIVE' ? 'success' : 'danger'" />
+              <Tag :value="data.status === 'ACTIVE' ? 'Đang hoạt động' : 'Đã khoá'" :severity="data.status === 'ACTIVE' ? 'success' : 'danger'" />
             </template>
           </Column>
         </DataTable>

@@ -6,12 +6,22 @@ import {
   IsOptional,
   IsString,
   IsUUID,
+  Matches,
   Max,
   Min,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { PaginationQueryDto } from '../common/pagination.dto';
 import { TrackDto } from './track.dto';
+
+export const TRACK_USAGE_RIGHT_VALUES = [
+  'REPRODUCTION_RIGHT',
+  'COMMUNICATION_TO_PUBLIC_RIGHT',
+  'DERIVATIVE_WORK_RIGHT',
+  'DISTRIBUTION_RIGHT',
+] as const;
+
+export type TrackUsageRight = (typeof TRACK_USAGE_RIGHT_VALUES)[number];
 
 export class AdminTracksListQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({ type: Number, default: 10, minimum: 1, maximum: 10 })
@@ -81,6 +91,28 @@ export class AdminTracksListQueryDto extends PaginationQueryDto {
   keyword?: string;
 }
 
+export class AdminTracksSummaryQueryDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  q?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  keyword?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  genre?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUUID()
+  artistId?: string;
+}
+
 export class AdminCreateTrackRequestDto {
   @ApiProperty()
   @IsString()
@@ -109,11 +141,11 @@ export class AdminCreateTrackRequestDto {
   @Min(0)
   duration?: number;
 
-  @ApiPropertyOptional({ type: [String] })
+  @ApiPropertyOptional({ enum: TRACK_USAGE_RIGHT_VALUES, isArray: true })
   @IsOptional()
   @IsArray()
-  @IsString({ each: true })
-  usageRights?: string[];
+  @IsIn(TRACK_USAGE_RIGHT_VALUES, { each: true })
+  usageRights?: TrackUsageRight[];
 }
 
 export class AdminUpdateTrackRequestDto {
@@ -146,11 +178,11 @@ export class AdminUpdateTrackRequestDto {
   @Min(0)
   duration?: number;
 
-  @ApiPropertyOptional({ type: [String] })
+  @ApiPropertyOptional({ enum: TRACK_USAGE_RIGHT_VALUES, isArray: true })
   @IsOptional()
   @IsArray()
-  @IsString({ each: true })
-  usageRights?: string[];
+  @IsIn(TRACK_USAGE_RIGHT_VALUES, { each: true })
+  usageRights?: TrackUsageRight[];
 }
 
 export class AdminTrackUploadUrlResponseDataDto {
@@ -158,6 +190,17 @@ export class AdminTrackUploadUrlResponseDataDto {
   uploadUrl: string;
 
   @ApiProperty()
+  fileKey: string;
+}
+
+export class AdminConfirmTrackAudioUploadRequestDto {
+  @ApiProperty({ enum: ['original', 'preview'] })
+  @IsIn(['original', 'preview'])
+  mode: 'original' | 'preview';
+
+  @ApiProperty({ example: '123.mp3' })
+  @IsString()
+  @Matches(/^\d+\.mp3$/)
   fileKey: string;
 }
 
@@ -169,4 +212,15 @@ export class AdminTrackPlaybackUrlResponseDataDto {
 export class AdminTracksListDataDto {
   @ApiProperty({ type: [TrackDto] })
   items: TrackDto[];
+}
+
+export class AdminTracksSummaryDataDto {
+  @ApiProperty()
+  total: number;
+
+  @ApiProperty()
+  published: number;
+
+  @ApiProperty()
+  hidden: number;
 }

@@ -18,51 +18,51 @@ const logout = async () => {
 
 const items = computed<MenuItem[]>(() => [
   {
-    label: 'Dashboard',
+    label: 'Tổng quan',
     icon: 'pi pi-home',
     command: async () => router.push('/admin/dashboard'),
   },
   {
-    label: 'Admin List',
+    label: 'Danh sách admin',
     icon: 'pi pi-shield',
     command: async () => router.push('/admin/admins'),
   },
   {
-    label: 'Track Management',
+    label: 'Quản lý track',
     icon: 'pi pi-wave-pulse',
     command: async () => router.push('/admin/tracks'),
   },
   {
-    label: 'User Management',
+    label: 'Quản lý người dùng',
     icon: 'pi pi-users',
     items: [
       {
-        label: 'Buyers',
+        label: 'Người mua',
         icon: 'pi pi-user',
         command: async () => router.push('/admin/users/buyers'),
       },
       {
-        label: 'Artists',
+        label: 'Nghệ sĩ',
         icon: 'pi pi-star',
         command: async () => router.push('/admin/users/artists'),
       },
     ],
   },
   {
-    label: 'Certificate Management',
+    label: 'Quản lý chứng chỉ',
     icon: 'pi pi-file-pdf',
     command: async () => router.push('/admin/certificates'),
   },
 ])
 
-const pageTitle = computed(() => (typeof route.meta.title === 'string' ? route.meta.title : 'Admin'))
+const pageTitle = computed(() => (typeof route.meta.title === 'string' ? route.meta.title : 'Quản trị'))
 </script>
 
 <template>
   <div class="layout">
     <aside class="sidebar">
       <Card class="sidebarCard">
-        <template #title>Admin Menu</template>
+        <template #title>Menu quản trị</template>
         <template #content>
           <PanelMenu :model="items" />
         </template>
@@ -75,7 +75,7 @@ const pageTitle = computed(() => (typeof route.meta.title === 'string' ? route.m
           <div class="title">{{ pageTitle }}</div>
           <div class="subtitle">{{ authStore.user?.email }}</div>
         </div>
-        <Button label="Logout" severity="secondary" @click="logout" />
+        <Button label="Đăng xuất" severity="secondary" @click="logout" />
       </header>
 
       <RouterView />

@@ -2,9 +2,9 @@
 import Card from 'primevue/card'
 
 const cards = [
-  { label: 'Total Tracks', value: 15 },
-  { label: 'Total Users', value: 14 },
-  { label: 'Total Certificates', value: 10 },
+  { label: 'Tổng số track', value: 15 },
+  { label: 'Tổng số người dùng', value: 14 },
+  { label: 'Tổng số chứng chỉ', value: 10 },
 ]
 </script>
 
@@ -15,7 +15,7 @@ const cards = [
         <template #title>{{ item.label }}</template>
         <template #content>
           <div class="value">{{ item.value }}</div>
-          <div class="hint">Dummy data (test UI)</div>
+          <div class="hint">Dữ liệu mẫu để kiểm thử giao diện</div>
         </template>
       </Card>
     </div>

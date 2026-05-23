@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { TRACK_USAGE_RIGHT_VALUES, type TrackUsageRight } from './admin-tracks.dto';
 
 export class TrackDto {
   @ApiProperty()
@@ -22,8 +23,8 @@ export class TrackDto {
   @ApiProperty({ enum: ['HIDDEN', 'PUBLISHED'] })
   status: 'HIDDEN' | 'PUBLISHED';
 
-  @ApiProperty({ type: [String] })
-  usageRights: string[];
+  @ApiProperty({ enum: TRACK_USAGE_RIGHT_VALUES, isArray: true })
+  usageRights: TrackUsageRight[];
 
   @ApiProperty({ required: false, nullable: true })
   originalAudioKey: string | null;

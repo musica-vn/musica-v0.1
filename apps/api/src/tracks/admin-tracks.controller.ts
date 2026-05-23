@@ -23,7 +23,9 @@ import { Roles } from '../auth/roles.decorator';
 import type { AuthenticatedRequest } from '../auth/auth.types';
 import {
   AdminCreateTrackRequestDto,
+  AdminConfirmTrackAudioUploadRequestDto,
   AdminTracksListQueryDto,
+  AdminTracksSummaryQueryDto,
   AdminUpdateTrackRequestDto,
 } from './admin-tracks.dto';
 import { TracksService } from './tracks.service';
@@ -31,6 +33,7 @@ import {
   AdminTrackResponseDto,
   AdminTrackPlaybackUrlResponseDto,
   AdminTracksListResponseDto,
+  AdminTracksSummaryResponseDto,
   AdminTrackUploadUrlResponseDto,
 } from './tracks.swagger';
 
@@ -47,6 +50,13 @@ export class AdminTracksController {
   @ApiOkResponse({ type: AdminTracksListResponseDto })
   async list(@Query() query: AdminTracksListQueryDto) {
     return this.tracksService.listAdminTracks(query);
+  }
+
+  @Get('summary')
+  @ApiOperation({ summary: 'Get track summary counts (admin)' })
+  @ApiOkResponse({ type: AdminTracksSummaryResponseDto })
+  async summary(@Query() query: AdminTracksSummaryQueryDto) {
+    return this.tracksService.getAdminTracksSummary(query);
   }
 
   @Post()
@@ -89,6 +99,16 @@ export class AdminTracksController {
   @ApiOkResponse({ type: AdminTrackUploadUrlResponseDto })
   async previewUploadUrl(@Param('trackId', ParseUUIDPipe) trackId: string) {
     return this.tracksService.createPreviewUploadUrl(trackId);
+  }
+
+  @Post(':trackId/confirm-audio-upload')
+  @ApiOperation({ summary: 'Confirm uploaded audio key (admin)' })
+  @ApiOkResponse({ type: AdminTrackResponseDto })
+  async confirmAudioUpload(
+    @Param('trackId', ParseUUIDPipe) trackId: string,
+    @Body() body: AdminConfirmTrackAudioUploadRequestDto,
+  ) {
+    return this.tracksService.confirmTrackAudioUpload(trackId, body);
   }
 
   @Get(':trackId/preview-playback-url')

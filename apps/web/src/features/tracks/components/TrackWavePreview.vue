@@ -17,6 +17,21 @@ const isPlaying = ref(false)
 const localError = ref<string | null>(null)
 
 const iconClass = computed(() => (isPlaying.value ? 'pi pi-pause' : 'pi pi-play'))
+const rootClass = computed(() =>
+  props.compact ? 'grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2' : 'grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3',
+)
+const buttonClass = computed(() =>
+  props.compact
+    ? 'inline-flex h-9 w-9 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 transition hover:border-violet-300 hover:text-violet-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300'
+    : 'inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 transition hover:border-violet-300 hover:text-violet-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300',
+)
+const waveformClass = computed(() => [
+  props.compact ? 'min-w-[180px]' : 'min-w-[220px]',
+  'w-full rounded-xl',
+  Boolean(props.audioUrl) && !isReady.value
+    ? 'min-h-[22px] animate-pulse bg-gradient-to-r from-slate-100 via-slate-50 to-slate-100 dark:from-slate-800 dark:via-slate-900 dark:to-slate-800'
+    : '',
+])
 
 type PeaksCacheValue = {
   peaks: Array<number[]>
@@ -135,81 +150,15 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="wave-preview" :class="{ 'wave-preview--compact': compact }">
-    <Button
-      rounded
-      text
-      severity="secondary"
-      class="wave-preview__button"
-      :icon="iconClass"
-      :disabled="disabled || !audioUrl || !isReady"
-      @click="togglePlayback"
-    />
-    <div
-      ref="waveformContainer"
-      class="wave-preview__waveform"
-      :class="{ 'wave-preview__waveform--loading': Boolean(audioUrl) && !isReady }"
-    />
-    <span v-if="rightLabel" class="wave-preview__label">{{ rightLabel }}</span>
-    <div v-if="localError" class="wave-preview__error">{{ localError }}</div>
+  <div :class="rootClass">
+    <Button rounded text severity="secondary" :class="buttonClass" :icon="iconClass" :disabled="disabled || !audioUrl || !isReady" @click="togglePlayback" />
+    <div ref="waveformContainer" :class="waveformClass" />
+    <span
+      v-if="rightLabel"
+      class="whitespace-nowrap text-[11px] font-medium text-slate-500 [font-variant-numeric:tabular-nums] dark:text-slate-400"
+    >
+      {{ rightLabel }}
+    </span>
+    <div v-if="localError" class="col-span-full text-xs text-red-600 dark:text-red-400">{{ localError }}</div>
   </div>
 </template>
-
-<style scoped>
-.wave-preview {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: 10px;
-  align-items: center;
-}
-
-.wave-preview--compact {
-  gap: 8px;
-}
-
-.wave-preview__button {
-  width: 38px;
-  height: 38px;
-}
-
-.wave-preview__waveform {
-  min-width: 180px;
-  width: 100%;
-}
-
-.wave-preview__waveform--loading {
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0.06),
-    rgba(255, 255, 255, 0.12),
-    rgba(255, 255, 255, 0.06)
-  );
-  background-size: 240% 100%;
-  border-radius: 12px;
-  min-height: 22px;
-  animation: wave-skeleton 1.1s ease-in-out infinite;
-}
-
-.wave-preview__label {
-  font-size: 11px;
-  letter-spacing: 0.02em;
-  color: rgba(148, 163, 184, 0.86);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-
-.wave-preview__error {
-  grid-column: 1 / -1;
-  font-size: 12px;
-  color: #dc2626;
-}
-
-@keyframes wave-skeleton {
-  0% {
-    background-position: 0% 0%;
-  }
-  100% {
-    background-position: 100% 0%;
-  }
-}
-</style>

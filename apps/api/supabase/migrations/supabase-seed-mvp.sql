@@ -67,21 +67,21 @@ seed_tracks as (
   select *
   from (
     values
-      ('Midnight Pulse (Seed)', 'artist01@musica.local', 'Electronic', 182, 'PUBLISHED', array['SOCIAL_USE','YOUTUBE_USE']),
-      ('Neon Skyline (Seed)', 'artist01@musica.local', 'Electronic', 156, 'PUBLISHED', array['ADS_USE','COMMERCIAL_USE']),
-      ('Cinematic Rise (Seed)', 'artist02@musica.local', 'Cinematic', 201, 'PUBLISHED', array['EVENT_USE']),
-      ('Corporate Breeze (Seed)', 'artist02@musica.local', 'Corporate', 128, 'PUBLISHED', array['SOCIAL_USE']),
-      ('Pop Spark (Seed)', 'artist03@musica.local', 'Pop', 174, 'PUBLISHED', array['YOUTUBE_USE','COMMERCIAL_USE']),
-      ('Ambient Drift (Seed)', 'artist03@musica.local', 'Cinematic', 223, 'PUBLISHED', array['SOCIAL_USE','EVENT_USE']),
-      ('Late Night Drive (Seed)', 'artist01@musica.local', 'Electronic', 190, 'PUBLISHED', array['ADS_USE']),
-      ('Bright Morning (Seed)', 'artist02@musica.local', 'Pop', 165, 'PUBLISHED', array['SOCIAL_USE','ADS_USE']),
-      ('Soft Focus (Seed)', 'artist03@musica.local', 'Corporate', 142, 'PUBLISHED', array['COMMERCIAL_USE']),
-      ('Festival Lights (Seed)', 'artist01@musica.local', 'Pop', 198, 'PUBLISHED', array['EVENT_USE','SOCIAL_USE']),
-      ('Hidden Draft 01 (Seed)', 'artist01@musica.local', 'Electronic', 160, 'HIDDEN', array['SOCIAL_USE']),
-      ('Hidden Draft 02 (Seed)', 'artist02@musica.local', 'Cinematic', 210, 'HIDDEN', array['YOUTUBE_USE']),
-      ('Hidden Draft 03 (Seed)', 'artist03@musica.local', 'Corporate', 120, 'HIDDEN', array['ADS_USE']),
-      ('Hidden Draft 04 (Seed)', 'artist01@musica.local', 'Pop', 175, 'HIDDEN', array['COMMERCIAL_USE']),
-      ('Hidden Draft 05 (Seed)', 'artist02@musica.local', 'Corporate', 135, 'HIDDEN', array['EVENT_USE'])
+      ('Midnight Pulse (Seed)', 'artist01@musica.local', 'Electronic', 182, 'PUBLISHED', array['REPRODUCTION_RIGHT','DERIVATIVE_WORK_RIGHT']),
+      ('Neon Skyline (Seed)', 'artist01@musica.local', 'Electronic', 156, 'PUBLISHED', array['COMMUNICATION_TO_PUBLIC_RIGHT','DISTRIBUTION_RIGHT']),
+      ('Cinematic Rise (Seed)', 'artist02@musica.local', 'Cinematic', 201, 'PUBLISHED', array['DERIVATIVE_WORK_RIGHT']),
+      ('Corporate Breeze (Seed)', 'artist02@musica.local', 'Corporate', 128, 'PUBLISHED', array['REPRODUCTION_RIGHT']),
+      ('Pop Spark (Seed)', 'artist03@musica.local', 'Pop', 174, 'PUBLISHED', array['DISTRIBUTION_RIGHT','COMMUNICATION_TO_PUBLIC_RIGHT']),
+      ('Ambient Drift (Seed)', 'artist03@musica.local', 'Cinematic', 223, 'PUBLISHED', array['REPRODUCTION_RIGHT','DERIVATIVE_WORK_RIGHT']),
+      ('Late Night Drive (Seed)', 'artist01@musica.local', 'Electronic', 190, 'PUBLISHED', array['COMMUNICATION_TO_PUBLIC_RIGHT']),
+      ('Bright Morning (Seed)', 'artist02@musica.local', 'Pop', 165, 'PUBLISHED', array['REPRODUCTION_RIGHT','COMMUNICATION_TO_PUBLIC_RIGHT']),
+      ('Soft Focus (Seed)', 'artist03@musica.local', 'Corporate', 142, 'PUBLISHED', array['DISTRIBUTION_RIGHT']),
+      ('Festival Lights (Seed)', 'artist01@musica.local', 'Pop', 198, 'PUBLISHED', array['DERIVATIVE_WORK_RIGHT','REPRODUCTION_RIGHT']),
+      ('Hidden Draft 01 (Seed)', 'artist01@musica.local', 'Electronic', 160, 'HIDDEN', array['REPRODUCTION_RIGHT']),
+      ('Hidden Draft 02 (Seed)', 'artist02@musica.local', 'Cinematic', 210, 'HIDDEN', array['DISTRIBUTION_RIGHT']),
+      ('Hidden Draft 03 (Seed)', 'artist03@musica.local', 'Corporate', 120, 'HIDDEN', array['COMMUNICATION_TO_PUBLIC_RIGHT']),
+      ('Hidden Draft 04 (Seed)', 'artist01@musica.local', 'Pop', 175, 'HIDDEN', array['DISTRIBUTION_RIGHT']),
+      ('Hidden Draft 05 (Seed)', 'artist02@musica.local', 'Corporate', 135, 'HIDDEN', array['DERIVATIVE_WORK_RIGHT'])
   ) as t(title, artist_email, genre, duration, status, usage_rights)
 ),
 inserted_tracks as (
@@ -113,16 +113,16 @@ seed_certificates as (
   select *
   from (
     values
-      ('Midnight Pulse (Seed)', 'buyer01@musica.local', array['YOUTUBE_USE']::text[], 3),
-      ('Neon Skyline (Seed)', 'buyer01@musica.local', array['ADS_USE']::text[], 8),
-      ('Cinematic Rise (Seed)', 'buyer02@musica.local', array['EVENT_USE']::text[], 6),
-      ('Corporate Breeze (Seed)', 'buyer03@musica.local', array['SOCIAL_USE']::text[], 10),
-      ('Pop Spark (Seed)', 'buyer04@musica.local', array['COMMERCIAL_USE']::text[], 2),
-      ('Ambient Drift (Seed)', 'buyer05@musica.local', array['EVENT_USE']::text[], 4),
-      ('Late Night Drive (Seed)', 'buyer06@musica.local', array['ADS_USE']::text[], 1),
-      ('Bright Morning (Seed)', 'buyer07@musica.local', array['SOCIAL_USE','ADS_USE']::text[], 7),
-      ('Soft Focus (Seed)', 'buyer08@musica.local', array['COMMERCIAL_USE']::text[], 12),
-      ('Festival Lights (Seed)', 'buyer02@musica.local', array['EVENT_USE']::text[], 5)
+      ('Midnight Pulse (Seed)', 'buyer01@musica.local', array['DERIVATIVE_WORK_RIGHT']::text[], 3),
+      ('Neon Skyline (Seed)', 'buyer01@musica.local', array['COMMUNICATION_TO_PUBLIC_RIGHT']::text[], 8),
+      ('Cinematic Rise (Seed)', 'buyer02@musica.local', array['DERIVATIVE_WORK_RIGHT']::text[], 6),
+      ('Corporate Breeze (Seed)', 'buyer03@musica.local', array['REPRODUCTION_RIGHT']::text[], 10),
+      ('Pop Spark (Seed)', 'buyer04@musica.local', array['DISTRIBUTION_RIGHT']::text[], 2),
+      ('Ambient Drift (Seed)', 'buyer05@musica.local', array['DERIVATIVE_WORK_RIGHT']::text[], 4),
+      ('Late Night Drive (Seed)', 'buyer06@musica.local', array['COMMUNICATION_TO_PUBLIC_RIGHT']::text[], 1),
+      ('Bright Morning (Seed)', 'buyer07@musica.local', array['REPRODUCTION_RIGHT','COMMUNICATION_TO_PUBLIC_RIGHT']::text[], 7),
+      ('Soft Focus (Seed)', 'buyer08@musica.local', array['DISTRIBUTION_RIGHT']::text[], 12),
+      ('Festival Lights (Seed)', 'buyer02@musica.local', array['DERIVATIVE_WORK_RIGHT']::text[], 5)
   ) as t(track_title, buyer_email, selected_usage_rights, days_ago)
 )
 insert into public.certificates (

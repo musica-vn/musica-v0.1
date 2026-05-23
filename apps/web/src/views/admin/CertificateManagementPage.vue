@@ -1,14 +1,8 @@
 <script setup lang="ts">
-import Card from 'primevue/card'
-import DataTable from 'primevue/datatable'
-import Column from 'primevue/column'
-import Tag from 'primevue/tag'
 import Button from 'primevue/button'
-import InputText from 'primevue/inputtext'
-import Dropdown from 'primevue/dropdown'
 import Dialog from 'primevue/dialog'
-import Textarea from 'primevue/textarea'
 import Message from 'primevue/message'
+import Textarea from 'primevue/textarea'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { ApiClientError } from '../../shared/api/http'
 import {
@@ -19,13 +13,23 @@ import {
   renderAdminCertificateHtml,
   updateAdminCertificateTemplate,
 } from '../../features/certificates/certificates.api'
-import type { CertificateDetail, CertificateListItem } from '../../features/certificates/certificates.types'
+import type { CertificateDetail, CertificateListItem as CertificateListItemType } from '../../features/certificates/certificates.types'
+import CertificateListItemCard from '../../features/certificates/components/CertificateListItem.vue'
+import TrackFilterInput from '../../features/tracks/components/TrackFilterInput.vue'
+import TrackFilterSelect from '../../features/tracks/components/TrackFilterSelect.vue'
+
+const usageRightLabelMap: Record<string, string> = {
+  REPRODUCTION_RIGHT: 'Quyền sao chép tác phẩm',
+  COMMUNICATION_TO_PUBLIC_RIGHT: 'Quyền truyền đạt đến công chúng',
+  DERIVATIVE_WORK_RIGHT: 'Quyền làm tác phẩm phái sinh',
+  DISTRIBUTION_RIGHT: 'Quyền phân phối bản sao',
+}
 
 const isLoading = ref(false)
 const errorMessage = ref<string | null>(null)
 const successMessage = ref<string | null>(null)
 
-const rows = ref<CertificateListItem[]>([])
+const rows = ref<CertificateListItemType[]>([])
 const totalItems = ref(0)
 
 const pagination = reactive({
@@ -42,7 +46,18 @@ const filters = reactive({
   toDate: '',
 })
 
-const tableFirst = computed(() => (pagination.page - 1) * pagination.pageSize)
+const fieldClass =
+  'h-12 w-full rounded-2xl border border-slate-200/80 bg-white/90 px-4 text-sm text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-violet-400 focus:ring-4 focus:ring-violet-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-800 dark:bg-slate-950/70 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-violet-500 dark:focus:ring-violet-500/20'
+const primaryButtonClass =
+  'inline-flex items-center justify-center rounded-2xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-600 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-violet-500 dark:hover:bg-violet-400'
+const secondaryButtonClass =
+  'inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-violet-300 hover:text-violet-600 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-violet-500 dark:hover:text-violet-300'
+const summaryToneClassMap = {
+  primary: 'from-violet-500/15 to-fuchsia-500/10 border-violet-200/60 dark:border-violet-500/20',
+  success: 'from-emerald-500/15 to-teal-500/10 border-emerald-200/60 dark:border-emerald-500/20',
+  info: 'from-sky-500/15 to-cyan-500/10 border-sky-200/60 dark:border-sky-500/20',
+  warning: 'from-amber-500/15 to-orange-500/10 border-amber-200/60 dark:border-amber-500/20',
+} as const
 
 const detailDialogVisible = ref(false)
 const detail = ref<CertificateDetail | null>(null)
@@ -61,41 +76,43 @@ const uniqueBuyerCount = computed(() => new Set(rows.value.map((certificate) => 
 const previewReadyCount = computed(() => rows.value.filter((certificate) => Boolean(certificate.trackSnapshotName)).length)
 const summaryCards = computed(() => [
   {
-    title: 'Certificates',
+    title: 'Chứng chỉ',
     value: totalItems.value,
-    description: 'Records matched by current filter',
+    description: 'Bản ghi khớp với bộ lọc hiện tại',
     icon: 'pi pi-file',
+    tone: 'primary' as const,
   },
   {
-    title: 'Active',
+    title: 'Đang hiệu lực',
     value: activeCount.value,
-    description: 'Usable certificates on current page',
+    description: 'Chứng chỉ khả dụng trên trang hiện tại',
     icon: 'pi pi-verified',
+    tone: 'success' as const,
   },
   {
-    title: 'Unique Buyers',
+    title: 'Người mua duy nhất',
     value: uniqueBuyerCount.value,
-    description: 'Distinct buyers in the current result',
+    description: 'Số người mua khác nhau trong kết quả',
     icon: 'pi pi-users',
+    tone: 'info' as const,
   },
   {
-    title: 'Preview Ready',
+    title: 'Sẵn sàng xem trước',
     value: previewReadyCount.value,
-    description: 'Rows available for render-html preview',
+    description: 'Bản ghi có thể render HTML để xem trước',
     icon: 'pi pi-eye',
+    tone: 'warning' as const,
   },
 ])
 
 const statusOptions = [
-  { label: 'All', value: '' },
-  { label: 'ACTIVE', value: 'ACTIVE' as const },
+  { label: 'Tất cả', value: '' },
+  { label: 'Đang hiệu lực', value: 'ACTIVE' as const },
 ]
-const previewOptions = computed(() =>
-  rows.value.map((certificate) => ({
-    label: `${certificate.trackSnapshotName} • ${certificate.buyerSnapshotName}`,
-    value: certificate.id,
-  })),
-)
+const totalPages = computed(() => Math.max(1, Math.ceil(totalItems.value / pagination.pageSize)))
+const pageStart = computed(() => (totalItems.value === 0 ? 0 : (pagination.page - 1) * pagination.pageSize + 1))
+const pageEnd = computed(() => Math.min(pagination.page * pagination.pageSize, totalItems.value))
+const previewCandidates = computed(() => rows.value.filter((certificate) => certificate.trackSnapshotName))
 
 const setError = (error: unknown) => {
   if (error instanceof ApiClientError) {
@@ -106,7 +123,7 @@ const setError = (error: unknown) => {
     errorMessage.value = error.message
     return
   }
-  errorMessage.value = 'Unknown error'
+  errorMessage.value = 'Đã xảy ra lỗi không xác định'
 }
 
 const clearMessages = () => {
@@ -115,11 +132,15 @@ const clearMessages = () => {
 }
 
 const formatDateTime = (value: string | null) => {
-  if (typeof value !== 'string' || value.length === 0) return 'N/A'
+  if (typeof value !== 'string' || value.length === 0) return 'Chưa có'
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return value
   return date.toLocaleString()
 }
+
+const formatCertificateStatus = (value: string) => (value === 'ACTIVE' ? 'Đang hiệu lực' : value)
+const formatUsageRights = (values: string[]) => values.map((value) => usageRightLabelMap[value] ?? value).join(', ')
+const summaryCardToneClass = (tone: keyof typeof summaryToneClassMap) => summaryToneClassMap[tone]
 
 const fetchCertificates = async () => {
   clearMessages()
@@ -160,11 +181,6 @@ const openDetail = async (certificateId: string) => {
   }
 }
 
-const openDetailAndRender = async (certificateId: string) => {
-  await openDetail(certificateId)
-  await renderDetailHtml(certificateId)
-}
-
 const downloadPdf = async (certificateId: string) => {
   clearMessages()
   isLoading.value = true
@@ -199,7 +215,7 @@ const loadTemplate = async () => {
     templateUnavailableMessage.value = null
   } catch (error) {
     templateUnavailableMessage.value =
-      error instanceof Error ? error.message : 'Template feature is not available on current schema'
+      error instanceof Error ? error.message : 'Tính năng template chưa khả dụng trên schema hiện tại'
   }
 }
 
@@ -209,7 +225,7 @@ const saveTemplate = async () => {
   try {
     const { data } = await updateAdminCertificateTemplate(templateHtml.value)
     templateUpdatedAt.value = data.updatedAt
-    successMessage.value = 'Template saved'
+    successMessage.value = 'Đã lưu template'
   } catch (error) {
     setError(error)
   } finally {
@@ -233,200 +249,236 @@ const previewRender = async () => {
   }
 }
 
+const resetFilters = async () => {
+  filters.buyerKeyword = ''
+  filters.trackKeyword = ''
+  filters.artistId = ''
+  filters.status = 'ACTIVE'
+  filters.fromDate = ''
+  filters.toDate = ''
+  pagination.page = 1
+  await fetchCertificates()
+}
+
+const selectPreviewCandidate = (certificateId: string) => {
+  previewCertificateId.value = certificateId
+}
+
+const openPreviewPanel = async (certificateId: string) => {
+  selectPreviewCandidate(certificateId)
+  await previewRender()
+}
+
+const goToPage = async (page: number) => {
+  const nextPage = Math.min(Math.max(page, 1), totalPages.value)
+  if (nextPage === pagination.page) return
+  pagination.page = nextPage
+  await fetchCertificates()
+}
+
 onMounted(async () => {
   await Promise.all([fetchCertificates(), loadTemplate()])
 })
 </script>
 
 <template>
-  <div class="page">
-    <section class="hero">
-      <div>
-        <div class="eyebrow">Admin Panel</div>
-        <h1 class="hero-title">Certificate Management</h1>
-        <p class="hero-copy">
-          Theo dõi certificate issuance, snapshot pháp lý và khu vực template editor theo layout dashboard sáng, nhiều khoảng trắng như ảnh bạn gửi.
-        </p>
+  <div class="space-y-6 pb-8">
+    <section
+      class="flex flex-col gap-4 rounded-[32px] border border-slate-200/80 bg-[radial-gradient(circle_at_top_left,rgba(109,74,255,0.22),transparent_38%),radial-gradient(circle_at_60%_120%,rgba(56,189,248,0.14),transparent_44%),linear-gradient(135deg,rgba(255,255,255,0.96),rgba(245,243,255,0.92))] p-6 shadow-2xl shadow-slate-200/40 dark:border-slate-800 dark:bg-[radial-gradient(circle_at_top_left,rgba(124,58,237,0.25),transparent_32%),radial-gradient(circle_at_60%_120%,rgba(14,165,233,0.16),transparent_44%),linear-gradient(135deg,rgba(15,23,42,0.92),rgba(2,6,23,0.96))] dark:shadow-black/20 lg:flex-row lg:items-start lg:justify-between"
+    >
+      <div class="space-y-3">
+        <div class="inline-flex items-center rounded-full bg-violet-100 px-3 py-1 text-xs font-bold uppercase tracking-[0.24em] text-violet-700 dark:bg-violet-500/20 dark:text-violet-200">
+          Quản trị viên
+        </div>
+        <div>
+          <h1 class="m-0 text-3xl font-semibold tracking-tight text-slate-950 dark:text-white">Quản lý chứng chỉ</h1>
+        </div>
       </div>
-      <div class="hero-actions">
-        <Button label="Refresh" icon="pi pi-refresh" severity="secondary" outlined :disabled="isLoading" @click="fetchCertificates" />
-      </div>
+
+      <button type="button" :class="secondaryButtonClass" :disabled="isLoading" @click="fetchCertificates">
+        <i class="pi pi-refresh mr-2" />
+        Làm mới
+      </button>
     </section>
 
-    <section class="summary-grid">
-      <article v-for="card in summaryCards" :key="card.title" class="summary-card">
-        <div class="summary-card__meta">
-          <span class="summary-card__title">{{ card.title }}</span>
-          <span class="summary-card__icon">
+    <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <article
+        v-for="card in summaryCards"
+        :key="card.title"
+        class="rounded-[28px] border bg-gradient-to-br p-5 shadow-sm backdrop-blur"
+        :class="summaryCardToneClass(card.tone)"
+      >
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <div class="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">{{ card.title }}</div>
+            <div class="mt-3 text-3xl font-semibold tracking-tight text-slate-950 dark:text-white">{{ card.value }}</div>
+          </div>
+          <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/80 text-violet-600 shadow-sm dark:bg-slate-950/60 dark:text-violet-300">
             <i :class="card.icon" />
-          </span>
+          </div>
         </div>
-        <div class="summary-card__value">{{ card.value }}</div>
-        <div class="summary-card__desc">{{ card.description }}</div>
+        <p class="mt-3 text-sm text-slate-500 dark:text-slate-400">{{ card.description }}</p>
       </article>
     </section>
 
-    <section class="content-grid">
-      <Card class="dashboard-card table-card">
-        <template #content>
-          <div class="panel-header">
+    <section class="grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(380px,0.8fr)]">
+      <div class="space-y-6">
+        <section class="rounded-[32px] border border-slate-200/80 bg-white/85 p-5 shadow-xl shadow-slate-200/40 backdrop-blur dark:border-slate-800 dark:bg-slate-950/70 dark:shadow-black/20">
+          <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <div class="panel-title">Certificates Directory</div>
-              <div class="panel-copy">Tra cứu certificate, xem detail, mở file PDF và kiểm tra snapshot trước khi cấp lại.</div>
+              <div class="text-xl font-semibold text-slate-950 dark:text-white">Danh sách chứng chỉ</div>
+            </div>
+            <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+              <TrackFilterInput v-model="filters.buyerKeyword" icon-class="pi pi-user" placeholder="Người mua" :disabled="isLoading" />
+              <TrackFilterInput v-model="filters.trackKeyword" icon-class="pi pi-wave-pulse" placeholder="Track" :disabled="isLoading" />
+              <TrackFilterSelect v-model="filters.status" icon-class="pi pi-tag" :options="statusOptions" :disabled="isLoading" />
+              <input v-model="filters.artistId" :class="fieldClass" placeholder="Artist ID" />
+              <input v-model="filters.fromDate" :class="fieldClass" placeholder="Từ ngày (ISO date)" />
+              <input v-model="filters.toDate" :class="fieldClass" placeholder="Đến ngày (ISO date)" />
             </div>
           </div>
 
-          <div class="toolbar">
-            <div class="filters">
-              <InputText v-model="filters.buyerKeyword" placeholder="Buyer keyword" />
-              <InputText v-model="filters.trackKeyword" placeholder="Track keyword" />
-              <InputText v-model="filters.artistId" placeholder="Artist ID" />
-              <Dropdown v-model="filters.status" :options="statusOptions" optionLabel="label" optionValue="value" />
-              <InputText v-model="filters.fromDate" placeholder="From (ISO date)" />
-              <InputText v-model="filters.toDate" placeholder="To (ISO date)" />
-              <Button :disabled="isLoading" label="Search" severity="secondary" @click="() => { pagination.page = 1; fetchCertificates() }" />
-              <Button
-                :disabled="isLoading"
-                label="Reset"
-                text
-                @click="() => {
-                  filters.buyerKeyword = ''
-                  filters.trackKeyword = ''
-                  filters.artistId = ''
-                  filters.status = 'ACTIVE'
-                  filters.fromDate = ''
-                  filters.toDate = ''
-                  pagination.page = 1
-                  fetchCertificates()
-                }"
-              />
+          <div class="mt-4 flex flex-wrap gap-3">
+            <button
+              type="button"
+              :class="secondaryButtonClass"
+              :disabled="isLoading"
+              @click="() => { pagination.page = 1; void fetchCertificates() }"
+            >
+              Tìm kiếm
+            </button>
+            <button type="button" :class="secondaryButtonClass" :disabled="isLoading" @click="() => void resetFilters()">
+              Đặt lại
+            </button>
+          </div>
+
+          <div class="mt-4 space-y-3">
+            <Message v-if="errorMessage" severity="error">{{ errorMessage }}</Message>
+            <Message v-if="successMessage" severity="success">{{ successMessage }}</Message>
+          </div>
+
+          <div class="mt-6 space-y-4">
+            <CertificateListItemCard
+              v-for="certificate in rows"
+              :key="certificate.id"
+              :certificate="certificate"
+              :is-busy="isLoading"
+              @detail="openDetail"
+              @preview="(certificateId: string) => void openPreviewPanel(certificateId)"
+              @download="(certificateId: string) => void downloadPdf(certificateId)"
+            />
+
+            <div
+              v-if="!isLoading && rows.length === 0"
+              class="flex flex-col items-center justify-center rounded-[28px] border border-dashed border-slate-300 bg-slate-50/80 px-6 py-14 text-center dark:border-slate-700 dark:bg-slate-900/40"
+            >
+              <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-violet-600 shadow-sm dark:bg-slate-950 dark:text-violet-300">
+                <i class="pi pi-file-pdf text-xl" />
+              </div>
+              <div class="mt-4 text-lg font-semibold text-slate-900 dark:text-white">Không có chứng chỉ phù hợp</div>
+              <div class="mt-2 max-w-md text-sm text-slate-500 dark:text-slate-400">
+                Thử đổi bộ lọc người mua, track, trạng thái hoặc khoảng ngày để mở rộng kết quả.
+              </div>
             </div>
           </div>
 
-          <Message v-if="errorMessage" severity="error">{{ errorMessage }}</Message>
-          <Message v-if="successMessage" severity="success">{{ successMessage }}</Message>
-
-          <DataTable
-            :value="rows"
-            size="small"
-            stripedRows
-            class="dashboard-table"
-            :loading="isLoading"
-            paginator
-            lazy
-            :rows="pagination.pageSize"
-            :first="tableFirst"
-            :totalRecords="totalItems"
-            @page="(e) => { pagination.page = e.page + 1; pagination.pageSize = e.rows; fetchCertificates() }"
-          >
-            <Column header="Certificate">
-              <template #body="{ data }">
-                <div class="certificate-cell">
-                  <div class="certificate-avatar">C</div>
-                  <div>
-                    <div class="cell-title">{{ data.trackSnapshotName }}</div>
-                    <div class="cell-subtitle">{{ data.buyerSnapshotName }} • {{ formatDateTime(data.createdAt) }}</div>
-                  </div>
-                </div>
-              </template>
-            </Column>
-            <Column header="Buyer">
-              <template #body="{ data }">
-                <div class="cell-stack">
-                  <span class="cell-title">{{ data.buyerSnapshotName }}</span>
-                  <span class="cell-subtitle">{{ data.buyerEmail || 'No email snapshot' }}</span>
-                </div>
-              </template>
-            </Column>
-            <Column header="Artist">
-              <template #body="{ data }">
-                <div class="cell-stack">
-                  <span class="cell-title">{{ data.artistSnapshotName }}</span>
-                  <span class="cell-subtitle">Rights owner</span>
-                </div>
-              </template>
-            </Column>
-            <Column header="Issued">
-              <template #body="{ data }">
-                <div class="cell-stack">
-                  <span class="cell-title">{{ formatDateTime(data.validFrom) }}</span>
-                  <span class="cell-subtitle">{{ formatDateTime(data.createdAt) }}</span>
-                </div>
-              </template>
-            </Column>
-            <Column header="Status">
-              <template #body="{ data }">
-                <Tag :value="data.status" severity="success" />
-              </template>
-            </Column>
-            <Column header="Actions">
-              <template #body="{ data }">
-                <div class="row-actions">
-                  <Button size="small" rounded label="Detail" severity="secondary" :disabled="isLoading" @click="openDetail(data.id)" />
-                  <Button size="small" rounded label="Render" severity="contrast" outlined :disabled="isLoading" @click="openDetailAndRender(data.id)" />
-                  <Button size="small" rounded label="Download" :disabled="isLoading" @click="downloadPdf(data.id)" />
-                </div>
-              </template>
-            </Column>
-          </DataTable>
-        </template>
-      </Card>
-
-      <Card class="dashboard-card side-card">
-        <template #content>
-          <div class="panel-header panel-header--tight">
-            <div>
-              <div class="panel-title">Certificate Template</div>
-              <div class="panel-copy">Edit HTML template và preview nhanh theo certificate hiện có.</div>
+          <div class="mt-6 flex flex-col gap-4 border-t border-slate-200 pt-4 dark:border-slate-800 md:flex-row md:items-center md:justify-between">
+            <div class="text-sm text-slate-500 dark:text-slate-400">
+              {{ pageStart }}-{{ pageEnd }} / {{ totalItems }} chứng chỉ
+            </div>
+            <div class="flex items-center gap-2">
+              <button type="button" :class="secondaryButtonClass" :disabled="isLoading || pagination.page <= 1" @click="() => void goToPage(pagination.page - 1)">
+                <i class="pi pi-arrow-left mr-2" />
+                Trước
+              </button>
+              <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+                Trang {{ pagination.page }} / {{ totalPages }}
+              </div>
+              <button type="button" :class="secondaryButtonClass" :disabled="isLoading || pagination.page >= totalPages" @click="() => void goToPage(pagination.page + 1)">
+                Sau
+                <i class="pi pi-arrow-right ml-2" />
+              </button>
             </div>
           </div>
+        </section>
+      </div>
 
-          <Message v-if="templateUnavailableMessage" severity="warn">{{ templateUnavailableMessage }}</Message>
-          <div class="template-meta">
-            <div v-if="templateUpdatedAt"><strong>Updated At:</strong> {{ formatDateTime(templateUpdatedAt) }}</div>
+      <section class="space-y-4 rounded-[32px] border border-slate-200/80 bg-white/85 p-5 shadow-xl shadow-slate-200/40 backdrop-blur dark:border-slate-800 dark:bg-slate-950/70 dark:shadow-black/20">
+        <div class="flex items-center gap-3 text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+          <i class="pi pi-code text-violet-500" />
+          Template Platform
+        </div>
+
+        <div class="space-y-2">
+          <div class="text-lg font-semibold text-slate-950 dark:text-white">Template chứng chỉ</div>
+          <div class="text-sm text-slate-500 dark:text-slate-400">
+            Chỉnh sửa HTML template và render nhanh theo chứng chỉ đang có.
           </div>
+        </div>
 
-          <Textarea v-model="templateHtml" rows="12" autoResize class="template-textarea" :disabled="!!templateUnavailableMessage" />
+        <Message v-if="templateUnavailableMessage" severity="warn">{{ templateUnavailableMessage }}</Message>
 
-          <div class="template-actions">
-            <Button label="Save Template" :disabled="templateSaveLoading || !!templateUnavailableMessage" @click="saveTemplate" />
+        <div v-if="templateUpdatedAt" class="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600 dark:bg-slate-900/70 dark:text-slate-300">
+          <span class="font-semibold text-slate-900 dark:text-white">Cập nhật lúc:</span>
+          {{ formatDateTime(templateUpdatedAt) }}
+        </div>
+
+        <Textarea
+          v-model="templateHtml"
+          rows="16"
+          autoResize
+          class="w-full"
+          :disabled="!!templateUnavailableMessage"
+        />
+
+        <div class="flex justify-end">
+          <button type="button" :class="primaryButtonClass" :disabled="templateSaveLoading || !!templateUnavailableMessage" @click="saveTemplate">
+            Lưu template
+          </button>
+        </div>
+
+        <div class="space-y-3 rounded-[28px] border border-slate-200/80 bg-slate-50/80 p-4 dark:border-slate-800 dark:bg-slate-900/50">
+          <div class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Xem trước HTML</div>
+          <div class="grid gap-3">
+            <select
+              v-model="previewCertificateId"
+              :class="fieldClass"
+            >
+              <option value="">Chọn chứng chỉ để xem trước</option>
+              <option
+                v-for="certificate in previewCandidates"
+                :key="certificate.id"
+                :value="certificate.id"
+              >
+                {{ certificate.trackSnapshotName }} • {{ certificate.buyerSnapshotName }}
+              </option>
+            </select>
+            <button type="button" :class="secondaryButtonClass" :disabled="previewLoading || !!templateUnavailableMessage || !previewCertificateId" @click="previewRender">
+              Xem trước
+            </button>
           </div>
-
-          <div class="preview">
-            <div class="preview-toolbar">
-              <Dropdown
-                v-model="previewCertificateId"
-                :options="previewOptions"
-                optionLabel="label"
-                optionValue="value"
-                placeholder="Select certificate preview"
-                class="preview-select"
-              />
-              <Button label="Preview" severity="secondary" :disabled="previewLoading || !!templateUnavailableMessage" @click="previewRender" />
-            </div>
-            <iframe v-if="previewHtml" class="preview-iframe preview-iframe--compact" sandbox="" :srcdoc="previewHtml" />
-          </div>
-        </template>
-      </Card>
+          <iframe v-if="previewHtml" class="h-[360px] w-full rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950" sandbox="" :srcdoc="previewHtml" />
+        </div>
+      </section>
     </section>
 
-    <Dialog v-model:visible="detailDialogVisible" modal header="Certificate Detail" class="dialog">
+    <Dialog v-model:visible="detailDialogVisible" modal header="Chi tiết chứng chỉ" class="dialog">
       <div v-if="detail" class="detail">
         <div class="detail-grid">
           <div><strong>Track:</strong> {{ detail.trackSnapshotName }}</div>
-          <div><strong>Buyer:</strong> {{ detail.buyerSnapshotName }} ({{ detail.buyerEmail }})</div>
-          <div><strong>Artist:</strong> {{ detail.artistSnapshotName }}</div>
-          <div><strong>Status:</strong> {{ detail.status }}</div>
-          <div><strong>Valid From:</strong> {{ formatDateTime(detail.validFrom) }}</div>
-          <div><strong>Valid Until:</strong> {{ formatDateTime(detail.validUntil) }}</div>
-          <div><strong>Created At:</strong> {{ formatDateTime(detail.createdAt) }}</div>
-          <div><strong>PDF Key:</strong> {{ detail.pdfFileKey }}</div>
-          <div><strong>Selected Rights:</strong> {{ detail.selectedUsageRights.join(', ') }}</div>
+          <div><strong>Người mua:</strong> {{ detail.buyerSnapshotName }} ({{ detail.buyerEmail || 'Chưa có email' }})</div>
+          <div><strong>Nghệ sĩ:</strong> {{ detail.artistSnapshotName }}</div>
+          <div><strong>Trạng thái:</strong> {{ formatCertificateStatus(detail.status) }}</div>
+          <div><strong>Hiệu lực từ:</strong> {{ formatDateTime(detail.validFrom) }}</div>
+          <div><strong>Hiệu lực đến:</strong> {{ formatDateTime(detail.validUntil) }}</div>
+          <div><strong>Tạo lúc:</strong> {{ formatDateTime(detail.createdAt) }}</div>
+          <div><strong>PDF key:</strong> {{ detail.pdfFileKey }}</div>
+          <div><strong>Quyền đã chọn:</strong> {{ formatUsageRights(detail.selectedUsageRights) }}</div>
         </div>
 
         <div class="detail-actions">
-          <Button label="Render HTML" severity="secondary" :disabled="isLoading" @click="renderDetailHtml(detail.id)" />
-          <Button label="Download PDF" :disabled="isLoading" @click="downloadPdf(detail.id)" />
+          <Button label="Xem HTML" severity="secondary" :disabled="isLoading" @click="renderDetailHtml(detail.id)" />
+          <Button label="Tải PDF" :disabled="isLoading" @click="downloadPdf(detail.id)" />
         </div>
 
         <iframe
@@ -438,254 +490,15 @@ onMounted(async () => {
       </div>
 
       <template #footer>
-        <Button label="Close" severity="secondary" @click="detailDialogVisible = false" />
+        <Button label="Đóng" severity="secondary" @click="detailDialogVisible = false" />
       </template>
     </Dialog>
   </div>
 </template>
 
 <style scoped>
-.page {
-  display: grid;
-  gap: 20px;
-}
-
-.hero {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  align-items: flex-start;
-  padding: 24px 28px;
-  border-radius: 24px;
-  background:
-    radial-gradient(circle at top left, rgba(109, 74, 255, 0.18), transparent 34%),
-    linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(244, 240, 255, 0.96));
-  border: 1px solid rgba(109, 74, 255, 0.08);
-  box-shadow: 0 18px 40px rgba(38, 27, 80, 0.08);
-}
-
-.eyebrow {
-  display: inline-flex;
-  align-items: center;
-  padding: 6px 10px;
-  border-radius: 999px;
-  background: rgba(109, 74, 255, 0.1);
-  color: #6d4aff;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.hero-title {
-  margin: 12px 0 8px;
-  font-size: 32px;
-  line-height: 1.15;
-}
-
-.hero-copy {
-  max-width: 760px;
-  margin: 0;
-  color: #6b7280;
-}
-
-.hero-actions {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.summary-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 16px;
-}
-
-.summary-card {
-  padding: 18px;
-  border-radius: 20px;
-  background: #fff;
-  border: 1px solid #ece9f8;
-  box-shadow: 0 14px 30px rgba(38, 27, 80, 0.06);
-}
-
-.summary-card__meta {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.summary-card__title {
-  color: #6b7280;
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.summary-card__icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 38px;
-  height: 38px;
-  border-radius: 12px;
-  background: rgba(109, 74, 255, 0.12);
-  color: #6d4aff;
-}
-
-.summary-card__value {
-  margin-top: 18px;
-  font-size: 28px;
-  font-weight: 700;
-}
-
-.summary-card__desc {
-  margin-top: 8px;
-  color: #6b7280;
-  font-size: 13px;
-}
-
-.content-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1.65fr) minmax(320px, 0.95fr);
-  gap: 20px;
-}
-
-.dashboard-card:deep(.p-card-body) {
-  padding: 24px;
-}
-
-.panel-header {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  align-items: center;
-  margin-bottom: 18px;
-}
-
-.panel-header--tight {
-  margin-bottom: 12px;
-}
-
-.panel-title {
-  font-size: 20px;
-  font-weight: 700;
-}
-
-.panel-copy {
-  margin-top: 6px;
-  color: #6b7280;
-  font-size: 14px;
-}
-
-.toolbar {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  margin-bottom: 14px;
-  flex-wrap: wrap;
-}
-
-.filters {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.dashboard-table:deep(.p-datatable-table-container) {
-  border-radius: 18px;
-  overflow: hidden;
-}
-
-.dashboard-table:deep(thead th) {
-  background: #faf9fe;
-  color: #6b7280;
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.row-actions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.certificate-cell {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.certificate-avatar {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 42px;
-  height: 42px;
-  border-radius: 14px;
-  background: linear-gradient(135deg, #7c5cff, #5e38ff);
-  color: #fff;
-  font-weight: 700;
-}
-
-.cell-stack {
-  display: grid;
-  gap: 4px;
-}
-
-.cell-title {
-  font-weight: 600;
-  color: #111827;
-}
-
-.cell-subtitle {
-  color: #6b7280;
-  font-size: 12px;
-}
-
 .dialog {
   width: min(1000px, 92vw);
-}
-
-.template-textarea {
-  width: 100%;
-}
-
-.template-actions {
-  margin-top: 10px;
-  display: flex;
-  gap: 8px;
-  justify-content: flex-end;
-}
-
-.preview {
-  margin-top: 14px;
-  display: grid;
-  gap: 10px;
-}
-
-.preview-toolbar {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.preview-select {
-  min-width: 280px;
-}
-
-.preview-iframe {
-  width: 100%;
-  height: 500px;
-  border: 1px solid var(--p-content-border-color, #ddd);
-  border-radius: 8px;
-}
-
-.preview-iframe--compact {
-  height: 360px;
 }
 
 .detail {
@@ -703,29 +516,4 @@ onMounted(async () => {
   gap: 8px;
   flex-wrap: wrap;
 }
-
-.template-meta {
-  margin-bottom: 10px;
-}
-
-@media (max-width: 1200px) {
-  .summary-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .content-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 768px) {
-  .hero {
-    flex-direction: column;
-  }
-
-  .summary-grid {
-    grid-template-columns: 1fr;
-  }
-}
 </style>
-

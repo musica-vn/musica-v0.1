@@ -4,6 +4,9 @@ import type {
   AdminCreateTrackBody,
   AdminTracksListData,
   AdminTracksListQuery,
+  AdminTracksSummaryData,
+  AdminTracksSummaryQuery,
+  ConfirmTrackAudioUploadBody,
   SignedPlaybackUrlData,
   AdminUpdateTrackBody,
   SignedUploadUrlData,
@@ -12,6 +15,10 @@ import type {
 
 export const listAdminTracks = async (query: AdminTracksListQuery) => {
   return apiGet<AdminTracksListData, PaginationMeta>('/admin/tracks', { params: query })
+}
+
+export const getAdminTracksSummary = async (query: AdminTracksSummaryQuery) => {
+  return apiGet<AdminTracksSummaryData>('/admin/tracks/summary', { params: query })
 }
 
 export const createAdminTrack = async (body: AdminCreateTrackBody) => {
@@ -36,6 +43,10 @@ export const getOriginalUploadUrl = async (trackId: string) => {
 
 export const getPreviewUploadUrl = async (trackId: string) => {
   return apiPost<SignedUploadUrlData>(`/admin/tracks/${trackId}/preview-upload-url`)
+}
+
+export const confirmAdminTrackAudioUpload = async (trackId: string, body: ConfirmTrackAudioUploadBody) => {
+  return apiPost<Track, ConfirmTrackAudioUploadBody>(`/admin/tracks/${trackId}/confirm-audio-upload`, body)
 }
 
 export const getPreviewPlaybackUrl = async (trackId: string) => {
