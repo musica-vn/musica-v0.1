@@ -17,7 +17,14 @@ const password = ref('')
 const isSubmitting = ref(false)
 const errorMessage = ref<string | null>(null)
 
+const isDev = import.meta.env.DEV
+
 const canSubmit = computed(() => email.value.length > 0 && password.value.length > 0 && !isSubmitting.value)
+
+const fillSuperAdmin = () => {
+  email.value = 'superadmin@musica.local'
+  password.value = 'Password123!'
+}
 
 const submit = async () => {
   if (!canSubmit.value) return
@@ -67,6 +74,10 @@ const submit = async () => {
             />
           </div>
 
+          <div v-if="isDev" class="quickFill">
+            <Button label="Fill Super Admin" severity="secondary" :disabled="isSubmitting" @click="fillSuperAdmin" />
+          </div>
+
           <Message v-if="errorMessage" severity="error" :closable="false">
             {{ errorMessage }}
           </Message>
@@ -101,9 +112,14 @@ const submit = async () => {
   gap: 6px;
 }
 
+.quickFill {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 label {
   font-size: 14px;
   opacity: 0.85;
 }
 </style>
-
