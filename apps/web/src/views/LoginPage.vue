@@ -17,7 +17,7 @@ const password = ref('')
 const isSubmitting = ref(false)
 const errorMessage = ref<string | null>(null)
 
-const isDev = import.meta.env.DEV
+const isQuickFillEnabled = import.meta.env.VITE_ENABLE_QUICK_LOGIN === 'true'
 
 const canSubmit = computed(() => email.value.length > 0 && password.value.length > 0 && !isSubmitting.value)
 
@@ -74,7 +74,7 @@ const submit = async () => {
             />
           </div>
 
-          <div v-if="isDev" class="quickFill">
+          <div v-if="isQuickFillEnabled" class="quickFill">
             <Button label="Fill Super Admin" severity="secondary" :disabled="isSubmitting" @click="fillSuperAdmin" />
           </div>
 
