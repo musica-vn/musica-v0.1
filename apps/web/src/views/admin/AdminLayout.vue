@@ -62,14 +62,14 @@ const items = computed<MenuItem[]>(() => {
   return base
 })
 
-const pageTitle = computed(() => (typeof route.meta.title === 'string' ? route.meta.title : 'Admin'))
+const pageTitle = computed(() => (typeof route.meta.title === 'string' ? route.meta.title : 'Quản trị'))
 </script>
 
 <template>
   <div class="layout">
     <aside class="sidebar">
       <Card class="sidebarCard">
-        <template #title>Admin Menu</template>
+        <template #title>Menu quản trị</template>
         <template #content>
           <PanelMenu :model="items" />
         </template>
@@ -82,7 +82,7 @@ const pageTitle = computed(() => (typeof route.meta.title === 'string' ? route.m
           <div class="title">{{ pageTitle }}</div>
           <div class="subtitle">{{ authStore.user?.email }}</div>
         </div>
-        <Button label="Logout" severity="secondary" @click="logout" />
+        <Button label="Đăng xuất" severity="secondary" @click="logout" />
       </header>
 
       <RouterView />

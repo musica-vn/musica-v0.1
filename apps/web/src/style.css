@@ -1,3 +1,5 @@
+@import 'tailwindcss';
+
 :root {
   --text: #6b6375;
   --text-h: #08060d;
@@ -10,6 +12,16 @@
   --social-bg: rgba(244, 243, 236, 0.5);
   --shadow:
     rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+
+  --admin-surface-0: #ffffff;
+  --admin-surface-1: #fbfbff;
+  --admin-surface-2: #f5f3ff;
+  --admin-border: rgba(17, 24, 39, 0.1);
+  --admin-muted: rgba(107, 114, 128, 0.92);
+  --admin-elev-1: 0 18px 38px rgba(17, 24, 39, 0.08);
+  --admin-elev-2: 0 22px 60px rgba(17, 24, 39, 0.12);
+  --admin-glow: 0 0 0 1px rgba(124, 92, 255, 0.18),
+    0 0 44px rgba(124, 92, 255, 0.18);
 
   --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
   --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
@@ -43,6 +55,16 @@
     --social-bg: rgba(47, 48, 58, 0.5);
     --shadow:
       rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
+
+    --admin-surface-0: rgba(20, 22, 30, 0.96);
+    --admin-surface-1: rgba(12, 13, 18, 0.94);
+    --admin-surface-2: rgba(22, 24, 33, 0.96);
+    --admin-border: rgba(148, 163, 184, 0.16);
+    --admin-muted: rgba(148, 163, 184, 0.86);
+    --admin-elev-1: 0 18px 48px rgba(0, 0, 0, 0.46);
+    --admin-elev-2: 0 28px 78px rgba(0, 0, 0, 0.52);
+    --admin-glow: 0 0 0 1px rgba(192, 132, 252, 0.18),
+      0 0 46px rgba(192, 132, 252, 0.14);
   }
 
   #social .button-icon {

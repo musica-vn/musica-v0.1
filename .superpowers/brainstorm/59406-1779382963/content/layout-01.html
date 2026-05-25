@@ -1,0 +1,121 @@
+<h2>Track Management — chỉnh UI theo yêu cầu</h2>
+<p class="subtitle">
+  Chọn layout “Review” + Filters. Mình sẽ implement đúng option bạn chọn.
+</p>
+
+<div class="section">
+  <div class="label">Wave / Review / Details</div>
+  <div class="options">
+    <div class="option" data-choice="a" onclick="toggleSelect(this)">
+      <div class="letter">A</div>
+      <div class="content">
+        <h3>Inline Review (không modal)</h3>
+        <p>Click row mở “review” ngay dưới row: waveform + thời lượng bên phải + upload.</p>
+        <div class="mockup">
+          <div class="mockup-header">Row</div>
+          <div class="mockup-body">
+            <div style="display:flex;gap:14px;align-items:flex-start">
+              <div style="width:36px;height:36px;border-radius:12px;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;font-weight:700">N</div>
+              <div style="flex:1">
+                <div style="display:flex;justify-content:space-between;gap:12px">
+                  <div>
+                    <div style="font-weight:700">Neon Skyline (Seed)</div>
+                    <div style="opacity:.72;font-size:12px;margin-top:2px">Artist 01 • Electronic</div>
+                  </div>
+                  <div style="opacity:.7;font-size:12px">2026-05-21</div>
+                </div>
+                <div style="margin-top:10px;border-radius:14px;background:rgba(255,255,255,.04);padding:10px 12px;display:flex;align-items:center;gap:10px">
+                  <div style="flex:1;height:22px;background:linear-gradient(90deg,rgba(255,255,255,.14),rgba(255,255,255,.04));border-radius:10px"></div>
+                  <div style="font-size:11px;opacity:.75">0:14</div>
+                </div>
+                <div style="margin-top:10px;display:flex;gap:8px">
+                  <button class="mock-button">Upload MP3</button>
+                  <button class="mock-button">Play</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="option" data-choice="b" onclick="toggleSelect(this)">
+      <div class="letter">B</div>
+      <div class="content">
+        <h3>Review Modal (Recommended)</h3>
+        <p>Bỏ cột Details. Nút “eye” mở modal Review: waveform + time bên phải + upload + status.</p>
+        <div class="mockup">
+          <div class="mockup-header">Modal: Review</div>
+          <div class="mockup-body">
+            <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start">
+              <div>
+                <div style="font-weight:800;font-size:16px">Neon Skyline (Seed)</div>
+                <div style="opacity:.72;font-size:12px;margin-top:2px">Artist 01 • Electronic</div>
+              </div>
+              <button class="mock-button">Live</button>
+            </div>
+
+            <div style="margin-top:14px;border-radius:18px;background:rgba(255,255,255,.04);border:1px solid rgba(148,163,184,.16);padding:14px">
+              <div style="display:flex;align-items:center;gap:12px">
+                <div style="flex:1;height:26px;background:linear-gradient(90deg,rgba(255,255,255,.18),rgba(255,255,255,.05));border-radius:12px"></div>
+                <div style="font-size:11px;opacity:.78">0:14</div>
+              </div>
+              <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+                <button class="mock-button">Upload (original)</button>
+                <button class="mock-button">Upload (preview)</button>
+                <button class="mock-button">Play / Pause</button>
+              </div>
+              <div style="margin-top:10px;opacity:.72;font-size:12px">Key đang dùng: <b>test.mp3</b></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="option" data-choice="c" onclick="toggleSelect(this)">
+      <div class="letter">C</div>
+      <div class="content">
+        <h3>Giữ modal nhưng rút gọn “Details”</h3>
+        <p>Vẫn có modal, nhưng bỏ 80% thông tin, chỉ giữ waveform + upload + time. (Gần giống B nhưng vẫn còn một ít metadata).</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="label">Filters / Search</div>
+  <div class="options">
+    <div class="option" data-choice="filters-1" onclick="toggleSelect(this)">
+      <div class="letter">1</div>
+      <div class="content">
+        <h3>Auto-apply + debounce search (Recommended)</h3>
+        <p>Bỏ Apply/Reset. Đổi filter -> tự fetch (debounce 250ms). Search debounce 350–500ms.</p>
+        <div class="mockup">
+          <div class="mockup-header">Filters</div>
+          <div class="mockup-body">
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+              <div style="flex:1;min-width:220px" class="mock-input">Search (debounced)</div>
+              <div style="min-width:190px" class="mock-input">Sort</div>
+              <div style="min-width:160px" class="mock-input">Status</div>
+              <div style="min-width:160px" class="mock-input">Genre</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="option" data-choice="filters-2" onclick="toggleSelect(this)">
+      <div class="letter">2</div>
+      <div class="content">
+        <h3>Auto-apply ngay lập tức (không debounce)</h3>
+        <p>Đổi dropdown -> fetch ngay. Search vẫn debounce.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <p class="subtitle">
+    Gợi ý thêm về performance waveform: mình sẽ chỉ khởi tạo WaveSurfer khi element visible (IntersectionObserver),
+    cache instance theo trackId và không tạo lại khi hover. Khi chưa sẵn sàng sẽ show “skeleton wave”.
+  </p>
+</div>

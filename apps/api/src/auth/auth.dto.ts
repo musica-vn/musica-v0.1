@@ -42,4 +42,3 @@ export class AuthLoginDataDto {
   @ApiProperty({ type: [String], example: ['ADMIN'] })
   roles: string[];
 }
-

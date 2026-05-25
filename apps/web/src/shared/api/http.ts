@@ -18,7 +18,11 @@ export class ApiClientError extends Error {
 }
 
 export const httpClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL,
+  baseURL: (() => {
+    const baseUrl = import.meta.env.VITE_API_BASE_URL
+    if (typeof baseUrl === 'string' && baseUrl.length > 0) return baseUrl
+    throw new Error('Missing VITE_API_BASE_URL')
+  })(),
 })
 
 export const setHttpBearerToken = (accessToken?: string) => {
@@ -126,7 +130,8 @@ export const apiPatch = async <TData, TBody = unknown, TMeta = undefined>(
         timestamp: response.data.timestamp,
       }
 
-      const metaResult = response.data.meta === undefined ? {} : { meta: response.data.meta as TMeta }
+      const metaResult =
+        response.data.meta === undefined ? {} : { meta: response.data.meta as TMeta }
 
       return { ...baseResult, ...metaResult } as ApiOkResult<TData, TMeta>
     }
@@ -143,12 +148,13 @@ export const apiPatch = async <TData, TBody = unknown, TMeta = undefined>(
   }
 }
 
-export const apiDelete = async <TData, TMeta = undefined>(
+export const apiPut = async <TData, TBody = unknown, TMeta = undefined>(
   url: string,
+  body?: TBody,
   config?: AxiosRequestConfig,
 ): Promise<ApiOkResult<TData, TMeta>> => {
   try {
-    const response = await httpClient.delete<ApiResponse<TData, TMeta>>(url, config)
+    const response = await httpClient.put<ApiResponse<TData, TMeta>>(url, body, config)
 
     if (isApiSuccessResponse<TData, TMeta>(response.data)) {
       const baseResult = {
@@ -158,7 +164,8 @@ export const apiDelete = async <TData, TMeta = undefined>(
         timestamp: response.data.timestamp,
       }
 
-      const metaResult = response.data.meta === undefined ? {} : { meta: response.data.meta as TMeta }
+      const metaResult =
+        response.data.meta === undefined ? {} : { meta: response.data.meta as TMeta }
 
       return { ...baseResult, ...metaResult } as ApiOkResult<TData, TMeta>
     }

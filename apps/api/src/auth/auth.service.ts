@@ -28,7 +28,10 @@ export class AuthService {
       .maybeSingle<DbUserRow>();
 
     if (userError) {
-      throw new HttpException(userError.message, HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new HttpException(
+        userError.message,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
 
     if (!user) {
@@ -45,17 +48,25 @@ export class AuthService {
       throw new HttpException('Invalid credentials', HttpStatus.UNAUTHORIZED);
     }
 
-    const { data: userRoles, error: rolesError } = await this.supabaseService.client
-      .from('user_roles')
-      .select('role:roles(code)')
-      .eq('user_id', user.id);
+    const { data: userRoles, error: rolesError } =
+      await this.supabaseService.client
+        .from('user_roles')
+        .select('role:roles(code)')
+        .eq('user_id', user.id);
 
     if (rolesError) {
-      throw new HttpException(rolesError.message, HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new HttpException(
+        rolesError.message,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
 
     const roles = (userRoles ?? [])
-      .map((x) => (typeof x === 'object' && x !== null ? (x as { role?: { code?: unknown } }).role : undefined))
+      .map((x) =>
+        typeof x === 'object' && x !== null
+          ? (x as { role?: { code?: unknown } }).role
+          : undefined,
+      )
       .map((r) => (r && typeof r.code === 'string' ? r.code : undefined))
       .filter((x): x is string => typeof x === 'string');
 
@@ -63,7 +74,8 @@ export class AuthService {
       throw new HttpException('User has no roles', HttpStatus.FORBIDDEN);
     }
 
-    const jwtSecret = this.configService.get<string>('JWT_SECRET') ?? 'dev-secret';
+    const jwtSecret =
+      this.configService.get<string>('JWT_SECRET') ?? 'dev-secret';
     const expiresInSeconds = 60 * 60 * 24 * 7;
 
     const accessToken = jwt.sign({ sub: user.id, roles }, jwtSecret, {
@@ -84,4 +96,3 @@ export class AuthService {
     };
   }
 }
-
