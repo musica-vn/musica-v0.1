@@ -4,7 +4,7 @@ import Dialog from 'primevue/dialog'
 import Message from 'primevue/message'
 import Textarea from 'primevue/textarea'
 import { computed, onMounted, reactive, ref } from 'vue'
-import { ApiClientError } from '../../shared/api/http'
+import { ApiClientError } from '../../../shared/api/http'
 import {
   getAdminCertificateDetail,
   getAdminCertificateDownloadUrl,
@@ -12,11 +12,11 @@ import {
   listAdminCertificates,
   renderAdminCertificateHtml,
   updateAdminCertificateTemplate,
-} from '../../features/certificates/certificates.api'
-import type { CertificateDetail, CertificateListItem as CertificateListItemType } from '../../features/certificates/certificates.types'
-import CertificateListItemCard from '../../features/certificates/components/CertificateListItem.vue'
-import TrackFilterInput from '../../features/tracks/components/TrackFilterInput.vue'
-import TrackFilterSelect from '../../features/tracks/components/TrackFilterSelect.vue'
+} from '../../certificates/certificates.api'
+import type { CertificateDetail, CertificateListItem as CertificateListItemType } from '../../certificates/certificates.types'
+import CertificateListItemCard from '../../certificates/components/CertificateListItem.vue'
+import TrackFilterInput from '../../tracks/components/TrackFilterInput.vue'
+import TrackFilterSelect from '../../tracks/components/TrackFilterSelect.vue'
 
 const usageRightLabelMap: Record<string, string> = {
   REPRODUCTION_RIGHT: 'Quyền sao chép tác phẩm',

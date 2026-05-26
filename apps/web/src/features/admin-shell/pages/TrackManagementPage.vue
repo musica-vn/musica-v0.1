@@ -2,8 +2,8 @@
 import Dialog from 'primevue/dialog'
 import Message from 'primevue/message'
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
-import { ApiClientError } from '../../shared/api/http'
-import type { Track, TrackSortValue, TrackStatus, TrackUsageRight } from '../../features/tracks/tracks.types'
+import { ApiClientError } from '../../../shared/api/http'
+import type { Track, TrackSortValue, TrackStatus, TrackUsageRight } from '../../tracks/tracks.types'
 import {
   confirmAdminTrackAudioUpload,
   createAdminTrack,
@@ -15,11 +15,11 @@ import {
   listAdminTracks,
   publishAdminTrack,
   updateAdminTrack,
-} from '../../features/tracks/tracks.api'
-import TrackFilterInput from '../../features/tracks/components/TrackFilterInput.vue'
-import TrackFilterSelect from '../../features/tracks/components/TrackFilterSelect.vue'
-import TrackListItem from '../../features/tracks/components/TrackListItem.vue'
-import TrackWavePreview from '../../features/tracks/components/TrackWavePreview.vue'
+} from '../../tracks/tracks.api'
+import TrackFilterInput from '../../tracks/components/TrackFilterInput.vue'
+import TrackFilterSelect from '../../tracks/components/TrackFilterSelect.vue'
+import TrackListItem from '../../tracks/components/TrackListItem.vue'
+import TrackWavePreview from '../../tracks/components/TrackWavePreview.vue'
 
 type TrackAudioMode = 'original' | 'preview'
 
@@ -183,6 +183,68 @@ const createPreviewDurationDisplay = computed(() =>
   createPreviewDurationSeconds.value === null ? null : formatDuration(createPreviewDurationSeconds.value),
 )
 const selectedTrackUsageRights = computed(() => selectedTrack.value?.usageRights ?? [])
+const selectedTrackDescription = computed(() => {
+  if (!selectedTrack.value) return ''
+
+  const track = selectedTrack.value
+  const authorLabel = track.authorName || 'chưa có tên tác giả hiển thị'
+  const genreLabel = track.genre || 'chưa phân loại thể loại'
+  const durationLabel = formatDuration(track.duration).toLowerCase()
+  const statusLabel =
+    track.status === 'PUBLISHED' ? 'đang ở trạng thái phát hành' : 'đang được ẩn khỏi hệ thống'
+  const usageRightsLabel =
+    track.usageRights.length > 0
+      ? track.usageRights.map(formatUsageRightLabel).join(', ')
+      : 'chưa được gán quyền sử dụng'
+  const audioStateLabel = [
+    track.originalAudioKey ? 'đã có file MP3 gốc' : 'chưa có file MP3 gốc',
+    track.previewAudioKey ? 'đã có file nghe thử' : 'chưa có file nghe thử',
+  ].join(', ')
+
+  return `Track "${track.title}" của artist ${track.artistId} hiện ${statusLabel}. Bản ghi này hiển thị tác giả ${authorLabel}, thuộc nhóm ${genreLabel}, thời lượng ${durationLabel}, ${audioStateLabel} và đang mang các quyền sử dụng: ${usageRightsLabel}.`
+})
+const selectedTrackAttributeItems = computed(() => {
+  if (!selectedTrack.value) return []
+
+  const track = selectedTrack.value
+
+  return [
+    {
+      label: 'Track ID',
+      value: track.id,
+      mono: true,
+    },
+    {
+      label: 'Artist ID',
+      value: track.artistId,
+      mono: true,
+    },
+    {
+      label: 'Tên tác giả',
+      value: track.authorName || 'Chưa có',
+    },
+    {
+      label: 'Thể loại',
+      value: track.genre || 'Chưa có thể loại',
+    },
+    {
+      label: 'Thời lượng',
+      value: formatDuration(track.duration),
+    },
+    {
+      label: 'Trạng thái',
+      value: formatTrackStatusLabel(track.status),
+    },
+    {
+      label: 'Tạo lúc',
+      value: formatDateTime(track.createdAt),
+    },
+    {
+      label: 'Cập nhật lúc',
+      value: formatDateTime(track.updatedAt),
+    },
+  ]
+})
 const formatUsageRightLabel = (value: TrackUsageRight) => usageRightLabelMap[value]
 const formatTrackStatusLabel = (value: TrackStatus) => (value === 'PUBLISHED' ? 'Đang phát hành' : 'Đang ẩn')
 const formatUploadStatusLabel = (value: 'idle' | 'requesting' | 'uploading' | 'done' | 'error') => {
@@ -1080,6 +1142,31 @@ onBeforeUnmount(() => {
         </section>
 
         <section class="grid gap-4 lg:grid-cols-2">
+          <article class="rounded-[28px] border border-slate-200/80 bg-white/80 p-5 dark:border-slate-800 dark:bg-slate-950/60 lg:col-span-2">
+            <div class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Mô tả track hiện tại</div>
+            <p class="mt-4 text-sm leading-7 text-slate-600 dark:text-slate-300">
+              {{ selectedTrackDescription }}
+            </p>
+
+            <div class="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              <div
+                v-for="item in selectedTrackAttributeItems"
+                :key="`${selectedTrack.id}-${item.label}`"
+                class="rounded-2xl border border-slate-200/80 bg-slate-50/80 px-4 py-3 dark:border-slate-800 dark:bg-slate-900/60"
+              >
+                <div class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                  {{ item.label }}
+                </div>
+                <div
+                  class="mt-2 break-words text-sm font-medium text-slate-700 dark:text-slate-200"
+                  :class="item.mono ? 'font-mono text-xs sm:text-sm' : ''"
+                >
+                  {{ item.value }}
+                </div>
+              </div>
+            </div>
+          </article>
+
           <article class="rounded-[28px] border border-slate-200/80 bg-white/80 p-5 dark:border-slate-800 dark:bg-slate-950/60">
             <div class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Thông tin chung</div>
             <div class="mt-4 space-y-3 text-sm text-slate-600 dark:text-slate-300">

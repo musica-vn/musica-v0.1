@@ -6,11 +6,21 @@ import './style.css'
 import App from './App.vue'
 import { router } from './router'
 import { pinia } from './shared/pinia'
+import { initializeAppTheme } from './shared/theme/app-theme'
 
 const app = createApp(App)
 
+initializeAppTheme()
+
 app.use(pinia)
 app.use(router)
-app.use(PrimeVue, { theme: { preset: Aura } })
+app.use(PrimeVue, {
+  theme: {
+    preset: Aura,
+    options: {
+      darkModeSelector: '.app-dark',
+    },
+  },
+})
 
 app.mount('#app')

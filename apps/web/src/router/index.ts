@@ -1,24 +1,21 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import HomePage from '../views/HomePage.vue'
-import ExamplesPage from '../views/ExamplesPage.vue'
-import LoginPage from '../views/LoginPage.vue'
-import LandingTestPage from '../views/LandingTestPage.vue'
+import LoginPage from '../features/auth/pages/LoginPage.vue'
+import LandingPage from '../features/landing/pages/LandingPage.vue'
 import { useAuthStore } from '../features/auth/auth.store'
 import { pinia } from '../shared/pinia'
-import AdminLayout from '../views/admin/AdminLayout.vue'
-import AdminDashboardPage from '../views/admin/AdminDashboardPage.vue'
-import AdminListPage from '../views/admin/AdminListPage.vue'
-import TrackManagementPage from '../views/admin/TrackManagementPage.vue'
-import UserManagementPage from '../views/admin/UserManagementPage.vue'
-import CertificateManagementPage from '../views/admin/CertificateManagementPage.vue'
+import AdminLayout from '../features/admin-shell/layouts/AdminLayout.vue'
+import AdminDashboardPage from '../features/admin-shell/pages/AdminDashboardPage.vue'
+import AdminListPage from '../features/admin-shell/pages/AdminListPage.vue'
+import TrackManagementPage from '../features/admin-shell/pages/TrackManagementPage.vue'
+import UserManagementPage from '../features/admin-shell/pages/UserManagementPage.vue'
+import CertificateManagementPage from '../features/admin-shell/pages/CertificateManagementPage.vue'
 
 export const router = createRouter({
   history: createWebHistory(),
   routes: [
-    { path: '/', name: 'home', component: HomePage },
-    { path: '/examples', name: 'examples', component: ExamplesPage },
+    { path: '/', redirect: '/login' },
     { path: '/login', name: 'login', component: LoginPage },
-    { path: '/landing', name: 'landing', component: LandingTestPage },
+    { path: '/landing', name: 'landing', component: LandingPage },
     {
       path: '/admin',
       component: AdminLayout,
@@ -31,22 +28,27 @@ export const router = createRouter({
           component: AdminListPage,
           meta: { title: 'Admin List', requiresSuperAdmin: true },
         },
-        { path: 'tracks', component: TrackManagementPage, meta: { title: 'Track Management' } },
+        { path: 'tracks', component: TrackManagementPage, meta: { title: 'Quản lý Track' } },
         {
           path: 'users/buyers',
           component: UserManagementPage,
           props: { initialRole: 'BUYER' },
-          meta: { title: 'User Management - Buyers' },
+          meta: { title: 'User Management · Buyers' },
         },
         {
           path: 'users/artists',
           component: UserManagementPage,
           props: { initialRole: 'ARTIST' },
-          meta: { title: 'User Management - Artists' },
+          meta: { title: 'User Management · Artists' },
         },
-        { path: 'certificates', component: CertificateManagementPage, meta: { title: 'Certificate Management' } },
+        {
+          path: 'certificates',
+          component: CertificateManagementPage,
+          meta: { title: 'Quản lý Certificate' },
+        },
       ],
     },
+    { path: '/:pathMatch(.*)*', redirect: '/login' },
   ],
 })
 
