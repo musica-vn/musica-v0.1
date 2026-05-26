@@ -16,6 +16,8 @@ const main = async (): Promise<void> => {
     process.env.STORAGE_BUCKET_PREVIEW_AUDIO ?? 'preview-audio';
   process.env.STORAGE_BUCKET_CERTIFICATES =
     process.env.STORAGE_BUCKET_CERTIFICATES ?? 'certificates';
+  process.env.STORAGE_BUCKET_TRACK_THUMBNAILS =
+    process.env.STORAGE_BUCKET_TRACK_THUMBNAILS ?? 'track-thumbnails';
 
   const app = await NestFactory.create(AppModule, { logger: false });
 

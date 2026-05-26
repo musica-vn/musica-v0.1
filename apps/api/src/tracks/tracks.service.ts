@@ -7,6 +7,7 @@ import type { ApiEnvelopePayload } from '../common/api-response.interceptor';
 import {
   AdminCreateTrackRequestDto,
   AdminConfirmTrackAudioUploadRequestDto,
+  AdminConfirmTrackThumbnailUploadRequestDto,
   AdminTracksListQueryDto,
   AdminTracksSummaryQueryDto,
   TRACK_USAGE_RIGHT_VALUES,
@@ -26,6 +27,7 @@ type DbTrackRow = {
   usage_rights: string[];
   original_audio_key: string | null;
   preview_audio_key: string | null;
+  thumbnail_key: string | null;
   created_by: string;
   created_at: string;
   updated_at: string;
@@ -45,12 +47,15 @@ const mapTrackRowToDto = (row: DbTrackRow): TrackDto => ({
   usageRights: (row.usage_rights ?? []).filter(isTrackUsageRight),
   originalAudioKey: row.original_audio_key,
   previewAudioKey: row.preview_audio_key,
+  thumbnailKey: row.thumbnail_key,
   createdBy: row.created_by,
   createdAt: row.created_at,
   updatedAt: row.updated_at,
 });
 
 const normalizeKeyword = (value: string) => value.trim();
+
+const SIGNED_URL_EXPIRES_IN_SECONDS = 60 * 60 * 6;
 
 const parseSort = (
   sort: string | undefined,
@@ -86,7 +91,10 @@ export class TracksService {
     private readonly configService: ConfigService,
   ) {}
 
-  private async allocateNextStorageKey(bucket: string): Promise<string> {
+  private async allocateNextStorageKey(
+    bucket: string,
+    extension: string,
+  ): Promise<string> {
     const { data, error } = await this.supabaseService.client.rpc(
       'allocate_storage_index',
       { p_bucket: bucket },
@@ -103,7 +111,7 @@ export class TracksService {
       );
     }
 
-    return `${data}.mp3`;
+    return `${data}.${extension}`;
   }
 
   async listAdminTracks(
@@ -295,6 +303,14 @@ export class TracksService {
   }
 
   async publishTrack(trackId: string): Promise<TrackDto> {
+    const track = await this.getTrackById(trackId);
+    if (!track.thumbnailKey) {
+      throw new HttpException(
+        'TRACK_THUMBNAIL_REQUIRED',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
     const { data, error } = await this.supabaseService.client
       .from('tracks')
       .update({ status: 'PUBLISHED' })
@@ -347,7 +363,7 @@ export class TracksService {
       );
     }
 
-    const fileKey = await this.allocateNextStorageKey(bucket);
+    const fileKey = await this.allocateNextStorageKey(bucket, 'mp3');
     const { data, error } = await this.supabaseService.client.storage
       .from(bucket)
       .createSignedUploadUrl(fileKey);
@@ -389,7 +405,7 @@ export class TracksService {
       );
     }
 
-    const fileKey = await this.allocateNextStorageKey(bucket);
+    const fileKey = await this.allocateNextStorageKey(bucket, 'mp3');
     const { data, error } = await this.supabaseService.client.storage
       .from(bucket)
       .createSignedUploadUrl(fileKey);
@@ -404,6 +420,49 @@ export class TracksService {
     const { error: updateError } = await this.supabaseService.client
       .from('tracks')
       .update({ preview_audio_key: fileKey })
+      .eq('id', trackId);
+
+    if (updateError) {
+      throw new HttpException(
+        updateError.message,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+
+    return { uploadUrl: data.signedUrl, fileKey };
+  }
+
+  async createThumbnailUploadUrl(
+    trackId: string,
+    extension: string,
+  ): Promise<{ uploadUrl: string; fileKey: string }> {
+    await this.getTrackById(trackId);
+
+    const bucket = this.configService.get<string>(
+      'STORAGE_BUCKET_TRACK_THUMBNAILS',
+    );
+    if (!bucket) {
+      throw new HttpException(
+        'Missing STORAGE_BUCKET_TRACK_THUMBNAILS',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+
+    const fileKey = await this.allocateNextStorageKey(bucket, extension);
+    const { data, error } = await this.supabaseService.client.storage
+      .from(bucket)
+      .createSignedUploadUrl(fileKey);
+
+    if (error || !data) {
+      throw new HttpException(
+        error?.message ?? 'Failed to create signed upload URL',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+
+    const { error: updateError } = await this.supabaseService.client
+      .from('tracks')
+      .update({ thumbnail_key: fileKey })
       .eq('id', trackId);
 
     if (updateError) {
@@ -445,6 +504,62 @@ export class TracksService {
     return mapTrackRowToDto(data);
   }
 
+  async confirmTrackThumbnailUpload(
+    trackId: string,
+    payload: AdminConfirmTrackThumbnailUploadRequestDto,
+  ): Promise<TrackDto> {
+    await this.getTrackById(trackId);
+
+    const { data, error } = await this.supabaseService.client
+      .from('tracks')
+      .update({ thumbnail_key: payload.fileKey })
+      .eq('id', trackId)
+      .select('*')
+      .maybeSingle<DbTrackRow>();
+
+    if (error) {
+      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    if (!data) {
+      throw new HttpException('TRACK_NOT_FOUND', HttpStatus.NOT_FOUND);
+    }
+
+    return mapTrackRowToDto(data);
+  }
+
+  async createThumbnailUrl(trackId: string): Promise<{ thumbnailUrl: string }> {
+    const track = await this.getTrackById(trackId);
+
+    if (!track.thumbnailKey) {
+      throw new HttpException('Thumbnail is not available', HttpStatus.NOT_FOUND);
+    }
+
+    const bucket = this.configService.get<string>('STORAGE_BUCKET_TRACK_THUMBNAILS');
+    if (!bucket) {
+      throw new HttpException(
+        'Missing STORAGE_BUCKET_TRACK_THUMBNAILS',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+
+    const expiresInSeconds = SIGNED_URL_EXPIRES_IN_SECONDS;
+    const { data, error } = await this.supabaseService.client.storage
+      .from(bucket)
+      .createSignedUrl(track.thumbnailKey, expiresInSeconds);
+
+    if (data?.signedUrl) {
+      return { thumbnailUrl: data.signedUrl };
+    }
+
+    const errorMessage = error?.message ?? 'Failed to create signed thumbnail URL';
+    if (errorMessage === 'Object not found') {
+      throw new HttpException('Thumbnail object not found', HttpStatus.NOT_FOUND);
+    }
+
+    throw new HttpException(errorMessage, HttpStatus.INTERNAL_SERVER_ERROR);
+  }
+
   async createPreviewPlaybackUrl(
     trackId: string,
   ): Promise<{ playbackUrl: string }> {
@@ -469,7 +584,7 @@ export class TracksService {
       );
     }
 
-    const expiresInSeconds = 60 * 15;
+    const expiresInSeconds = SIGNED_URL_EXPIRES_IN_SECONDS;
     const trySignedUrl = async (bucket: string) =>
       this.supabaseService.client.storage
         .from(bucket)
@@ -490,6 +605,40 @@ export class TracksService {
       originalResult.error?.message ??
       'Failed to create signed playback URL';
 
+    if (errorMessage === 'Object not found') {
+      throw new HttpException('Audio object not found', HttpStatus.NOT_FOUND);
+    }
+
+    throw new HttpException(errorMessage, HttpStatus.INTERNAL_SERVER_ERROR);
+  }
+
+  async createOriginalPlaybackUrl(
+    trackId: string,
+  ): Promise<{ playbackUrl: string }> {
+    const track = await this.getTrackById(trackId);
+
+    const audioKey = track.originalAudioKey;
+    if (!audioKey) {
+      throw new HttpException('Audio is not available', HttpStatus.NOT_FOUND);
+    }
+
+    const bucket = this.configService.get<string>('STORAGE_BUCKET_ORIGINAL_AUDIO');
+    if (!bucket) {
+      throw new HttpException(
+        'Missing STORAGE_BUCKET_ORIGINAL_AUDIO',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+
+    const { data, error } = await this.supabaseService.client.storage
+      .from(bucket)
+      .createSignedUrl(audioKey, SIGNED_URL_EXPIRES_IN_SECONDS);
+
+    if (data?.signedUrl) {
+      return { playbackUrl: data.signedUrl };
+    }
+
+    const errorMessage = error?.message ?? 'Failed to create signed playback URL';
     if (errorMessage === 'Object not found') {
       throw new HttpException('Audio object not found', HttpStatus.NOT_FOUND);
     }

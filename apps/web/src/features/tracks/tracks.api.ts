@@ -7,7 +7,10 @@ import type {
   AdminTracksSummaryData,
   AdminTracksSummaryQuery,
   ConfirmTrackAudioUploadBody,
+  ConfirmTrackThumbnailUploadBody,
+  CreateThumbnailUploadUrlBody,
   SignedPlaybackUrlData,
+  SignedThumbnailUrlData,
   AdminUpdateTrackBody,
   SignedUploadUrlData,
   Track,
@@ -49,6 +52,22 @@ export const confirmAdminTrackAudioUpload = async (trackId: string, body: Confir
   return apiPost<Track, ConfirmTrackAudioUploadBody>(`/admin/tracks/${trackId}/confirm-audio-upload`, body)
 }
 
+export const getThumbnailUploadUrl = async (trackId: string, body: CreateThumbnailUploadUrlBody) => {
+  return apiPost<SignedUploadUrlData, CreateThumbnailUploadUrlBody>(`/admin/tracks/${trackId}/thumbnail-upload-url`, body)
+}
+
+export const confirmAdminTrackThumbnailUpload = async (trackId: string, body: ConfirmTrackThumbnailUploadBody) => {
+  return apiPost<Track, ConfirmTrackThumbnailUploadBody>(`/admin/tracks/${trackId}/confirm-thumbnail-upload`, body)
+}
+
+export const getTrackThumbnailUrl = async (trackId: string) => {
+  return apiGet<SignedThumbnailUrlData>(`/admin/tracks/${trackId}/thumbnail-url`)
+}
+
 export const getPreviewPlaybackUrl = async (trackId: string) => {
   return apiGet<SignedPlaybackUrlData>(`/admin/tracks/${trackId}/preview-playback-url`)
+}
+
+export const getOriginalPlaybackUrl = async (trackId: string) => {
+  return apiGet<SignedPlaybackUrlData>(`/admin/tracks/${trackId}/original-playback-url`)
 }

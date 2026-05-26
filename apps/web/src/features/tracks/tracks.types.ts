@@ -29,6 +29,7 @@ export type Track = {
   usageRights: TrackUsageRight[]
   originalAudioKey: string | null
   previewAudioKey: string | null
+  thumbnailKey: string | null
   createdBy: string
   createdAt: string
   updatedAt: string
@@ -83,4 +84,18 @@ export type SignedPlaybackUrlData = {
 export type ConfirmTrackAudioUploadBody = {
   mode: 'original' | 'preview'
   fileKey: string
+}
+
+export type TrackThumbnailExtension = 'png' | 'jpg' | 'jpeg' | 'webp'
+
+export type CreateThumbnailUploadUrlBody = {
+  extension: TrackThumbnailExtension
+}
+
+export type ConfirmTrackThumbnailUploadBody = {
+  fileKey: string
+}
+
+export type SignedThumbnailUrlData = {
+  thumbnailUrl: string
 }

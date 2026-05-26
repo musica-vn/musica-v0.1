@@ -204,6 +204,24 @@ export class AdminConfirmTrackAudioUploadRequestDto {
   fileKey: string;
 }
 
+export class AdminCreateTrackThumbnailUploadUrlRequestDto {
+  @ApiProperty({ enum: ['png', 'jpg', 'jpeg', 'webp'] })
+  @IsIn(['png', 'jpg', 'jpeg', 'webp'])
+  extension: 'png' | 'jpg' | 'jpeg' | 'webp';
+}
+
+export class AdminConfirmTrackThumbnailUploadRequestDto {
+  @ApiProperty({ example: '123.png' })
+  @IsString()
+  @Matches(/^\d+\.(png|jpg|jpeg|webp)$/i)
+  fileKey: string;
+}
+
+export class AdminTrackThumbnailUrlResponseDataDto {
+  @ApiProperty()
+  thumbnailUrl: string;
+}
+
 export class AdminTrackPlaybackUrlResponseDataDto {
   @ApiProperty()
   playbackUrl: string;

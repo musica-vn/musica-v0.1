@@ -5,13 +5,13 @@ import TrackWavePreview from './TrackWavePreview.vue'
 const props = defineProps<{
   track: Track
   audioUrl: string | null
+  thumbnailUrl?: string | null
   durationLabel: string
   isBusy?: boolean
 }>()
 
 const emit = defineEmits<{
   (event: 'detail', track: Track): void
-  (event: 'edit', track: Track): void
   (event: 'upload-original', track: Track): void
   (event: 'upload-preview', track: Track): void
   (event: 'toggle-publish', track: Track): void
@@ -29,7 +29,13 @@ const emit = defineEmits<{
       <div
         class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 to-fuchsia-500 text-lg font-semibold text-white shadow-lg shadow-violet-500/20"
       >
-        {{ props.track.title.slice(0, 1).toUpperCase() }}
+        <img
+          v-if="props.thumbnailUrl"
+          :src="props.thumbnailUrl"
+          alt=""
+          class="h-full w-full rounded-2xl object-cover"
+        />
+        <span v-else>{{ props.track.title.slice(0, 1).toUpperCase() }}</span>
       </div>
 
       <div class="min-w-0 flex-1 space-y-3">
@@ -78,14 +84,6 @@ const emit = defineEmits<{
           @click="emit('detail', props.track)"
         >
           <i class="pi pi-eye" />
-        </button>
-        <button
-          type="button"
-          class="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 transition hover:border-violet-300 hover:text-violet-600 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
-          :disabled="props.isBusy"
-          @click="emit('edit', props.track)"
-        >
-          <i class="pi pi-pencil" />
         </button>
         <button
           type="button"
