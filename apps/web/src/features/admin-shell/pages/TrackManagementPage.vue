@@ -1,16 +1,21 @@
 <script setup lang="ts">
 import Dialog from 'primevue/dialog'
 import Message from 'primevue/message'
+import { useConfirm } from 'primevue/useconfirm'
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { ApiClientError } from '../../../shared/api/http'
-import type { Track, TrackSortValue, TrackStatus, TrackUsageRight } from '../../tracks/tracks.types'
+import type { Track, TrackSortValue, TrackStatus, TrackUsageRight, TrackThumbnailExtension } from '../../tracks/tracks.types'
 import {
   confirmAdminTrackAudioUpload,
+  confirmAdminTrackThumbnailUpload,
   createAdminTrack,
   getAdminTracksSummary,
+  getThumbnailUploadUrl,
   getOriginalUploadUrl,
+  getOriginalPlaybackUrl,
   getPreviewPlaybackUrl,
   getPreviewUploadUrl,
+  getTrackThumbnailUrl,
   hideAdminTrack,
   listAdminTracks,
   publishAdminTrack,
@@ -41,8 +46,6 @@ const primaryButtonClass =
   'inline-flex items-center justify-center rounded-2xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-600 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-violet-500 dark:hover:bg-violet-400'
 const secondaryButtonClass =
   'inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-violet-300 hover:text-violet-600 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-violet-500 dark:hover:text-violet-300'
-const iconButtonClass =
-  'inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 transition hover:border-violet-300 hover:text-violet-600 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300'
 const summaryToneClassMap = {
   primary: 'from-violet-500/15 to-fuchsia-500/10 border-violet-200/60 dark:border-violet-500/20',
   success: 'from-emerald-500/15 to-teal-500/10 border-emerald-200/60 dark:border-emerald-500/20',
@@ -61,6 +64,8 @@ const usageRightLabelMap: Record<TrackUsageRight, string> = {
   DERIVATIVE_WORK_RIGHT: 'Quyền làm tác phẩm phái sinh',
   DISTRIBUTION_RIGHT: 'Quyền phân phối bản sao',
 }
+
+const confirm = useConfirm()
 
 const isLoading = ref(false)
 const errorMessage = ref<string | null>(null)
@@ -137,9 +142,13 @@ const createOriginalFile = ref<File | null>(null)
 const createPreviewFile = ref<File | null>(null)
 const editOriginalFile = ref<File | null>(null)
 const editPreviewFile = ref<File | null>(null)
+const createThumbnailFile = ref<File | null>(null)
+const editThumbnailFile = ref<File | null>(null)
 const createOriginalAudioUrl = ref<string | null>(null)
 const createPreviewAudioUrl = ref<string | null>(null)
 const createPreviewDurationSeconds = ref<number | null>(null)
+const createThumbnailUrl = ref<string | null>(null)
+const editThumbnailUrl = ref<string | null>(null)
 
 const uploadMode = ref<TrackAudioMode>('original')
 const uploadFile = ref<File | null>(null)
@@ -148,6 +157,10 @@ const uploadResult = ref<{ fileKey: string; uploadUrl: string } | null>(null)
 const uploadError = ref<string | null>(null)
 const previewAudioUrls = ref<Record<string, string>>({})
 const previewAudioLoading = ref<Record<string, boolean>>({})
+const originalAudioUrls = ref<Record<string, string>>({})
+const originalAudioLoading = ref<Record<string, boolean>>({})
+const thumbnailUrls = ref<Record<string, string>>({})
+const thumbnailLoading = ref<Record<string, boolean>>({})
 
 const totalPages = computed(() => Math.max(1, Math.ceil(totalItems.value / pagination.pageSize)))
 const pageStart = computed(() => (totalItems.value === 0 ? 0 : (pagination.page - 1) * pagination.pageSize + 1))
@@ -279,6 +292,10 @@ const summaryCardToneClass = (tone: keyof typeof summaryToneClassMap) => summary
 
 const setError = (error: unknown) => {
   if (error instanceof ApiClientError) {
+    if (error.message === 'TRACK_THUMBNAIL_REQUIRED') {
+      errorMessage.value = 'Cần upload thumbnail trước khi phát hành track'
+      return
+    }
     errorMessage.value = `${error.code}: ${error.message}`
     return
   }
@@ -309,16 +326,6 @@ const setCreateAudioUrl = (mode: TrackAudioMode, file: File | null) => {
   createPreviewAudioUrl.value = file ? URL.createObjectURL(file) : null
 }
 
-const copyToClipboard = async (value: string | null, label: string) => {
-  if (!value) return
-  try {
-    await navigator.clipboard.writeText(value)
-    successMessage.value = `Đã sao chép ${label.toLowerCase()}`
-  } catch (error) {
-    setError(error instanceof Error ? error : new Error('Không thể sao chép'))
-  }
-}
-
 const ensurePreviewAudioUrl = async (track: Track) => {
   if (!track.previewAudioKey) return null
   if (previewAudioUrls.value[track.id]) return previewAudioUrls.value[track.id]
@@ -340,6 +347,27 @@ const ensurePreviewAudioUrl = async (track: Track) => {
   }
 }
 
+const ensureOriginalAudioUrl = async (track: Track) => {
+  if (!track.originalAudioKey) return null
+  if (originalAudioUrls.value[track.id]) return originalAudioUrls.value[track.id]
+  if (originalAudioLoading.value[track.id]) return null
+
+  originalAudioLoading.value = { ...originalAudioLoading.value, [track.id]: true }
+  try {
+    const { data } = await getOriginalPlaybackUrl(track.id)
+    originalAudioUrls.value = {
+      ...originalAudioUrls.value,
+      [track.id]: data.playbackUrl,
+    }
+    return data.playbackUrl
+  } catch (error) {
+    setError(error)
+    return null
+  } finally {
+    originalAudioLoading.value = { ...originalAudioLoading.value, [track.id]: false }
+  }
+}
+
 const prewarmPreviewAudioUrls = async (tracks: Track[]) => {
   const candidates = tracks.filter((track) => track.previewAudioKey)
   const concurrency = 2
@@ -356,6 +384,32 @@ const prewarmPreviewAudioUrls = async (tracks: Track[]) => {
   await Promise.all(Array.from({ length: Math.min(concurrency, candidates.length) }, () => worker()))
 }
 
+const ensureThumbnailUrl = async (track: Track) => {
+  if (!track.thumbnailKey) return null
+  if (thumbnailUrls.value[track.id]) return thumbnailUrls.value[track.id]
+  if (thumbnailLoading.value[track.id]) return null
+
+  thumbnailLoading.value = { ...thumbnailLoading.value, [track.id]: true }
+  try {
+    const { data } = await getTrackThumbnailUrl(track.id)
+    thumbnailUrls.value = {
+      ...thumbnailUrls.value,
+      [track.id]: data.thumbnailUrl,
+    }
+    return data.thumbnailUrl
+  } catch (error) {
+    setError(error)
+    return null
+  } finally {
+    thumbnailLoading.value = { ...thumbnailLoading.value, [track.id]: false }
+  }
+}
+
+const preloadTrackAssets = (track: Track) => {
+  void ensurePreviewAudioUrl(track)
+  void ensureThumbnailUrl(track)
+}
+
 const resetCreateForm = () => {
   createForm.title = ''
   createForm.artistId = ''
@@ -365,11 +419,14 @@ const resetCreateForm = () => {
   createForm.usageRights = []
   revokeObjectUrl(createOriginalAudioUrl.value)
   revokeObjectUrl(createPreviewAudioUrl.value)
+  revokeObjectUrl(createThumbnailUrl.value)
   createOriginalAudioUrl.value = null
   createPreviewAudioUrl.value = null
   createPreviewDurationSeconds.value = null
   createOriginalFile.value = null
   createPreviewFile.value = null
+  createThumbnailFile.value = null
+  createThumbnailUrl.value = null
 }
 
 const resetEditForm = (track: Track) => {
@@ -381,6 +438,9 @@ const resetEditForm = (track: Track) => {
   editForm.usageRights = [...(track.usageRights ?? [])]
   editOriginalFile.value = null
   editPreviewFile.value = null
+  revokeObjectUrl(editThumbnailUrl.value)
+  editThumbnailFile.value = null
+  editThumbnailUrl.value = null
 }
 
 const extractEventFile = (event: Event) => {
@@ -394,6 +454,30 @@ const ensureAudioFile = (file: File, label: string) => {
 
   if (isAudioMime || isMp3Name) return
   throw new Error(`${label} phải là file audio/mp3 hợp lệ`)
+}
+
+const getFileExtension = (file: File): string | null => {
+  const parts = file.name.split('.')
+  if (parts.length < 2) return null
+  const ext = parts.at(-1)?.trim().toLowerCase()
+  return ext && ext.length > 0 ? ext : null
+}
+
+const ensureThumbnailFile = (file: File, label: string): TrackThumbnailExtension => {
+  const extension = getFileExtension(file)
+  const allowed: TrackThumbnailExtension[] = ['png', 'jpg', 'jpeg', 'webp']
+  const isAllowed = !!extension && allowed.includes(extension as TrackThumbnailExtension)
+  const isImageMime = file.type.startsWith('image/')
+
+  if (isAllowed || isImageMime) {
+    const normalized = (extension ?? (file.type.split('/')[1] ?? '')).toLowerCase()
+    if (allowed.includes(normalized as TrackThumbnailExtension)) {
+      return normalized as TrackThumbnailExtension
+    }
+    if (allowed.includes('jpg') && normalized === 'jpeg') return 'jpeg'
+  }
+
+  throw new Error(`${label} phải là file ảnh hợp lệ (png/jpg/jpeg/webp)`)
 }
 
 const readAudioDurationFromFile = async (file: File): Promise<number> => {
@@ -426,16 +510,74 @@ const toggleUsageRight = (form: TrackForm, value: TrackUsageRight) => {
 
 const validateTrackForm = (
   form: TrackForm,
-  options: { requireOriginalFile: boolean; originalFile: File | null },
+  options: {
+    requireOriginalFile: boolean
+    originalFile: File | null
+    requireThumbnailFile: boolean
+    thumbnailFile: File | null
+    existingThumbnailKey?: string | null
+  },
 ) => {
   if (form.title.trim().length === 0) return 'Tên track là bắt buộc'
   if (form.artistId.trim().length === 0) return 'Artist ID là bắt buộc'
   if (form.usageRights.length === 0) return 'Cần chọn ít nhất 1 quyền sử dụng'
+  if (options.requireThumbnailFile && !options.thumbnailFile) return 'Cần chọn thumbnail cho track'
+  if (
+    !options.requireThumbnailFile &&
+    !options.thumbnailFile &&
+    (!options.existingThumbnailKey || options.existingThumbnailKey.trim().length === 0)
+  ) {
+    return 'Cần có thumbnail trước khi lưu track'
+  }
   if (options.requireOriginalFile && !options.originalFile) return 'Cần chọn file MP3 gốc khi tạo track'
   if (options.requireOriginalFile && form.duration.trim().length === 0) {
     return 'Không đọc được thời lượng từ file audio gốc'
   }
   return null
+}
+
+const setCreateThumbnailPreviewUrl = (file: File | null) => {
+  revokeObjectUrl(createThumbnailUrl.value)
+  createThumbnailUrl.value = file ? URL.createObjectURL(file) : null
+}
+
+const setEditThumbnailPreviewUrl = (file: File | null) => {
+  revokeObjectUrl(editThumbnailUrl.value)
+  editThumbnailUrl.value = file ? URL.createObjectURL(file) : null
+}
+
+const handleCreateThumbnailFileChange = (event: Event) => {
+  clearMessages()
+  const file = extractEventFile(event)
+  createThumbnailFile.value = file
+  setCreateThumbnailPreviewUrl(file)
+
+  if (!file) return
+
+  try {
+    ensureThumbnailFile(file, 'Thumbnail')
+  } catch (error) {
+    createThumbnailFile.value = null
+    setCreateThumbnailPreviewUrl(null)
+    setError(error)
+  }
+}
+
+const handleEditThumbnailFileChange = (event: Event) => {
+  clearMessages()
+  const file = extractEventFile(event)
+  editThumbnailFile.value = file
+  setEditThumbnailPreviewUrl(file)
+
+  if (!file) return
+
+  try {
+    ensureThumbnailFile(file, 'Thumbnail')
+  } catch (error) {
+    editThumbnailFile.value = null
+    setEditThumbnailPreviewUrl(null)
+    setError(error)
+  }
 }
 
 const handleCreateAudioFileChange = async (mode: TrackAudioMode, event: Event) => {
@@ -525,8 +667,13 @@ const fetchTracks = async () => {
     })
 
     rows.value = data.items
+    if (selectedTrack.value) {
+      const refreshedSelected = data.items.find((item) => item.id === selectedTrack.value?.id)
+      if (refreshedSelected) selectedTrack.value = refreshedSelected
+    }
     totalItems.value = meta.pagination.totalItems
     void prewarmPreviewAudioUrls(data.items.slice(0, 6))
+    void Promise.all(data.items.slice(0, 6).map((track) => ensureThumbnailUrl(track)))
   } catch (error) {
     setError(error)
   } finally {
@@ -569,6 +716,7 @@ const openEditDialog = (track: Track) => {
   detailDialogVisible.value = false
   resetEditForm(track)
   editDialogVisible.value = true
+  void ensureThumbnailUrl(track)
 }
 
 const openDetailDialog = (track: Track) => {
@@ -577,14 +725,22 @@ const openDetailDialog = (track: Track) => {
   editDialogVisible.value = false
   uploadDialogVisible.value = false
   detailDialogVisible.value = true
+  const nextPreviewUrls = { ...previewAudioUrls.value }
+  const nextOriginalUrls = { ...originalAudioUrls.value }
+  delete nextPreviewUrls[track.id]
+  delete nextOriginalUrls[track.id]
+  previewAudioUrls.value = nextPreviewUrls
+  originalAudioUrls.value = nextOriginalUrls
   void ensurePreviewAudioUrl(track)
+  void ensureOriginalAudioUrl(track)
+  void ensureThumbnailUrl(track)
 }
 
 const uploadToSignedUrl = async (url: string, file: File) => {
   const response = await fetch(url, {
     method: 'PUT',
     headers: {
-      'Content-Type': file.type || 'audio/mpeg',
+      'Content-Type': file.type || 'application/octet-stream',
     },
     body: file,
   })
@@ -608,7 +764,29 @@ const uploadTrackAudioFile = async (trackId: string, file: File, mode: TrackAudi
   if (selectedTrack.value?.id === trackId) {
     selectedTrack.value = confirmed.data
   }
-  previewAudioUrls.value = {}
+  const nextPreviewUrls = { ...previewAudioUrls.value }
+  const nextOriginalUrls = { ...originalAudioUrls.value }
+  delete nextPreviewUrls[trackId]
+  delete nextOriginalUrls[trackId]
+  previewAudioUrls.value = nextPreviewUrls
+  originalAudioUrls.value = nextOriginalUrls
+
+  return data
+}
+
+const uploadTrackThumbnailFile = async (trackId: string, file: File) => {
+  const extension = ensureThumbnailFile(file, 'Thumbnail')
+  const { data } = await getThumbnailUploadUrl(trackId, { extension })
+
+  await uploadToSignedUrl(data.uploadUrl, file)
+  const confirmed = await confirmAdminTrackThumbnailUpload(trackId, { fileKey: data.fileKey })
+  rows.value = rows.value.map((item) => (item.id === trackId ? confirmed.data : item))
+  if (selectedTrack.value?.id === trackId) {
+    selectedTrack.value = confirmed.data
+  }
+  const next = { ...thumbnailUrls.value }
+  delete next[trackId]
+  thumbnailUrls.value = next
 
   return data
 }
@@ -618,6 +796,8 @@ const submitCreate = async () => {
   const validationError = validateTrackForm(createForm, {
     requireOriginalFile: true,
     originalFile: createOriginalFile.value,
+    requireThumbnailFile: true,
+    thumbnailFile: createThumbnailFile.value,
   })
 
   if (validationError) {
@@ -639,6 +819,7 @@ const submitCreate = async () => {
     })
 
     createdTrack = data
+    await uploadTrackThumbnailFile(data.id, createThumbnailFile.value as File)
     await uploadTrackAudioFile(data.id, createOriginalFile.value as File, 'original')
 
     if (createPreviewFile.value) {
@@ -653,7 +834,7 @@ const submitCreate = async () => {
     if (createdTrack) {
       setError(
         new Error(
-          `Track đã được tạo nhưng upload audio thất bại. ${error instanceof Error ? error.message : String(error)}`,
+          `Track đã được tạo nhưng upload file thất bại. ${error instanceof Error ? error.message : String(error)}`,
         ),
       )
       await refreshTrackDashboard()
@@ -672,6 +853,9 @@ const submitEdit = async () => {
   const validationError = validateTrackForm(editForm, {
     requireOriginalFile: false,
     originalFile: editOriginalFile.value,
+    requireThumbnailFile: false,
+    thumbnailFile: editThumbnailFile.value,
+    existingThumbnailKey: selectedTrack.value.thumbnailKey,
   })
 
   if (validationError) {
@@ -691,6 +875,10 @@ const submitEdit = async () => {
       usageRights: [...editForm.usageRights],
     })
 
+    if (editThumbnailFile.value) {
+      await uploadTrackThumbnailFile(selectedTrack.value.id, editThumbnailFile.value)
+    }
+
     if (editOriginalFile.value) {
       await uploadTrackAudioFile(selectedTrack.value.id, editOriginalFile.value, 'original')
     }
@@ -709,15 +897,23 @@ const submitEdit = async () => {
   }
 }
 
-const togglePublish = async (track: Track) => {
+const togglePublishConfirmed = async (track: Track) => {
   clearMessages()
   isLoading.value = true
   try {
     if (track.status === 'PUBLISHED') {
-      await hideAdminTrack(track.id)
+      const { data } = await hideAdminTrack(track.id)
+      rows.value = rows.value.map((item) => (item.id === track.id ? data : item))
+      if (selectedTrack.value?.id === track.id) {
+        selectedTrack.value = data
+      }
       successMessage.value = 'Đã ẩn track'
     } else {
-      await publishAdminTrack(track.id)
+      const { data } = await publishAdminTrack(track.id)
+      rows.value = rows.value.map((item) => (item.id === track.id ? data : item))
+      if (selectedTrack.value?.id === track.id) {
+        selectedTrack.value = data
+      }
       successMessage.value = 'Đã phát hành track'
     }
     await refreshTrackDashboard()
@@ -726,6 +922,25 @@ const togglePublish = async (track: Track) => {
   } finally {
     isLoading.value = false
   }
+}
+
+const confirmTogglePublish = (track: Track) => {
+  const isPublished = track.status === 'PUBLISHED'
+  if (!isPublished && !track.thumbnailKey) {
+    errorMessage.value = 'Cần upload thumbnail trước khi phát hành track'
+    openEditDialog(track)
+    return
+  }
+  confirm.require({
+    header: isPublished ? 'Xác nhận ẩn track' : 'Xác nhận phát hành track',
+    message: isPublished
+      ? `Bạn chắc chắn muốn ẩn track "${track.title}"?`
+      : `Bạn chắc chắn muốn phát hành track "${track.title}"?`,
+    icon: 'pi pi-exclamation-triangle',
+    acceptLabel: isPublished ? 'Ẩn track' : 'Phát hành',
+    rejectLabel: 'Huỷ',
+    accept: () => void togglePublishConfirmed(track),
+  })
 }
 
 const openUploadDialog = (track: Track, mode: TrackAudioMode) => {
@@ -814,6 +1029,8 @@ watch(
 onBeforeUnmount(() => {
   revokeObjectUrl(createOriginalAudioUrl.value)
   revokeObjectUrl(createPreviewAudioUrl.value)
+  revokeObjectUrl(createThumbnailUrl.value)
+  revokeObjectUrl(editThumbnailUrl.value)
 })
 </script>
 
@@ -881,14 +1098,14 @@ onBeforeUnmount(() => {
           :key="track.id"
           :track="track"
           :audio-url="previewAudioUrls[track.id] ?? null"
+          :thumbnail-url="thumbnailUrls[track.id] ?? null"
           :duration-label="formatDuration(track.duration)"
           :is-busy="isLoading"
           @detail="openDetailDialog"
-          @edit="openEditDialog"
           @upload-original="(track) => openUploadDialog(track, 'original')"
           @upload-preview="(track) => openUploadDialog(track, 'preview')"
-          @toggle-publish="togglePublish"
-          @preload-preview="ensurePreviewAudioUrl"
+          @toggle-publish="confirmTogglePublish"
+          @preload-preview="preloadTrackAssets"
         />
 
         <div
@@ -986,6 +1203,27 @@ onBeforeUnmount(() => {
 
         <section class="space-y-4 rounded-[28px] border border-slate-200/80 bg-slate-50/80 p-5 dark:border-slate-800 dark:bg-slate-900/50">
           <div class="flex items-center gap-3 text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+            <i class="pi pi-image text-violet-500" />
+            Thumbnail
+          </div>
+
+          <article class="rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/70">
+            <div class="flex items-center justify-between gap-3">
+              <div class="text-sm font-semibold text-slate-900 dark:text-white">Ảnh đại diện</div>
+              <span v-if="createThumbnailFile" class="rounded-full bg-violet-100 px-3 py-1 text-xs font-medium text-violet-700 dark:bg-violet-500/20 dark:text-violet-200">
+                {{ createThumbnailFile.name }}
+              </span>
+            </div>
+            <div class="mt-4">
+              <input type="file" accept="image/*,.png,.jpg,.jpeg,.webp" :class="fileInputClass" @change="handleCreateThumbnailFileChange" />
+            </div>
+            <div class="mt-4 overflow-hidden rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 p-4 dark:border-slate-700 dark:bg-slate-900/60">
+              <img v-if="createThumbnailUrl" :src="createThumbnailUrl" alt="" class="h-40 w-full rounded-2xl object-cover" />
+              <div v-else class="flex h-40 items-center justify-center text-sm text-slate-500 dark:text-slate-400">Chưa chọn thumbnail</div>
+            </div>
+          </article>
+
+          <div class="flex items-center gap-3 pt-2 text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
             <i class="pi pi-volume-up text-violet-500" />
             Nghe thử audio
           </div>
@@ -1056,6 +1294,31 @@ onBeforeUnmount(() => {
         </div>
 
         <label class="block space-y-2">
+          <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Thumbnail</span>
+          <input type="file" accept="image/*,.png,.jpg,.jpeg,.webp" :class="fileInputClass" @change="handleEditThumbnailFileChange" />
+          <div class="flex flex-wrap items-center gap-2">
+            <span v-if="selectedTrack?.thumbnailKey" class="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+              Đang có thumbnail
+            </span>
+            <span v-else class="rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-700 dark:bg-amber-500/20 dark:text-amber-200">
+              Thiếu thumbnail
+            </span>
+            <span v-if="editThumbnailFile" class="rounded-full bg-violet-100 px-3 py-1 text-xs font-medium text-violet-700 dark:bg-violet-500/20 dark:text-violet-200">
+              {{ editThumbnailFile.name }}
+            </span>
+          </div>
+          <div class="overflow-hidden rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 p-4 dark:border-slate-700 dark:bg-slate-900/60">
+            <img
+              v-if="editThumbnailUrl || (selectedTrack && thumbnailUrls[selectedTrack.id])"
+              :src="editThumbnailUrl || (selectedTrack ? thumbnailUrls[selectedTrack.id] : '')"
+              alt=""
+              class="h-40 w-full rounded-2xl object-cover"
+            />
+            <div v-else class="flex h-40 items-center justify-center text-sm text-slate-500 dark:text-slate-400">Chưa có thumbnail</div>
+          </div>
+        </label>
+
+        <label class="block space-y-2">
           <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Thay MP3 gốc</span>
           <input type="file" accept=".mp3,audio/*" :class="fileInputClass" @change="(event) => void handleEditAudioFileChange('original', event)" />
           <span class="text-sm text-slate-500 dark:text-slate-400">Nếu chọn file mới, duration sẽ cập nhật theo audio này.</span>
@@ -1105,8 +1368,14 @@ onBeforeUnmount(() => {
       <template #header>
         <div v-if="selectedTrack" class="flex w-full flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div class="flex items-center gap-4">
-            <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 to-fuchsia-500 text-lg font-semibold text-white shadow-lg shadow-violet-500/20">
-              {{ selectedTrack.title.slice(0, 1).toUpperCase() }}
+            <div class="flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-violet-600 to-fuchsia-500 text-lg font-semibold text-white shadow-lg shadow-violet-500/20">
+              <img
+                v-if="thumbnailUrls[selectedTrack.id]"
+                :src="thumbnailUrls[selectedTrack.id]"
+                alt=""
+                class="h-full w-full object-cover"
+              />
+              <span v-else>{{ selectedTrack.title.slice(0, 1).toUpperCase() }}</span>
             </div>
             <div>
               <div class="text-xl font-semibold text-slate-950 dark:text-white">{{ selectedTrack.title }}</div>
@@ -1124,7 +1393,7 @@ onBeforeUnmount(() => {
             >
               {{ formatTrackStatusLabel(selectedTrack.status) }}
             </span>
-            <button type="button" :class="secondaryButtonClass" :disabled="isLoading" @click="togglePublish(selectedTrack)">
+            <button type="button" :class="secondaryButtonClass" :disabled="isLoading" @click="confirmTogglePublish(selectedTrack)">
               {{ selectedTrack.status === 'PUBLISHED' ? 'Ẩn track' : 'Phát hành track' }}
             </button>
           </div>
@@ -1132,8 +1401,16 @@ onBeforeUnmount(() => {
       </template>
 
       <div v-if="selectedTrack" class="space-y-4">
+        <div class="space-y-3">
+          <Message v-if="errorMessage" severity="error">{{ errorMessage }}</Message>
+          <Message v-if="successMessage" severity="success">{{ successMessage }}</Message>
+        </div>
+
         <section class="rounded-[28px] border border-slate-200/80 bg-slate-50/80 p-5 dark:border-slate-800 dark:bg-slate-900/50">
-          <TrackWavePreview :audio-url="previewAudioUrls[selectedTrack.id] ?? null" :disabled="!selectedTrack.previewAudioKey" />
+          <TrackWavePreview
+            :audio-url="originalAudioUrls[selectedTrack.id] ?? null"
+            :disabled="!selectedTrack.originalAudioKey"
+          />
           <div class="mt-3 flex flex-wrap gap-2 text-sm text-slate-500 dark:text-slate-400">
             <span>{{ formatDuration(selectedTrack.duration) }}</span>
             <span>·</span>
@@ -1180,29 +1457,22 @@ onBeforeUnmount(() => {
 
           <article class="rounded-[28px] border border-slate-200/80 bg-white/80 p-5 dark:border-slate-800 dark:bg-slate-950/60">
             <div class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Tài nguyên audio</div>
-            <div class="mt-4 flex flex-wrap gap-2">
-              <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
-                {{ selectedTrack.originalAudioKey ? 'MP3 gốc sẵn sàng' : 'Thiếu MP3 gốc' }}
-              </span>
-              <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
-                {{ selectedTrack.previewAudioKey ? 'MP3 nghe thử sẵn sàng' : 'Thiếu MP3 nghe thử' }}
-              </span>
-            </div>
-
-            <div class="mt-4 space-y-3 text-sm text-slate-600 dark:text-slate-300">
-              <div class="flex items-center gap-2">
-                <span class="font-semibold text-slate-900 dark:text-white">Key audio gốc:</span>
-                <span class="min-w-0 flex-1 truncate font-mono">{{ selectedTrack.originalAudioKey || 'Chưa có' }}</span>
-                <button v-if="selectedTrack.originalAudioKey" type="button" :class="iconButtonClass" @click="() => void copyToClipboard(selectedTrack?.originalAudioKey ?? null, 'key audio gốc')">
-                  <i class="pi pi-copy" />
-                </button>
+            <div class="mt-4 space-y-4">
+              <div class="space-y-2">
+                <div class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Audio gốc</div>
+                <TrackWavePreview
+                  :audio-url="originalAudioUrls[selectedTrack.id] ?? null"
+                  :disabled="!selectedTrack.originalAudioKey"
+                  :right-label="formatDuration(selectedTrack.duration)"
+                />
               </div>
-              <div class="flex items-center gap-2">
-                <span class="font-semibold text-slate-900 dark:text-white">Key audio nghe thử:</span>
-                <span class="min-w-0 flex-1 truncate font-mono">{{ selectedTrack.previewAudioKey || 'Chưa có' }}</span>
-                <button v-if="selectedTrack.previewAudioKey" type="button" :class="iconButtonClass" @click="() => void copyToClipboard(selectedTrack?.previewAudioKey ?? null, 'key audio nghe thử')">
-                  <i class="pi pi-copy" />
-                </button>
+
+              <div class="space-y-2">
+                <div class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Audio nghe thử</div>
+                <TrackWavePreview
+                  :audio-url="previewAudioUrls[selectedTrack.id] ?? null"
+                  :disabled="!selectedTrack.previewAudioKey"
+                />
               </div>
             </div>
           </article>

@@ -32,6 +32,9 @@ export class TrackDto {
   @ApiProperty({ required: false, nullable: true })
   previewAudioKey: string | null;
 
+  @ApiProperty({ required: false, nullable: true })
+  thumbnailKey: string | null;
+
   @ApiProperty()
   createdBy: string;
 

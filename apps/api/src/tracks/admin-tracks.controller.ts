@@ -24,6 +24,8 @@ import type { AuthenticatedRequest } from '../auth/auth.types';
 import {
   AdminCreateTrackRequestDto,
   AdminConfirmTrackAudioUploadRequestDto,
+  AdminConfirmTrackThumbnailUploadRequestDto,
+  AdminCreateTrackThumbnailUploadUrlRequestDto,
   AdminTracksListQueryDto,
   AdminTracksSummaryQueryDto,
   AdminUpdateTrackRequestDto,
@@ -32,6 +34,7 @@ import { TracksService } from './tracks.service';
 import {
   AdminTrackResponseDto,
   AdminTrackPlaybackUrlResponseDto,
+  AdminTrackThumbnailUrlResponseDto,
   AdminTracksListResponseDto,
   AdminTracksSummaryResponseDto,
   AdminTrackUploadUrlResponseDto,
@@ -101,6 +104,16 @@ export class AdminTracksController {
     return this.tracksService.createPreviewUploadUrl(trackId);
   }
 
+  @Post(':trackId/thumbnail-upload-url')
+  @ApiOperation({ summary: 'Get signed upload URL for track thumbnail (admin)' })
+  @ApiOkResponse({ type: AdminTrackUploadUrlResponseDto })
+  async thumbnailUploadUrl(
+    @Param('trackId', ParseUUIDPipe) trackId: string,
+    @Body() body: AdminCreateTrackThumbnailUploadUrlRequestDto,
+  ) {
+    return this.tracksService.createThumbnailUploadUrl(trackId, body.extension);
+  }
+
   @Post(':trackId/confirm-audio-upload')
   @ApiOperation({ summary: 'Confirm uploaded audio key (admin)' })
   @ApiOkResponse({ type: AdminTrackResponseDto })
@@ -111,11 +124,37 @@ export class AdminTracksController {
     return this.tracksService.confirmTrackAudioUpload(trackId, body);
   }
 
+  @Post(':trackId/confirm-thumbnail-upload')
+  @ApiOperation({ summary: 'Confirm uploaded thumbnail key (admin)' })
+  @ApiOkResponse({ type: AdminTrackResponseDto })
+  async confirmThumbnailUpload(
+    @Param('trackId', ParseUUIDPipe) trackId: string,
+    @Body() body: AdminConfirmTrackThumbnailUploadRequestDto,
+  ) {
+    return this.tracksService.confirmTrackThumbnailUpload(trackId, body);
+  }
+
+  @Get(':trackId/thumbnail-url')
+  @ApiOperation({ summary: 'Get signed URL for track thumbnail (admin)' })
+  @ApiOkResponse({ type: AdminTrackThumbnailUrlResponseDto })
+  async thumbnailUrl(@Param('trackId', ParseUUIDPipe) trackId: string) {
+    return this.tracksService.createThumbnailUrl(trackId);
+  }
+
   @Get(':trackId/preview-playback-url')
   @ApiOperation({ summary: 'Get signed playback URL for preview audio (admin)' })
   @ApiOkResponse({ type: AdminTrackPlaybackUrlResponseDto })
   async previewPlaybackUrl(@Param('trackId', ParseUUIDPipe) trackId: string) {
     return this.tracksService.createPreviewPlaybackUrl(trackId);
+  }
+
+  @Get(':trackId/original-playback-url')
+  @ApiOperation({
+    summary: 'Get signed playback URL for original audio (admin)',
+  })
+  @ApiOkResponse({ type: AdminTrackPlaybackUrlResponseDto })
+  async originalPlaybackUrl(@Param('trackId', ParseUUIDPipe) trackId: string) {
+    return this.tracksService.createOriginalPlaybackUrl(trackId);
   }
 
   @Patch(':trackId/publish')
