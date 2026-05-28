@@ -136,7 +136,7 @@ Tất cả APIs trong MVP cần tuân theo các nguyên tắc sau:
 
 ## 6. Nhóm Track Ingestion
 
-## 6.1 `GET /admin/tracks`
+## 6.1 `GET /admin/products`
 
 - Actor: `ADMIN`
 - Mục tiêu: list tracks để quản trị
@@ -148,7 +148,7 @@ Tất cả APIs trong MVP cần tuân theo các nguyên tắc sau:
   - `page`
   - `pageSize`
 
-## 6.2 `POST /admin/tracks`
+## 6.2 `POST /admin/products`
 
 - Actor: `ADMIN`
 - Mục tiêu: tạo track metadata
@@ -160,17 +160,17 @@ Tất cả APIs trong MVP cần tuân theo các nguyên tắc sau:
   - `duration`
   - `usageRights`
 
-## 6.3 `GET /admin/tracks/:trackId`
+## 6.3 `GET /admin/products/:trackId`
 
 - Actor: `ADMIN`
 - Mục tiêu: xem chi tiết track
 
-## 6.4 `PATCH /admin/tracks/:trackId`
+## 6.4 `PATCH /admin/products/:trackId`
 
 - Actor: `ADMIN`
 - Mục tiêu: cập nhật metadata track
 
-## 6.5 `POST /admin/tracks/:trackId/original-upload-url`
+## 6.5 `POST /admin/products/:trackId/original-upload-url`
 
 - Actor: `ADMIN`
 - Mục tiêu: lấy signed upload URL cho original audio
@@ -178,7 +178,7 @@ Tất cả APIs trong MVP cần tuân theo các nguyên tắc sau:
   - `uploadUrl`
   - `fileKey`
 
-## 6.6 `POST /admin/tracks/:trackId/preview-upload-url`
+## 6.6 `POST /admin/products/:trackId/preview-upload-url`
 
 - Actor: `ADMIN`
 - Mục tiêu: lấy signed upload URL cho preview audio
@@ -186,12 +186,12 @@ Tất cả APIs trong MVP cần tuân theo các nguyên tắc sau:
   - `uploadUrl`
   - `fileKey`
 
-## 6.7 `PATCH /admin/tracks/:trackId/publish`
+## 6.7 `PATCH /admin/products/:trackId/publish`
 
 - Actor: `ADMIN`
 - Mục tiêu: chuyển trạng thái `PUBLISHED`
 
-## 6.8 `PATCH /admin/tracks/:trackId/hide`
+## 6.8 `PATCH /admin/products/:trackId/hide`
 
 - Actor: `ADMIN`
 - Mục tiêu: chuyển trạng thái `HIDDEN`
@@ -346,13 +346,13 @@ Tất cả APIs trong MVP cần tuân theo các nguyên tắc sau:
 
 ### Ingestion
 
-- `GET /admin/tracks`
-- `POST /admin/tracks`
-- `PATCH /admin/tracks/:trackId`
-- `POST /admin/tracks/:trackId/original-upload-url`
-- `POST /admin/tracks/:trackId/preview-upload-url`
-- `PATCH /admin/tracks/:trackId/publish`
-- `PATCH /admin/tracks/:trackId/hide`
+- `GET /admin/products`
+- `POST /admin/products`
+- `PATCH /admin/products/:trackId`
+- `POST /admin/products/:trackId/original-upload-url`
+- `POST /admin/products/:trackId/preview-upload-url`
+- `PATCH /admin/products/:trackId/publish`
+- `PATCH /admin/products/:trackId/hide`
 
 ### Discovery & Purchase
 

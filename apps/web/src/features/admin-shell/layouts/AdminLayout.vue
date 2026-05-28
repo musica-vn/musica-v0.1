@@ -1,12 +1,11 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../../auth/auth.store'
 import AdminThemeToggle from '../components/AdminThemeToggle.vue'
 
 type AdminNavItem = {
   label: string
-  description: string
   icon: string
   to: string
 }
@@ -20,32 +19,74 @@ const logout = async () => {
   await router.replace('/login')
 }
 
+const SIDEBAR_STORAGE_KEY = 'musica_admin_sidebar_collapsed_v1'
+const isSidebarCollapsed = ref(false)
+
+if (typeof window !== 'undefined') {
+  isSidebarCollapsed.value = window.localStorage.getItem(SIDEBAR_STORAGE_KEY) === 'true'
+}
+
+watch(isSidebarCollapsed, (nextValue) => {
+  if (typeof window === 'undefined') return
+  window.localStorage.setItem(SIDEBAR_STORAGE_KEY, String(nextValue))
+})
+
+const toggleSidebar = () => {
+  isSidebarCollapsed.value = !isSidebarCollapsed.value
+}
+
 const primaryNavItems = computed<AdminNavItem[]>(() => {
   const items: AdminNavItem[] = [
     {
       label: 'Dashboard',
-      description: 'Tổng quan nhanh toàn bộ hệ thống',
       icon: 'pi pi-chart-bar',
       to: '/admin/dashboard',
     },
     {
-      label: 'Quản lý track',
-      description: 'Điều phối audio, trạng thái và metadata',
+      label: 'Quản lý sản phẩm',
       icon: 'pi pi-wave-pulse',
-      to: '/admin/tracks',
+      to: '/admin/products',
+    },
+    {
+      label: 'Pháp lý & kiểm duyệt',
+      icon: 'pi pi-verified',
+      to: '/admin/compliance',
     },
     {
       label: 'Quản lý chứng chỉ',
-      description: 'Theo dõi chứng chỉ và template HTML',
       icon: 'pi pi-file-pdf',
       to: '/admin/certificates',
+    },
+    {
+      label: 'Core permissions',
+      icon: 'pi pi-sliders-h',
+      to: '/admin/settings/permissions',
+    },
+    {
+      label: 'Digital rights',
+      icon: 'pi pi-youtube',
+      to: '/admin/settings/digital-rights',
+    },
+    {
+      label: 'Physical rights',
+      icon: 'pi pi-building',
+      to: '/admin/settings/physical-rights',
+    },
+    {
+      label: 'Expression configs',
+      icon: 'pi pi-images',
+      to: '/admin/settings/expression-configs',
+    },
+    {
+      label: 'Modification configs',
+      icon: 'pi pi-wrench',
+      to: '/admin/settings/modification-configs',
     },
   ]
 
   if (authStore.isSuperAdmin) {
     items.splice(1, 0, {
       label: 'Admin list',
-      description: 'Quản trị tài khoản nội bộ và quyền truy cập',
       icon: 'pi pi-shield',
       to: '/admin/admins',
     })
@@ -57,191 +98,150 @@ const primaryNavItems = computed<AdminNavItem[]>(() => {
 const userNavItems: AdminNavItem[] = [
   {
     label: 'Người mua',
-    description: 'Buyer accounts và trạng thái hoạt động',
     icon: 'pi pi-users',
     to: '/admin/users/buyers',
   },
   {
     label: 'Nghệ sĩ',
-    description: 'Artist accounts và dữ liệu quản lý',
     icon: 'pi pi-microphone',
     to: '/admin/users/artists',
   },
 ]
 
+const navigationItems = computed(() => [...primaryNavItems.value, ...userNavItems])
+
 const pageTitle = computed(() =>
   typeof route.meta.title === 'string' ? route.meta.title : 'Quản trị Musica',
 )
-
-const pageSubtitle = computed(() => {
-  if (route.path.startsWith('/admin/tracks')) return 'Theo dõi nội dung âm thanh và xuất bản'
-  if (route.path.startsWith('/admin/certificates')) return 'Quản trị chứng chỉ, template và render HTML'
-  if (route.path.startsWith('/admin/admins')) return 'Kiểm soát tài khoản quản trị nội bộ'
-  if (route.path.startsWith('/admin/users')) return 'Quản lý buyer và artist theo từng vai trò'
-  return 'Không gian điều hành dành cho admin và super-admin'
-})
 
 const roleBadges = computed(() => authStore.roles.map((role) => role.replace('_', ' ')))
 
 const isRouteActive = (targetPath: string) =>
   route.path === targetPath || route.path.startsWith(`${targetPath}/`)
+
+const sidebarGridClass = computed(() =>
+  isSidebarCollapsed.value
+    ? 'lg:grid-cols-[96px_minmax(0,1fr)]'
+    : 'lg:grid-cols-[300px_minmax(0,1fr)]',
+)
+
+const sidebarIconClass = computed(() =>
+  isSidebarCollapsed.value ? 'pi pi-angle-right' : 'pi pi-angle-left',
+)
+
+const sidebarHeaderClass = computed(() =>
+  isSidebarCollapsed.value
+    ? 'flex flex-col items-center gap-3 border-b border-slate-200/80 px-3 py-4 dark:border-slate-800'
+    : 'flex items-center justify-between gap-3 border-b border-slate-200/80 px-4 py-4 dark:border-slate-800',
+)
 </script>
 
 <template>
   <div class="min-h-screen bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
-    <div class="mx-auto grid min-h-screen max-w-[1600px] gap-6 px-4 py-4 lg:grid-cols-[320px_minmax(0,1fr)] lg:px-6 lg:py-6">
+    <div
+      class="mx-auto grid min-h-screen w-full max-w-[1920px] gap-6 px-4 py-4 lg:px-6 lg:py-6"
+      :class="sidebarGridClass"
+    >
       <aside class="lg:sticky lg:top-6 lg:h-[calc(100svh-3rem)]">
         <div class="flex h-full flex-col overflow-hidden rounded-[32px] border border-slate-200/80 bg-white/92 shadow-[0_24px_70px_rgba(15,23,42,0.08)] backdrop-blur dark:border-slate-800 dark:bg-slate-900/88 dark:shadow-black/30">
-          <div class="border-b border-slate-200/80 px-6 py-5 dark:border-slate-800">
-            <div class="flex items-start justify-between gap-4">
-              <div class="space-y-2">
-                <div class="inline-flex items-center gap-2 rounded-full bg-violet-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-violet-700 dark:bg-violet-500/20 dark:text-violet-200">
-                  <span class="h-2.5 w-2.5 rounded-full bg-violet-500" />
-                  Admin Shell
-                </div>
-                <div>
-                  <div class="text-xl font-semibold text-slate-950 dark:text-white">Musica Control</div>
-                  <div class="text-sm text-slate-500 dark:text-slate-400">
-                    Vận hành tập trung cho content và identity management
-                  </div>
-                </div>
-              </div>
-              <AdminThemeToggle compact />
-            </div>
-          </div>
+          <div :class="sidebarHeaderClass">
+            <RouterLink
+              to="/admin/dashboard"
+              class="inline-flex items-center gap-3 rounded-2xl bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-800 transition hover:bg-violet-100 hover:text-violet-700 dark:bg-slate-950/60 dark:text-slate-200 dark:hover:bg-violet-500/10 dark:hover:text-violet-200"
+              :class="isSidebarCollapsed ? 'justify-center px-2' : ''"
+              title="Musica Admin"
+            >
+              <span class="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 to-fuchsia-500 text-white shadow-lg shadow-violet-500/20">
+                <i class="pi pi-sparkles" />
+              </span>
+              <span v-if="!isSidebarCollapsed" class="whitespace-nowrap">Musica</span>
+            </RouterLink>
 
-          <div class="flex-1 space-y-6 overflow-y-auto px-4 py-5">
-            <section class="rounded-[28px] border border-slate-200/80 bg-slate-50/90 p-4 dark:border-slate-800 dark:bg-slate-950/60">
-              <div class="flex items-center gap-3">
-                <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 to-fuchsia-500 text-base font-semibold text-white">
-                  {{ authStore.user?.fullName?.slice(0, 1)?.toUpperCase() || 'A' }}
-                </div>
-                <div class="min-w-0">
-                  <div class="truncate font-semibold text-slate-950 dark:text-white">
-                    {{ authStore.user?.fullName || 'Admin' }}
-                  </div>
-                  <div class="truncate text-sm text-slate-500 dark:text-slate-400">
-                    {{ authStore.user?.email }}
-                  </div>
-                </div>
-              </div>
-              <div class="mt-4 flex flex-wrap gap-2">
-                <span
-                  v-for="role in roleBadges"
-                  :key="role"
-                  class="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
-                >
-                  {{ role }}
-                </span>
-              </div>
-            </section>
-
-            <section class="space-y-3">
-              <div class="px-2 text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
-                Điều hướng chính
-              </div>
-              <RouterLink
-                v-for="item in primaryNavItems"
-                :key="item.to"
-                :to="item.to"
-                class="flex items-center gap-3 rounded-[24px] border px-4 py-3 transition"
-                :class="
-                  isRouteActive(item.to)
-                    ? 'border-violet-200 bg-violet-50 text-violet-700 shadow-sm dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-violet-200'
-                    : 'border-slate-200/80 bg-white text-slate-700 hover:border-violet-200 hover:text-violet-700 dark:border-slate-800 dark:bg-slate-950/60 dark:text-slate-200 dark:hover:border-violet-500/30 dark:hover:text-violet-300'
-                "
-              >
-                <div
-                  class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl"
-                  :class="
-                    isRouteActive(item.to)
-                      ? 'bg-white text-violet-700 dark:bg-slate-950 dark:text-violet-200'
-                      : 'bg-slate-100 text-slate-500 dark:bg-slate-900 dark:text-slate-300'
-                  "
-                >
-                  <i :class="item.icon" />
-                </div>
-                <div class="min-w-0">
-                  <div class="font-semibold">{{ item.label }}</div>
-                  <div class="truncate text-sm opacity-80">{{ item.description }}</div>
-                </div>
-              </RouterLink>
-            </section>
-
-            <section class="space-y-3">
-              <div class="px-2 text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
-                Người dùng hệ thống
-              </div>
-              <RouterLink
-                v-for="item in userNavItems"
-                :key="item.to"
-                :to="item.to"
-                class="flex items-center gap-3 rounded-[24px] border px-4 py-3 transition"
-                :class="
-                  isRouteActive(item.to)
-                    ? 'border-violet-200 bg-violet-50 text-violet-700 shadow-sm dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-violet-200'
-                    : 'border-slate-200/80 bg-white text-slate-700 hover:border-violet-200 hover:text-violet-700 dark:border-slate-800 dark:bg-slate-950/60 dark:text-slate-200 dark:hover:border-violet-500/30 dark:hover:text-violet-300'
-                "
-              >
-                <div
-                  class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl"
-                  :class="
-                    isRouteActive(item.to)
-                      ? 'bg-white text-violet-700 dark:bg-slate-950 dark:text-violet-200'
-                      : 'bg-slate-100 text-slate-500 dark:bg-slate-900 dark:text-slate-300'
-                  "
-                >
-                  <i :class="item.icon" />
-                </div>
-                <div class="min-w-0">
-                  <div class="font-semibold">{{ item.label }}</div>
-                  <div class="truncate text-sm opacity-80">{{ item.description }}</div>
-                </div>
-              </RouterLink>
-            </section>
-          </div>
-
-          <div class="border-t border-slate-200/80 px-4 py-4 dark:border-slate-800">
             <button
               type="button"
-              class="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-rose-200 hover:text-rose-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:border-rose-500/30 dark:hover:text-rose-300"
-              @click="logout"
+              class="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 transition hover:border-slate-300 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:border-slate-600 dark:hover:text-white"
+              :title="isSidebarCollapsed ? 'Mở rộng sidebar' : 'Thu gọn sidebar'"
+              @click="toggleSidebar"
             >
-              <i class="pi pi-sign-out" />
-              Đăng xuất
+              <i :class="sidebarIconClass" />
             </button>
           </div>
+
+          <nav class="flex-1 overflow-y-auto px-3 py-4 no-scrollbar">
+            <RouterLink
+              v-for="item in navigationItems"
+              :key="item.to"
+              :to="item.to"
+              class="group flex items-center gap-3 rounded-[22px] border px-3 py-3 transition"
+              :class="[
+                isSidebarCollapsed ? 'justify-center px-2' : '',
+                isRouteActive(item.to)
+                  ? 'border-transparent bg-violet-50 text-violet-700 shadow-sm dark:bg-violet-500/10 dark:text-violet-200'
+                  : 'border-transparent bg-transparent text-slate-600 hover:bg-white hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-950/60 dark:hover:text-white',
+              ]"
+              :title="item.label"
+            >
+              <div
+                class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl transition"
+                :class="
+                  isRouteActive(item.to)
+                    ? 'bg-white text-violet-700 shadow-sm dark:bg-slate-950 dark:text-violet-200'
+                    : 'bg-slate-100 text-slate-500 group-hover:text-slate-700 dark:bg-slate-950/60 dark:text-slate-300 dark:group-hover:text-slate-100'
+                "
+              >
+                <i :class="item.icon" />
+              </div>
+              <div v-if="!isSidebarCollapsed" class="min-w-0">
+                <div class="truncate text-sm font-semibold">{{ item.label }}</div>
+              </div>
+            </RouterLink>
+          </nav>
         </div>
       </aside>
 
       <main class="flex min-w-0 flex-col gap-6">
-        <header class="rounded-[32px] border border-slate-200/80 bg-white/92 px-6 py-5 shadow-[0_24px_70px_rgba(15,23,42,0.08)] backdrop-blur dark:border-slate-800 dark:bg-slate-900/88 dark:shadow-black/30">
-          <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-            <div class="space-y-2">
-              <div class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:bg-slate-800 dark:text-slate-300">
-                <span class="h-2.5 w-2.5 rounded-full bg-emerald-500" />
-                Admin Workspace
-              </div>
-              <div>
-                <h1 class="!m-0 text-3xl font-semibold tracking-tight !text-slate-950 dark:!text-white">
-                  {{ pageTitle }}
-                </h1>
-                <p class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
-                  {{ pageSubtitle }}
-                </p>
-              </div>
+        <header class="rounded-[28px] border border-slate-200/80 bg-white/92 px-5 py-4 shadow-[0_18px_55px_rgba(15,23,42,0.08)] backdrop-blur dark:border-slate-800 dark:bg-slate-900/88 dark:shadow-black/30">
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex min-w-0 items-center gap-2 text-sm font-semibold text-slate-600 dark:text-slate-300">
+              <i class="pi pi-compass" />
+              <span class="truncate">{{ pageTitle }}</span>
             </div>
 
             <div class="flex flex-wrap items-center gap-3">
-              <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300">
-                <div class="font-semibold text-slate-900 dark:text-white">Phiên đăng nhập hiện tại</div>
-                <div class="mt-1">{{ authStore.user?.email }}</div>
+              <div class="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-950">
+                <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 to-fuchsia-500 text-base font-semibold text-white">
+                  {{ authStore.user?.fullName?.slice(0, 1)?.toUpperCase() || 'A' }}
+                </div>
+                <div class="min-w-0">
+                  <div class="truncate text-sm font-semibold text-slate-900 dark:text-white">
+                    {{ authStore.user?.fullName || 'Admin' }}
+                  </div>
+                  <div class="truncate text-xs text-slate-500 dark:text-slate-400">
+                    {{ authStore.user?.email }}
+                  </div>
+                </div>
+                <div class="hidden flex-wrap gap-2 xl:flex">
+                  <span
+                    v-for="role in roleBadges"
+                    :key="role"
+                    class="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+                  >
+                    {{ role }}
+                  </span>
+                </div>
               </div>
               <AdminThemeToggle />
+              <button
+                type="button"
+                class="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-rose-200 hover:text-rose-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:border-rose-500/30 dark:hover:text-rose-300"
+                @click="logout"
+              >
+                <i class="pi pi-sign-out" />
+                Đăng xuất
+              </button>
             </div>
           </div>
         </header>
-
         <RouterView />
       </main>
     </div>

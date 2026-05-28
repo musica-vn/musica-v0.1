@@ -257,7 +257,7 @@ Ensure DataTable uses `:rows="pagination.pageSize"` and keeps `@page` handler.
 
 - [ ] **Step 3: Verify**
 
-Manual: load `/admin/tracks` and confirm only 10 rows displayed per page.
+Manual: load `/admin/products` and confirm only 10 rows displayed per page.
 
 ---
 

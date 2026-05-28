@@ -50,6 +50,13 @@ VITE_API_BASE_URL=http://localhost:3000
 pnpm.cmd -C apps/api seed:dev
 ```
 
+- Seed hiện tạo sẵn:
+  - user dev
+  - track / certificate mẫu
+  - core permissions mẫu
+  - digital / physical / expression / modification configs
+  - compliance reviews, legal files và allowed permissions mẫu cho DB V2
+
 - Tài khoản dev mặc định:
   - `superadmin@musica.local / Password123!`
   - `admin01@musica.local / Password123!`
@@ -147,16 +154,19 @@ pnpm.cmd -C apps/web dev
 - `DELETE /admin/users/:userId`
 
 ### Tracks
-- `GET /admin/tracks`
-- `GET /admin/tracks/summary`
-- `POST /admin/tracks`
-- `PATCH /admin/tracks/:trackId`
-- `POST /admin/tracks/:trackId/original-upload-url`
-- `POST /admin/tracks/:trackId/preview-upload-url`
-- `POST /admin/tracks/:trackId/confirm-audio-upload`
-- `GET /admin/tracks/:trackId/preview-playback-url`
-- `PATCH /admin/tracks/:trackId/publish`
-- `PATCH /admin/tracks/:trackId/hide`
+- `GET /admin/products`
+- `GET /admin/products/summary`
+- `POST /admin/products`
+- `PATCH /admin/products/:productId`
+- `PUT /admin/products/:productId/allowed-permissions`
+- `POST /admin/products/:productId/original-upload-url`
+- `POST /admin/products/:productId/thumbnail-upload-url`
+- `POST /admin/products/:productId/confirm-audio-upload`
+- `POST /admin/products/:productId/confirm-thumbnail-upload`
+- `GET /admin/products/:productId/thumbnail-url`
+- `GET /admin/products/:productId/original-playback-url`
+- `PATCH /admin/products/:productId/publish`
+- `PATCH /admin/products/:productId/hide`
 
 ### Certificates
 - `GET /admin/certificates`
@@ -165,6 +175,32 @@ pnpm.cmd -C apps/web dev
 - `GET /admin/certificates/template`
 - `PUT /admin/certificates/template`
 - `GET /admin/certificates/:certificateId/render-html`
+
+### Licensing configs
+- `GET /admin/digital-right-configs`
+- `GET /admin/digital-right-configs/:configId`
+- `POST /admin/digital-right-configs`
+- `PATCH /admin/digital-right-configs/:configId`
+- `PATCH /admin/digital-right-configs/:configId/status`
+- `DELETE /admin/digital-right-configs/:configId`
+- `GET /admin/physical-right-configs`
+- `GET /admin/physical-right-configs/:configId`
+- `POST /admin/physical-right-configs`
+- `PATCH /admin/physical-right-configs/:configId`
+- `PATCH /admin/physical-right-configs/:configId/status`
+- `DELETE /admin/physical-right-configs/:configId`
+- `GET /admin/expression-configs`
+- `GET /admin/expression-configs/:configId`
+- `POST /admin/expression-configs`
+- `PATCH /admin/expression-configs/:configId`
+- `PATCH /admin/expression-configs/:configId/status`
+- `DELETE /admin/expression-configs/:configId`
+- `GET /admin/modification-configs`
+- `GET /admin/modification-configs/:configId`
+- `POST /admin/modification-configs`
+- `PATCH /admin/modification-configs/:configId`
+- `PATCH /admin/modification-configs/:configId/status`
+- `DELETE /admin/modification-configs/:configId`
 
 ## OpenAPI và generated types
 ### Generate lại schema
@@ -218,22 +254,57 @@ type PaginationMeta = {
 ```
 
 ## Supabase workflow
-### Login / init / link
+### One-time setup
 ```bash
-pnpm --filter api sb:login
-pnpm --filter api sb:init
-pnpm --filter api sb:link -- --project-ref <SUPABASE_PROJECT_REF>
+pnpm.cmd -C apps/api exec supabase login
+pnpm.cmd -C apps/api exec supabase link --project-ref <SUPABASE_PROJECT_REF>
 ```
 
-### Pull / push schema
+### Nếu muốn dùng token thay vì interactive login
 ```bash
-pnpm db:pull
-pnpm db:push
+SUPABASE_ACCESS_TOKEN=<YOUR_TOKEN>
 ```
 
 ### Tạo migration mới
 ```bash
-pnpm --filter api exec node scripts/supabase.mjs migration new <name>
+pnpm.cmd -C apps/api exec node scripts/supabase.mjs migration new <migration_name>
+```
+
+### Update DB remote theo repo
+```bash
+pnpm.cmd -C apps/api db:push
+```
+
+### Pull schema từ remote về repo khi cần diff
+```bash
+pnpm.cmd -C apps/api db:pull
+```
+
+### Kiểm tra local Supabase nếu cần test migration trước
+```bash
+pnpm.cmd -C apps/api db:start
+pnpm.cmd -C apps/api db:status
+pnpm.cmd -C apps/api db:stop
+```
+
+### Sau khi đổi API contract hoặc thêm endpoint mới
+```bash
+pnpm.cmd -C apps/api build
+pnpm.cmd -C apps/api gen:openapi
+pnpm.cmd -C apps/web gen:types
+```
+
+### Quy trình chuẩn để update DB an toàn
+1. Tạo migration mới trong `apps/api/supabase/migrations`.
+2. Test migration trên local Supabase nếu thay đổi lớn hoặc có backfill dữ liệu.
+3. Link đúng remote project bằng `supabase link`.
+4. Chạy `pnpm.cmd -C apps/api db:push`.
+5. Chạy `pnpm.cmd -C apps/api build`, `gen:openapi`, rồi `pnpm.cmd -C apps/web gen:types`.
+6. Chạy typecheck trước khi commit:
+
+```bash
+pnpm.cmd -C apps/api typecheck
+pnpm.cmd -C apps/web typecheck
 ```
 
 ## Deploy

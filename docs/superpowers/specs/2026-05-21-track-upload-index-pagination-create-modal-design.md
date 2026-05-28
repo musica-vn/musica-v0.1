@@ -26,7 +26,7 @@ Không đổi tên bucket, sử dụng đúng 3 bucket đang có:
 
 ### Upload original
 
-- Endpoint: `POST /admin/tracks/:trackId/original-upload-url`
+- Endpoint: `POST /admin/products/:trackId/original-upload-url`
 - Tạo key: `{n}.mp3` (n lấy từ counter của bucket `original-audio`)
 - Signed upload URL trỏ tới: `original-audio/{n}.mp3`
 - DB update:
@@ -35,7 +35,7 @@ Không đổi tên bucket, sử dụng đúng 3 bucket đang có:
 
 ### Upload preview
 
-- Endpoint: `POST /admin/tracks/:trackId/preview-upload-url`
+- Endpoint: `POST /admin/products/:trackId/preview-upload-url`
 - Tạo key: `{n}.mp3` (n lấy từ counter của bucket `preview-audio`)
 - Signed upload URL trỏ tới: `preview-audio/{n}.mp3`
 - DB update:
@@ -44,7 +44,7 @@ Không đổi tên bucket, sử dụng đúng 3 bucket đang có:
 
 ### Playback
 
-- Endpoint: `GET /admin/tracks/:trackId/preview-playback-url`
+- Endpoint: `GET /admin/products/:trackId/preview-playback-url`
 - Đọc `preview_audio_key` trước, nếu thiếu thì dùng `original_audio_key`.
 - Xin signed playback URL theo key đang có trong DB.
 - Không thay đổi bucket `certificates`.

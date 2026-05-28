@@ -16,7 +16,7 @@
   - [x] Implement Auth/Profile: `POST /auth/login`, `GET /auth/me`.
   - [ ] Implement Super Admin: quản lý Admins (`GET/POST/PATCH status`).
   - [ ] Implement Admin Users: list/create/update users (Artist/Buyer).
-  - [ ] Implement Tracks ingestion: CRUD tối thiểu + publish/hide + signed upload URL.
+  - [ ] Implement Products ingestion: CRUD tối thiểu + publish/hide + signed upload URL.
   - [ ] Implement Catalog: list/detail published-only + preview URL.
   - [ ] Implement Checkout: validate + tạo certificate record + generate PDF (có thể mock PDF nhưng phải có fileKey).
   - [ ] Implement Buyer/Admin Certificates: list/detail/download signed URL.

@@ -67,22 +67,22 @@ seed_tracks as (
   select *
   from (
     values
-      ('Midnight Pulse (Seed)', 'artist01@musica.local', 'Electronic', 182, 'PUBLISHED', array['REPRODUCTION_RIGHT','DERIVATIVE_WORK_RIGHT']),
-      ('Neon Skyline (Seed)', 'artist01@musica.local', 'Electronic', 156, 'PUBLISHED', array['COMMUNICATION_TO_PUBLIC_RIGHT','DISTRIBUTION_RIGHT']),
-      ('Cinematic Rise (Seed)', 'artist02@musica.local', 'Cinematic', 201, 'PUBLISHED', array['DERIVATIVE_WORK_RIGHT']),
-      ('Corporate Breeze (Seed)', 'artist02@musica.local', 'Corporate', 128, 'PUBLISHED', array['REPRODUCTION_RIGHT']),
-      ('Pop Spark (Seed)', 'artist03@musica.local', 'Pop', 174, 'PUBLISHED', array['DISTRIBUTION_RIGHT','COMMUNICATION_TO_PUBLIC_RIGHT']),
-      ('Ambient Drift (Seed)', 'artist03@musica.local', 'Cinematic', 223, 'PUBLISHED', array['REPRODUCTION_RIGHT','DERIVATIVE_WORK_RIGHT']),
-      ('Late Night Drive (Seed)', 'artist01@musica.local', 'Electronic', 190, 'PUBLISHED', array['COMMUNICATION_TO_PUBLIC_RIGHT']),
-      ('Bright Morning (Seed)', 'artist02@musica.local', 'Pop', 165, 'PUBLISHED', array['REPRODUCTION_RIGHT','COMMUNICATION_TO_PUBLIC_RIGHT']),
-      ('Soft Focus (Seed)', 'artist03@musica.local', 'Corporate', 142, 'PUBLISHED', array['DISTRIBUTION_RIGHT']),
-      ('Festival Lights (Seed)', 'artist01@musica.local', 'Pop', 198, 'PUBLISHED', array['DERIVATIVE_WORK_RIGHT','REPRODUCTION_RIGHT']),
-      ('Hidden Draft 01 (Seed)', 'artist01@musica.local', 'Electronic', 160, 'HIDDEN', array['REPRODUCTION_RIGHT']),
-      ('Hidden Draft 02 (Seed)', 'artist02@musica.local', 'Cinematic', 210, 'HIDDEN', array['DISTRIBUTION_RIGHT']),
-      ('Hidden Draft 03 (Seed)', 'artist03@musica.local', 'Corporate', 120, 'HIDDEN', array['COMMUNICATION_TO_PUBLIC_RIGHT']),
-      ('Hidden Draft 04 (Seed)', 'artist01@musica.local', 'Pop', 175, 'HIDDEN', array['DISTRIBUTION_RIGHT']),
-      ('Hidden Draft 05 (Seed)', 'artist02@musica.local', 'Corporate', 135, 'HIDDEN', array['DERIVATIVE_WORK_RIGHT'])
-  ) as t(title, artist_email, genre, duration, status, usage_rights)
+      ('Midnight Pulse (Seed)', 'artist01@musica.local', 'Electronic', 182, 'PUBLISHED'),
+      ('Neon Skyline (Seed)', 'artist01@musica.local', 'Electronic', 156, 'PUBLISHED'),
+      ('Cinematic Rise (Seed)', 'artist02@musica.local', 'Cinematic', 201, 'PUBLISHED'),
+      ('Corporate Breeze (Seed)', 'artist02@musica.local', 'Corporate', 128, 'PUBLISHED'),
+      ('Pop Spark (Seed)', 'artist03@musica.local', 'Pop', 174, 'PUBLISHED'),
+      ('Ambient Drift (Seed)', 'artist03@musica.local', 'Cinematic', 223, 'PUBLISHED'),
+      ('Late Night Drive (Seed)', 'artist01@musica.local', 'Electronic', 190, 'PUBLISHED'),
+      ('Bright Morning (Seed)', 'artist02@musica.local', 'Pop', 165, 'PUBLISHED'),
+      ('Soft Focus (Seed)', 'artist03@musica.local', 'Corporate', 142, 'PUBLISHED'),
+      ('Festival Lights (Seed)', 'artist01@musica.local', 'Pop', 198, 'PUBLISHED'),
+      ('Hidden Draft 01 (Seed)', 'artist01@musica.local', 'Electronic', 160, 'HIDDEN'),
+      ('Hidden Draft 02 (Seed)', 'artist02@musica.local', 'Cinematic', 210, 'HIDDEN'),
+      ('Hidden Draft 03 (Seed)', 'artist03@musica.local', 'Corporate', 120, 'HIDDEN'),
+      ('Hidden Draft 04 (Seed)', 'artist01@musica.local', 'Pop', 175, 'HIDDEN'),
+      ('Hidden Draft 05 (Seed)', 'artist02@musica.local', 'Corporate', 135, 'HIDDEN')
+  ) as t(title, artist_email, genre, duration, status)
 ),
 inserted_tracks as (
   insert into public.tracks (
@@ -92,7 +92,6 @@ inserted_tracks as (
     genre,
     duration,
     status,
-    usage_rights,
     created_by
   )
   select
@@ -102,7 +101,6 @@ inserted_tracks as (
     st.genre,
     st.duration,
     st.status::public.track_status,
-    st.usage_rights,
     ap.admin_id
   from seed_tracks st
   join public.users au on au.email = st.artist_email

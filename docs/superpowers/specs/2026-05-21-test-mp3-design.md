@@ -49,7 +49,7 @@ Sử dụng các bucket hiện có:
 - Với dữ liệu đang có trên Supabase remote, chạy một câu lệnh update:
 
 ```sql
-update public.tracks
+update public.products
 set
   original_audio_key = 'test.mp3',
   preview_audio_key = 'test.mp3';

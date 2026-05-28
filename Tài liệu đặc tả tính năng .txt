@@ -1,0 +1,352 @@
+﻿TÀI LIỆU ĐẶC TẢ TÍNH NĂNG QUẢN TRỊ CẤU HÌNH HỆ THỐNG (ADMIN MANAGEMENT SYSTEM)
+1. Core Permission Management (Tính năng Quản lý Quyền Cốt Lõi)
+
+
+Mục tiêu:
+Quản lý danh sách các quyền cốt lõi theo Luật Sở hữu trí tuệ Việt Nam dưới dạng các dòng dữ liệu động trong Cơ sở dữ liệu, làm gốc tham chiếu để liên kết các gói bản quyền thương mại và xuất chứng nhận pháp lý.
+
+
+Đối tượng sử dụng:
+Admin
+
+
+Màn hình hiển thị:
+Admin Permission Settings (Giao diện bảng danh sách quyền và Form chỉnh sửa)
+Bảng số liệu hiển thị:
+Tên thuộc tính
+	Mô tả thuộc tính
+	Ràng buộc / Kiểu dữ liệu
+	Permission ID
+	Mã định danh duy nhất của quyền cốt lõi
+	String (Khóa chính - PK, UNIQUE, viết hoa)
+	Permission Name
+	Tên hiển thị pháp lý của quyền
+	String (Tiếng Việt chuẩn luật)
+	Law Reference
+	Điều khoản luật tương ứng tại Việt Nam
+	String (Ví dụ: Khoản 1 Điều 20 Luật SHTT)
+	Status
+	Trạng thái hoạt động của quyền
+	Enum (ACTIVE, INACTIVE)
+	Description
+	Mô tả chi tiết hành vi được phép
+	Text
+	Admin action:
+* Create Permission: Thêm một quyền cốt lõi mới vào hệ thống khi có sự thay đổi hoặc bổ sung từ Luật SHTT Việt Nam.
+* Update Permission: Chỉnh sửa thông tin hiển thị, tên gọi, điều khoản luật tham chiếu hoặc mô tả hành vi của quyền.
+* Toggle Status / Delete: Chuyển đổi trạng thái hoạt động hoặc thực hiện xóa quyền khỏi hệ thống.
+Logic hoạt động:
+* Logic Ràng buộc toàn vẹn dữ liệu (Foreign Key Constraint Check): Khi Admin thực hiện hành động Xóa hoặc chuyển trạng thái một Quyền sang INACTIVE, hệ thống sẽ tự động quét qua tất cả các bảng phụ thuộc ở tầng dưới bao gồm: Digital Rights, Physical Rights, Expression Config, Modification Config.
+* Nếu quyền này đang được liên kết ở bất kỳ module cấu hình nào bên dưới, hệ thống sẽ chặn hoàn toàn hành động và hiển thị thông báo lỗi chi tiết trên giao diện: "Không thể thay đổi trạng thái quyền này vì đang có cấu hình tính năng khác tham chiếu đến".
+* Tất cả các bản ghi Core Permission có trạng thái INACTIVE sẽ tự động bị ẩn đi, không hiển thị trong danh sách lựa chọn cấu hình của các tính năng khác trên hệ thống Admin.
+
+
+Định nghĩa hoàn thành (DoD):
+* Admin đăng nhập thành công, truy cập được vào màn hình danh sách quyền, dữ liệu hiển thị rõ ràng và không bị lỗi giao diện.
+* Tính năng Chỉnh sửa (Update) hoạt động đúng: Admin sửa thông tin của một quyền, bấm Lưu thì hệ thống cập nhật thành công xuống Database.
+* Tính năng Chuyển đổi trạng thái (Toggle Status) hoạt động đúng logic ràng buộc: Hệ thống chặn thành công và báo lỗi nếu quyền đó đang được map với các cấu hình bên dưới.
+
+
+2. Digital Platform Rights Management (Tính năng Quản lý Bản quyền Nền tảng Số)
+Mục tiêu:
+Cấu hình biểu phí thương mại và liên kết quyền cốt lõi cho các hành vi sử dụng âm nhạc trên môi trường mạng xã hội kỹ thuật số, phân tách rõ ràng theo từng nền tảng và gói thời hạn cố định.
+
+
+Đối tượng sử dụng:
+Admin
+
+
+Màn hình hiển thị:
+Admin Digital Configuration (Giao diện quản lý cấu hình quyền số)
+
+
+Bảng số liệu hiển thị:
+Tên thuộc tính
+	Mô tả thuộc tính
+	Ràng buộc / Kiểu dữ liệu
+	Digital Right ID
+	Mã cấu hình quyền số trong hệ thống
+	String (Khóa chính - PK, UNIQUE, viết hoa)
+	Target Platform
+	Nền tảng mạng xã hội áp dụng
+	Enum (YOUTUBE, TIKTOK, FACEBOOK)
+	Duration Type
+	Thời hạn áp dụng gói quyền số
+	Enum (ONE_YEAR - 1 năm, PERPETUAL - Vĩnh viễn)
+	Referenced Permissions
+	Các quyền cốt lõi bắt buộc đi kèm khi mua gói này
+	Multiselect Tag (Chọn các Permission ID đang ACTIVE)
+	Base Price / Multiplier
+	Mức giá cơ sở hoặc Hệ số nhân của gói quyền số
+	Float / Decimal (Giá trị >= 1.0)
+	Status
+	Trạng thái hoạt động của cấu hình
+	Enum (ACTIVE, INACTIVE)
+	Admin action:
+* Create Digital Configuration: Thêm mới gói cấu hình bản quyền cho một nền tảng số cụ thể kèm thời hạn.
+* Edit Digital Configuration: Thay đổi hệ số giá, cập nhật danh sách quyền cốt lõi đính kèm hoặc tắt kích hoạt gói.
+Logic hoạt động:
+* Hệ thống cố định cứng (Hardcode Enum) ở tầng Backend đối với trường Duration Type chỉ gồm 2 lựa chọn: ONE_YEAR và PERPETUAL, chặn mọi hành vi cố tình chèn hoặc tùy biến số ngày tự do từ giao diện bên ngoài.
+* Khi người dùng cuối mua gói Digital này, hệ thống tính toán tiền sẽ tự động lấy hệ số Base Price / Multiplier của bản ghi này tham gia vào chuỗi tính giá cuối cùng.
+Định nghĩa hoàn thành (DoD):
+* Màn hình thêm mới hiển thị trường Thời hạn ở dạng Dropdown/Radio chỉ cho phép chọn duy nhất 1 trong 2 tùy chọn: 1 Năm hoặc Vĩnh Viễn.
+* Tính năng lưu cấu hình hoạt động đúng: Lưu chính xác quan hệ giữa Digital Right và Core Permissions vào bảng trung gian.
+* Chuyển trạng thái sang INACTIVE lập tiếp ẩn cấu hình gói này khỏi giao diện hiển thị của người mua trên Frontend Client.
+
+
+3. Physical Usage Rights Management (Tính năng Quản lý Quyền Sử dụng Vật lý)
+
+
+Mục tiêu:
+Quản lý các hình thức và địa điểm sử dụng âm nhạc ngoài đời thực (ngoài không gian mạng) nhằm áp dụng biểu phí thương mại tương ứng.
+
+
+
+
+Đối tượng sử dụng:
+Admin
+
+
+Màn hình hiển thị:
+Admin Physical Configuration (Giao diện quản lý phân loại sử dụng ngoài đời thực)
+
+
+Bảng số liệu hiển thị:
+Tên thuộc tính
+	Mô tả thuộc tính
+	Ràng buộc / Kiểu dữ liệu
+	Physical Right ID
+	Mã cấu hình quyền vật lý
+	String (Khóa chính - PK, UNIQUE, viết hoa)
+	Venue/Usage Type
+	Loại hình không gian hoặc cách thức biểu diễn thực tế
+	String (Ví dụ: PHÒNG TRÀ, HỘI CHỢ, QUÁN CAFE)
+	Referenced Permissions
+	Các quyền cốt lõi bắt buộc đi kèm khi mua địa điểm này
+	Multiselect Tag (Chọn các Permission ID đang ACTIVE)
+	Base Price / Multiplier
+	Mức giá cơ sở hoặc Hệ số nhân áp dụng cho địa điểm
+	Float / Decimal (Giá trị >= 1.0)
+	Status
+	Trạng thái hoạt động của cấu hình vật lý
+	Enum (ACTIVE, INACTIVE)
+	Admin action:
+* Create Physical Right: Thêm một loại hình địa điểm hoặc bối cảnh biểu diễn thực tế mới vào hệ thống.
+* Update Physical Right: Sửa tên loại hình, đổi hệ số giá hoặc thay đổi các quyền cốt lõi đi kèm.
+Logic hoạt động:
+* Module này chạy hoàn toàn độc lập với môi trường mạng xã hội kỹ thuật số. Engine tính tiền của hệ thống chỉ gọi đến bảng này khi người dùng lựa chọn luồng mua giấy phép cấp cho các hoạt động offline bên ngoài đời thực.
+Định nghĩa hoàn thành (DoD):
+* Danh sách hiển thị rõ ràng, phân trang đầy đủ thông tin các loại hình địa điểm thực tế cùng hệ số giá đi kèm.
+* Tính năng xác thực Form hoạt động đúng, chặn không cho lưu nếu để trống các trường bắt buộc hoặc nhập sai định dạng số tiền/hệ số.
+4. Product Expression Management (Tính năng Quản lý Hình thức Biểu hiện)
+Mục tiêu:
+Quản lý danh mục cấu hình các hình thức biểu hiện của sản phẩm âm nhạc (Ví dụ: Hát cover, Sử dụng làm nhạc nền, Nhạc phim, Nhạc quảng cáo) và quản lý hệ số nhân biểu phí riêng cho từng hình thức.
+
+
+Đối tượng sử dụng:
+Admin
+
+
+Màn hình hiển thị:
+Admin Expression Settings Dashboard
+
+
+Bảng số liệu hiển thị:
+Tên thuộc tính
+	Mô tả thuộc tính
+	Ràng buộc / Kiểu dữ liệu
+	Expression ID
+	Mã định danh hình thức biểu hiện
+	String (Khóa chính - PK, UNIQUE, viết hoa)
+	Expression Name
+	Tên hình thức biểu hiện tác phẩm
+	String (Ví dụ: Nhạc nền Vlog, Hát Cover lại)
+	Price Multiplier
+	Hệ số giá của hình thức biểu hiện này
+	Float / Decimal (Giá trị >= 1.0)
+	Referenced Permissions
+	Các quyền cốt lõi cần phải có để thực hiện hình thức
+	Multiselect Tag (Tham chiếu bảng Core Quyền ở P1)
+	Status
+	Trạng thái hoạt động của cấu hình
+	Enum (ACTIVE, INACTIVE)
+	Admin action:
+* Create Expression Rule: Định nghĩa một hình thức biểu hiện mới và gắn hệ số tính tiền đính kèm quyền pháp lý tương ứng.
+* Update Expression Rule: Chỉnh sửa tên, cập nhật tăng giảm hệ số nhân hoặc thay đổi quyền liên kết.
+Logic hoạt động:
+* Tách biệt module này giúp Admin có thể cấu hình chi tiết: Để người dùng được quyền dùng bài hát làm "Nhạc phim Quảng cáo thương mại", ngoài việc nhân hệ số giá lên cao, hệ thống sẽ bắt buộc phải đính kèm thêm các quyền cốt lõi đặc thù (Ví dụ: Quyền phân phối, Quyền truyền đạt đến công chúng). Khi người dùng chọn hình thức này, các quyền đính kèm sẽ tự động được thêm vào giỏ hàng pháp lý của họ.
+
+
+Định nghĩa hoàn thành (DoD):
+* Admin tạo mới thành công một hình thức biểu hiện, hệ thống lưu đúng hệ số nhân và liên kết quyền cốt lõi tương ứng xuống Database.
+* Engine tính tiền tự động lấy đúng hệ số nhân của hình thức biểu hiện được chọn để nhân vào công thức giá cuối cùng.
+
+
+5. Product Modification Management (Tính năng Quản lý Mức độ Biến đổi Tác phẩm)
+Mục tiêu:
+Quản lý danh mục cấu hình các mức độ can thiệp, thay đổi, chỉnh sửa cấu trúc của tác phẩm gốc và ràng buộc các quyền làm sản phẩm phái sinh đi kèm hệ số phí tương ứng.
+
+
+Đối tượng sử dụng:
+Admin
+
+
+Màn hình hiển thị:
+Admin Modification Config Dashboard
+Bảng số liệu hiển thị:
+Tên thuộc tính
+	Mô tả thuộc tính
+	Ràng buộc / Kiểu dữ liệu
+	Modification ID
+	Mã định danh mức độ biến đổi
+	String (Khóa chính - PK, UNIQUE, viết hoa)
+	Modification Name
+	Tên mức độ can thiệp tác phẩm gốc
+	String (Ví dụ: Giữ nguyên master, Cải biên phối khí)
+	Price Multiplier
+	Hệ số nhân giá của mức độ biến đổi này
+	Float / Decimal (Giá trị >= 1.0)
+	Referenced Permissions
+	Các quyền cốt lõi bắt buộc phải có khi biến đổi
+	Multiselect Tag (Tham chiếu bảng Core Quyền ở P1)
+	Status
+	Trạng thái hoạt động của cấu hình
+	Enum (ACTIVE, INACTIVE)
+	Admin action:
+* Create Modification Rule: Tạo mới một phân loại mức độ biến đổi tác phẩm gốc.
+* Update Modification Rule: Chỉnh sửa hệ số giá, cấu hình lại các quyền ràng buộc pháp lý phái sinh.
+Logic hoạt động:
+* Đây là chốt chặn pháp lý quan trọng của hệ thống. Nếu người dùng chọn mức can thiệp là "Cải biên phối khí", Backend sẽ tự động quét danh sách quyền đính kèm của cấu hình này. Hệ thống sẽ đối chiếu và bắt buộc giấy chứng nhận (Certificate) xuất ra sau đó phải ghi nhận quyền làm sản phẩm phái sinh, đảm bảo không vi phạm bản quyền tác giả gốc.
+Định nghĩa hoàn thành (DoD):
+* Giao diện form hiển thị trực quan, cho phép chọn nhiều quyền cốt lõi để gán cho một mức độ biến đổi tác phẩm.
+* Logic chặn chạy đúng: Hệ thống áp dụng chính xác hệ số biến đổi vào toán tử nhân giá khi thực hiện checkout đơn hàng trên Frontend Client.
+6. Product Management (Tính năng Quản lý Sản phẩm Core)
+Mục tiêu:
+Quản lý các thông tin thuộc tính vật lý, hình ảnh đại diện (Thumbnail) của sản phẩm (Track nhạc) và danh sách các quyền thương mại được phép khai thác sau khi đã qua kiểm duyệt pháp lý.
+
+
+Đối tượng sử dụng:
+Admin / Creator
+
+
+Màn hình hiển thị:
+Admin Product Overview (Bảng danh sách sản phẩm và Form cấu hình quyền thương mại)
+
+
+Bảng số liệu hiển thị:
+Tên thuộc tính
+	Mô tả thuộc tính
+	Ràng buộc / Kiểu dữ liệu
+	Product ID
+	Mã định danh duy nhất của sản phẩm
+	String (Khóa chính - PK, UNIQUE, dạng PROD-XXXX)
+	Artist ID
+	Mã định danh của nghệ sĩ sở hữu hoặc phát hành
+	String (Khóa ngoại - FK, tham chiếu bảng Artist)
+	Product Title
+	Tên bản nhạc hoặc tiêu đề tác phẩm
+	String (Tối đa 255 ký tự)
+	Thumbnail URL
+	Đường dẫn ảnh đại diện hoặc ảnh bìa của sản phẩm
+	String (S3 URL hình ảnh, định dạng JPG/PNG)
+	Genre
+	Thể loại âm nhạc chính
+	String (Ví dụ: Pop, Rock, Lofi)
+	Use-case
+	Mục đích sử dụng phù hợp (Gợi ý cho người mua)
+	String (Danh sách phân tách bằng dấu phẩy)
+	Duration
+	Tổng thời lượng của bản nhạc tính bằng giây
+	Integer (Giá trị > 0, hiển thị UI dạng mm:ss)
+	Original Audio Key
+	Đường dẫn lưu trữ file âm thanh gốc chất lượng cao
+	String (S3 Key, bắt buộc, không hiển thị công khai)
+	Allowed Core Permissions
+	Danh sách các quyền cốt lõi sản phẩm được phép bán
+	Multiselect/Array (Lưu các ID lấy từ Phần 1)
+	Status
+	Trạng thái hiển thị và kinh doanh của sản phẩm
+	Enum (PENDING - Chờ duyệt, PUBLISH, HIDDEN)
+	Created At
+	Thời gian sản phẩm được đẩy lên hệ thống
+	Timestamp (ISO 8601, tự động sinh)
+	Updated At
+	Thời gian cập nhật thông tin sản phẩm lần cuối
+	Timestamp (ISO 8601, tự động cập nhật)
+	Admin action:
+* View & Search Product: Xem danh sách sản phẩm, lọc theo trạng thái (ví dụ: tìm các sản phẩm PENDING để kiểm tra).
+* Configure Allowed Permissions: Gắn/tích chọn các quyền cốt lõi (Allowed Core Permissions) mà sản phẩm này được phép kinh doanh dựa trên kết quả xác minh pháp lý.
+* Toggle Status (Publish/Hidden): Bật phát hành hoặc ẩn sản phẩm (chỉ thao tác được khi đã qua kiểm duyệt).
+Logic hoạt động:
+* Khởi tạo và Trạng thái Chờ (PENDING): Khi người dùng đẩy sản phẩm lên lần đầu, hệ thống mặc định gán Status = PENDING. Lúc này trường Allowed Core Permissions sẽ hoàn toàn trống (Null/Empty Array).
+* Logic Gắn Quyền Thương Mại (Permission Binding): Trường Allowed Core Permissions không cho phép sửa đổi thủ công bởi Creator. Danh sách quyền này chỉ được hệ thống tự động đồng bộ hoặc do Admin chủ động chỉ định Sau khi Module Pháp lý (Phần 7) xác minh hồ sơ là hợp lệ (SUFFICIENT).
+* Ràng buộc Phát hành (PUBLISH): Hệ thống chặn hoàn toàn việc chuyển trạng thái từ PENDING sang PUBLISH nếu danh sách Allowed Core Permissions đang rỗng. Người dùng cuối (Người mua) chỉ có thể mua các gói quyền nằm trong danh sách "quyền được phép bán" này của sản phẩm.
+Định nghĩa hoàn thành (DoD):
+* Giao diện danh sách hiển thị đầy đủ cột Thumbnail (dưới dạng ảnh thu nhỏ) và cột Trạng thái hiển thị đúng chữ "Đang chờ kiểm duyệt" cho các sản phẩm mới.
+* Biểu mẫu (Form) chi tiết sản phẩm hiển thị trực quan danh sách các quyền (Allowed Core Permissions) đã được phê duyệt và cấp phép từ Module quản lý dưới.
+* Hệ thống hiển thị thông báo lỗi và chặn hành động lưu nếu Admin cố tình bấm chuyển trạng thái một sản phẩm sang PUBLISH khi danh sách quyền được phép bán (Allowed Core Permissions) đang trống.
+7. Compliance & Legal Management (Module Quản lý Giấy tờ Pháp lý & Kiểm duyệt)
+Mục tiêu:
+Quản lý quy trình tải lên trực tiếp các tệp tin chứng minh pháp lý, thực hiện kiểm duyệt chất lượng nội dung âm thanh và tiến hành cấp quyền thương mại hợp pháp cho từng sản phẩm.
+
+
+Đối tượng sử dụng:
+Admin (Bộ phận Pháp chế / Kiểm duyệt viên)
+
+
+Màn hình hiển thị:
+Admin Compliance & Review Dashboard (Màn hình thẩm định hồ sơ, xem file đính kèm và cấp quyền)
+
+
+Bảng số liệu hiển thị:
+Tên thuộc tính
+	Mô tả thuộc tính
+	Ràng buộc / Kiểu dữ liệu
+	Compliance ID
+	Mã định danh duy nhất của hồ sơ kiểm duyệt
+	String (Khóa chính - PK, UNIQUE, dạng CMP-XXXX)
+	Product ID
+	Mã sản phẩm được tham chiếu đến
+	String (Khóa ngoại - FK, UNIQUE - Ràng buộc 1-1)
+	Uploaded Legal Files
+	Danh sách các tệp tin giấy tờ pháp lý đính kèm
+	Array / JSON (Mảng Object chứa file_name, s3_key)
+	Legal Status
+	Trạng thái xác minh của hồ sơ giấy tờ
+	Enum (PENDING, SUFFICIENT, INSUFFICIENT)
+	Review Status
+	Trạng thái kiểm duyệt nội dung âm thanh
+	Enum (PENDING, APPROVED, REJECTED)
+	Approved Permissions
+	Các quyền cốt lõi được Admin cấp phép từ hồ sơ
+	Multiselect (Chọn từ danh sách Core Quyền ở P1)
+	Reject Reason
+	Lý do từ chối kiểm duyệt hoặc từ chối hồ sơ
+	Text (Bắt buộc khi chọn REJECTED/INSUFFICIENT)
+	Reviewed By
+	ID của Admin hoặc Kiểm duyệt viên xử lý
+	String (Tham chiếu tới bảng User/Admin)
+	Reviewed At
+	Thời gian thực hiện xử lý kiểm duyệt
+	Timestamp (ISO 8601, hệ thống tự ghi)
+	Admin action:
+* Upload/Manage Legal Files: Cho phép Creator (hoặc Admin hỗ trợ) tải lên trực tiếp các file đính kèm (PDF, DOCX, PNG) để làm bằng chứng pháp lý (Hợp đồng, Giấy ủy quyền, Chứng nhận đăng ký quyền tác giả).
+* View/Download Files: Admin có thể click để tải về hoặc xem trực tiếp các file đã upload thông qua Secure S3 Presigned URL.
+* Assign Approved Permissions: Đánh giá giấy tờ và chọn các quyền cụ thể được phép áp dụng cho sản phẩm này.
+* Submit Review Decision: Xác nhận kết quả duyệt để kích hoạt trạng thái cho sản phẩm.
+
+
+Logic hoạt động:
+* Luồng xử lý Upload File: Thay vì lưu một đường dẫn text (URL) tĩnh cố định, hệ thống cung cấp API Endpoint dạng Multipart/Form-Data cho phép upload nhiều file cùng lúc lên Object Storage (S3). Hệ thống sẽ Validate định dạng file (Chỉ nhận PDF, tài liệu văn bản hoặc ảnh scan rõ nét) và giới hạn dung lượng file (< 25MB mỗi file) trước khi lưu thông tin vào trường Uploaded Legal Files.
+* Luồng đồng bộ tự động và Cấp quyền (Event Trigger & Data Sync):
+1. Admin tiến hành thẩm định danh sách file đính kèm trong Uploaded Legal Files và nghe duyệt nội dung âm thanh của sản phẩm.
+2. Admin tích chọn các quyền cốt lõi hợp pháp vào ô Approved Permissions.
+3. Khi Admin bấm "Xác nhận" và hệ thống ghi nhận Legal Status = SUFFICIENT VÀ Review Status = APPROVED:
+* Hệ thống sẽ tự động thực hiện một lệnh Update (hoặc bắn Event đồng bộ dữ liệu) để sao chép toàn bộ danh sách quyền từ Approved Permissions (Phần 7) ghi đè vào trường Allowed Core Permissions của bảng Product (Phần 6).
+* Đồng thời, hệ thống tự động giải phóng lệnh khóa, cho phép Admin/Creator có quyền chuyển trạng thái sản phẩm bên Phần 6 từ PENDING sang PUBLISH hoặc HIDDEN.
+
+
+Định nghĩa hoàn thành (DoD):
+* Tính năng Tải tệp tin (Upload File) hoạt động chính xác: Hệ thống lưu trữ thành công danh sách file đính kèm dưới dạng mảng JSON gồm tên file và S3 key, chặn thành công các file sai định dạng (ví dụ: chặn file .exe, .mp3 gài vào phần giấy tờ).
+* Tính năng Xem tệp đính kèm hoạt động đúng: Admin click vào từng file trong danh sách Uploaded Legal Files hiển thị trên giao diện, hệ thống tự động sinh mã Token bảo mật để mở file hoặc tải file về máy thành công.
+* Logic Đồng bộ và Cấp quyền chạy chính xác 100%: Ngay khi bấm phê duyệt thành công hồ sơ pháp lý, danh sách quyền được chọn lập tức xuất hiện tại phần dữ liệu của sản phẩm ở Phần 6, đồng thời trạng thái sản phẩm sẵn sàng để chuyển sang PUBLISH.

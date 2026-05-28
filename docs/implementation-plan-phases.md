@@ -141,8 +141,8 @@ Khuyến nghị implement theo thứ tự (mỗi bước đều cập nhật Swa
    - `POST /admin/users`
    - `GET /admin/users/admins` (Super Admin)
 3. **Tracks**
-   - `POST /admin/tracks`
-   - `PATCH /admin/tracks/:trackId/publish`
+   - `POST /admin/products`
+   - `PATCH /admin/products/:trackId/publish`
    - `GET /catalog/tracks`
 4. **Checkout + Certificates**
    - `POST /buyer/checkout`

@@ -127,7 +127,7 @@ Run (tại `apps/api`):
 npm run seed:dev
 ```
 
-Expected: seed chạy ok; trong `public.tracks`, `original_audio_key` và `preview_audio_key` của seed tracks là `NULL`.
+Expected: seed chạy ok; trong `public.products`, `original_audio_key` và `preview_audio_key` của seed tracks là `NULL`.
 
 ---
 

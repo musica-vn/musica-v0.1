@@ -200,6 +200,15 @@ body.app-dark {
   color-scheme: dark;
 }
 
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 #center {
   display: flex;
   flex-direction: column;

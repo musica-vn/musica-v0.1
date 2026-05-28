@@ -15,8 +15,8 @@ import {
 } from '../../certificates/certificates.api'
 import type { CertificateDetail, CertificateListItem as CertificateListItemType } from '../../certificates/certificates.types'
 import CertificateListItemCard from '../../certificates/components/CertificateListItem.vue'
-import TrackFilterInput from '../../tracks/components/TrackFilterInput.vue'
-import TrackFilterSelect from '../../tracks/components/TrackFilterSelect.vue'
+import ProductFilterInput from '../../products/components/ProductFilterInput.vue'
+import ProductFilterSelect from '../../products/components/ProductFilterSelect.vue'
 
 const usageRightLabelMap: Record<string, string> = {
   REPRODUCTION_RIGHT: 'Quyền sao chép tác phẩm',
@@ -329,9 +329,9 @@ onMounted(async () => {
               <div class="text-xl font-semibold text-slate-950 dark:text-white">Danh sách chứng chỉ</div>
             </div>
             <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-              <TrackFilterInput v-model="filters.buyerKeyword" icon-class="pi pi-user" placeholder="Người mua" :disabled="isLoading" />
-              <TrackFilterInput v-model="filters.trackKeyword" icon-class="pi pi-wave-pulse" placeholder="Track" :disabled="isLoading" />
-              <TrackFilterSelect v-model="filters.status" icon-class="pi pi-tag" :options="statusOptions" :disabled="isLoading" />
+              <ProductFilterInput v-model="filters.buyerKeyword" icon-class="pi pi-user" placeholder="Người mua" :disabled="isLoading" />
+              <ProductFilterInput v-model="filters.trackKeyword" icon-class="pi pi-wave-pulse" placeholder="Track" :disabled="isLoading" />
+              <ProductFilterSelect v-model="filters.status" icon-class="pi pi-tag" :options="statusOptions" :disabled="isLoading" />
               <input v-model="filters.artistId" :class="fieldClass" placeholder="Artist ID" />
               <input v-model="filters.fromDate" :class="fieldClass" placeholder="Từ ngày (ISO date)" />
               <input v-model="filters.toDate" :class="fieldClass" placeholder="Đến ngày (ISO date)" />

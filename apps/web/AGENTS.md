@@ -1,5 +1,7 @@
 # Vue Skills Development Guide
 
+> Runtime note: file hướng dẫn chính cho AI agent khi làm FE là [AGENT.md](file:///c:/Users/LHP02/Desktop/musica-v0.1/apps/web/AGENT.md). Tài liệu này giữ vai trò handbook dài cho việc phát triển và đánh giá skill library trong `apps/web/skills`.
+
 ## Branch Strategy
 
 > **IMPORTANT: Never develop on `main` branch!**

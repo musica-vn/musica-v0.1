@@ -9,10 +9,13 @@ import { ExamplesModule } from './examples/examples.module';
 import { HealthModule } from './health/health.module';
 import { RequestIdMiddleware } from './common/request-id.middleware';
 import { AuthModule } from './auth/auth.module';
-import { TracksModule } from './tracks/tracks.module';
+import { ProductsModule } from './products/products.module';
 import { CertificatesModule } from './certificates/certificates.module';
 import { AdminUsersModule } from './admin-users/admin-users.module';
 import { ManagedUsersModule } from './managed-users/managed-users.module';
+import { CorePermissionsModule } from './core-permissions/core-permissions.module';
+import { ComplianceModule } from './compliance/compliance.module';
+import { LicensingConfigsModule } from './licensing-configs/licensing-configs.module';
 
 @Module({
   imports: [
@@ -23,10 +26,13 @@ import { ManagedUsersModule } from './managed-users/managed-users.module';
     HealthModule,
     ExamplesModule,
     AuthModule,
-    TracksModule,
+    ProductsModule,
     CertificatesModule,
     AdminUsersModule,
     ManagedUsersModule,
+    CorePermissionsModule,
+    ComplianceModule,
+    LicensingConfigsModule,
   ],
   controllers: [AppController],
   providers: [

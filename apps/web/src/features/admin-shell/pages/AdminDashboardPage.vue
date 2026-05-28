@@ -5,7 +5,15 @@ import { useAuthStore } from '../../auth/auth.store'
 import { listAdmins } from '../../admins/admins.api'
 import { listManagedUsers } from '../../managed-users/managed-users.api'
 import { listAdminCertificates } from '../../certificates/certificates.api'
-import { getAdminTracksSummary } from '../../tracks/tracks.api'
+import { getAdminProductsSummary } from '../../products/products.api'
+import { listAdminCompliance } from '../../compliance/compliance.api'
+import { listAdminCorePermissions } from '../../core-permissions/core-permissions.api'
+import {
+  listAdminDigitalRightConfigs,
+  listAdminExpressionConfigs,
+  listAdminModificationConfigs,
+  listAdminPhysicalRightConfigs,
+} from '../../licensing-configs/licensing-configs.api'
 import type { AdminUser } from '../../admins/admins.types'
 import type { ManagedUser } from '../../managed-users/managed-users.types'
 import AdminStatCard from '../components/AdminStatCard.vue'
@@ -29,6 +37,9 @@ const adminTotal = ref(0)
 const buyerTotal = ref(0)
 const artistTotal = ref(0)
 const certificateTotal = ref(0)
+const activeCorePermissionTotal = ref(0)
+const activeLicensingConfigTotal = ref(0)
+const pendingComplianceTotal = ref(0)
 const recentAdmins = ref<AdminUser[]>([])
 const recentBuyers = ref<ManagedUser[]>([])
 const recentArtists = ref<ManagedUser[]>([])
@@ -39,7 +50,7 @@ const recentUsers = computed(() => [...recentArtists.value, ...recentBuyers.valu
 const statCards = computed<DashboardStatCard[]>(() => {
   const cards: DashboardStatCard[] = [
     {
-      title: 'Tổng track',
+      title: 'Tổng product',
       value: trackTotal.value,
       description: `${publishedTracks.value} đang phát hành, ${hiddenTracks.value} đang ẩn`,
       icon: 'pi pi-wave-pulse',
@@ -59,6 +70,20 @@ const statCards = computed<DashboardStatCard[]>(() => {
       icon: 'pi pi-file-pdf',
       tone: 'emerald' as const,
     },
+    {
+      title: 'Core permissions',
+      value: activeCorePermissionTotal.value,
+      description: 'Số quyền cốt lõi đang ACTIVE và sẵn sàng để map',
+      icon: 'pi pi-sliders-h',
+      tone: 'amber' as const,
+    },
+    {
+      title: 'Licensing configs',
+      value: activeLicensingConfigTotal.value,
+      description: `${pendingComplianceTotal.value} hồ sơ compliance đang chờ xử lý`,
+      icon: 'pi pi-sitemap',
+      tone: 'sky' as const,
+    },
   ]
 
   if (authStore.isSuperAdmin) {
@@ -77,9 +102,9 @@ const statCards = computed<DashboardStatCard[]>(() => {
 const quickActions = computed(() => {
   const items = [
     {
-      title: 'Đi tới track',
-      description: 'Quản lý audio, xuất bản và metadata',
-      to: '/admin/tracks',
+      title: 'Đi tới product',
+      description: 'Quản lý sản phẩm, audio, xuất bản và metadata',
+      to: '/admin/products',
       icon: 'pi pi-arrow-up-right',
     },
     {
@@ -92,6 +117,18 @@ const quickActions = computed(() => {
       title: 'Đi tới certificates',
       description: 'Theo dõi chứng chỉ và template HTML',
       to: '/admin/certificates',
+      icon: 'pi pi-arrow-up-right',
+    },
+    {
+      title: 'Đi tới digital rights',
+      description: 'Cấu hình pricing và permission set cho nền tảng số',
+      to: '/admin/settings/digital-rights',
+      icon: 'pi pi-arrow-up-right',
+    },
+    {
+      title: 'Đi tới core permissions',
+      description: 'Quản lý tập quyền pháp lý gốc dùng cho toàn hệ thống',
+      to: '/admin/settings/permissions',
       icon: 'pi pi-arrow-up-right',
     },
   ]
@@ -119,13 +156,30 @@ const loadDashboard = async () => {
 
   try {
     const tasks = [
-      getAdminTracksSummary({}),
+      getAdminProductsSummary({}),
       listManagedUsers({ page: 1, pageSize: 3, roleCode: 'BUYER' }),
       listManagedUsers({ page: 1, pageSize: 3, roleCode: 'ARTIST' }),
       listAdminCertificates({ page: 1, pageSize: 1 }),
+      listAdminCorePermissions({ page: 1, pageSize: 1, status: 'ACTIVE' }),
+      listAdminDigitalRightConfigs({ page: 1, pageSize: 1, status: 'ACTIVE' }),
+      listAdminPhysicalRightConfigs({ page: 1, pageSize: 1, status: 'ACTIVE' }),
+      listAdminExpressionConfigs({ page: 1, pageSize: 1, status: 'ACTIVE' }),
+      listAdminModificationConfigs({ page: 1, pageSize: 1, status: 'ACTIVE' }),
+      listAdminCompliance({ page: 1, pageSize: 1, reviewStatus: 'PENDING' }),
     ] as const
 
-    const [tracksSummaryResponse, buyersResponse, artistsResponse, certificatesResponse] =
+    const [
+      tracksSummaryResponse,
+      buyersResponse,
+      artistsResponse,
+      certificatesResponse,
+      corePermissionsResponse,
+      digitalConfigsResponse,
+      physicalConfigsResponse,
+      expressionConfigsResponse,
+      modificationConfigsResponse,
+      pendingComplianceResponse,
+    ] =
       await Promise.all(tasks)
 
     trackTotal.value = tracksSummaryResponse.data.total
@@ -135,6 +189,13 @@ const loadDashboard = async () => {
     buyerTotal.value = buyersResponse.meta.pagination.totalItems
     artistTotal.value = artistsResponse.meta.pagination.totalItems
     certificateTotal.value = certificatesResponse.meta.pagination.totalItems
+    activeCorePermissionTotal.value = corePermissionsResponse.meta.pagination.totalItems
+    activeLicensingConfigTotal.value =
+      digitalConfigsResponse.meta.pagination.totalItems +
+      physicalConfigsResponse.meta.pagination.totalItems +
+      expressionConfigsResponse.meta.pagination.totalItems +
+      modificationConfigsResponse.meta.pagination.totalItems
+    pendingComplianceTotal.value = pendingComplianceResponse.meta.pagination.totalItems
     recentBuyers.value = buyersResponse.data.items
     recentArtists.value = artistsResponse.data.items
 
@@ -360,4 +421,3 @@ onMounted(() => {
     </section>
   </div>
 </template>
-

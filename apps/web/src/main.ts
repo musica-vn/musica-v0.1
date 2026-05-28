@@ -23,5 +23,6 @@ app.use(PrimeVue, {
     },
   },
 })
+app.use(ConfirmationService)
 
 app.mount('#app')

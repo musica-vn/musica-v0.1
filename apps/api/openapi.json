@@ -121,9 +121,9 @@
         ]
       }
     },
-    "/admin/tracks": {
+    "/admin/products": {
       "get": {
-        "operationId": "AdminTracksController_list",
+        "operationId": "AdminProductsController_list",
         "parameters": [
           {
             "name": "page",
@@ -141,8 +141,8 @@
             "in": "query",
             "schema": {
               "minimum": 1,
-              "maximum": 100,
-              "default": 20,
+              "maximum": 10,
+              "default": 10,
               "type": "number"
             }
           },
@@ -160,7 +160,19 @@
             "in": "query",
             "schema": {
               "example": "createdAt:desc",
-              "type": "string"
+              "type": "string",
+              "enum": [
+                "createdAt:desc",
+                "createdAt:asc",
+                "updatedAt:desc",
+                "updatedAt:asc",
+                "title:asc",
+                "title:desc",
+                "status:asc",
+                "status:desc",
+                "genre:asc",
+                "genre:desc"
+              ]
             }
           },
           {
@@ -170,6 +182,7 @@
             "schema": {
               "type": "string",
               "enum": [
+                "PENDING",
                 "HIDDEN",
                 "PUBLISHED"
               ]
@@ -206,7 +219,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AdminTracksListResponseDto"
+                  "$ref": "#/components/schemas/AdminProductsListResponseDto"
                 }
               }
             }
@@ -217,20 +230,20 @@
             "bearer": []
           }
         ],
-        "summary": "List tracks (admin)",
+        "summary": "List products (admin)",
         "tags": [
-          "Admin - Tracks"
+          "Admin - Products"
         ]
       },
       "post": {
-        "operationId": "AdminTracksController_create",
+        "operationId": "AdminProductsController_create",
         "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/AdminCreateTrackRequestDto"
+                "$ref": "#/components/schemas/AdminCreateProductRequestDto"
               }
             }
           }
@@ -241,7 +254,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AdminTrackResponseDto"
+                  "$ref": "#/components/schemas/AdminProductResponseDto"
                 }
               }
             }
@@ -252,18 +265,78 @@
             "bearer": []
           }
         ],
-        "summary": "Create track metadata (admin)",
+        "summary": "Create product metadata (admin)",
         "tags": [
-          "Admin - Tracks"
+          "Admin - Products"
         ]
       }
     },
-    "/admin/tracks/{trackId}": {
+    "/admin/products/summary": {
       "get": {
-        "operationId": "AdminTracksController_detail",
+        "operationId": "AdminProductsController_summary",
         "parameters": [
           {
-            "name": "trackId",
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "keyword",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "genre",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "artistId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminProductsSummaryResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get product summary counts (admin)",
+        "tags": [
+          "Admin - Products"
+        ]
+      }
+    },
+    "/admin/products/{productId}": {
+      "get": {
+        "operationId": "AdminProductsController_detail",
+        "parameters": [
+          {
+            "name": "productId",
             "required": true,
             "in": "path",
             "schema": {
@@ -277,7 +350,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AdminTrackResponseDto"
+                  "$ref": "#/components/schemas/AdminProductResponseDto"
                 }
               }
             }
@@ -288,16 +361,16 @@
             "bearer": []
           }
         ],
-        "summary": "Get track detail (admin)",
+        "summary": "Get product detail (admin)",
         "tags": [
-          "Admin - Tracks"
+          "Admin - Products"
         ]
       },
       "patch": {
-        "operationId": "AdminTracksController_update",
+        "operationId": "AdminProductsController_update",
         "parameters": [
           {
-            "name": "trackId",
+            "name": "productId",
             "required": true,
             "in": "path",
             "schema": {
@@ -310,7 +383,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/AdminUpdateTrackRequestDto"
+                "$ref": "#/components/schemas/AdminUpdateProductRequestDto"
               }
             }
           }
@@ -321,7 +394,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AdminTrackResponseDto"
+                  "$ref": "#/components/schemas/AdminProductResponseDto"
                 }
               }
             }
@@ -332,18 +405,64 @@
             "bearer": []
           }
         ],
-        "summary": "Update track metadata (admin)",
+        "summary": "Update product metadata (admin)",
         "tags": [
-          "Admin - Tracks"
+          "Admin - Products"
         ]
       }
     },
-    "/admin/tracks/{trackId}/original-upload-url": {
-      "post": {
-        "operationId": "AdminTracksController_originalUploadUrl",
+    "/admin/products/{productId}/allowed-permissions": {
+      "put": {
+        "operationId": "AdminProductsController_replaceAllowedPermissions",
         "parameters": [
           {
-            "name": "trackId",
+            "name": "productId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminReplaceProductAllowedPermissionsRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminProductResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Replace allowed permissions for product (admin)",
+        "tags": [
+          "Admin - Products"
+        ]
+      }
+    },
+    "/admin/products/{productId}/original-upload-url": {
+      "post": {
+        "operationId": "AdminProductsController_originalUploadUrl",
+        "parameters": [
+          {
+            "name": "productId",
             "required": true,
             "in": "path",
             "schema": {
@@ -357,7 +476,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AdminTrackUploadUrlResponseDto"
+                  "$ref": "#/components/schemas/AdminProductUploadUrlResponseDto"
                 }
               }
             }
@@ -370,16 +489,16 @@
         ],
         "summary": "Get signed upload URL for original audio (admin)",
         "tags": [
-          "Admin - Tracks"
+          "Admin - Products"
         ]
       }
     },
-    "/admin/tracks/{trackId}/preview-upload-url": {
+    "/admin/products/{productId}/thumbnail-upload-url": {
       "post": {
-        "operationId": "AdminTracksController_previewUploadUrl",
+        "operationId": "AdminProductsController_thumbnailUploadUrl",
         "parameters": [
           {
-            "name": "trackId",
+            "name": "productId",
             "required": true,
             "in": "path",
             "schema": {
@@ -387,13 +506,23 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminCreateProductThumbnailUploadUrlRequestDto"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AdminTrackUploadUrlResponseDto"
+                  "$ref": "#/components/schemas/AdminProductUploadUrlResponseDto"
                 }
               }
             }
@@ -404,18 +533,110 @@
             "bearer": []
           }
         ],
-        "summary": "Get signed upload URL for preview audio (admin)",
+        "summary": "Get signed upload URL for product thumbnail (admin)",
         "tags": [
-          "Admin - Tracks"
+          "Admin - Products"
         ]
       }
     },
-    "/admin/tracks/{trackId}/preview-playback-url": {
+    "/admin/products/{productId}/confirm-audio-upload": {
+      "post": {
+        "operationId": "AdminProductsController_confirmAudioUpload",
+        "parameters": [
+          {
+            "name": "productId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminConfirmProductAudioUploadRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminProductResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Confirm uploaded audio key (admin)",
+        "tags": [
+          "Admin - Products"
+        ]
+      }
+    },
+    "/admin/products/{productId}/confirm-thumbnail-upload": {
+      "post": {
+        "operationId": "AdminProductsController_confirmThumbnailUpload",
+        "parameters": [
+          {
+            "name": "productId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminConfirmProductThumbnailUploadRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminProductResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Confirm uploaded thumbnail key (admin)",
+        "tags": [
+          "Admin - Products"
+        ]
+      }
+    },
+    "/admin/products/{productId}/thumbnail-url": {
       "get": {
-        "operationId": "AdminTracksController_previewPlaybackUrl",
+        "operationId": "AdminProductsController_thumbnailUrl",
         "parameters": [
           {
-            "name": "trackId",
+            "name": "productId",
             "required": true,
             "in": "path",
             "schema": {
@@ -429,7 +650,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AdminTrackPlaybackUrlResponseDto"
+                  "$ref": "#/components/schemas/AdminProductThumbnailUrlResponseDto"
                 }
               }
             }
@@ -440,18 +661,18 @@
             "bearer": []
           }
         ],
-        "summary": "Get signed playback URL for preview audio (admin)",
+        "summary": "Get signed URL for product thumbnail (admin)",
         "tags": [
-          "Admin - Tracks"
+          "Admin - Products"
         ]
       }
     },
-    "/admin/tracks/{trackId}/publish": {
-      "patch": {
-        "operationId": "AdminTracksController_publish",
+    "/admin/products/{productId}/original-playback-url": {
+      "get": {
+        "operationId": "AdminProductsController_originalPlaybackUrl",
         "parameters": [
           {
-            "name": "trackId",
+            "name": "productId",
             "required": true,
             "in": "path",
             "schema": {
@@ -465,7 +686,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AdminTrackResponseDto"
+                  "$ref": "#/components/schemas/AdminProductPlaybackUrlResponseDto"
                 }
               }
             }
@@ -476,18 +697,18 @@
             "bearer": []
           }
         ],
-        "summary": "Publish track (admin)",
+        "summary": "Get signed playback URL for original audio (admin)",
         "tags": [
-          "Admin - Tracks"
+          "Admin - Products"
         ]
       }
     },
-    "/admin/tracks/{trackId}/hide": {
+    "/admin/products/{productId}/publish": {
       "patch": {
-        "operationId": "AdminTracksController_hide",
+        "operationId": "AdminProductsController_publish",
         "parameters": [
           {
-            "name": "trackId",
+            "name": "productId",
             "required": true,
             "in": "path",
             "schema": {
@@ -501,7 +722,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AdminTrackResponseDto"
+                  "$ref": "#/components/schemas/AdminProductResponseDto"
                 }
               }
             }
@@ -512,9 +733,45 @@
             "bearer": []
           }
         ],
-        "summary": "Hide track (admin)",
+        "summary": "Publish product (admin)",
         "tags": [
-          "Admin - Tracks"
+          "Admin - Products"
+        ]
+      }
+    },
+    "/admin/products/{productId}/hide": {
+      "patch": {
+        "operationId": "AdminProductsController_hide",
+        "parameters": [
+          {
+            "name": "productId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminProductResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Hide product (admin)",
+        "tags": [
+          "Admin - Products"
         ]
       }
     },
@@ -804,6 +1061,2020 @@
           "Admin - Certificates"
         ]
       }
+    },
+    "/admin/users/admins": {
+      "get": {
+        "operationId": "AdminUsersController_listAdmins",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "createdAt:desc",
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ACTIVE",
+                "LOCKED",
+                "DELETED"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminUserListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin-users"
+        ]
+      },
+      "post": {
+        "operationId": "AdminUsersController_createAdmin",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAdminUserRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin-users"
+        ]
+      }
+    },
+    "/admin/users/admins/{adminId}": {
+      "patch": {
+        "operationId": "AdminUsersController_updateAdmin",
+        "parameters": [
+          {
+            "name": "adminId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAdminUserRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin-users"
+        ]
+      },
+      "delete": {
+        "operationId": "AdminUsersController_deleteAdmin",
+        "parameters": [
+          {
+            "name": "adminId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin-users"
+        ]
+      }
+    },
+    "/admin/users/admins/{adminId}/status": {
+      "patch": {
+        "operationId": "AdminUsersController_updateAdminStatus",
+        "parameters": [
+          {
+            "name": "adminId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAdminUserStatusRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin-users"
+        ]
+      }
+    },
+    "/admin/users": {
+      "get": {
+        "operationId": "ManagedUsersController_listUsers",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "createdAt:desc",
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ACTIVE",
+                "LOCKED",
+                "DELETED"
+              ]
+            }
+          },
+          {
+            "name": "roleCode",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "BUYER",
+                "ARTIST"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagedUserListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "managed-users"
+        ]
+      },
+      "post": {
+        "operationId": "ManagedUsersController_createUser",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateManagedUserRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "managed-users"
+        ]
+      }
+    },
+    "/admin/users/{userId}": {
+      "patch": {
+        "operationId": "ManagedUsersController_updateUser",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateManagedUserRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "managed-users"
+        ]
+      },
+      "delete": {
+        "operationId": "ManagedUsersController_deleteUser",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "managed-users"
+        ]
+      }
+    },
+    "/admin/users/{userId}/status": {
+      "patch": {
+        "operationId": "ManagedUsersController_updateUserStatus",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateManagedUserStatusRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "managed-users"
+        ]
+      }
+    },
+    "/admin/core-permissions": {
+      "get": {
+        "operationId": "AdminCorePermissionsController_list",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "createdAt:desc",
+              "type": "string"
+            }
+          },
+          {
+            "name": "keyword",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ACTIVE",
+                "INACTIVE"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminCorePermissionsListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Admin - Core Permissions"
+        ]
+      },
+      "post": {
+        "operationId": "AdminCorePermissionsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminCreateCorePermissionRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminCorePermissionResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Admin - Core Permissions"
+        ]
+      }
+    },
+    "/admin/core-permissions/{permissionId}": {
+      "patch": {
+        "operationId": "AdminCorePermissionsController_update",
+        "parameters": [
+          {
+            "name": "permissionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminUpdateCorePermissionRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminCorePermissionResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Admin - Core Permissions"
+        ]
+      },
+      "delete": {
+        "operationId": "AdminCorePermissionsController_delete",
+        "parameters": [
+          {
+            "name": "permissionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Admin - Core Permissions"
+        ]
+      }
+    },
+    "/admin/core-permissions/{permissionId}/status": {
+      "patch": {
+        "operationId": "AdminCorePermissionsController_updateStatus",
+        "parameters": [
+          {
+            "name": "permissionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminUpdateCorePermissionStatusRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminCorePermissionResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Admin - Core Permissions"
+        ]
+      }
+    },
+    "/admin/compliance": {
+      "get": {
+        "operationId": "AdminComplianceController_list",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "createdAt:desc",
+              "type": "string"
+            }
+          },
+          {
+            "name": "keyword",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "legalStatus",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PENDING",
+                "SUFFICIENT",
+                "INSUFFICIENT"
+              ]
+            }
+          },
+          {
+            "name": "reviewStatus",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PENDING",
+                "APPROVED",
+                "REJECTED"
+              ]
+            }
+          },
+          {
+            "name": "productStatus",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PENDING",
+                "HIDDEN",
+                "PUBLISHED"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminComplianceListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Admin - Compliance"
+        ]
+      }
+    },
+    "/admin/compliance/{trackId}": {
+      "get": {
+        "operationId": "AdminComplianceController_detail",
+        "parameters": [
+          {
+            "name": "trackId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminComplianceDetailResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Admin - Compliance"
+        ]
+      }
+    },
+    "/admin/compliance/{trackId}/files": {
+      "post": {
+        "operationId": "AdminComplianceController_uploadFiles",
+        "parameters": [
+          {
+            "name": "trackId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Admin - Compliance"
+        ]
+      }
+    },
+    "/admin/compliance/files/download-url": {
+      "post": {
+        "operationId": "AdminComplianceController_createDownloadUrl",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminCreateComplianceFileDownloadUrlRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminComplianceFileDownloadUrlResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Admin - Compliance"
+        ]
+      }
+    },
+    "/admin/compliance/{trackId}/decision": {
+      "put": {
+        "operationId": "AdminComplianceController_submitDecision",
+        "parameters": [
+          {
+            "name": "trackId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminComplianceDecisionRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminComplianceDetailResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Admin - Compliance"
+        ]
+      }
+    },
+    "/admin/digital-right-configs": {
+      "get": {
+        "operationId": "AdminDigitalRightConfigsController_list",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "createdAt:desc",
+              "type": "string"
+            }
+          },
+          {
+            "name": "keyword",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ACTIVE",
+                "INACTIVE"
+              ]
+            }
+          },
+          {
+            "name": "targetPlatform",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "YOUTUBE",
+                "TIKTOK",
+                "FACEBOOK"
+              ]
+            }
+          },
+          {
+            "name": "durationType",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ONE_YEAR",
+                "PERPETUAL"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminDigitalRightConfigsListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Admin - Digital Rights"
+        ]
+      },
+      "post": {
+        "operationId": "AdminDigitalRightConfigsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDigitalRightConfigRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminDigitalRightConfigResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Admin - Digital Rights"
+        ]
+      }
+    },
+    "/admin/digital-right-configs/{configId}": {
+      "get": {
+        "operationId": "AdminDigitalRightConfigsController_getDetail",
+        "parameters": [
+          {
+            "name": "configId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminDigitalRightConfigResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Admin - Digital Rights"
+        ]
+      },
+      "patch": {
+        "operationId": "AdminDigitalRightConfigsController_update",
+        "parameters": [
+          {
+            "name": "configId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDigitalRightConfigRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminDigitalRightConfigResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Admin - Digital Rights"
+        ]
+      },
+      "delete": {
+        "operationId": "AdminDigitalRightConfigsController_delete",
+        "parameters": [
+          {
+            "name": "configId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Admin - Digital Rights"
+        ]
+      }
+    },
+    "/admin/digital-right-configs/{configId}/status": {
+      "patch": {
+        "operationId": "AdminDigitalRightConfigsController_updateStatus",
+        "parameters": [
+          {
+            "name": "configId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateConfigStatusRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminDigitalRightConfigResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Admin - Digital Rights"
+        ]
+      }
+    },
+    "/admin/physical-right-configs": {
+      "get": {
+        "operationId": "AdminPhysicalRightConfigsController_list",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "createdAt:desc",
+              "type": "string"
+            }
+          },
+          {
+            "name": "keyword",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ACTIVE",
+                "INACTIVE"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminPhysicalRightConfigsListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Admin - Physical Rights"
+        ]
+      },
+      "post": {
+        "operationId": "AdminPhysicalRightConfigsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePhysicalRightConfigRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminPhysicalRightConfigResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Admin - Physical Rights"
+        ]
+      }
+    },
+    "/admin/physical-right-configs/{configId}": {
+      "get": {
+        "operationId": "AdminPhysicalRightConfigsController_getDetail",
+        "parameters": [
+          {
+            "name": "configId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminPhysicalRightConfigResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Admin - Physical Rights"
+        ]
+      },
+      "patch": {
+        "operationId": "AdminPhysicalRightConfigsController_update",
+        "parameters": [
+          {
+            "name": "configId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePhysicalRightConfigRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminPhysicalRightConfigResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Admin - Physical Rights"
+        ]
+      },
+      "delete": {
+        "operationId": "AdminPhysicalRightConfigsController_delete",
+        "parameters": [
+          {
+            "name": "configId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Admin - Physical Rights"
+        ]
+      }
+    },
+    "/admin/physical-right-configs/{configId}/status": {
+      "patch": {
+        "operationId": "AdminPhysicalRightConfigsController_updateStatus",
+        "parameters": [
+          {
+            "name": "configId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateConfigStatusRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminPhysicalRightConfigResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Admin - Physical Rights"
+        ]
+      }
+    },
+    "/admin/expression-configs": {
+      "get": {
+        "operationId": "AdminExpressionConfigsController_list",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "createdAt:desc",
+              "type": "string"
+            }
+          },
+          {
+            "name": "keyword",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ACTIVE",
+                "INACTIVE"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminExpressionConfigsListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Admin - Expression Configs"
+        ]
+      },
+      "post": {
+        "operationId": "AdminExpressionConfigsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateExpressionConfigRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminExpressionConfigResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Admin - Expression Configs"
+        ]
+      }
+    },
+    "/admin/expression-configs/{configId}": {
+      "get": {
+        "operationId": "AdminExpressionConfigsController_getDetail",
+        "parameters": [
+          {
+            "name": "configId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminExpressionConfigResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Admin - Expression Configs"
+        ]
+      },
+      "patch": {
+        "operationId": "AdminExpressionConfigsController_update",
+        "parameters": [
+          {
+            "name": "configId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateExpressionConfigRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminExpressionConfigResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Admin - Expression Configs"
+        ]
+      },
+      "delete": {
+        "operationId": "AdminExpressionConfigsController_delete",
+        "parameters": [
+          {
+            "name": "configId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Admin - Expression Configs"
+        ]
+      }
+    },
+    "/admin/expression-configs/{configId}/status": {
+      "patch": {
+        "operationId": "AdminExpressionConfigsController_updateStatus",
+        "parameters": [
+          {
+            "name": "configId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateConfigStatusRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminExpressionConfigResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Admin - Expression Configs"
+        ]
+      }
+    },
+    "/admin/modification-configs": {
+      "get": {
+        "operationId": "AdminModificationConfigsController_list",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "createdAt:desc",
+              "type": "string"
+            }
+          },
+          {
+            "name": "keyword",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ACTIVE",
+                "INACTIVE"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminModificationConfigsListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Admin - Modification Configs"
+        ]
+      },
+      "post": {
+        "operationId": "AdminModificationConfigsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateModificationConfigRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminModificationConfigResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Admin - Modification Configs"
+        ]
+      }
+    },
+    "/admin/modification-configs/{configId}": {
+      "get": {
+        "operationId": "AdminModificationConfigsController_getDetail",
+        "parameters": [
+          {
+            "name": "configId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminModificationConfigResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Admin - Modification Configs"
+        ]
+      },
+      "patch": {
+        "operationId": "AdminModificationConfigsController_update",
+        "parameters": [
+          {
+            "name": "configId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateModificationConfigRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminModificationConfigResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Admin - Modification Configs"
+        ]
+      },
+      "delete": {
+        "operationId": "AdminModificationConfigsController_delete",
+        "parameters": [
+          {
+            "name": "configId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Admin - Modification Configs"
+        ]
+      }
+    },
+    "/admin/modification-configs/{configId}/status": {
+      "patch": {
+        "operationId": "AdminModificationConfigsController_updateStatus",
+        "parameters": [
+          {
+            "name": "configId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateConfigStatusRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminModificationConfigResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Admin - Modification Configs"
+        ]
+      }
     }
   },
   "info": {
@@ -1040,10 +3311,28 @@
           "timestamp"
         ]
       },
-      "TrackDto": {
+      "ProductAllowedPermissionDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "lawReference": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "lawReference"
+        ]
+      },
+      "ProductDto": {
         "type": "object",
         "properties": {
           "id": {
+            "type": "string"
+          },
+          "productCode": {
             "type": "string"
           },
           "title": {
@@ -1071,17 +3360,49 @@
               "PUBLISHED"
             ]
           },
-          "usageRights": {
+          "useCase": {
+            "type": "object",
+            "nullable": true
+          },
+          "description": {
+            "type": "object",
+            "nullable": true
+          },
+          "allowedPermissionIds": {
             "type": "array",
             "items": {
               "type": "string"
             }
           },
+          "allowedPermissions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductAllowedPermissionDto"
+            }
+          },
+          "complianceLegalStatus": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "SUFFICIENT",
+              "INSUFFICIENT"
+            ],
+            "nullable": true
+          },
+          "complianceReviewStatus": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "APPROVED",
+              "REJECTED"
+            ],
+            "nullable": true
+          },
           "originalAudioKey": {
             "type": "object",
             "nullable": true
           },
-          "previewAudioKey": {
+          "thumbnailKey": {
             "type": "object",
             "nullable": true
           },
@@ -1097,22 +3418,24 @@
         },
         "required": [
           "id",
+          "productCode",
           "title",
           "artistId",
           "status",
-          "usageRights",
+          "allowedPermissionIds",
+          "allowedPermissions",
           "createdBy",
           "createdAt",
           "updatedAt"
         ]
       },
-      "AdminTracksListDataDto": {
+      "AdminProductsListDataDto": {
         "type": "object",
         "properties": {
           "items": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/TrackDto"
+              "$ref": "#/components/schemas/ProductDto"
             }
           }
         },
@@ -1162,7 +3485,7 @@
           "pagination"
         ]
       },
-      "AdminTracksListResponseDto": {
+      "AdminProductsListResponseDto": {
         "type": "object",
         "properties": {
           "success": {
@@ -1174,7 +3497,7 @@
             "example": 200
           },
           "data": {
-            "$ref": "#/components/schemas/AdminTracksListDataDto"
+            "$ref": "#/components/schemas/AdminProductsListDataDto"
           },
           "meta": {
             "$ref": "#/components/schemas/PaginationMetaDto"
@@ -1197,37 +3520,30 @@
           "timestamp"
         ]
       },
-      "AdminCreateTrackRequestDto": {
+      "AdminProductsSummaryDataDto": {
         "type": "object",
         "properties": {
-          "title": {
-            "type": "string"
-          },
-          "artistId": {
-            "type": "string"
-          },
-          "authorName": {
-            "type": "string"
-          },
-          "genre": {
-            "type": "string"
-          },
-          "duration": {
+          "total": {
             "type": "number"
           },
-          "usageRights": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
+          "published": {
+            "type": "number"
+          },
+          "hidden": {
+            "type": "number"
+          },
+          "pending": {
+            "type": "number"
           }
         },
         "required": [
-          "title",
-          "artistId"
+          "total",
+          "published",
+          "hidden",
+          "pending"
         ]
       },
-      "AdminTrackResponseDto": {
+      "AdminProductsSummaryResponseDto": {
         "type": "object",
         "properties": {
           "success": {
@@ -1239,7 +3555,7 @@
             "example": 200
           },
           "data": {
-            "$ref": "#/components/schemas/TrackDto"
+            "$ref": "#/components/schemas/AdminProductsSummaryDataDto"
           },
           "requestId": {
             "type": "string",
@@ -1258,7 +3574,7 @@
           "timestamp"
         ]
       },
-      "AdminUpdateTrackRequestDto": {
+      "AdminCreateProductRequestDto": {
         "type": "object",
         "properties": {
           "title": {
@@ -1273,18 +3589,90 @@
           "genre": {
             "type": "string"
           },
+          "useCase": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
           "duration": {
             "type": "number"
+          }
+        },
+        "required": [
+          "title",
+          "artistId"
+        ]
+      },
+      "AdminProductResponseDto": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
           },
-          "usageRights": {
+          "statusCode": {
+            "type": "number",
+            "example": 200
+          },
+          "data": {
+            "$ref": "#/components/schemas/ProductDto"
+          },
+          "requestId": {
+            "type": "string",
+            "example": "2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a"
+          },
+          "timestamp": {
+            "type": "string",
+            "example": "2026-05-20T00:00:00.000Z"
+          }
+        },
+        "required": [
+          "success",
+          "statusCode",
+          "data",
+          "requestId",
+          "timestamp"
+        ]
+      },
+      "AdminUpdateProductRequestDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "authorName": {
+            "type": "string"
+          },
+          "genre": {
+            "type": "string"
+          },
+          "useCase": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "duration": {
+            "type": "number"
+          }
+        }
+      },
+      "AdminReplaceProductAllowedPermissionsRequestDto": {
+        "type": "object",
+        "properties": {
+          "permissionIds": {
             "type": "array",
             "items": {
               "type": "string"
             }
           }
-        }
+        },
+        "required": [
+          "permissionIds"
+        ]
       },
-      "AdminTrackUploadUrlResponseDataDto": {
+      "AdminProductUploadUrlResponseDataDto": {
         "type": "object",
         "properties": {
           "uploadUrl": {
@@ -1299,7 +3687,7 @@
           "fileKey"
         ]
       },
-      "AdminTrackUploadUrlResponseDto": {
+      "AdminProductUploadUrlResponseDto": {
         "type": "object",
         "properties": {
           "success": {
@@ -1311,7 +3699,7 @@
             "example": 200
           },
           "data": {
-            "$ref": "#/components/schemas/AdminTrackUploadUrlResponseDataDto"
+            "$ref": "#/components/schemas/AdminProductUploadUrlResponseDataDto"
           },
           "requestId": {
             "type": "string",
@@ -1330,18 +3718,66 @@
           "timestamp"
         ]
       },
-      "AdminTrackPlaybackUrlResponseDataDto": {
+      "AdminCreateProductThumbnailUploadUrlRequestDto": {
         "type": "object",
         "properties": {
-          "playbackUrl": {
+          "extension": {
+            "type": "string",
+            "enum": [
+              "png",
+              "jpg",
+              "jpeg",
+              "webp"
+            ]
+          }
+        },
+        "required": [
+          "extension"
+        ]
+      },
+      "AdminConfirmProductAudioUploadRequestDto": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "original"
+            ]
+          },
+          "fileKey": {
+            "type": "string",
+            "example": "123.mp3"
+          }
+        },
+        "required": [
+          "mode",
+          "fileKey"
+        ]
+      },
+      "AdminConfirmProductThumbnailUploadRequestDto": {
+        "type": "object",
+        "properties": {
+          "fileKey": {
+            "type": "string",
+            "example": "123.png"
+          }
+        },
+        "required": [
+          "fileKey"
+        ]
+      },
+      "AdminProductThumbnailUrlResponseDataDto": {
+        "type": "object",
+        "properties": {
+          "thumbnailUrl": {
             "type": "string"
           }
         },
         "required": [
-          "playbackUrl"
+          "thumbnailUrl"
         ]
       },
-      "AdminTrackPlaybackUrlResponseDto": {
+      "AdminProductThumbnailUrlResponseDto": {
         "type": "object",
         "properties": {
           "success": {
@@ -1353,7 +3789,49 @@
             "example": 200
           },
           "data": {
-            "$ref": "#/components/schemas/AdminTrackPlaybackUrlResponseDataDto"
+            "$ref": "#/components/schemas/AdminProductThumbnailUrlResponseDataDto"
+          },
+          "requestId": {
+            "type": "string",
+            "example": "2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a"
+          },
+          "timestamp": {
+            "type": "string",
+            "example": "2026-05-20T00:00:00.000Z"
+          }
+        },
+        "required": [
+          "success",
+          "statusCode",
+          "data",
+          "requestId",
+          "timestamp"
+        ]
+      },
+      "AdminProductPlaybackUrlResponseDataDto": {
+        "type": "object",
+        "properties": {
+          "playbackUrl": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "playbackUrl"
+        ]
+      },
+      "AdminProductPlaybackUrlResponseDto": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "statusCode": {
+            "type": "number",
+            "example": 200
+          },
+          "data": {
+            "$ref": "#/components/schemas/AdminProductPlaybackUrlResponseDataDto"
           },
           "requestId": {
             "type": "string",
@@ -1728,6 +4206,1574 @@
           "requestId",
           "timestamp"
         ]
+      },
+      "AdminUserDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "LOCKED",
+              "DELETED"
+            ]
+          },
+          "roleCodes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "fullName",
+          "email",
+          "status",
+          "roleCodes",
+          "createdAt"
+        ]
+      },
+      "AdminUserListDataDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminUserDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "AdminUserListMetaDto": {
+        "type": "object",
+        "properties": {
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationDto"
+          }
+        },
+        "required": [
+          "pagination"
+        ]
+      },
+      "AdminUserListResponseDto": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "statusCode": {
+            "type": "number",
+            "example": 200
+          },
+          "data": {
+            "$ref": "#/components/schemas/AdminUserListDataDto"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/AdminUserListMetaDto"
+          },
+          "requestId": {
+            "type": "string",
+            "example": "2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a"
+          },
+          "timestamp": {
+            "type": "string",
+            "example": "2026-05-20T00:00:00.000Z"
+          }
+        },
+        "required": [
+          "success",
+          "statusCode",
+          "data",
+          "meta",
+          "requestId",
+          "timestamp"
+        ]
+      },
+      "CreateAdminUserRequestDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpdateAdminUserRequestDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpdateAdminUserStatusRequestDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "ManagedUserDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "LOCKED",
+              "DELETED"
+            ]
+          },
+          "roleCodes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "BUYER",
+                "ARTIST"
+              ]
+            }
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "fullName",
+          "email",
+          "status",
+          "roleCodes",
+          "createdAt"
+        ]
+      },
+      "ManagedUserListDataDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ManagedUserDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "ManagedUserListMetaDto": {
+        "type": "object",
+        "properties": {
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationDto"
+          }
+        },
+        "required": [
+          "pagination"
+        ]
+      },
+      "ManagedUserListResponseDto": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "statusCode": {
+            "type": "number",
+            "example": 200
+          },
+          "data": {
+            "$ref": "#/components/schemas/ManagedUserListDataDto"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ManagedUserListMetaDto"
+          },
+          "requestId": {
+            "type": "string",
+            "example": "2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a"
+          },
+          "timestamp": {
+            "type": "string",
+            "example": "2026-05-20T00:00:00.000Z"
+          }
+        },
+        "required": [
+          "success",
+          "statusCode",
+          "data",
+          "meta",
+          "requestId",
+          "timestamp"
+        ]
+      },
+      "CreateManagedUserRequestDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpdateManagedUserRequestDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpdateManagedUserStatusRequestDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "CorePermissionDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "lawReference": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "INACTIVE"
+            ]
+          },
+          "description": {
+            "type": "object",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "lawReference",
+          "status",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "AdminCorePermissionsListDataDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CorePermissionDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "AdminCorePermissionsListResponseDto": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "statusCode": {
+            "type": "number",
+            "example": 200
+          },
+          "data": {
+            "$ref": "#/components/schemas/AdminCorePermissionsListDataDto"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PaginationMetaDto"
+          },
+          "requestId": {
+            "type": "string",
+            "example": "2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a"
+          },
+          "timestamp": {
+            "type": "string",
+            "example": "2026-05-20T00:00:00.000Z"
+          }
+        },
+        "required": [
+          "success",
+          "statusCode",
+          "data",
+          "meta",
+          "requestId",
+          "timestamp"
+        ]
+      },
+      "AdminCreateCorePermissionRequestDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "lawReference": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "lawReference"
+        ]
+      },
+      "AdminCorePermissionResponseDto": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "statusCode": {
+            "type": "number",
+            "example": 200
+          },
+          "data": {
+            "$ref": "#/components/schemas/CorePermissionDto"
+          },
+          "requestId": {
+            "type": "string",
+            "example": "2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a"
+          },
+          "timestamp": {
+            "type": "string",
+            "example": "2026-05-20T00:00:00.000Z"
+          }
+        },
+        "required": [
+          "success",
+          "statusCode",
+          "data",
+          "requestId",
+          "timestamp"
+        ]
+      },
+      "AdminUpdateCorePermissionRequestDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "lawReference": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      },
+      "AdminUpdateCorePermissionStatusRequestDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "INACTIVE"
+            ]
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "ComplianceProductSnapshotDto": {
+        "type": "object",
+        "properties": {
+          "trackId": {
+            "type": "string"
+          },
+          "productCode": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "artistId": {
+            "type": "string"
+          },
+          "artistName": {
+            "type": "object",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "HIDDEN",
+              "PUBLISHED"
+            ]
+          }
+        },
+        "required": [
+          "trackId",
+          "productCode",
+          "title",
+          "artistId",
+          "status"
+        ]
+      },
+      "ComplianceListItemDto": {
+        "type": "object",
+        "properties": {
+          "complianceId": {
+            "type": "string"
+          },
+          "complianceCode": {
+            "type": "string"
+          },
+          "legalStatus": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "SUFFICIENT",
+              "INSUFFICIENT"
+            ]
+          },
+          "reviewStatus": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "APPROVED",
+              "REJECTED"
+            ]
+          },
+          "filesCount": {
+            "type": "number"
+          },
+          "reviewedBy": {
+            "type": "object",
+            "nullable": true
+          },
+          "reviewedByName": {
+            "type": "object",
+            "nullable": true
+          },
+          "reviewedAt": {
+            "type": "object",
+            "nullable": true
+          },
+          "product": {
+            "$ref": "#/components/schemas/ComplianceProductSnapshotDto"
+          }
+        },
+        "required": [
+          "complianceId",
+          "complianceCode",
+          "legalStatus",
+          "reviewStatus",
+          "filesCount",
+          "product"
+        ]
+      },
+      "AdminComplianceListDataDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ComplianceListItemDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "AdminComplianceListResponseDto": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "statusCode": {
+            "type": "number",
+            "example": 200
+          },
+          "data": {
+            "$ref": "#/components/schemas/AdminComplianceListDataDto"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PaginationMetaDto"
+          },
+          "requestId": {
+            "type": "string",
+            "example": "2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a"
+          },
+          "timestamp": {
+            "type": "string",
+            "example": "2026-05-20T00:00:00.000Z"
+          }
+        },
+        "required": [
+          "success",
+          "statusCode",
+          "data",
+          "meta",
+          "requestId",
+          "timestamp"
+        ]
+      },
+      "CorePermissionSummaryDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "lawReference": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "lawReference"
+        ]
+      },
+      "ComplianceDetailDto": {
+        "type": "object",
+        "properties": {
+          "complianceId": {
+            "type": "string"
+          },
+          "complianceCode": {
+            "type": "string"
+          },
+          "legalStatus": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "SUFFICIENT",
+              "INSUFFICIENT"
+            ]
+          },
+          "reviewStatus": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "APPROVED",
+              "REJECTED"
+            ]
+          },
+          "rejectReason": {
+            "type": "object",
+            "nullable": true
+          },
+          "reviewedBy": {
+            "type": "object",
+            "nullable": true
+          },
+          "reviewedByName": {
+            "type": "object",
+            "nullable": true
+          },
+          "reviewedAt": {
+            "type": "object",
+            "nullable": true
+          },
+          "approvedPermissionIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "approvedPermissions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CorePermissionSummaryDto"
+            }
+          },
+          "uploadedLegalFiles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "product": {
+            "$ref": "#/components/schemas/ComplianceProductSnapshotDto"
+          }
+        },
+        "required": [
+          "complianceId",
+          "complianceCode",
+          "legalStatus",
+          "reviewStatus",
+          "approvedPermissionIds",
+          "approvedPermissions",
+          "uploadedLegalFiles",
+          "product"
+        ]
+      },
+      "AdminComplianceDetailResponseDto": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "statusCode": {
+            "type": "number",
+            "example": 200
+          },
+          "data": {
+            "$ref": "#/components/schemas/ComplianceDetailDto"
+          },
+          "requestId": {
+            "type": "string",
+            "example": "2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a"
+          },
+          "timestamp": {
+            "type": "string",
+            "example": "2026-05-20T00:00:00.000Z"
+          }
+        },
+        "required": [
+          "success",
+          "statusCode",
+          "data",
+          "requestId",
+          "timestamp"
+        ]
+      },
+      "AdminCreateComplianceFileDownloadUrlRequestDto": {
+        "type": "object",
+        "properties": {
+          "fileKey": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "fileKey"
+        ]
+      },
+      "AdminComplianceFileDownloadUrlDataDto": {
+        "type": "object",
+        "properties": {
+          "downloadUrl": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "downloadUrl"
+        ]
+      },
+      "AdminComplianceFileDownloadUrlResponseDto": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "statusCode": {
+            "type": "number",
+            "example": 200
+          },
+          "data": {
+            "$ref": "#/components/schemas/AdminComplianceFileDownloadUrlDataDto"
+          },
+          "requestId": {
+            "type": "string",
+            "example": "2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a"
+          },
+          "timestamp": {
+            "type": "string",
+            "example": "2026-05-20T00:00:00.000Z"
+          }
+        },
+        "required": [
+          "success",
+          "statusCode",
+          "data",
+          "requestId",
+          "timestamp"
+        ]
+      },
+      "AdminComplianceDecisionRequestDto": {
+        "type": "object",
+        "properties": {
+          "legalStatus": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "SUFFICIENT",
+              "INSUFFICIENT"
+            ]
+          },
+          "reviewStatus": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "APPROVED",
+              "REJECTED"
+            ]
+          },
+          "approvedPermissionIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "rejectReason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "legalStatus",
+          "reviewStatus",
+          "approvedPermissionIds"
+        ]
+      },
+      "ConfigPermissionSummaryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "lawReference": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "lawReference"
+        ]
+      },
+      "DigitalRightConfigDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "INACTIVE"
+            ]
+          },
+          "referencedPermissionIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "referencedPermissions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConfigPermissionSummaryDto"
+            }
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "targetPlatform": {
+            "type": "string",
+            "enum": [
+              "YOUTUBE",
+              "TIKTOK",
+              "FACEBOOK"
+            ]
+          },
+          "durationType": {
+            "type": "string",
+            "enum": [
+              "ONE_YEAR",
+              "PERPETUAL"
+            ]
+          },
+          "basePriceMultiplier": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "status",
+          "referencedPermissionIds",
+          "referencedPermissions",
+          "createdAt",
+          "updatedAt",
+          "targetPlatform",
+          "durationType",
+          "basePriceMultiplier"
+        ]
+      },
+      "DigitalRightConfigsListDataDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DigitalRightConfigDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "AdminDigitalRightConfigsListResponseDto": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "statusCode": {
+            "type": "number",
+            "example": 200
+          },
+          "requestId": {
+            "type": "string",
+            "example": "2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a"
+          },
+          "timestamp": {
+            "type": "string",
+            "example": "2026-05-20T00:00:00.000Z"
+          },
+          "data": {
+            "$ref": "#/components/schemas/DigitalRightConfigsListDataDto"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PaginationMetaDto"
+          }
+        },
+        "required": [
+          "success",
+          "statusCode",
+          "requestId",
+          "timestamp",
+          "data",
+          "meta"
+        ]
+      },
+      "AdminDigitalRightConfigResponseDto": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "statusCode": {
+            "type": "number",
+            "example": 200
+          },
+          "requestId": {
+            "type": "string",
+            "example": "2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a"
+          },
+          "timestamp": {
+            "type": "string",
+            "example": "2026-05-20T00:00:00.000Z"
+          },
+          "data": {
+            "$ref": "#/components/schemas/DigitalRightConfigDto"
+          }
+        },
+        "required": [
+          "success",
+          "statusCode",
+          "requestId",
+          "timestamp",
+          "data"
+        ]
+      },
+      "CreateDigitalRightConfigRequestDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Bo trong de backend tu allocate code tiep theo."
+          },
+          "targetPlatform": {
+            "type": "string",
+            "enum": [
+              "YOUTUBE",
+              "TIKTOK",
+              "FACEBOOK"
+            ]
+          },
+          "durationType": {
+            "type": "string",
+            "enum": [
+              "ONE_YEAR",
+              "PERPETUAL"
+            ]
+          },
+          "basePriceMultiplier": {
+            "type": "number",
+            "minimum": 1
+          },
+          "referencedPermissionIds": {
+            "default": [],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "INACTIVE"
+            ],
+            "default": "ACTIVE"
+          }
+        },
+        "required": [
+          "targetPlatform",
+          "durationType",
+          "basePriceMultiplier"
+        ]
+      },
+      "UpdateDigitalRightConfigRequestDto": {
+        "type": "object",
+        "properties": {
+          "referencedPermissionIds": {
+            "default": [],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "targetPlatform": {
+            "type": "string",
+            "enum": [
+              "YOUTUBE",
+              "TIKTOK",
+              "FACEBOOK"
+            ]
+          },
+          "durationType": {
+            "type": "string",
+            "enum": [
+              "ONE_YEAR",
+              "PERPETUAL"
+            ]
+          },
+          "basePriceMultiplier": {
+            "type": "number",
+            "minimum": 1
+          }
+        }
+      },
+      "UpdateConfigStatusRequestDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "INACTIVE"
+            ],
+            "default": "ACTIVE"
+          }
+        }
+      },
+      "PhysicalRightConfigDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "INACTIVE"
+            ]
+          },
+          "referencedPermissionIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "referencedPermissions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConfigPermissionSummaryDto"
+            }
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "venueUsageType": {
+            "type": "string"
+          },
+          "basePriceMultiplier": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "status",
+          "referencedPermissionIds",
+          "referencedPermissions",
+          "createdAt",
+          "updatedAt",
+          "venueUsageType",
+          "basePriceMultiplier"
+        ]
+      },
+      "PhysicalRightConfigsListDataDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PhysicalRightConfigDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "AdminPhysicalRightConfigsListResponseDto": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "statusCode": {
+            "type": "number",
+            "example": 200
+          },
+          "requestId": {
+            "type": "string",
+            "example": "2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a"
+          },
+          "timestamp": {
+            "type": "string",
+            "example": "2026-05-20T00:00:00.000Z"
+          },
+          "data": {
+            "$ref": "#/components/schemas/PhysicalRightConfigsListDataDto"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PaginationMetaDto"
+          }
+        },
+        "required": [
+          "success",
+          "statusCode",
+          "requestId",
+          "timestamp",
+          "data",
+          "meta"
+        ]
+      },
+      "AdminPhysicalRightConfigResponseDto": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "statusCode": {
+            "type": "number",
+            "example": 200
+          },
+          "requestId": {
+            "type": "string",
+            "example": "2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a"
+          },
+          "timestamp": {
+            "type": "string",
+            "example": "2026-05-20T00:00:00.000Z"
+          },
+          "data": {
+            "$ref": "#/components/schemas/PhysicalRightConfigDto"
+          }
+        },
+        "required": [
+          "success",
+          "statusCode",
+          "requestId",
+          "timestamp",
+          "data"
+        ]
+      },
+      "CreatePhysicalRightConfigRequestDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Bo trong de backend tu allocate code tiep theo."
+          },
+          "venueUsageType": {
+            "type": "string"
+          },
+          "basePriceMultiplier": {
+            "type": "number",
+            "minimum": 1
+          },
+          "referencedPermissionIds": {
+            "default": [],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "INACTIVE"
+            ],
+            "default": "ACTIVE"
+          }
+        },
+        "required": [
+          "venueUsageType",
+          "basePriceMultiplier"
+        ]
+      },
+      "UpdatePhysicalRightConfigRequestDto": {
+        "type": "object",
+        "properties": {
+          "referencedPermissionIds": {
+            "default": [],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "venueUsageType": {
+            "type": "string"
+          },
+          "basePriceMultiplier": {
+            "type": "number",
+            "minimum": 1
+          }
+        }
+      },
+      "ExpressionConfigDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "INACTIVE"
+            ]
+          },
+          "referencedPermissionIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "referencedPermissions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConfigPermissionSummaryDto"
+            }
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "priceMultiplier": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "status",
+          "referencedPermissionIds",
+          "referencedPermissions",
+          "createdAt",
+          "updatedAt",
+          "name",
+          "priceMultiplier"
+        ]
+      },
+      "ExpressionConfigsListDataDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExpressionConfigDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "AdminExpressionConfigsListResponseDto": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "statusCode": {
+            "type": "number",
+            "example": 200
+          },
+          "requestId": {
+            "type": "string",
+            "example": "2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a"
+          },
+          "timestamp": {
+            "type": "string",
+            "example": "2026-05-20T00:00:00.000Z"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ExpressionConfigsListDataDto"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PaginationMetaDto"
+          }
+        },
+        "required": [
+          "success",
+          "statusCode",
+          "requestId",
+          "timestamp",
+          "data",
+          "meta"
+        ]
+      },
+      "AdminExpressionConfigResponseDto": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "statusCode": {
+            "type": "number",
+            "example": 200
+          },
+          "requestId": {
+            "type": "string",
+            "example": "2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a"
+          },
+          "timestamp": {
+            "type": "string",
+            "example": "2026-05-20T00:00:00.000Z"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ExpressionConfigDto"
+          }
+        },
+        "required": [
+          "success",
+          "statusCode",
+          "requestId",
+          "timestamp",
+          "data"
+        ]
+      },
+      "CreateExpressionConfigRequestDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Bo trong de backend tu allocate code tiep theo."
+          },
+          "name": {
+            "type": "string"
+          },
+          "priceMultiplier": {
+            "type": "number",
+            "minimum": 1
+          },
+          "referencedPermissionIds": {
+            "default": [],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "INACTIVE"
+            ],
+            "default": "ACTIVE"
+          }
+        },
+        "required": [
+          "name",
+          "priceMultiplier"
+        ]
+      },
+      "UpdateExpressionConfigRequestDto": {
+        "type": "object",
+        "properties": {
+          "referencedPermissionIds": {
+            "default": [],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "name": {
+            "type": "string"
+          },
+          "priceMultiplier": {
+            "type": "number",
+            "minimum": 1
+          }
+        }
+      },
+      "ModificationConfigDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "INACTIVE"
+            ]
+          },
+          "referencedPermissionIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "referencedPermissions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConfigPermissionSummaryDto"
+            }
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "priceMultiplier": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "status",
+          "referencedPermissionIds",
+          "referencedPermissions",
+          "createdAt",
+          "updatedAt",
+          "name",
+          "priceMultiplier"
+        ]
+      },
+      "ModificationConfigsListDataDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ModificationConfigDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "AdminModificationConfigsListResponseDto": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "statusCode": {
+            "type": "number",
+            "example": 200
+          },
+          "requestId": {
+            "type": "string",
+            "example": "2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a"
+          },
+          "timestamp": {
+            "type": "string",
+            "example": "2026-05-20T00:00:00.000Z"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ModificationConfigsListDataDto"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PaginationMetaDto"
+          }
+        },
+        "required": [
+          "success",
+          "statusCode",
+          "requestId",
+          "timestamp",
+          "data",
+          "meta"
+        ]
+      },
+      "AdminModificationConfigResponseDto": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "statusCode": {
+            "type": "number",
+            "example": 200
+          },
+          "requestId": {
+            "type": "string",
+            "example": "2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a"
+          },
+          "timestamp": {
+            "type": "string",
+            "example": "2026-05-20T00:00:00.000Z"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ModificationConfigDto"
+          }
+        },
+        "required": [
+          "success",
+          "statusCode",
+          "requestId",
+          "timestamp",
+          "data"
+        ]
+      },
+      "CreateModificationConfigRequestDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Bo trong de backend tu allocate code tiep theo."
+          },
+          "name": {
+            "type": "string"
+          },
+          "priceMultiplier": {
+            "type": "number",
+            "minimum": 1
+          },
+          "referencedPermissionIds": {
+            "default": [],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "INACTIVE"
+            ],
+            "default": "ACTIVE"
+          }
+        },
+        "required": [
+          "name",
+          "priceMultiplier"
+        ]
+      },
+      "UpdateModificationConfigRequestDto": {
+        "type": "object",
+        "properties": {
+          "referencedPermissionIds": {
+            "default": [],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "name": {
+            "type": "string"
+          },
+          "priceMultiplier": {
+            "type": "number",
+            "minimum": 1
+          }
+        }
       }
     }
   }

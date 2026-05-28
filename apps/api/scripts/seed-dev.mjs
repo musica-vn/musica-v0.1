@@ -118,26 +118,26 @@ const usersSeed = [
 ]
 
 const tracksSeed = [
-  { title: `Midnight Pulse${seedTag}`, artistEmail: 'artist01@musica.local', genre: 'Electronic', duration: 182, status: 'PUBLISHED', usage_rights: ['REPRODUCTION_RIGHT', 'DERIVATIVE_WORK_RIGHT'] },
-  { title: `Neon Skyline${seedTag}`, artistEmail: 'artist01@musica.local', genre: 'Electronic', duration: 156, status: 'PUBLISHED', usage_rights: ['COMMUNICATION_TO_PUBLIC_RIGHT', 'DISTRIBUTION_RIGHT'] },
-  { title: `Cinematic Rise${seedTag}`, artistEmail: 'artist02@musica.local', genre: 'Cinematic', duration: 201, status: 'PUBLISHED', usage_rights: ['DERIVATIVE_WORK_RIGHT'] },
-  { title: `Corporate Breeze${seedTag}`, artistEmail: 'artist02@musica.local', genre: 'Corporate', duration: 128, status: 'PUBLISHED', usage_rights: ['REPRODUCTION_RIGHT'] },
-  { title: `Pop Spark${seedTag}`, artistEmail: 'artist03@musica.local', genre: 'Pop', duration: 174, status: 'PUBLISHED', usage_rights: ['DISTRIBUTION_RIGHT', 'COMMUNICATION_TO_PUBLIC_RIGHT'] },
-  { title: `Ambient Drift${seedTag}`, artistEmail: 'artist03@musica.local', genre: 'Cinematic', duration: 223, status: 'PUBLISHED', usage_rights: ['REPRODUCTION_RIGHT', 'DERIVATIVE_WORK_RIGHT'] },
-  { title: `Late Night Drive${seedTag}`, artistEmail: 'artist01@musica.local', genre: 'Electronic', duration: 190, status: 'PUBLISHED', usage_rights: ['COMMUNICATION_TO_PUBLIC_RIGHT'] },
-  { title: `Bright Morning${seedTag}`, artistEmail: 'artist02@musica.local', genre: 'Pop', duration: 165, status: 'PUBLISHED', usage_rights: ['REPRODUCTION_RIGHT', 'COMMUNICATION_TO_PUBLIC_RIGHT'] },
-  { title: `Soft Focus${seedTag}`, artistEmail: 'artist03@musica.local', genre: 'Corporate', duration: 142, status: 'PUBLISHED', usage_rights: ['DISTRIBUTION_RIGHT'] },
-  { title: `Festival Lights${seedTag}`, artistEmail: 'artist01@musica.local', genre: 'Pop', duration: 198, status: 'PUBLISHED', usage_rights: ['DERIVATIVE_WORK_RIGHT', 'REPRODUCTION_RIGHT'] },
-  { title: `Hidden Draft 01${seedTag}`, artistEmail: 'artist01@musica.local', genre: 'Electronic', duration: 160, status: 'HIDDEN', usage_rights: ['REPRODUCTION_RIGHT'] },
-  { title: `Hidden Draft 02${seedTag}`, artistEmail: 'artist02@musica.local', genre: 'Cinematic', duration: 210, status: 'HIDDEN', usage_rights: ['DISTRIBUTION_RIGHT'] },
-  { title: `Hidden Draft 03${seedTag}`, artistEmail: 'artist03@musica.local', genre: 'Corporate', duration: 120, status: 'HIDDEN', usage_rights: ['COMMUNICATION_TO_PUBLIC_RIGHT'] },
-  { title: `Hidden Draft 04${seedTag}`, artistEmail: 'artist01@musica.local', genre: 'Pop', duration: 175, status: 'HIDDEN', usage_rights: ['DISTRIBUTION_RIGHT'] },
-  { title: `Hidden Draft 05${seedTag}`, artistEmail: 'artist02@musica.local', genre: 'Corporate', duration: 135, status: 'HIDDEN', usage_rights: ['DERIVATIVE_WORK_RIGHT'] },
-  { title: `Ocean Haze${seedTag}`, artistEmail: 'artist03@musica.local', genre: 'Ambient', duration: 204, status: 'PUBLISHED', usage_rights: ['REPRODUCTION_RIGHT'] },
-  { title: `Street Rhythm${seedTag}`, artistEmail: 'artist01@musica.local', genre: 'HipHop', duration: 177, status: 'PUBLISHED', usage_rights: ['DISTRIBUTION_RIGHT'] },
-  { title: `Golden Hour${seedTag}`, artistEmail: 'artist02@musica.local', genre: 'Pop', duration: 189, status: 'PUBLISHED', usage_rights: ['DISTRIBUTION_RIGHT'] },
-  { title: `Tech Pulse${seedTag}`, artistEmail: 'artist01@musica.local', genre: 'Electronic', duration: 161, status: 'HIDDEN', usage_rights: ['COMMUNICATION_TO_PUBLIC_RIGHT'] },
-  { title: `Minimal Corporate${seedTag}`, artistEmail: 'artist03@musica.local', genre: 'Corporate', duration: 133, status: 'HIDDEN', usage_rights: ['REPRODUCTION_RIGHT'] },
+  { title: `Midnight Pulse${seedTag}`, artistEmail: 'artist01@musica.local', genre: 'Electronic', duration: 182, status: 'PUBLISHED' },
+  { title: `Neon Skyline${seedTag}`, artistEmail: 'artist01@musica.local', genre: 'Electronic', duration: 156, status: 'PUBLISHED' },
+  { title: `Cinematic Rise${seedTag}`, artistEmail: 'artist02@musica.local', genre: 'Cinematic', duration: 201, status: 'PUBLISHED' },
+  { title: `Corporate Breeze${seedTag}`, artistEmail: 'artist02@musica.local', genre: 'Corporate', duration: 128, status: 'PUBLISHED' },
+  { title: `Pop Spark${seedTag}`, artistEmail: 'artist03@musica.local', genre: 'Pop', duration: 174, status: 'PUBLISHED' },
+  { title: `Ambient Drift${seedTag}`, artistEmail: 'artist03@musica.local', genre: 'Cinematic', duration: 223, status: 'PUBLISHED' },
+  { title: `Late Night Drive${seedTag}`, artistEmail: 'artist01@musica.local', genre: 'Electronic', duration: 190, status: 'PUBLISHED' },
+  { title: `Bright Morning${seedTag}`, artistEmail: 'artist02@musica.local', genre: 'Pop', duration: 165, status: 'PUBLISHED' },
+  { title: `Soft Focus${seedTag}`, artistEmail: 'artist03@musica.local', genre: 'Corporate', duration: 142, status: 'PUBLISHED' },
+  { title: `Festival Lights${seedTag}`, artistEmail: 'artist01@musica.local', genre: 'Pop', duration: 198, status: 'PUBLISHED' },
+  { title: `Hidden Draft 01${seedTag}`, artistEmail: 'artist01@musica.local', genre: 'Electronic', duration: 160, status: 'HIDDEN' },
+  { title: `Hidden Draft 02${seedTag}`, artistEmail: 'artist02@musica.local', genre: 'Cinematic', duration: 210, status: 'HIDDEN' },
+  { title: `Hidden Draft 03${seedTag}`, artistEmail: 'artist03@musica.local', genre: 'Corporate', duration: 120, status: 'HIDDEN' },
+  { title: `Hidden Draft 04${seedTag}`, artistEmail: 'artist01@musica.local', genre: 'Pop', duration: 175, status: 'HIDDEN' },
+  { title: `Hidden Draft 05${seedTag}`, artistEmail: 'artist02@musica.local', genre: 'Corporate', duration: 135, status: 'HIDDEN' },
+  { title: `Ocean Haze${seedTag}`, artistEmail: 'artist03@musica.local', genre: 'Ambient', duration: 204, status: 'PUBLISHED' },
+  { title: `Street Rhythm${seedTag}`, artistEmail: 'artist01@musica.local', genre: 'HipHop', duration: 177, status: 'PUBLISHED' },
+  { title: `Golden Hour${seedTag}`, artistEmail: 'artist02@musica.local', genre: 'Pop', duration: 189, status: 'PUBLISHED' },
+  { title: `Tech Pulse${seedTag}`, artistEmail: 'artist01@musica.local', genre: 'Electronic', duration: 161, status: 'HIDDEN' },
+  { title: `Minimal Corporate${seedTag}`, artistEmail: 'artist03@musica.local', genre: 'Corporate', duration: 133, status: 'HIDDEN' },
 ]
 
 const certificatesSeed = [
@@ -156,10 +156,235 @@ const certificatesSeed = [
   { trackTitle: `Golden Hour${seedTag}`, buyerEmail: 'buyer05@musica.local', rights: ['DISTRIBUTION_RIGHT'], daysAgo: 13 },
 ]
 
+const corePermissionsSeed = [
+  {
+    code: 'PERM-SEED-REPRODUCTION',
+    name: `Quyen sao chep${seedTag}`,
+    law_reference: 'Khoan 1 Dieu 20 Luat SHTT',
+    description: 'Cho phep sao chep ban ghi va tac pham phuc vu khai thac thuong mai.',
+    status: 'ACTIVE',
+  },
+  {
+    code: 'PERM-SEED-DISTRIBUTION',
+    name: `Quyen phan phoi${seedTag}`,
+    law_reference: 'Khoan 2 Dieu 20 Luat SHTT',
+    description: 'Cho phep phan phoi ban sao, ban ghi va cac hinh thuc luu hanh hop phap.',
+    status: 'ACTIVE',
+  },
+  {
+    code: 'PERM-SEED-COMMUNICATION',
+    name: `Quyen truyen dat den cong chung${seedTag}`,
+    law_reference: 'Khoan 3 Dieu 20 Luat SHTT',
+    description: 'Cho phep dua tac pham den cong chung thong qua nen tang so va kenh phat hanh.',
+    status: 'ACTIVE',
+  },
+  {
+    code: 'PERM-SEED-PERFORMANCE',
+    name: `Quyen bieu dien truoc cong chung${seedTag}`,
+    law_reference: 'Khoan 4 Dieu 20 Luat SHTT',
+    description: 'Cho phep bieu dien, phat nhac va khai thac trong cac khong gian cong cong.',
+    status: 'ACTIVE',
+  },
+  {
+    code: 'PERM-SEED-DERIVATIVE',
+    name: `Quyen lam tac pham phai sinh${seedTag}`,
+    law_reference: 'Khoan 5 Dieu 20 Luat SHTT',
+    description: 'Cho phep cai bien, phoi khi va tao san pham phai sinh tu tac pham goc.',
+    status: 'ACTIVE',
+  },
+]
+
+const digitalRightConfigsSeed = [
+  {
+    code: 'DIGI-SEED-YT-1Y',
+    target_platform: 'YOUTUBE',
+    duration_type: 'ONE_YEAR',
+    base_price_multiplier: 1.25,
+    status: 'ACTIVE',
+    permissionCodes: ['PERM-SEED-REPRODUCTION', 'PERM-SEED-COMMUNICATION'],
+  },
+  {
+    code: 'DIGI-SEED-TT-PERP',
+    target_platform: 'TIKTOK',
+    duration_type: 'PERPETUAL',
+    base_price_multiplier: 1.6,
+    status: 'ACTIVE',
+    permissionCodes: ['PERM-SEED-REPRODUCTION', 'PERM-SEED-COMMUNICATION', 'PERM-SEED-DISTRIBUTION'],
+  },
+]
+
+const physicalRightConfigsSeed = [
+  {
+    code: 'PHYS-SEED-COFFEE',
+    venue_usage_type: `Quan cafe${seedTag}`,
+    base_price_multiplier: 1.1,
+    status: 'ACTIVE',
+    permissionCodes: ['PERM-SEED-PERFORMANCE'],
+  },
+  {
+    code: 'PHYS-SEED-FAIR',
+    venue_usage_type: `Hoi cho su kien${seedTag}`,
+    base_price_multiplier: 1.45,
+    status: 'ACTIVE',
+    permissionCodes: ['PERM-SEED-PERFORMANCE', 'PERM-SEED-COMMUNICATION'],
+  },
+]
+
+const expressionConfigsSeed = [
+  {
+    code: 'EXPR-SEED-BGM',
+    name: `Nhac nen Vlog${seedTag}`,
+    price_multiplier: 1.2,
+    status: 'ACTIVE',
+    permissionCodes: ['PERM-SEED-REPRODUCTION', 'PERM-SEED-COMMUNICATION'],
+  },
+  {
+    code: 'EXPR-SEED-ADS',
+    name: `Nhac quang cao${seedTag}`,
+    price_multiplier: 1.85,
+    status: 'ACTIVE',
+    permissionCodes: ['PERM-SEED-REPRODUCTION', 'PERM-SEED-COMMUNICATION', 'PERM-SEED-DISTRIBUTION'],
+  },
+]
+
+const modificationConfigsSeed = [
+  {
+    code: 'MOD-SEED-ORIGINAL',
+    name: `Giu nguyen master${seedTag}`,
+    price_multiplier: 1,
+    status: 'ACTIVE',
+    permissionCodes: ['PERM-SEED-REPRODUCTION'],
+  },
+  {
+    code: 'MOD-SEED-REARRANGE',
+    name: `Cai bien phoi khi${seedTag}`,
+    price_multiplier: 2.1,
+    status: 'ACTIVE',
+    permissionCodes: ['PERM-SEED-REPRODUCTION', 'PERM-SEED-DERIVATIVE'],
+  },
+]
+
+const buildComplianceSeedEntries = () =>
+  tracksSeed.map((trackSeed, index) => {
+    if (trackSeed.status === 'PUBLISHED') {
+      const approvedPermissionGroups = [
+        ['PERM-SEED-REPRODUCTION', 'PERM-SEED-COMMUNICATION'],
+        ['PERM-SEED-REPRODUCTION', 'PERM-SEED-DISTRIBUTION'],
+        ['PERM-SEED-PERFORMANCE', 'PERM-SEED-COMMUNICATION'],
+        ['PERM-SEED-REPRODUCTION', 'PERM-SEED-DERIVATIVE'],
+      ]
+
+      return {
+        trackTitle: trackSeed.title,
+        legal_status: 'SUFFICIENT',
+        review_status: 'APPROVED',
+        reject_reason: null,
+        permissionCodes: approvedPermissionGroups[index % approvedPermissionGroups.length],
+        fileCount: 2,
+      }
+    }
+
+    if (index % 2 === 0) {
+      return {
+        trackTitle: trackSeed.title,
+        legal_status: 'INSUFFICIENT',
+        review_status: 'REJECTED',
+        reject_reason: 'Ho so phap ly seed chua dat yeu cau doi voi tac pham nay.',
+        permissionCodes: [],
+        fileCount: 1,
+      }
+    }
+
+    return {
+      trackTitle: trackSeed.title,
+      legal_status: 'PENDING',
+      review_status: 'PENDING',
+      reject_reason: null,
+      permissionCodes: [],
+      fileCount: 1,
+    }
+  })
+
 const getMonthPath = (date) => {
   const year = String(date.getUTCFullYear()).padStart(4, '0')
   const month = String(date.getUTCMonth() + 1).padStart(2, '0')
   return `${year}/${month}`
+}
+
+const withStableIdsByCode = async (tableName, rows) => {
+  const codes = rows.map((row) => row.code)
+  const { data: existingRows, error: existingRowsError } = await client
+    .from(tableName)
+    .select('id,code')
+    .in('code', codes)
+
+  if (existingRowsError) throw new Error(existingRowsError.message)
+
+  const codeToId = new Map((existingRows ?? []).map((row) => [row.code, row.id]))
+
+  return rows.map((row) => ({
+    ...row,
+    id: codeToId.get(row.code) ?? randomUUID(),
+  }))
+}
+
+const upsertSeedConfigs = async ({
+  tableName,
+  mappingTableName,
+  configForeignKey,
+  configs,
+  permissionCodeToId,
+}) => {
+  const configRows = await withStableIdsByCode(
+    tableName,
+    configs.map(({ permissionCodes, ...rest }) => rest),
+  )
+
+  const { error: upsertConfigsError } = await client
+    .from(tableName)
+    .upsert(configRows, { onConflict: 'code' })
+
+  if (upsertConfigsError) throw new Error(upsertConfigsError.message)
+
+  const configCodes = configs.map((item) => item.code)
+  const { data: insertedConfigs, error: fetchConfigsError } = await client
+    .from(tableName)
+    .select('id,code')
+    .in('code', configCodes)
+
+  if (fetchConfigsError) throw new Error(fetchConfigsError.message)
+
+  const configCodeToId = new Map((insertedConfigs ?? []).map((item) => [item.code, item.id]))
+  const configIds = [...configCodeToId.values()]
+
+  if (configIds.length > 0) {
+    const { error: deleteMappingsError } = await client
+      .from(mappingTableName)
+      .delete()
+      .in(configForeignKey, configIds)
+
+    if (deleteMappingsError) throw new Error(deleteMappingsError.message)
+  }
+
+  const mappingRows = configs.flatMap((config) => {
+    const configId = configCodeToId.get(config.code)
+    if (!configId) throw new Error(`Missing config id for ${config.code}`)
+
+    return config.permissionCodes.map((permissionCode) => {
+      const permissionId = permissionCodeToId.get(permissionCode)
+      if (!permissionId) throw new Error(`Missing permission id for ${permissionCode}`)
+
+      return {
+        [configForeignKey]: configId,
+        core_permission_id: permissionId,
+      }
+    })
+  })
+
+  if (mappingRows.length > 0) {
+    const { error: insertMappingsError } = await client.from(mappingTableName).insert(mappingRows)
+    if (insertMappingsError) throw new Error(insertMappingsError.message)
+  }
 }
 
 const isMissingTableError = (message) =>
@@ -203,14 +428,14 @@ const main = async () => {
     }
 
     const { data: createdByTrackIds, error: createdByTrackIdsError } = await client
-      .from('tracks')
+      .from('products')
       .select('id')
       .in('created_by', seedUserIds)
 
     if (createdByTrackIdsError) throw new Error(createdByTrackIdsError.message)
 
     const { data: titleTrackIds, error: titleTrackIdsError } = await client
-      .from('tracks')
+      .from('products')
       .select('id')
       .ilike('title', `%${seedTag}%`)
 
@@ -221,7 +446,7 @@ const main = async () => {
     )
 
     if (trackIds.length > 0) {
-      const { error: delTracksError } = await client.from('tracks').delete().in('id', trackIds)
+      const { error: delTracksError } = await client.from('products').delete().in('id', trackIds)
       if (delTracksError) throw new Error(delTracksError.message)
     }
 
@@ -278,32 +503,192 @@ const main = async () => {
   const { error: insertUserRolesError } = await client.from('user_roles').insert(userRolesToInsert)
   if (insertUserRolesError) throw new Error(insertUserRolesError.message)
 
+  const corePermissionsRows = await withStableIdsByCode('core_permissions', corePermissionsSeed)
+
+  const { error: upsertCorePermissionsError } = await client
+    .from('core_permissions')
+    .upsert(corePermissionsRows, { onConflict: 'code' })
+
+  if (upsertCorePermissionsError) throw new Error(upsertCorePermissionsError.message)
+
+  const permissionCodes = corePermissionsSeed.map((permission) => permission.code)
+  const { data: insertedCorePermissions, error: fetchCorePermissionsError } = await client
+    .from('core_permissions')
+    .select('id,code')
+    .in('code', permissionCodes)
+
+  if (fetchCorePermissionsError) throw new Error(fetchCorePermissionsError.message)
+
+  const permissionCodeToId = new Map((insertedCorePermissions ?? []).map((item) => [item.code, item.id]))
+
+  await upsertSeedConfigs({
+    tableName: 'digital_right_configs',
+    mappingTableName: 'digital_right_config_permissions',
+    configForeignKey: 'digital_right_config_id',
+    configs: digitalRightConfigsSeed,
+    permissionCodeToId,
+  })
+
+  await upsertSeedConfigs({
+    tableName: 'physical_right_configs',
+    mappingTableName: 'physical_right_config_permissions',
+    configForeignKey: 'physical_right_config_id',
+    configs: physicalRightConfigsSeed,
+    permissionCodeToId,
+  })
+
+  await upsertSeedConfigs({
+    tableName: 'expression_configs',
+    mappingTableName: 'expression_config_permissions',
+    configForeignKey: 'expression_config_id',
+    configs: expressionConfigsSeed,
+    permissionCodeToId,
+  })
+
+  await upsertSeedConfigs({
+    tableName: 'modification_configs',
+    mappingTableName: 'modification_config_permissions',
+    configForeignKey: 'modification_config_id',
+    configs: modificationConfigsSeed,
+    permissionCodeToId,
+  })
+
   const admin01 = emailToUser.get('admin01@musica.local')
   if (!admin01) throw new Error('Missing admin01')
 
-  const tracksToInsert = tracksSeed.map((t) => {
+  const tracksToInsert = tracksSeed.map((t, index) => {
     const artist = emailToUser.get(t.artistEmail)
     if (!artist) throw new Error(`Missing artist ${t.artistEmail}`)
     return {
+      id: randomUUID(),
+      product_code: `PROD-SEED-${String(index + 1).padStart(4, '0')}`,
       title: t.title,
       artist_id: artist.id,
       author_name: artist.full_name,
       genre: t.genre,
       duration: t.duration,
       status: t.status,
-      usage_rights: t.usage_rights,
       created_by: admin01.id,
     }
   })
 
   const { data: insertedTracks, error: insertTracksError } = await client
-    .from('tracks')
+    .from('products')
     .insert(tracksToInsert)
-    .select('id,title,artist_id')
+    .select('id,title,artist_id,product_code')
 
   if (insertTracksError) throw new Error(insertTracksError.message)
 
   const titleToTrack = new Map((insertedTracks ?? []).map((t) => [t.title, t]))
+
+  const complianceReviewsToInsert = buildComplianceSeedEntries().map((entry, index) => {
+    const track = titleToTrack.get(entry.trackTitle)
+    if (!track) throw new Error(`Missing track for compliance seed ${entry.trackTitle}`)
+
+    const reviewedAt =
+      entry.review_status === 'PENDING'
+        ? null
+        : new Date(Date.now() - (index + 1) * 6 * 60 * 60 * 1000).toISOString()
+
+    const uploadedLegalFiles = Array.from({ length: entry.fileCount }).map((_, fileIndex) => ({
+      fileName: `legal-${index + 1}-${fileIndex + 1}.pdf`,
+      fileKey: `legal-files/${getMonthPath(new Date())}/${randomUUID()}.pdf`,
+      uploadedAt: reviewedAt ?? new Date().toISOString(),
+      mimeType: 'application/pdf',
+      size: 1024 * (fileIndex + 1),
+    }))
+
+    return {
+      code: `CMP-SEED-${String(index + 1).padStart(4, '0')}`,
+      track_id: track.id,
+      uploaded_legal_files: uploadedLegalFiles,
+      legal_status: entry.legal_status,
+      review_status: entry.review_status,
+      reject_reason: entry.reject_reason,
+      reviewed_by: entry.review_status === 'PENDING' ? null : admin01.id,
+      reviewed_at: reviewedAt,
+    }
+  })
+
+  const { data: insertedComplianceReviews, error: insertComplianceReviewsError } = await client
+    .from('compliance_reviews')
+    .insert(complianceReviewsToInsert)
+    .select('id,code,track_id,uploaded_legal_files')
+
+  if (insertComplianceReviewsError) throw new Error(insertComplianceReviewsError.message)
+
+  const trackIdToCompliance = new Map((insertedComplianceReviews ?? []).map((item) => [item.track_id, item]))
+
+  const complianceLegalFilesToInsert = (insertedComplianceReviews ?? []).flatMap((compliance) =>
+    (Array.isArray(compliance.uploaded_legal_files) ? compliance.uploaded_legal_files : []).map((file) => ({
+      compliance_review_id: compliance.id,
+      file_name: file.fileName,
+      file_key: file.fileKey,
+      mime_type: file.mimeType,
+      file_size_bytes: file.size,
+      uploaded_by: admin01.id,
+      uploaded_at: file.uploadedAt,
+    })),
+  )
+
+  if (complianceLegalFilesToInsert.length > 0) {
+    const { error: insertComplianceLegalFilesError } = await client
+      .from('compliance_legal_files')
+      .insert(complianceLegalFilesToInsert)
+
+    if (insertComplianceLegalFilesError) throw new Error(insertComplianceLegalFilesError.message)
+  }
+
+  const complianceApprovedPermissionsToInsert = buildComplianceSeedEntries().flatMap((entry) => {
+    const track = titleToTrack.get(entry.trackTitle)
+    if (!track) throw new Error(`Missing track for approved permission seed ${entry.trackTitle}`)
+
+    const compliance = trackIdToCompliance.get(track.id)
+    if (!compliance) throw new Error(`Missing compliance for track ${entry.trackTitle}`)
+
+    return entry.permissionCodes.map((permissionCode) => {
+      const permissionId = permissionCodeToId.get(permissionCode)
+      if (!permissionId) throw new Error(`Missing permission id for ${permissionCode}`)
+
+      return {
+        compliance_id: compliance.id,
+        permission_id: permissionId,
+      }
+    })
+  })
+
+  if (complianceApprovedPermissionsToInsert.length > 0) {
+    const { error: insertComplianceApprovedPermissionsError } = await client
+      .from('compliance_approved_permissions')
+      .insert(complianceApprovedPermissionsToInsert)
+
+    if (insertComplianceApprovedPermissionsError) throw new Error(insertComplianceApprovedPermissionsError.message)
+  }
+
+  const trackAllowedPermissionsToInsert = buildComplianceSeedEntries().flatMap((entry) => {
+    if (entry.legal_status !== 'SUFFICIENT' || entry.review_status !== 'APPROVED') return []
+
+    const track = titleToTrack.get(entry.trackTitle)
+    if (!track) throw new Error(`Missing track for allowed permission seed ${entry.trackTitle}`)
+
+    return entry.permissionCodes.map((permissionCode) => {
+      const permissionId = permissionCodeToId.get(permissionCode)
+      if (!permissionId) throw new Error(`Missing permission id for ${permissionCode}`)
+
+      return {
+        track_id: track.id,
+        permission_id: permissionId,
+      }
+    })
+  })
+
+  if (trackAllowedPermissionsToInsert.length > 0) {
+    const { error: insertTrackAllowedPermissionsError } = await client
+      .from('track_allowed_permissions')
+      .insert(trackAllowedPermissionsToInsert)
+
+    if (insertTrackAllowedPermissionsError) throw new Error(insertTrackAllowedPermissionsError.message)
+  }
 
   const certificatesToInsert = certificatesSeed.map((c) => {
     const track = titleToTrack.get(c.trackTitle)

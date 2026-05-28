@@ -69,6 +69,298 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/products": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List products (admin) */
+        get: operations["AdminProductsController_list"];
+        put?: never;
+        /** Create product metadata (admin) */
+        post: operations["AdminProductsController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/products/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get product summary counts (admin) */
+        get: operations["AdminProductsController_summary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/products/{productId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get product detail (admin) */
+        get: operations["AdminProductsController_detail"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update product metadata (admin) */
+        patch: operations["AdminProductsController_update"];
+        trace?: never;
+    };
+    "/admin/products/{productId}/allowed-permissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Replace allowed permissions for product (admin) */
+        put: operations["AdminProductsController_replaceAllowedPermissions"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/products/{productId}/original-upload-url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Get signed upload URL for original audio (admin) */
+        post: operations["AdminProductsController_originalUploadUrl"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/products/{productId}/thumbnail-upload-url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Get signed upload URL for product thumbnail (admin) */
+        post: operations["AdminProductsController_thumbnailUploadUrl"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/products/{productId}/confirm-audio-upload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Confirm uploaded audio key (admin) */
+        post: operations["AdminProductsController_confirmAudioUpload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/products/{productId}/confirm-thumbnail-upload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Confirm uploaded thumbnail key (admin) */
+        post: operations["AdminProductsController_confirmThumbnailUpload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/products/{productId}/thumbnail-url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get signed URL for product thumbnail (admin) */
+        get: operations["AdminProductsController_thumbnailUrl"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/products/{productId}/original-playback-url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get signed playback URL for original audio (admin) */
+        get: operations["AdminProductsController_originalPlaybackUrl"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/products/{productId}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Publish product (admin) */
+        patch: operations["AdminProductsController_publish"];
+        trace?: never;
+    };
+    "/admin/products/{productId}/hide": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Hide product (admin) */
+        patch: operations["AdminProductsController_hide"];
+        trace?: never;
+    };
+    "/admin/certificates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List certificates (admin) */
+        get: operations["AdminCertificatesController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/certificates/template": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get certificate HTML template (admin) */
+        get: operations["AdminCertificatesController_getTemplate"];
+        /** Update certificate HTML template (admin) */
+        put: operations["AdminCertificatesController_updateTemplate"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/certificates/{certificateId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get certificate detail (admin) */
+        get: operations["AdminCertificatesController_detail"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/certificates/{certificateId}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get signed download URL for certificate PDF (admin) */
+        get: operations["AdminCertificatesController_download"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/certificates/{certificateId}/render-html": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Render certificate HTML (admin) */
+        get: operations["AdminCertificatesController_renderHtml"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/users/admins": {
         parameters: {
             query?: never;
@@ -165,43 +457,23 @@ export interface paths {
         patch: operations["ManagedUsersController_updateUserStatus"];
         trace?: never;
     };
-    "/admin/tracks": {
+    "/admin/core-permissions": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** List tracks (admin) */
-        get: operations["AdminTracksController_list"];
+        get: operations["AdminCorePermissionsController_list"];
         put?: never;
-        /** Create track metadata (admin) */
-        post: operations["AdminTracksController_create"];
+        post: operations["AdminCorePermissionsController_create"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/admin/tracks/{trackId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get track detail (admin) */
-        get: operations["AdminTracksController_detail"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /** Update track metadata (admin) */
-        patch: operations["AdminTracksController_update"];
-        trace?: never;
-    };
-    "/admin/tracks/{trackId}/original-upload-url": {
+    "/admin/core-permissions/{permissionId}": {
         parameters: {
             query?: never;
             header?: never;
@@ -210,49 +482,14 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Get signed upload URL for original audio (admin) */
-        post: operations["AdminTracksController_originalUploadUrl"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/admin/tracks/{trackId}/preview-upload-url": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Get signed upload URL for preview audio (admin) */
-        post: operations["AdminTracksController_previewUploadUrl"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/admin/tracks/{trackId}/preview-playback-url": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get signed playback URL for preview audio (admin) */
-        get: operations["AdminTracksController_previewPlaybackUrl"];
-        put?: never;
         post?: never;
-        delete?: never;
+        delete: operations["AdminCorePermissionsController_delete"];
         options?: never;
         head?: never;
-        patch?: never;
+        patch: operations["AdminCorePermissionsController_update"];
         trace?: never;
     };
-    "/admin/tracks/{trackId}/publish": {
+    "/admin/core-permissions/{permissionId}/status": {
         parameters: {
             query?: never;
             header?: never;
@@ -265,11 +502,122 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** Publish track (admin) */
-        patch: operations["AdminTracksController_publish"];
+        patch: operations["AdminCorePermissionsController_updateStatus"];
         trace?: never;
     };
-    "/admin/tracks/{trackId}/hide": {
+    "/admin/compliance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AdminComplianceController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/compliance/{trackId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AdminComplianceController_detail"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/compliance/{trackId}/files": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AdminComplianceController_uploadFiles"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/compliance/files/download-url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AdminComplianceController_createDownloadUrl"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/compliance/{trackId}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["AdminComplianceController_submitDecision"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/digital-right-configs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AdminDigitalRightConfigsController_list"];
+        put?: never;
+        post: operations["AdminDigitalRightConfigsController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/digital-right-configs/{configId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AdminDigitalRightConfigsController_getDetail"];
+        put?: never;
+        post?: never;
+        delete: operations["AdminDigitalRightConfigsController_delete"];
+        options?: never;
+        head?: never;
+        patch: operations["AdminDigitalRightConfigsController_update"];
+        trace?: never;
+    };
+    "/admin/digital-right-configs/{configId}/status": {
         parameters: {
             query?: never;
             header?: never;
@@ -282,94 +630,151 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** Hide track (admin) */
-        patch: operations["AdminTracksController_hide"];
+        patch: operations["AdminDigitalRightConfigsController_updateStatus"];
         trace?: never;
     };
-    "/admin/certificates": {
+    "/admin/physical-right-configs": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** List certificates (admin) */
-        get: operations["AdminCertificatesController_list"];
+        get: operations["AdminPhysicalRightConfigsController_list"];
+        put?: never;
+        post: operations["AdminPhysicalRightConfigsController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/physical-right-configs/{configId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AdminPhysicalRightConfigsController_getDetail"];
+        put?: never;
+        post?: never;
+        delete: operations["AdminPhysicalRightConfigsController_delete"];
+        options?: never;
+        head?: never;
+        patch: operations["AdminPhysicalRightConfigsController_update"];
+        trace?: never;
+    };
+    "/admin/physical-right-configs/{configId}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
         put?: never;
         post?: never;
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        patch: operations["AdminPhysicalRightConfigsController_updateStatus"];
         trace?: never;
     };
-    "/admin/certificates/template": {
+    "/admin/expression-configs": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Get certificate HTML template (admin) */
-        get: operations["AdminCertificatesController_getTemplate"];
-        /** Update certificate HTML template (admin) */
-        put: operations["AdminCertificatesController_updateTemplate"];
-        post?: never;
+        get: operations["AdminExpressionConfigsController_list"];
+        put?: never;
+        post: operations["AdminExpressionConfigsController_create"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/admin/certificates/{certificateId}": {
+    "/admin/expression-configs/{configId}": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Get certificate detail (admin) */
-        get: operations["AdminCertificatesController_detail"];
+        get: operations["AdminExpressionConfigsController_getDetail"];
+        put?: never;
+        post?: never;
+        delete: operations["AdminExpressionConfigsController_delete"];
+        options?: never;
+        head?: never;
+        patch: operations["AdminExpressionConfigsController_update"];
+        trace?: never;
+    };
+    "/admin/expression-configs/{configId}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
         put?: never;
         post?: never;
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        patch: operations["AdminExpressionConfigsController_updateStatus"];
         trace?: never;
     };
-    "/admin/certificates/{certificateId}/download": {
+    "/admin/modification-configs": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Get signed download URL for certificate PDF (admin) */
-        get: operations["AdminCertificatesController_download"];
+        get: operations["AdminModificationConfigsController_list"];
         put?: never;
-        post?: never;
+        post: operations["AdminModificationConfigsController_create"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/admin/certificates/{certificateId}/render-html": {
+    "/admin/modification-configs/{configId}": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Render certificate HTML (admin) */
-        get: operations["AdminCertificatesController_renderHtml"];
+        get: operations["AdminModificationConfigsController_getDetail"];
+        put?: never;
+        post?: never;
+        delete: operations["AdminModificationConfigsController_delete"];
+        options?: never;
+        head?: never;
+        patch: operations["AdminModificationConfigsController_update"];
+        trace?: never;
+    };
+    "/admin/modification-configs/{configId}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
         put?: never;
         post?: never;
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        patch: operations["AdminModificationConfigsController_updateStatus"];
         trace?: never;
     };
 }
@@ -444,68 +849,13 @@ export interface components {
             /** @example 2026-05-20T00:00:00.000Z */
             timestamp: string;
         };
-          AdminUserDto: {
+        ProductAllowedPermissionDto: {
+            name: string;
+            lawReference: string;
+        };
+        ProductDto: {
             id: string;
-            fullName: string;
-            email: string;
-            /** @enum {string} */
-            status: "ACTIVE" | "LOCKED" | "DELETED";
-            roleCodes: string[];
-            createdAt: string;
-        };
-        AdminUserListDataDto: {
-            items: components["schemas"]["AdminUserDto"][];
-        };
-        AdminUserListMetaDto: {
-            pagination: components["schemas"]["PaginationDto"];
-        };
-        AdminUserListResponseDto: {
-            /** @example true */
-            success: boolean;
-            /** @example 200 */
-            statusCode: number;
-            data: components["schemas"]["AdminUserListDataDto"];
-            meta: components["schemas"]["AdminUserListMetaDto"];
-            /** @example 2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a */
-            requestId: string;
-            /** @example 2026-05-20T00:00:00.000Z */
-            timestamp: string;
-        };
-        CreateAdminUserRequestDto: Record<string, never>;
-        UpdateAdminUserRequestDto: Record<string, never>;
-        UpdateAdminUserStatusRequestDto: Record<string, never>;
-        ManagedUserDto: {
-            id: string;
-            fullName: string;
-            email: string;
-            /** @enum {string} */
-            status: "ACTIVE" | "LOCKED" | "DELETED";
-            roleCodes: ("BUYER" | "ARTIST")[];
-            createdAt: string;
-        };
-        ManagedUserListDataDto: {
-            items: components["schemas"]["ManagedUserDto"][];
-        };
-        ManagedUserListMetaDto: {
-            pagination: components["schemas"]["PaginationDto"];
-        };
-        ManagedUserListResponseDto: {
-            /** @example true */
-            success: boolean;
-            /** @example 200 */
-            statusCode: number;
-            data: components["schemas"]["ManagedUserListDataDto"];
-            meta: components["schemas"]["ManagedUserListMetaDto"];
-            /** @example 2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a */
-            requestId: string;
-            /** @example 2026-05-20T00:00:00.000Z */
-            timestamp: string;
-        };
-        CreateManagedUserRequestDto: Record<string, never>;
-        UpdateManagedUserRequestDto: Record<string, never>;
-        UpdateManagedUserStatusRequestDto: Record<string, never>;
-        TrackDto: {
-            id: string;
+            productCode: string;
             title: string;
             artistId: string;
             authorName?: Record<string, never> | null;
@@ -513,15 +863,22 @@ export interface components {
             duration?: Record<string, never> | null;
             /** @enum {string} */
             status: "HIDDEN" | "PUBLISHED";
-            usageRights: string[];
+            useCase?: Record<string, never> | null;
+            description?: Record<string, never> | null;
+            allowedPermissionIds: string[];
+            allowedPermissions: components["schemas"]["ProductAllowedPermissionDto"][];
+            /** @enum {string|null} */
+            complianceLegalStatus?: "PENDING" | "SUFFICIENT" | "INSUFFICIENT" | null;
+            /** @enum {string|null} */
+            complianceReviewStatus?: "PENDING" | "APPROVED" | "REJECTED" | null;
             originalAudioKey?: Record<string, never> | null;
-            previewAudioKey?: Record<string, never> | null;
+            thumbnailKey?: Record<string, never> | null;
             createdBy: string;
             createdAt: string;
             updatedAt: string;
         };
-        AdminTracksListDataDto: {
-            items: components["schemas"]["TrackDto"][];
+        AdminProductsListDataDto: {
+            items: components["schemas"]["ProductDto"][];
         };
         PaginationInfoDto: {
             page: number;
@@ -534,69 +891,118 @@ export interface components {
         PaginationMetaDto: {
             pagination: components["schemas"]["PaginationInfoDto"];
         };
-        AdminTracksListResponseDto: {
+        AdminProductsListResponseDto: {
             /** @example true */
             success: boolean;
             /** @example 200 */
             statusCode: number;
-            data: components["schemas"]["AdminTracksListDataDto"];
+            data: components["schemas"]["AdminProductsListDataDto"];
             meta: components["schemas"]["PaginationMetaDto"];
             /** @example 2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a */
             requestId: string;
             /** @example 2026-05-20T00:00:00.000Z */
             timestamp: string;
         };
-        AdminCreateTrackRequestDto: {
+        AdminProductsSummaryDataDto: {
+            total: number;
+            published: number;
+            hidden: number;
+            pending: number;
+        };
+        AdminProductsSummaryResponseDto: {
+            /** @example true */
+            success: boolean;
+            /** @example 200 */
+            statusCode: number;
+            data: components["schemas"]["AdminProductsSummaryDataDto"];
+            /** @example 2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a */
+            requestId: string;
+            /** @example 2026-05-20T00:00:00.000Z */
+            timestamp: string;
+        };
+        AdminCreateProductRequestDto: {
             title: string;
             artistId: string;
             authorName?: string;
             genre?: string;
+            useCase?: string;
+            description?: string;
             duration?: number;
-            usageRights?: string[];
         };
-        AdminTrackResponseDto: {
+        AdminProductResponseDto: {
             /** @example true */
             success: boolean;
             /** @example 200 */
             statusCode: number;
-            data: components["schemas"]["TrackDto"];
+            data: components["schemas"]["ProductDto"];
             /** @example 2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a */
             requestId: string;
             /** @example 2026-05-20T00:00:00.000Z */
             timestamp: string;
         };
-        AdminUpdateTrackRequestDto: {
+        AdminUpdateProductRequestDto: {
             title?: string;
-            artistId?: string;
             authorName?: string;
             genre?: string;
+            useCase?: string;
+            description?: string;
             duration?: number;
-            usageRights?: string[];
         };
-        AdminTrackUploadUrlResponseDataDto: {
+        AdminReplaceProductAllowedPermissionsRequestDto: {
+            permissionIds: string[];
+        };
+        AdminProductUploadUrlResponseDataDto: {
             uploadUrl: string;
             fileKey: string;
         };
-        AdminTrackUploadUrlResponseDto: {
+        AdminProductUploadUrlResponseDto: {
             /** @example true */
             success: boolean;
             /** @example 200 */
             statusCode: number;
-            data: components["schemas"]["AdminTrackUploadUrlResponseDataDto"];
+            data: components["schemas"]["AdminProductUploadUrlResponseDataDto"];
             /** @example 2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a */
             requestId: string;
             /** @example 2026-05-20T00:00:00.000Z */
             timestamp: string;
         };
-        AdminTrackPlaybackUrlResponseDataDto: {
-            playbackUrl: string;
+        AdminCreateProductThumbnailUploadUrlRequestDto: {
+            /** @enum {string} */
+            extension: "png" | "jpg" | "jpeg" | "webp";
         };
-        AdminTrackPlaybackUrlResponseDto: {
+        AdminConfirmProductAudioUploadRequestDto: {
+            /** @enum {string} */
+            mode: "original";
+            /** @example 123.mp3 */
+            fileKey: string;
+        };
+        AdminConfirmProductThumbnailUploadRequestDto: {
+            /** @example 123.png */
+            fileKey: string;
+        };
+        AdminProductThumbnailUrlResponseDataDto: {
+            thumbnailUrl: string;
+        };
+        AdminProductThumbnailUrlResponseDto: {
             /** @example true */
             success: boolean;
             /** @example 200 */
             statusCode: number;
-            data: components["schemas"]["AdminTrackPlaybackUrlResponseDataDto"];
+            data: components["schemas"]["AdminProductThumbnailUrlResponseDataDto"];
+            /** @example 2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a */
+            requestId: string;
+            /** @example 2026-05-20T00:00:00.000Z */
+            timestamp: string;
+        };
+        AdminProductPlaybackUrlResponseDataDto: {
+            playbackUrl: string;
+        };
+        AdminProductPlaybackUrlResponseDto: {
+            /** @example true */
+            success: boolean;
+            /** @example 200 */
+            statusCode: number;
+            data: components["schemas"]["AdminProductPlaybackUrlResponseDataDto"];
             /** @example 2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a */
             requestId: string;
             /** @example 2026-05-20T00:00:00.000Z */
@@ -709,6 +1115,458 @@ export interface components {
             /** @example 2026-05-20T00:00:00.000Z */
             timestamp: string;
         };
+        AdminUserDto: {
+            id: string;
+            fullName: string;
+            email: string;
+            /** @enum {string} */
+            status: "ACTIVE" | "LOCKED" | "DELETED";
+            roleCodes: string[];
+            createdAt: string;
+        };
+        AdminUserListDataDto: {
+            items: components["schemas"]["AdminUserDto"][];
+        };
+        AdminUserListMetaDto: {
+            pagination: components["schemas"]["PaginationDto"];
+        };
+        AdminUserListResponseDto: {
+            /** @example true */
+            success: boolean;
+            /** @example 200 */
+            statusCode: number;
+            data: components["schemas"]["AdminUserListDataDto"];
+            meta: components["schemas"]["AdminUserListMetaDto"];
+            /** @example 2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a */
+            requestId: string;
+            /** @example 2026-05-20T00:00:00.000Z */
+            timestamp: string;
+        };
+        CreateAdminUserRequestDto: Record<string, never>;
+        UpdateAdminUserRequestDto: Record<string, never>;
+        UpdateAdminUserStatusRequestDto: Record<string, never>;
+        ManagedUserDto: {
+            id: string;
+            fullName: string;
+            email: string;
+            /** @enum {string} */
+            status: "ACTIVE" | "LOCKED" | "DELETED";
+            roleCodes: ("BUYER" | "ARTIST")[];
+            createdAt: string;
+        };
+        ManagedUserListDataDto: {
+            items: components["schemas"]["ManagedUserDto"][];
+        };
+        ManagedUserListMetaDto: {
+            pagination: components["schemas"]["PaginationDto"];
+        };
+        ManagedUserListResponseDto: {
+            /** @example true */
+            success: boolean;
+            /** @example 200 */
+            statusCode: number;
+            data: components["schemas"]["ManagedUserListDataDto"];
+            meta: components["schemas"]["ManagedUserListMetaDto"];
+            /** @example 2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a */
+            requestId: string;
+            /** @example 2026-05-20T00:00:00.000Z */
+            timestamp: string;
+        };
+        CreateManagedUserRequestDto: Record<string, never>;
+        UpdateManagedUserRequestDto: Record<string, never>;
+        UpdateManagedUserStatusRequestDto: Record<string, never>;
+        CorePermissionDto: {
+            id: string;
+            code: string;
+            name: string;
+            lawReference: string;
+            /** @enum {string} */
+            status: "ACTIVE" | "INACTIVE";
+            description?: Record<string, never> | null;
+            createdAt: string;
+            updatedAt: string;
+        };
+        AdminCorePermissionsListDataDto: {
+            items: components["schemas"]["CorePermissionDto"][];
+        };
+        AdminCorePermissionsListResponseDto: {
+            /** @example true */
+            success: boolean;
+            /** @example 200 */
+            statusCode: number;
+            data: components["schemas"]["AdminCorePermissionsListDataDto"];
+            meta: components["schemas"]["PaginationMetaDto"];
+            /** @example 2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a */
+            requestId: string;
+            /** @example 2026-05-20T00:00:00.000Z */
+            timestamp: string;
+        };
+        AdminCreateCorePermissionRequestDto: {
+            code: string;
+            name: string;
+            lawReference: string;
+            description?: string;
+        };
+        AdminCorePermissionResponseDto: {
+            /** @example true */
+            success: boolean;
+            /** @example 200 */
+            statusCode: number;
+            data: components["schemas"]["CorePermissionDto"];
+            /** @example 2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a */
+            requestId: string;
+            /** @example 2026-05-20T00:00:00.000Z */
+            timestamp: string;
+        };
+        AdminUpdateCorePermissionRequestDto: {
+            name?: string;
+            lawReference?: string;
+            description?: string;
+        };
+        AdminUpdateCorePermissionStatusRequestDto: {
+            /** @enum {string} */
+            status: "ACTIVE" | "INACTIVE";
+        };
+        ComplianceProductSnapshotDto: {
+            trackId: string;
+            productCode: string;
+            title: string;
+            artistId: string;
+            /** @enum {string} */
+            status: "PENDING" | "HIDDEN" | "PUBLISHED";
+        };
+        ComplianceListItemDto: {
+            complianceId: string;
+            complianceCode: string;
+            /** @enum {string} */
+            legalStatus: "PENDING" | "SUFFICIENT" | "INSUFFICIENT";
+            /** @enum {string} */
+            reviewStatus: "PENDING" | "APPROVED" | "REJECTED";
+            filesCount: number;
+            reviewedBy?: Record<string, never> | null;
+            reviewedAt?: Record<string, never> | null;
+            product: components["schemas"]["ComplianceProductSnapshotDto"];
+        };
+        AdminComplianceListDataDto: {
+            items: components["schemas"]["ComplianceListItemDto"][];
+        };
+        AdminComplianceListResponseDto: {
+            /** @example true */
+            success: boolean;
+            /** @example 200 */
+            statusCode: number;
+            data: components["schemas"]["AdminComplianceListDataDto"];
+            meta: components["schemas"]["PaginationMetaDto"];
+            /** @example 2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a */
+            requestId: string;
+            /** @example 2026-05-20T00:00:00.000Z */
+            timestamp: string;
+        };
+        CorePermissionSummaryDto: {
+            name: string;
+            lawReference: string;
+        };
+        ComplianceDetailDto: {
+            complianceId: string;
+            complianceCode: string;
+            /** @enum {string} */
+            legalStatus: "PENDING" | "SUFFICIENT" | "INSUFFICIENT";
+            /** @enum {string} */
+            reviewStatus: "PENDING" | "APPROVED" | "REJECTED";
+            rejectReason?: Record<string, never> | null;
+            reviewedBy?: Record<string, never> | null;
+            reviewedAt?: Record<string, never> | null;
+            approvedPermissionIds: string[];
+            approvedPermissions: components["schemas"]["CorePermissionSummaryDto"][];
+            uploadedLegalFiles: string[];
+            product: components["schemas"]["ComplianceProductSnapshotDto"];
+        };
+        AdminComplianceDetailResponseDto: {
+            /** @example true */
+            success: boolean;
+            /** @example 200 */
+            statusCode: number;
+            data: components["schemas"]["ComplianceDetailDto"];
+            /** @example 2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a */
+            requestId: string;
+            /** @example 2026-05-20T00:00:00.000Z */
+            timestamp: string;
+        };
+        AdminCreateComplianceFileDownloadUrlRequestDto: {
+            fileKey: string;
+        };
+        AdminComplianceFileDownloadUrlDataDto: {
+            downloadUrl: string;
+        };
+        AdminComplianceFileDownloadUrlResponseDto: {
+            /** @example true */
+            success: boolean;
+            /** @example 200 */
+            statusCode: number;
+            data: components["schemas"]["AdminComplianceFileDownloadUrlDataDto"];
+            /** @example 2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a */
+            requestId: string;
+            /** @example 2026-05-20T00:00:00.000Z */
+            timestamp: string;
+        };
+        AdminComplianceDecisionRequestDto: {
+            /** @enum {string} */
+            legalStatus: "PENDING" | "SUFFICIENT" | "INSUFFICIENT";
+            /** @enum {string} */
+            reviewStatus: "PENDING" | "APPROVED" | "REJECTED";
+            approvedPermissionIds: string[];
+            rejectReason?: string;
+        };
+        ConfigPermissionSummaryDto: {
+            id: string;
+            code: string;
+            name: string;
+            lawReference: string;
+        };
+        DigitalRightConfigDto: {
+            id: string;
+            code: string;
+            /** @enum {string} */
+            status: "ACTIVE" | "INACTIVE";
+            referencedPermissionIds: string[];
+            referencedPermissions: components["schemas"]["ConfigPermissionSummaryDto"][];
+            createdAt: string;
+            updatedAt: string;
+            /** @enum {string} */
+            targetPlatform: "YOUTUBE" | "TIKTOK" | "FACEBOOK";
+            /** @enum {string} */
+            durationType: "ONE_YEAR" | "PERPETUAL";
+            basePriceMultiplier: number;
+        };
+        DigitalRightConfigsListDataDto: {
+            items: components["schemas"]["DigitalRightConfigDto"][];
+        };
+        AdminDigitalRightConfigsListResponseDto: {
+            /** @example true */
+            success: boolean;
+            /** @example 200 */
+            statusCode: number;
+            /** @example 2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a */
+            requestId: string;
+            /** @example 2026-05-20T00:00:00.000Z */
+            timestamp: string;
+            data: components["schemas"]["DigitalRightConfigsListDataDto"];
+            meta: components["schemas"]["PaginationMetaDto"];
+        };
+        AdminDigitalRightConfigResponseDto: {
+            /** @example true */
+            success: boolean;
+            /** @example 200 */
+            statusCode: number;
+            /** @example 2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a */
+            requestId: string;
+            /** @example 2026-05-20T00:00:00.000Z */
+            timestamp: string;
+            data: components["schemas"]["DigitalRightConfigDto"];
+        };
+        CreateDigitalRightConfigRequestDto: {
+            /** @description Bo trong de backend tu allocate code tiep theo. */
+            code?: string;
+            /** @enum {string} */
+            targetPlatform: "YOUTUBE" | "TIKTOK" | "FACEBOOK";
+            /** @enum {string} */
+            durationType: "ONE_YEAR" | "PERPETUAL";
+            basePriceMultiplier: number;
+            /** @default [] */
+            referencedPermissionIds: string[];
+            /**
+             * @default ACTIVE
+             * @enum {string}
+             */
+            status: "ACTIVE" | "INACTIVE";
+        };
+        UpdateDigitalRightConfigRequestDto: {
+            /** @default [] */
+            referencedPermissionIds: string[];
+            /** @enum {string} */
+            targetPlatform?: "YOUTUBE" | "TIKTOK" | "FACEBOOK";
+            /** @enum {string} */
+            durationType?: "ONE_YEAR" | "PERPETUAL";
+            basePriceMultiplier?: number;
+        };
+        UpdateConfigStatusRequestDto: {
+            /**
+             * @default ACTIVE
+             * @enum {string}
+             */
+            status: "ACTIVE" | "INACTIVE";
+        };
+        PhysicalRightConfigDto: {
+            id: string;
+            code: string;
+            /** @enum {string} */
+            status: "ACTIVE" | "INACTIVE";
+            referencedPermissionIds: string[];
+            referencedPermissions: components["schemas"]["ConfigPermissionSummaryDto"][];
+            createdAt: string;
+            updatedAt: string;
+            venueUsageType: string;
+            basePriceMultiplier: number;
+        };
+        PhysicalRightConfigsListDataDto: {
+            items: components["schemas"]["PhysicalRightConfigDto"][];
+        };
+        AdminPhysicalRightConfigsListResponseDto: {
+            /** @example true */
+            success: boolean;
+            /** @example 200 */
+            statusCode: number;
+            /** @example 2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a */
+            requestId: string;
+            /** @example 2026-05-20T00:00:00.000Z */
+            timestamp: string;
+            data: components["schemas"]["PhysicalRightConfigsListDataDto"];
+            meta: components["schemas"]["PaginationMetaDto"];
+        };
+        AdminPhysicalRightConfigResponseDto: {
+            /** @example true */
+            success: boolean;
+            /** @example 200 */
+            statusCode: number;
+            /** @example 2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a */
+            requestId: string;
+            /** @example 2026-05-20T00:00:00.000Z */
+            timestamp: string;
+            data: components["schemas"]["PhysicalRightConfigDto"];
+        };
+        CreatePhysicalRightConfigRequestDto: {
+            /** @description Bo trong de backend tu allocate code tiep theo. */
+            code?: string;
+            venueUsageType: string;
+            basePriceMultiplier: number;
+            /** @default [] */
+            referencedPermissionIds: string[];
+            /**
+             * @default ACTIVE
+             * @enum {string}
+             */
+            status: "ACTIVE" | "INACTIVE";
+        };
+        UpdatePhysicalRightConfigRequestDto: {
+            /** @default [] */
+            referencedPermissionIds: string[];
+            venueUsageType?: string;
+            basePriceMultiplier?: number;
+        };
+        ExpressionConfigDto: {
+            id: string;
+            code: string;
+            /** @enum {string} */
+            status: "ACTIVE" | "INACTIVE";
+            referencedPermissionIds: string[];
+            referencedPermissions: components["schemas"]["ConfigPermissionSummaryDto"][];
+            createdAt: string;
+            updatedAt: string;
+            name: string;
+            priceMultiplier: number;
+        };
+        ExpressionConfigsListDataDto: {
+            items: components["schemas"]["ExpressionConfigDto"][];
+        };
+        AdminExpressionConfigsListResponseDto: {
+            /** @example true */
+            success: boolean;
+            /** @example 200 */
+            statusCode: number;
+            /** @example 2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a */
+            requestId: string;
+            /** @example 2026-05-20T00:00:00.000Z */
+            timestamp: string;
+            data: components["schemas"]["ExpressionConfigsListDataDto"];
+            meta: components["schemas"]["PaginationMetaDto"];
+        };
+        AdminExpressionConfigResponseDto: {
+            /** @example true */
+            success: boolean;
+            /** @example 200 */
+            statusCode: number;
+            /** @example 2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a */
+            requestId: string;
+            /** @example 2026-05-20T00:00:00.000Z */
+            timestamp: string;
+            data: components["schemas"]["ExpressionConfigDto"];
+        };
+        CreateExpressionConfigRequestDto: {
+            /** @description Bo trong de backend tu allocate code tiep theo. */
+            code?: string;
+            name: string;
+            priceMultiplier: number;
+            /** @default [] */
+            referencedPermissionIds: string[];
+            /**
+             * @default ACTIVE
+             * @enum {string}
+             */
+            status: "ACTIVE" | "INACTIVE";
+        };
+        UpdateExpressionConfigRequestDto: {
+            /** @default [] */
+            referencedPermissionIds: string[];
+            name?: string;
+            priceMultiplier?: number;
+        };
+        ModificationConfigDto: {
+            id: string;
+            code: string;
+            /** @enum {string} */
+            status: "ACTIVE" | "INACTIVE";
+            referencedPermissionIds: string[];
+            referencedPermissions: components["schemas"]["ConfigPermissionSummaryDto"][];
+            createdAt: string;
+            updatedAt: string;
+            name: string;
+            priceMultiplier: number;
+        };
+        ModificationConfigsListDataDto: {
+            items: components["schemas"]["ModificationConfigDto"][];
+        };
+        AdminModificationConfigsListResponseDto: {
+            /** @example true */
+            success: boolean;
+            /** @example 200 */
+            statusCode: number;
+            /** @example 2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a */
+            requestId: string;
+            /** @example 2026-05-20T00:00:00.000Z */
+            timestamp: string;
+            data: components["schemas"]["ModificationConfigsListDataDto"];
+            meta: components["schemas"]["PaginationMetaDto"];
+        };
+        AdminModificationConfigResponseDto: {
+            /** @example true */
+            success: boolean;
+            /** @example 200 */
+            statusCode: number;
+            /** @example 2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a */
+            requestId: string;
+            /** @example 2026-05-20T00:00:00.000Z */
+            timestamp: string;
+            data: components["schemas"]["ModificationConfigDto"];
+        };
+        CreateModificationConfigRequestDto: {
+            /** @description Bo trong de backend tu allocate code tiep theo. */
+            code?: string;
+            name: string;
+            priceMultiplier: number;
+            /** @default [] */
+            referencedPermissionIds: string[];
+            /**
+             * @default ACTIVE
+             * @enum {string}
+             */
+            status: "ACTIVE" | "INACTIVE";
+        };
+        UpdateModificationConfigRequestDto: {
+            /** @default [] */
+            referencedPermissionIds: string[];
+            name?: string;
+            priceMultiplier?: number;
+        };
     };
     responses: never;
     parameters: never;
@@ -795,6 +1653,467 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AuthLoginResponseDto"];
+                };
+            };
+        };
+    };
+    AdminProductsController_list: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                q?: string;
+                sort?: "createdAt:desc" | "createdAt:asc" | "updatedAt:desc" | "updatedAt:asc" | "title:asc" | "title:desc" | "status:asc" | "status:desc" | "genre:asc" | "genre:desc";
+                status?: "PENDING" | "HIDDEN" | "PUBLISHED";
+                genre?: string;
+                artistId?: string;
+                keyword?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminProductsListResponseDto"];
+                };
+            };
+        };
+    };
+    AdminProductsController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminCreateProductRequestDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminProductResponseDto"];
+                };
+            };
+        };
+    };
+    AdminProductsController_summary: {
+        parameters: {
+            query?: {
+                q?: string;
+                keyword?: string;
+                genre?: string;
+                artistId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminProductsSummaryResponseDto"];
+                };
+            };
+        };
+    };
+    AdminProductsController_detail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                productId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminProductResponseDto"];
+                };
+            };
+        };
+    };
+    AdminProductsController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                productId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminUpdateProductRequestDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminProductResponseDto"];
+                };
+            };
+        };
+    };
+    AdminProductsController_replaceAllowedPermissions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                productId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminReplaceProductAllowedPermissionsRequestDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminProductResponseDto"];
+                };
+            };
+        };
+    };
+    AdminProductsController_originalUploadUrl: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                productId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminProductUploadUrlResponseDto"];
+                };
+            };
+        };
+    };
+    AdminProductsController_thumbnailUploadUrl: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                productId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminCreateProductThumbnailUploadUrlRequestDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminProductUploadUrlResponseDto"];
+                };
+            };
+        };
+    };
+    AdminProductsController_confirmAudioUpload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                productId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminConfirmProductAudioUploadRequestDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminProductResponseDto"];
+                };
+            };
+        };
+    };
+    AdminProductsController_confirmThumbnailUpload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                productId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminConfirmProductThumbnailUploadRequestDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminProductResponseDto"];
+                };
+            };
+        };
+    };
+    AdminProductsController_thumbnailUrl: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                productId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminProductThumbnailUrlResponseDto"];
+                };
+            };
+        };
+    };
+    AdminProductsController_originalPlaybackUrl: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                productId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminProductPlaybackUrlResponseDto"];
+                };
+            };
+        };
+    };
+    AdminProductsController_publish: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                productId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminProductResponseDto"];
+                };
+            };
+        };
+    };
+    AdminProductsController_hide: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                productId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminProductResponseDto"];
+                };
+            };
+        };
+    };
+    AdminCertificatesController_list: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                q?: string;
+                sort?: string;
+                buyerKeyword?: string;
+                trackKeyword?: string;
+                artistId?: string;
+                status?: "ACTIVE";
+                fromDate?: string;
+                toDate?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminCertificatesListResponseDto"];
+                };
+            };
+        };
+    };
+    AdminCertificatesController_getTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminCertificateTemplateResponseDto"];
+                };
+            };
+        };
+    };
+    AdminCertificatesController_updateTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateCertificateTemplateRequestDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminCertificateTemplateResponseDto"];
+                };
+            };
+        };
+    };
+    AdminCertificatesController_detail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                certificateId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminCertificateDetailResponseDto"];
+                };
+            };
+        };
+    };
+    AdminCertificatesController_download: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                certificateId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminCertificateDownloadUrlResponseDto"];
+                };
+            };
+        };
+    };
+    AdminCertificatesController_renderHtml: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                certificateId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminCertificateRenderedHtmlResponseDto"];
                 };
             };
         };
@@ -1022,17 +2341,15 @@ export interface operations {
             };
         };
     };
-    AdminTracksController_list: {
+    AdminCorePermissionsController_list: {
         parameters: {
             query?: {
                 page?: number;
                 pageSize?: number;
                 q?: string;
                 sort?: string;
-                status?: "HIDDEN" | "PUBLISHED";
-                genre?: string;
-                artistId?: string;
                 keyword?: string;
+                status?: "ACTIVE" | "INACTIVE";
             };
             header?: never;
             path?: never;
@@ -1045,12 +2362,12 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AdminTracksListResponseDto"];
+                    "application/json": components["schemas"]["AdminCorePermissionsListResponseDto"];
                 };
             };
         };
     };
-    AdminTracksController_create: {
+    AdminCorePermissionsController_create: {
         parameters: {
             query?: never;
             header?: never;
@@ -1059,7 +2376,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["AdminCreateTrackRequestDto"];
+                "application/json": components["schemas"]["AdminCreateCorePermissionRequestDto"];
             };
         };
         responses: {
@@ -1068,17 +2385,17 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AdminTrackResponseDto"];
+                    "application/json": components["schemas"]["AdminCorePermissionResponseDto"];
                 };
             };
         };
     };
-    AdminTracksController_detail: {
+    AdminCorePermissionsController_delete: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                trackId: string;
+                permissionId: string;
             };
             cookie?: never;
         };
@@ -1088,24 +2405,22 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["AdminTrackResponseDto"];
-                };
+                content?: never;
             };
         };
     };
-    AdminTracksController_update: {
+    AdminCorePermissionsController_update: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                trackId: string;
+                permissionId: string;
             };
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["AdminUpdateTrackRequestDto"];
+                "application/json": components["schemas"]["AdminUpdateCorePermissionRequestDto"];
             };
         };
         responses: {
@@ -1114,129 +2429,47 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AdminTrackResponseDto"];
+                    "application/json": components["schemas"]["AdminCorePermissionResponseDto"];
                 };
             };
         };
     };
-    AdminTracksController_originalUploadUrl: {
+    AdminCorePermissionsController_updateStatus: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                trackId: string;
+                permissionId: string;
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminUpdateCorePermissionStatusRequestDto"];
+            };
+        };
         responses: {
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AdminTrackUploadUrlResponseDto"];
+                    "application/json": components["schemas"]["AdminCorePermissionResponseDto"];
                 };
             };
         };
     };
-    AdminTracksController_previewUploadUrl: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                trackId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AdminTrackUploadUrlResponseDto"];
-                };
-            };
-        };
-    };
-    AdminTracksController_previewPlaybackUrl: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                trackId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AdminTrackPlaybackUrlResponseDto"];
-                };
-            };
-        };
-    };
-    AdminTracksController_publish: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                trackId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AdminTrackResponseDto"];
-                };
-            };
-        };
-    };
-    AdminTracksController_hide: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                trackId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AdminTrackResponseDto"];
-                };
-            };
-        };
-    };
-    AdminCertificatesController_list: {
+    AdminComplianceController_list: {
         parameters: {
             query?: {
                 page?: number;
                 pageSize?: number;
                 q?: string;
                 sort?: string;
-                buyerKeyword?: string;
-                trackKeyword?: string;
-                artistId?: string;
-                status?: "ACTIVE";
-                fromDate?: string;
-                toDate?: string;
+                keyword?: string;
+                legalStatus?: "PENDING" | "SUFFICIENT" | "INSUFFICIENT";
+                reviewStatus?: "PENDING" | "APPROVED" | "REJECTED";
+                productStatus?: "PENDING" | "HIDDEN" | "PUBLISHED";
             };
             header?: never;
             path?: never;
@@ -1249,16 +2482,18 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AdminCertificatesListResponseDto"];
+                    "application/json": components["schemas"]["AdminComplianceListResponseDto"];
                 };
             };
         };
     };
-    AdminCertificatesController_getTemplate: {
+    AdminComplianceController_detail: {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                trackId: string;
+            };
             cookie?: never;
         };
         requestBody?: never;
@@ -1268,12 +2503,31 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AdminCertificateTemplateResponseDto"];
+                    "application/json": components["schemas"]["AdminComplianceDetailResponseDto"];
                 };
             };
         };
     };
-    AdminCertificatesController_updateTemplate: {
+    AdminComplianceController_uploadFiles: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                trackId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminComplianceController_createDownloadUrl: {
         parameters: {
             query?: never;
             header?: never;
@@ -1282,7 +2536,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["UpdateCertificateTemplateRequestDto"];
+                "application/json": components["schemas"]["AdminCreateComplianceFileDownloadUrlRequestDto"];
             };
         };
         responses: {
@@ -1291,17 +2545,93 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AdminCertificateTemplateResponseDto"];
+                    "application/json": components["schemas"]["AdminComplianceFileDownloadUrlResponseDto"];
                 };
             };
         };
     };
-    AdminCertificatesController_detail: {
+    AdminComplianceController_submitDecision: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                certificateId: string;
+                trackId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminComplianceDecisionRequestDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminComplianceDetailResponseDto"];
+                };
+            };
+        };
+    };
+    AdminDigitalRightConfigsController_list: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                q?: string;
+                sort?: string;
+                keyword?: string;
+                status?: "ACTIVE" | "INACTIVE";
+                targetPlatform?: "YOUTUBE" | "TIKTOK" | "FACEBOOK";
+                durationType?: "ONE_YEAR" | "PERPETUAL";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminDigitalRightConfigsListResponseDto"];
+                };
+            };
+        };
+    };
+    AdminDigitalRightConfigsController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateDigitalRightConfigRequestDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminDigitalRightConfigResponseDto"];
+                };
+            };
+        };
+    };
+    AdminDigitalRightConfigsController_getDetail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                configId: string;
             };
             cookie?: never;
         };
@@ -1312,17 +2642,135 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AdminCertificateDetailResponseDto"];
+                    "application/json": components["schemas"]["AdminDigitalRightConfigResponseDto"];
                 };
             };
         };
     };
-    AdminCertificatesController_download: {
+    AdminDigitalRightConfigsController_delete: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                certificateId: string;
+                configId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminDigitalRightConfigsController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                configId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateDigitalRightConfigRequestDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminDigitalRightConfigResponseDto"];
+                };
+            };
+        };
+    };
+    AdminDigitalRightConfigsController_updateStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                configId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateConfigStatusRequestDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminDigitalRightConfigResponseDto"];
+                };
+            };
+        };
+    };
+    AdminPhysicalRightConfigsController_list: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                q?: string;
+                sort?: string;
+                keyword?: string;
+                status?: "ACTIVE" | "INACTIVE";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminPhysicalRightConfigsListResponseDto"];
+                };
+            };
+        };
+    };
+    AdminPhysicalRightConfigsController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreatePhysicalRightConfigRequestDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminPhysicalRightConfigResponseDto"];
+                };
+            };
+        };
+    };
+    AdminPhysicalRightConfigsController_getDetail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                configId: string;
             };
             cookie?: never;
         };
@@ -1333,17 +2781,135 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AdminCertificateDownloadUrlResponseDto"];
+                    "application/json": components["schemas"]["AdminPhysicalRightConfigResponseDto"];
                 };
             };
         };
     };
-    AdminCertificatesController_renderHtml: {
+    AdminPhysicalRightConfigsController_delete: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                certificateId: string;
+                configId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminPhysicalRightConfigsController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                configId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdatePhysicalRightConfigRequestDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminPhysicalRightConfigResponseDto"];
+                };
+            };
+        };
+    };
+    AdminPhysicalRightConfigsController_updateStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                configId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateConfigStatusRequestDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminPhysicalRightConfigResponseDto"];
+                };
+            };
+        };
+    };
+    AdminExpressionConfigsController_list: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                q?: string;
+                sort?: string;
+                keyword?: string;
+                status?: "ACTIVE" | "INACTIVE";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminExpressionConfigsListResponseDto"];
+                };
+            };
+        };
+    };
+    AdminExpressionConfigsController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateExpressionConfigRequestDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminExpressionConfigResponseDto"];
+                };
+            };
+        };
+    };
+    AdminExpressionConfigsController_getDetail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                configId: string;
             };
             cookie?: never;
         };
@@ -1354,7 +2920,215 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AdminCertificateRenderedHtmlResponseDto"];
+                    "application/json": components["schemas"]["AdminExpressionConfigResponseDto"];
+                };
+            };
+        };
+    };
+    AdminExpressionConfigsController_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                configId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminExpressionConfigsController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                configId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateExpressionConfigRequestDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminExpressionConfigResponseDto"];
+                };
+            };
+        };
+    };
+    AdminExpressionConfigsController_updateStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                configId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateConfigStatusRequestDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminExpressionConfigResponseDto"];
+                };
+            };
+        };
+    };
+    AdminModificationConfigsController_list: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                q?: string;
+                sort?: string;
+                keyword?: string;
+                status?: "ACTIVE" | "INACTIVE";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminModificationConfigsListResponseDto"];
+                };
+            };
+        };
+    };
+    AdminModificationConfigsController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateModificationConfigRequestDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminModificationConfigResponseDto"];
+                };
+            };
+        };
+    };
+    AdminModificationConfigsController_getDetail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                configId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminModificationConfigResponseDto"];
+                };
+            };
+        };
+    };
+    AdminModificationConfigsController_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                configId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminModificationConfigsController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                configId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateModificationConfigRequestDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminModificationConfigResponseDto"];
+                };
+            };
+        };
+    };
+    AdminModificationConfigsController_updateStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                configId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateConfigStatusRequestDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminModificationConfigResponseDto"];
                 };
             };
         };

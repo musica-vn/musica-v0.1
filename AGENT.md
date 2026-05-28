@@ -16,7 +16,8 @@
 
 ## Global skills (Trae)
 - Global skills nằm ở: [.trae/ai/skills](file:///c:/Users/LHP02/Desktop/musica-v0.1/.trae/ai/skills)
-- Repo đã có “superpower skills” để dùng chung; chỉ thêm skills riêng theo scope ở `apps/web/AGENT.md` và `apps/api/AGENT.md`.
+- `.trae/rules/*` và các file `AGENT.md` theo scope là instruction runtime chính.
+- `apps/web/skills` là thư viện tham khảo trong repo, không mặc định auto-load như tool skill registry. Khi làm FE, agent phải đọc thủ công skill/reference liên quan qua `apps/web/AGENT.md`.
 
 ## Quy ước quan trọng
 - Không hardcode secrets, không log secrets.

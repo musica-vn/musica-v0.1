@@ -21,6 +21,9 @@ export const httpClient = axios.create({
   baseURL: (() => {
     const baseUrl = import.meta.env.VITE_API_BASE_URL
     if (typeof baseUrl === 'string' && baseUrl.length > 0) return baseUrl
+
+    if (import.meta.env.DEV) return 'http://localhost:3000'
+
     throw new Error('Missing VITE_API_BASE_URL')
   })(),
 })

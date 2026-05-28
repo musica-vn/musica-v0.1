@@ -24,3 +24,6 @@ apps/**/.netlify
 
 apps/api/supabase/.temp
 apps/api/.home
+
+.dbg
+debug-*.md

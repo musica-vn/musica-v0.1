@@ -1,15 +1,12 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import Button from 'primevue/button'
-import DataTable from 'primevue/datatable'
-import Column from 'primevue/column'
 import Tag from 'primevue/tag'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
 import Dropdown from 'primevue/dropdown'
 import Message from 'primevue/message'
-import type { DataTablePageEvent } from 'primevue/datatable'
 import { ApiClientError } from '../../../shared/api/http'
 import { useAdminsStore } from '../../admins/admins.store'
 import { useAuthStore } from '../../auth/auth.store'
@@ -27,7 +24,6 @@ const pageSize = ref(20)
 const errorMessage = ref<string | null>(null)
 const isMutating = ref(false)
 
-const first = computed(() => (page.value - 1) * pageSize.value)
 const activeCount = computed(
   () => adminsStore.items.filter((admin) => admin.status === 'ACTIVE').length,
 )
@@ -37,11 +33,29 @@ const lockedCount = computed(
 const protectedCount = computed(
   () => adminsStore.items.filter((admin) => admin.roleCodes.includes('SUPER_ADMIN')).length,
 )
+
+const sortValue = ref<
+  | 'createdAt:desc'
+  | 'createdAt:asc'
+  | 'fullName:asc'
+  | 'fullName:desc'
+  | 'email:asc'
+  | 'email:desc'
+>('createdAt:desc')
+
 const statusOptions = [
   { label: 'Tất cả trạng thái', value: '' },
   { label: 'Đang hoạt động', value: 'ACTIVE' as const },
   { label: 'Đã khoá', value: 'LOCKED' as const },
   { label: 'Đã xoá', value: 'DELETED' as const },
+]
+const sortOptions = [
+  { label: 'Mới nhất', value: 'createdAt:desc' as const },
+  { label: 'Cũ nhất', value: 'createdAt:asc' as const },
+  { label: 'Tên A-Z', value: 'fullName:asc' as const },
+  { label: 'Tên Z-A', value: 'fullName:desc' as const },
+  { label: 'Email A-Z', value: 'email:asc' as const },
+  { label: 'Email Z-A', value: 'email:desc' as const },
 ]
 const roleOptions = [{ label: 'ADMIN', value: 'ADMIN' as const }]
 
@@ -65,11 +79,66 @@ onMounted(() => {
   void loadAdmins()
 })
 
-const onPage = async (event: DataTablePageEvent) => {
-  page.value = event.page + 1
-  pageSize.value = event.rows
+const totalPages = computed(() => adminsStore.meta?.pagination.totalPages ?? 1)
+const pageStart = computed(() =>
+  adminsStore.totalItems === 0 ? 0 : (page.value - 1) * pageSize.value + 1,
+)
+const pageEnd = computed(() => Math.min(page.value * pageSize.value, adminsStore.totalItems))
+
+const goToPage = async (nextPage: number) => {
+  const safePage = Math.min(Math.max(nextPage, 1), totalPages.value)
+  if (safePage === page.value) return
+  page.value = safePage
   await loadAdmins()
 }
+
+const setPageSize = async (nextPageSize: number) => {
+  pageSize.value = nextPageSize
+  page.value = 1
+  await loadAdmins()
+}
+
+const onPageSizeChange = (value: number) => {
+  void setPageSize(value)
+}
+
+const sortedAdmins = computed(() => {
+  const items = [...adminsStore.items]
+
+  const compareText = (a: string, b: string) => a.localeCompare(b, undefined, { sensitivity: 'base' })
+
+  const compareDate = (a: string, b: string) =>
+    new Date(a).getTime() - new Date(b).getTime()
+
+  const [field, dir] = sortValue.value.split(':') as [
+    'createdAt' | 'fullName' | 'email',
+    'asc' | 'desc',
+  ]
+
+  items.sort((left, right) => {
+    const result =
+      field === 'createdAt'
+        ? compareDate(left.createdAt, right.createdAt)
+        : compareText(left[field] ?? '', right[field] ?? '')
+
+    return dir === 'asc' ? result : -result
+  })
+
+  return items
+})
+
+const paginationButtons = computed(() => {
+  const maxButtons = 7
+  const current = page.value
+  const pages = totalPages.value
+
+  if (pages <= maxButtons) {
+    return Array.from({ length: pages }, (_, index) => index + 1)
+  }
+
+  const start = Math.max(1, Math.min(current - 2, pages - maxButtons + 1))
+  return Array.from({ length: maxButtons }, (_, index) => start + index)
+})
 
 const formatDateTime = (value: string) => {
   const date = new Date(value)
@@ -312,12 +381,8 @@ const confirmDelete = async () => {
           </div>
         </div>
 
-        <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-[320px_190px_auto_auto]">
-          <InputText
-            v-model="keyword"
-            placeholder="Tìm theo email hoặc họ tên"
-            class="w-full"
-          />
+        <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-[320px_190px_190px_auto_auto]">
+          <InputText v-model="keyword" placeholder="Tìm theo email hoặc họ tên" class="w-full" />
           <Dropdown
             v-model="statusFilter"
             :options="statusOptions"
@@ -326,19 +391,16 @@ const confirmDelete = async () => {
             placeholder="Trạng thái"
             class="w-full"
           />
-          <Button
-            label="Tìm kiếm"
-            severity="secondary"
-            :disabled="adminsStore.isLoading || isMutating"
-            @click="loadAdmins"
+          <Dropdown
+            v-model="sortValue"
+            :options="sortOptions"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Sắp xếp"
+            class="w-full"
           />
-          <Button
-            label="Làm mới"
-            severity="contrast"
-            outlined
-            :disabled="adminsStore.isLoading || isMutating"
-            @click="loadAdmins"
-          />
+          <Button label="Tìm kiếm" severity="secondary" :disabled="adminsStore.isLoading || isMutating" @click="loadAdmins" />
+          <Button label="Làm mới" severity="contrast" outlined :disabled="adminsStore.isLoading || isMutating" @click="loadAdmins" />
         </div>
       </div>
 
@@ -351,83 +413,157 @@ const confirmDelete = async () => {
         <Message v-if="errorMessage" severity="error">{{ errorMessage }}</Message>
       </div>
 
-      <div class="mt-6">
-        <DataTable
-          :value="adminsStore.items"
-          paginator
-          lazy
-          size="small"
-          :rows="pageSize"
-          :first="first"
-          :totalRecords="adminsStore.totalItems"
-          :loading="adminsStore.isLoading || isMutating"
-          class="overflow-hidden rounded-[24px]"
-          @page="onPage"
-        >
-          <Column field="fullName" header="Tên admin" />
-          <Column field="email" header="Email" />
-          <Column header="Vai trò">
-            <template #body="{ data }">
-              <div class="flex flex-wrap gap-2">
-                <span
-                  v-for="role in data.roleCodes"
-                  :key="`${data.id}-${role}`"
-                  class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300"
-                >
-                  {{ role }}
-                </span>
-              </div>
-            </template>
-          </Column>
-          <Column header="Trạng thái">
-            <template #body="{ data }">
-              <Tag
-                :value="data.status"
-                :severity="
-                  data.status === 'ACTIVE'
-                    ? 'success'
-                    : data.status === 'LOCKED'
-                      ? 'danger'
-                      : 'secondary'
-                "
-              />
-            </template>
-          </Column>
-          <Column header="Ngày tạo">
-            <template #body="{ data }">
-              <span class="text-sm text-slate-600 dark:text-slate-300">
-                {{ formatDateTime(data.createdAt) }}
-              </span>
-            </template>
-          </Column>
-          <Column header="Thao tác">
-            <template #body="{ data }">
-              <div class="flex flex-wrap gap-2">
-                <Button
-                  label="Sửa"
-                  size="small"
-                  severity="secondary"
-                  :disabled="isProtectedRow(data) || adminsStore.isLoading || isMutating"
-                  @click="openEdit(data)"
-                />
-                <Button
-                  :label="data.status === 'ACTIVE' ? 'Khoá' : 'Mở khoá'"
-                  size="small"
-                  severity="warning"
-                  :disabled="isProtectedRow(data) || adminsStore.isLoading || isMutating"
-                  @click="openLockConfirm(data)"
-                />
-                <Button
-                  label="Xoá"
-                  size="small"
-                  severity="danger"
-                  :disabled="isProtectedRow(data) || adminsStore.isLoading || isMutating"
-                  @click="openDeleteConfirm(data)"
-                />
-              </div>
-            </template>
-          </Column>
-        </DataTable>
+      <div class="mt-6 overflow-hidden rounded-[24px] border border-slate-200/80 bg-white dark:border-slate-800 dark:bg-slate-950/40">
+        <div class="overflow-x-auto">
+          <table class="min-w-full border-separate border-spacing-0 text-left text-sm">
+            <thead class="bg-slate-50 text-xs uppercase tracking-[0.18em] text-slate-500 dark:bg-slate-950/60 dark:text-slate-300">
+              <tr>
+                <th class="px-5 py-4 font-semibold">Admin</th>
+                <th class="px-5 py-4 font-semibold">Email</th>
+                <th class="px-5 py-4 font-semibold">Vai trò</th>
+                <th class="px-5 py-4 font-semibold">Trạng thái</th>
+                <th class="px-5 py-4 font-semibold">Ngày tạo</th>
+                <th class="px-5 py-4 text-right font-semibold">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-200/70 dark:divide-slate-800">
+              <tr
+                v-for="admin in sortedAdmins"
+                :key="admin.id"
+                class="bg-white transition hover:bg-slate-50/70 dark:bg-transparent dark:hover:bg-slate-900/30"
+              >
+                <td class="px-5 py-4">
+                  <div class="flex items-center gap-3">
+                    <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 to-fuchsia-500 text-sm font-semibold text-white">
+                      {{ admin.fullName.slice(0, 1).toUpperCase() }}
+                    </div>
+                    <div class="min-w-0">
+                      <div class="truncate font-semibold text-slate-900 dark:text-white">
+                        {{ admin.fullName }}
+                      </div>
+                      <div class="truncate text-xs text-slate-500 dark:text-slate-400">
+                        {{ admin.id }}
+                      </div>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-5 py-4 text-slate-600 dark:text-slate-300">
+                  {{ admin.email }}
+                </td>
+                <td class="px-5 py-4">
+                  <div class="flex flex-wrap gap-2">
+                    <span
+                      v-for="role in admin.roleCodes"
+                      :key="`${admin.id}-${role}`"
+                      class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300"
+                    >
+                      {{ role }}
+                    </span>
+                  </div>
+                </td>
+                <td class="px-5 py-4">
+                  <Tag
+                    :value="admin.status"
+                    :severity="
+                      admin.status === 'ACTIVE'
+                        ? 'success'
+                        : admin.status === 'LOCKED'
+                          ? 'danger'
+                          : 'secondary'
+                    "
+                  />
+                </td>
+                <td class="px-5 py-4 text-slate-600 dark:text-slate-300">
+                  {{ formatDateTime(admin.createdAt) }}
+                </td>
+                <td class="px-5 py-4">
+                  <div class="flex justify-end gap-2">
+                    <Button
+                      icon="pi pi-pencil"
+                      size="small"
+                      severity="secondary"
+                      :disabled="isProtectedRow(admin) || adminsStore.isLoading || isMutating"
+                      @click="openEdit(admin)"
+                    />
+                    <Button
+                      :icon="admin.status === 'ACTIVE' ? 'pi pi-lock' : 'pi pi-lock-open'"
+                      size="small"
+                      severity="warning"
+                      :disabled="isProtectedRow(admin) || adminsStore.isLoading || isMutating"
+                      @click="openLockConfirm(admin)"
+                    />
+                    <Button
+                      icon="pi pi-trash"
+                      size="small"
+                      severity="danger"
+                      :disabled="isProtectedRow(admin) || adminsStore.isLoading || isMutating"
+                      @click="openDeleteConfirm(admin)"
+                    />
+                  </div>
+                </td>
+              </tr>
+
+              <tr v-if="!adminsStore.isLoading && sortedAdmins.length === 0">
+                <td colspan="6" class="px-5 py-10 text-center text-sm text-slate-500 dark:text-slate-400">
+                  Không có admin phù hợp với bộ lọc hiện tại.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div class="text-sm text-slate-500 dark:text-slate-400">
+          Hiển thị {{ pageStart }}-{{ pageEnd }} / {{ adminsStore.totalItems }} admin
+        </div>
+
+        <div class="flex flex-wrap items-center justify-end gap-2">
+          <Dropdown
+            :modelValue="pageSize"
+            :options="[
+              { label: '10 / trang', value: 10 },
+              { label: '20 / trang', value: 20 },
+              { label: '50 / trang', value: 50 },
+            ]"
+            optionLabel="label"
+            optionValue="value"
+            class="w-[140px]"
+            @update:modelValue="onPageSizeChange"
+          />
+
+          <Button
+            icon="pi pi-angle-left"
+            severity="secondary"
+            rounded
+            :disabled="adminsStore.isLoading || page <= 1"
+            @click="() => void goToPage(page - 1)"
+          />
+
+          <button
+            v-for="value in paginationButtons"
+            :key="`admin-page-${value}`"
+            type="button"
+            class="inline-flex h-10 min-w-[40px] items-center justify-center rounded-2xl border px-3 text-sm font-semibold transition"
+            :class="
+              value === page
+                ? 'border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-500/30 dark:bg-violet-500/10 dark:text-violet-200'
+                : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:text-white'
+            "
+            :disabled="adminsStore.isLoading"
+            @click="() => void goToPage(value)"
+          >
+            {{ value }}
+          </button>
+
+          <Button
+            icon="pi pi-angle-right"
+            severity="secondary"
+            rounded
+            :disabled="adminsStore.isLoading || page >= totalPages"
+            @click="() => void goToPage(page + 1)"
+          />
+        </div>
       </div>
     </section>
 
