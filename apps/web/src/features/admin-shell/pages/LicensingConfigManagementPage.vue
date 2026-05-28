@@ -53,6 +53,7 @@ const resourceConfigMap: Record<
     title: string
     description: string
     createLabel: string
+    editLabel: string
     detailColumnLabel: string
     detailPlaceholder: string
     priceLabel: string
@@ -61,25 +62,27 @@ const resourceConfigMap: Record<
   }
 > = {
   digital: {
-    title: 'Digital Rights',
+    title: 'Cấu hình quyền nền tảng số',
     description:
-      'Quản lý cấu hình bản quyền nền tảng số theo từng platform, duration và tập core permissions đính kèm.',
-    createLabel: 'Thêm gói digital',
-    detailColumnLabel: 'Platform / Duration',
-    detailPlaceholder: 'Platform + duration',
-    priceLabel: 'Base multiplier',
-    emptyState: 'Chưa có digital right config nào.',
+      'Quản lý cấu hình bản quyền nền tảng số theo từng nền tảng áp dụng, thời hạn và quyền phụ thuộc.',
+    createLabel: 'Thêm cấu hình quyền số',
+    editLabel: 'Cập nhật cấu hình quyền số',
+    detailColumnLabel: 'Nền tảng / Thời hạn',
+    detailPlaceholder: 'Nền tảng áp dụng và thời hạn',
+    priceLabel: 'Hệ số giá cơ sở',
+    emptyState: 'Chưa có cấu hình quyền nền tảng số nào.',
     supportsDigitalFilters: true,
   },
   physical: {
-    title: 'Physical Rights',
+    title: 'Cấu hình quyền sử dụng vật lý',
     description:
-      'Quản lý các loại hình sử dụng âm nhạc ngoài đời thực và hệ số giá áp dụng cho từng bối cảnh offline.',
-    createLabel: 'Thêm gói physical',
-    detailColumnLabel: 'Venue / Usage type',
-    detailPlaceholder: 'Loại hình sử dụng',
-    priceLabel: 'Base multiplier',
-    emptyState: 'Chưa có physical right config nào.',
+      'Quản lý các loại hình sử dụng âm nhạc ngoài đời thực cùng hệ số giá và quyền phụ thuộc áp dụng cho từng bối cảnh.',
+    createLabel: 'Thêm cấu hình quyền vật lý',
+    editLabel: 'Cập nhật cấu hình quyền vật lý',
+    detailColumnLabel: 'Loại hình sử dụng thực tế',
+    detailPlaceholder: 'Loại hình sử dụng ngoài đời thực',
+    priceLabel: 'Hệ số giá cơ sở',
+    emptyState: 'Chưa có cấu hình quyền sử dụng vật lý nào.',
     supportsDigitalFilters: false,
   },
   expression: {
@@ -87,6 +90,7 @@ const resourceConfigMap: Record<
     description:
       'Quản lý hình thức biểu hiện của sản phẩm âm nhạc, hệ số giá và các quyền cốt lõi bắt buộc đi kèm.',
     createLabel: 'Thêm expression',
+    editLabel: 'Cập nhật cấu hình',
     detailColumnLabel: 'Expression name',
     detailPlaceholder: 'Tên hình thức biểu hiện',
     priceLabel: 'Price multiplier',
@@ -98,6 +102,7 @@ const resourceConfigMap: Record<
     description:
       'Quản lý mức độ biến đổi tác phẩm, hệ số giá và tập core permissions phải có khi can thiệp tác phẩm gốc.',
     createLabel: 'Thêm modification',
+    editLabel: 'Cập nhật cấu hình',
     detailColumnLabel: 'Modification name',
     detailPlaceholder: 'Tên mức độ biến đổi',
     priceLabel: 'Price multiplier',
@@ -133,6 +138,7 @@ const createDialogVisible = ref(false)
 const editDialogVisible = ref(false)
 const selectedItem = ref<AnyLicensingConfig | null>(null)
 const isSubmitting = ref(false)
+const hasLoadedPermissionOptions = ref(false)
 
 const form = reactive<{
   code: string
@@ -211,6 +217,31 @@ const currentTotalItems = computed(() => {
 const totalPages = computed(() => currentMeta.value?.pagination.totalPages ?? 1)
 const pageStart = computed(() => (currentTotalItems.value === 0 ? 0 : (pagination.page - 1) * pagination.pageSize + 1))
 const pageEnd = computed(() => Math.min(pagination.page * pagination.pageSize, currentTotalItems.value))
+const isDigitalResource = computed(() => props.resource === 'digital')
+const isPhysicalResource = computed(() => props.resource === 'physical')
+const isDigitalOrPhysicalResource = computed(() => isDigitalResource.value || isPhysicalResource.value)
+const keywordLabel = computed(() => (isDigitalOrPhysicalResource.value ? 'Từ khoá' : 'Keyword'))
+const keywordPlaceholder = computed(() =>
+  isDigitalOrPhysicalResource.value ? 'Tìm theo mã cấu hình hoặc tên hiển thị' : 'Tìm theo code hoặc tên hiển thị',
+)
+const statusFieldLabel = computed(() => (isDigitalOrPhysicalResource.value ? 'Trạng thái' : 'Status'))
+const codeLabel = computed(() => (isDigitalOrPhysicalResource.value ? 'Mã cấu hình' : 'Code'))
+const permissionsLabel = computed(() =>
+  isDigitalOrPhysicalResource.value ? 'Quyền phụ thuộc' : 'Referenced core permissions',
+)
+const actionsLabel = computed(() => (isDigitalOrPhysicalResource.value ? 'Thao tác' : 'Actions'))
+const emptyPermissionsText = computed(() =>
+  isDigitalOrPhysicalResource.value ? 'Chưa chọn quyền phụ thuộc' : 'Chưa gắn quyền',
+)
+const editDialogTitle = computed(() => currentResource.value.editLabel)
+const isPermissionOptionsLoading = computed(
+  () => isDigitalOrPhysicalResource.value && (!hasLoadedPermissionOptions.value || corePermissionsStore.isLoading),
+)
+const isPermissionSubmitDisabled = computed(() => isSubmitting.value || isPermissionOptionsLoading.value)
+const permissionOptionsLoadingMessage = computed(() =>
+  isDigitalOrPhysicalResource.value ? 'Đang tải quyền phụ thuộc...' : 'Đang tải danh sách quyền...',
+)
+const permissionOptionsEmptyMessage = computed(() => 'Hiện chưa có quyền cốt lõi đang hoạt động để lựa chọn.')
 
 const mergedPermissionOptions = computed<ReferencedPermissionSummary[]>(() => {
   const activePermissions = corePermissionsStore.activeItems.map((item) => ({
@@ -230,9 +261,27 @@ const mergedPermissionOptions = computed<ReferencedPermissionSummary[]>(() => {
   return [...permissionMap.values()]
 })
 
+const toggleReferencedPermission = (permissionId: string) => {
+  form.referencedPermissionIds = form.referencedPermissionIds.includes(permissionId)
+    ? form.referencedPermissionIds.filter((item) => item !== permissionId)
+    : [...form.referencedPermissionIds, permissionId]
+}
+
 const clearMessages = () => {
   errorMessage.value = null
   successMessage.value = null
+}
+
+const fetchPermissionOptions = async () => {
+  hasLoadedPermissionOptions.value = false
+
+  try {
+    await corePermissionsStore.fetchCorePermissions({ page: 1, pageSize: 200, status: 'ACTIVE' })
+  } catch {
+    // Keep the dialog usable even if preloading fails; the UI will fall back to the empty state.
+  } finally {
+    hasLoadedPermissionOptions.value = true
+  }
 }
 
 const setError = (error: unknown) => {
@@ -243,6 +292,14 @@ const setError = (error: unknown) => {
 
   errorMessage.value = error instanceof Error ? error.message : 'Đã xảy ra lỗi'
 }
+
+const formatStatusLabel = (status: LicensingConfigStatus) =>
+  status === 'ACTIVE' ? 'Đang hoạt động' : 'Ngừng hoạt động'
+
+const formatDigitalPlatformLabel = (platform: DigitalPlatform) => platform
+
+const formatDurationTypeLabel = (durationType: DigitalDurationType) =>
+  durationType === 'ONE_YEAR' ? '1 năm' : 'Vĩnh viễn'
 
 const resetForm = () => {
   form.code = ''
@@ -322,6 +379,9 @@ const openCreate = () => {
   clearMessages()
   selectedItem.value = null
   resetForm()
+  if (isDigitalOrPhysicalResource.value && !hasLoadedPermissionOptions.value && !corePermissionsStore.isLoading) {
+    void fetchPermissionOptions()
+  }
   editDialogVisible.value = false
   createDialogVisible.value = true
 }
@@ -330,6 +390,9 @@ const openEdit = (item: AnyLicensingConfig) => {
   clearMessages()
   selectedItem.value = item
   fillFormFromItem(item)
+  if (isDigitalOrPhysicalResource.value && !hasLoadedPermissionOptions.value && !corePermissionsStore.isLoading) {
+    void fetchPermissionOptions()
+  }
   createDialogVisible.value = false
   editDialogVisible.value = true
 }
@@ -530,7 +593,7 @@ const getDetailText = (item: AnyLicensingConfig) => {
   switch (props.resource) {
     case 'digital': {
       const digitalItem = item as DigitalRightConfig
-      return `${digitalItem.targetPlatform} · ${digitalItem.durationType}`
+      return `${formatDigitalPlatformLabel(digitalItem.targetPlatform)} · ${formatDurationTypeLabel(digitalItem.durationType)}`
     }
     case 'physical':
       return (item as PhysicalRightConfig).venueUsageType
@@ -555,7 +618,7 @@ const getPriceValue = (item: AnyLicensingConfig) => {
 }
 
 onMounted(() => {
-  void corePermissionsStore.fetchCorePermissions({ page: 1, pageSize: 200, status: 'ACTIVE' }).catch(() => {})
+  void fetchPermissionOptions()
   void fetchList()
 })
 </script>
@@ -576,19 +639,21 @@ onMounted(() => {
     <section class="rounded-[32px] border border-slate-200/80 bg-white/85 p-5 shadow-xl shadow-slate-200/40 backdrop-blur dark:border-slate-800 dark:bg-slate-950/70 dark:shadow-black/20">
       <div class="grid gap-3 md:grid-cols-4">
         <label class="space-y-2 md:col-span-2">
-          <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Keyword</span>
-          <input v-model="filters.keyword" :class="fieldClass" placeholder="Tìm theo code hoặc tên hiển thị" :disabled="currentIsLoading" />
+          <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">{{ keywordLabel }}</span>
+          <input v-model="filters.keyword" :class="fieldClass" :placeholder="keywordPlaceholder" :disabled="currentIsLoading" />
         </label>
         <label class="space-y-2">
-          <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Status</span>
+          <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">{{ statusFieldLabel }}</span>
           <select v-model="filters.status" :class="fieldClass" :disabled="currentIsLoading">
             <option value="">Tất cả</option>
-            <option value="ACTIVE">ACTIVE</option>
-            <option value="INACTIVE">INACTIVE</option>
+            <option value="ACTIVE">{{ isDigitalOrPhysicalResource ? 'Đang hoạt động' : 'ACTIVE' }}</option>
+            <option value="INACTIVE">{{ isDigitalOrPhysicalResource ? 'Ngừng hoạt động' : 'INACTIVE' }}</option>
           </select>
         </label>
         <label v-if="currentResource.supportsDigitalFilters" class="space-y-2">
-          <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Platform</span>
+          <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+            {{ isDigitalOrPhysicalResource ? 'Nền tảng áp dụng' : 'Platform' }}
+          </span>
           <select v-model="filters.targetPlatform" :class="fieldClass" :disabled="currentIsLoading">
             <option value="">Tất cả</option>
             <option value="YOUTUBE">YOUTUBE</option>
@@ -597,11 +662,13 @@ onMounted(() => {
           </select>
         </label>
         <label v-if="currentResource.supportsDigitalFilters" class="space-y-2">
-          <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Duration</span>
+          <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+            {{ isDigitalOrPhysicalResource ? 'Thời hạn áp dụng' : 'Duration' }}
+          </span>
           <select v-model="filters.durationType" :class="fieldClass" :disabled="currentIsLoading">
             <option value="">Tất cả</option>
-            <option value="ONE_YEAR">ONE_YEAR</option>
-            <option value="PERPETUAL">PERPETUAL</option>
+            <option value="ONE_YEAR">{{ isDigitalOrPhysicalResource ? '1 năm' : 'ONE_YEAR' }}</option>
+            <option value="PERPETUAL">{{ isDigitalOrPhysicalResource ? 'Vĩnh viễn' : 'PERPETUAL' }}</option>
           </select>
         </label>
       </div>
@@ -623,12 +690,12 @@ onMounted(() => {
           <table class="min-w-full border-separate border-spacing-0 text-left text-sm">
             <thead class="bg-slate-50 text-xs uppercase tracking-[0.18em] text-slate-500 dark:bg-slate-950/60 dark:text-slate-300">
               <tr>
-                <th class="px-4 py-4 font-semibold">Code</th>
+                <th class="px-4 py-4 font-semibold">{{ codeLabel }}</th>
                 <th class="px-4 py-4 font-semibold">{{ currentResource.detailColumnLabel }}</th>
                 <th class="px-4 py-4 font-semibold">{{ currentResource.priceLabel }}</th>
-                <th class="px-4 py-4 font-semibold">Referenced permissions</th>
-                <th class="px-4 py-4 font-semibold">Status</th>
-                <th class="px-4 py-4 text-right font-semibold">Actions</th>
+                <th class="px-4 py-4 font-semibold">{{ permissionsLabel }}</th>
+                <th class="px-4 py-4 font-semibold">{{ statusFieldLabel }}</th>
+                <th class="px-4 py-4 text-right font-semibold">{{ actionsLabel }}</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-200/70 dark:divide-slate-800">
@@ -646,14 +713,14 @@ onMounted(() => {
                 </td>
                 <td class="px-4 py-4 text-slate-600 dark:text-slate-300">{{ getPriceValue(item) }}</td>
                 <td class="px-4 py-4">
-                  <div v-if="item.referencedPermissions.length === 0" class="text-slate-400 dark:text-slate-500">Chưa gắn quyền</div>
+                  <div v-if="item.referencedPermissions.length === 0" class="text-slate-400 dark:text-slate-500">{{ emptyPermissionsText }}</div>
                   <div v-else class="flex flex-wrap gap-2">
                     <span
                       v-for="permission in item.referencedPermissions.slice(0, 3)"
                       :key="`${item.id}-${permission.id}`"
                       class="inline-flex items-center rounded-full border border-violet-200 bg-violet-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-violet-700 dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-violet-200"
                     >
-                      {{ permission.code }}
+                      {{ isDigitalOrPhysicalResource ? permission.name : permission.code }}
                     </span>
                     <span
                       v-if="item.referencedPermissions.length > 3"
@@ -670,7 +737,7 @@ onMounted(() => {
                       ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300'
                       : 'border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300'"
                   >
-                    {{ item.status }}
+                    {{ isDigitalOrPhysicalResource ? formatStatusLabel(item.status) : item.status }}
                   </span>
                 </td>
                 <td class="px-4 py-4">
@@ -717,13 +784,13 @@ onMounted(() => {
     <Dialog v-model:visible="createDialogVisible" modal class="w-[min(860px,96vw)]" :header="currentResource.createLabel">
       <div class="grid gap-4 sm:grid-cols-2">
         <label class="space-y-2 sm:col-span-2">
-          <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Code</span>
-          <input v-model="form.code" :class="fieldClass" placeholder="Bo trong neu muon backend tu cap code" :disabled="isSubmitting" />
+          <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">{{ codeLabel }}</span>
+          <input v-model="form.code" :class="fieldClass" placeholder="Để trống nếu muốn hệ thống tự cấp mã" :disabled="isSubmitting" />
         </label>
 
         <template v-if="props.resource === 'digital'">
           <label class="space-y-2">
-            <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Platform</span>
+            <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Nền tảng áp dụng</span>
             <select v-model="form.targetPlatform" :class="fieldClass" :disabled="isSubmitting">
               <option value="YOUTUBE">YOUTUBE</option>
               <option value="TIKTOK">TIKTOK</option>
@@ -731,25 +798,25 @@ onMounted(() => {
             </select>
           </label>
           <label class="space-y-2">
-            <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Duration</span>
+            <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Thời hạn áp dụng</span>
             <select v-model="form.durationType" :class="fieldClass" :disabled="isSubmitting">
-              <option value="ONE_YEAR">ONE_YEAR</option>
-              <option value="PERPETUAL">PERPETUAL</option>
+              <option value="ONE_YEAR">1 năm</option>
+              <option value="PERPETUAL">Vĩnh viễn</option>
             </select>
           </label>
           <label class="space-y-2 sm:col-span-2">
-            <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Base multiplier</span>
+            <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Hệ số giá cơ sở</span>
             <input v-model.number="form.basePriceMultiplier" type="number" min="1" step="0.01" :class="fieldClass" :disabled="isSubmitting" />
           </label>
         </template>
 
         <template v-if="props.resource === 'physical'">
           <label class="space-y-2 sm:col-span-2">
-            <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Venue / Usage type</span>
+            <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Loại hình sử dụng thực tế</span>
             <input v-model="form.venueUsageType" :class="fieldClass" placeholder="PHÒNG TRÀ / HỘI CHỢ / QUÁN CAFE" :disabled="isSubmitting" />
           </label>
           <label class="space-y-2 sm:col-span-2">
-            <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Base multiplier</span>
+            <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Hệ số giá cơ sở</span>
             <input v-model.number="form.basePriceMultiplier" type="number" min="1" step="0.01" :class="fieldClass" :disabled="isSubmitting" />
           </label>
         </template>
@@ -767,33 +834,85 @@ onMounted(() => {
           </label>
         </template>
 
-        <label class="space-y-2 sm:col-span-2">
-          <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Referenced core permissions</span>
-          <select v-model="form.referencedPermissionIds" multiple :class="textAreaClass" :disabled="isSubmitting">
+        <div class="space-y-3 sm:col-span-2">
+          <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">{{ permissionsLabel }}</span>
+          <div v-if="isDigitalOrPhysicalResource" class="space-y-3">
+            <div
+              v-if="isPermissionOptionsLoading || mergedPermissionOptions.length === 0"
+              class="rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 px-4 py-4 dark:border-slate-700 dark:bg-slate-900/40"
+            >
+              <div v-if="isPermissionOptionsLoading" class="space-y-3">
+                <div class="h-4 w-40 animate-pulse rounded-full bg-slate-200 dark:bg-slate-800" />
+                <div class="grid gap-2">
+                  <div
+                    v-for="placeholderIndex in 3"
+                    :key="`create-permission-loading-${placeholderIndex}`"
+                    class="rounded-2xl border border-slate-200/80 bg-white/70 px-4 py-4 dark:border-slate-800 dark:bg-slate-950/50"
+                  >
+                    <div class="h-4 w-3/4 animate-pulse rounded-full bg-slate-200 dark:bg-slate-800" />
+                    <div class="mt-2 h-3 w-1/2 animate-pulse rounded-full bg-slate-200 dark:bg-slate-800" />
+                  </div>
+                </div>
+              </div>
+              <div v-else class="text-sm text-slate-500 dark:text-slate-400">
+                {{ permissionOptionsEmptyMessage }}
+              </div>
+              <div v-if="isPermissionOptionsLoading" class="mt-3 text-xs text-slate-500 dark:text-slate-400">
+                {{ permissionOptionsLoadingMessage }}
+              </div>
+            </div>
+            <div v-else class="grid gap-2">
+              <button
+                v-for="permission in mergedPermissionOptions"
+                :key="permission.id"
+                type="button"
+                class="flex w-full items-start gap-3 rounded-2xl border px-4 py-3 text-left transition"
+                :class="form.referencedPermissionIds.includes(permission.id)
+                  ? 'border-violet-300 bg-violet-50 text-violet-700 dark:border-violet-500/40 dark:bg-violet-500/10 dark:text-violet-200'
+                  : 'border-slate-200 bg-white text-slate-700 hover:border-violet-200 dark:border-slate-800 dark:bg-slate-950/40 dark:text-slate-200'"
+                :disabled="isPermissionSubmitDisabled"
+                @click="toggleReferencedPermission(permission.id)"
+              >
+                <span
+                  class="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md border text-[11px]"
+                  :class="form.referencedPermissionIds.includes(permission.id)
+                    ? 'border-violet-400 bg-violet-500 text-white dark:border-violet-400 dark:bg-violet-500'
+                    : 'border-slate-300 bg-white text-transparent dark:border-slate-600 dark:bg-slate-950'"
+                >
+                  <i class="pi pi-check" />
+                </span>
+                <span class="min-w-0">
+                  <span class="block font-semibold">{{ permission.code }} - {{ permission.name }}</span>
+                  <span class="mt-1 block text-xs text-slate-500 dark:text-slate-400">{{ permission.lawReference }}</span>
+                </span>
+              </button>
+            </div>
+          </div>
+          <select v-else v-model="form.referencedPermissionIds" multiple :class="textAreaClass" :disabled="isSubmitting">
             <option v-for="permission in mergedPermissionOptions" :key="permission.id" :value="permission.id">
               {{ permission.code }} - {{ permission.name }}
             </option>
           </select>
-        </label>
+        </div>
       </div>
       <template #footer>
         <div class="flex w-full justify-end gap-3">
           <button type="button" :class="secondaryButtonClass" :disabled="isSubmitting" @click="createDialogVisible = false">Huỷ</button>
-          <button type="button" :class="primaryButtonClass" :disabled="isSubmitting" @click="submitCreate">Tạo</button>
+          <button type="button" :class="primaryButtonClass" :disabled="isPermissionSubmitDisabled" @click="submitCreate">Tạo</button>
         </div>
       </template>
     </Dialog>
 
-    <Dialog v-model:visible="editDialogVisible" modal class="w-[min(860px,96vw)]" header="Cập nhật cấu hình">
+    <Dialog v-model:visible="editDialogVisible" modal class="w-[min(860px,96vw)]" :header="editDialogTitle">
       <div class="grid gap-4 sm:grid-cols-2">
         <label class="space-y-2 sm:col-span-2">
-          <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Code</span>
+          <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">{{ codeLabel }}</span>
           <input v-model="form.code" :class="fieldClass" disabled />
         </label>
 
         <template v-if="props.resource === 'digital'">
           <label class="space-y-2">
-            <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Platform</span>
+            <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Nền tảng áp dụng</span>
             <select v-model="form.targetPlatform" :class="fieldClass" :disabled="isSubmitting">
               <option value="YOUTUBE">YOUTUBE</option>
               <option value="TIKTOK">TIKTOK</option>
@@ -801,25 +920,25 @@ onMounted(() => {
             </select>
           </label>
           <label class="space-y-2">
-            <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Duration</span>
+            <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Thời hạn áp dụng</span>
             <select v-model="form.durationType" :class="fieldClass" :disabled="isSubmitting">
-              <option value="ONE_YEAR">ONE_YEAR</option>
-              <option value="PERPETUAL">PERPETUAL</option>
+              <option value="ONE_YEAR">1 năm</option>
+              <option value="PERPETUAL">Vĩnh viễn</option>
             </select>
           </label>
           <label class="space-y-2 sm:col-span-2">
-            <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Base multiplier</span>
+            <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Hệ số giá cơ sở</span>
             <input v-model.number="form.basePriceMultiplier" type="number" min="1" step="0.01" :class="fieldClass" :disabled="isSubmitting" />
           </label>
         </template>
 
         <template v-if="props.resource === 'physical'">
           <label class="space-y-2 sm:col-span-2">
-            <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Venue / Usage type</span>
+            <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Loại hình sử dụng thực tế</span>
             <input v-model="form.venueUsageType" :class="fieldClass" :disabled="isSubmitting" />
           </label>
           <label class="space-y-2 sm:col-span-2">
-            <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Base multiplier</span>
+            <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Hệ số giá cơ sở</span>
             <input v-model.number="form.basePriceMultiplier" type="number" min="1" step="0.01" :class="fieldClass" :disabled="isSubmitting" />
           </label>
         </template>
@@ -837,19 +956,71 @@ onMounted(() => {
           </label>
         </template>
 
-        <label class="space-y-2 sm:col-span-2">
-          <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Referenced core permissions</span>
-          <select v-model="form.referencedPermissionIds" multiple :class="textAreaClass" :disabled="isSubmitting">
+        <div class="space-y-3 sm:col-span-2">
+          <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">{{ permissionsLabel }}</span>
+          <div v-if="isDigitalOrPhysicalResource" class="space-y-3">
+            <div
+              v-if="isPermissionOptionsLoading || mergedPermissionOptions.length === 0"
+              class="rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 px-4 py-4 dark:border-slate-700 dark:bg-slate-900/40"
+            >
+              <div v-if="isPermissionOptionsLoading" class="space-y-3">
+                <div class="h-4 w-40 animate-pulse rounded-full bg-slate-200 dark:bg-slate-800" />
+                <div class="grid gap-2">
+                  <div
+                    v-for="placeholderIndex in 3"
+                    :key="`edit-permission-loading-${placeholderIndex}`"
+                    class="rounded-2xl border border-slate-200/80 bg-white/70 px-4 py-4 dark:border-slate-800 dark:bg-slate-950/50"
+                  >
+                    <div class="h-4 w-3/4 animate-pulse rounded-full bg-slate-200 dark:bg-slate-800" />
+                    <div class="mt-2 h-3 w-1/2 animate-pulse rounded-full bg-slate-200 dark:bg-slate-800" />
+                  </div>
+                </div>
+              </div>
+              <div v-else class="text-sm text-slate-500 dark:text-slate-400">
+                {{ permissionOptionsEmptyMessage }}
+              </div>
+              <div v-if="isPermissionOptionsLoading" class="mt-3 text-xs text-slate-500 dark:text-slate-400">
+                {{ permissionOptionsLoadingMessage }}
+              </div>
+            </div>
+            <div v-else class="grid gap-2">
+              <button
+                v-for="permission in mergedPermissionOptions"
+                :key="permission.id"
+                type="button"
+                class="flex w-full items-start gap-3 rounded-2xl border px-4 py-3 text-left transition"
+                :class="form.referencedPermissionIds.includes(permission.id)
+                  ? 'border-violet-300 bg-violet-50 text-violet-700 dark:border-violet-500/40 dark:bg-violet-500/10 dark:text-violet-200'
+                  : 'border-slate-200 bg-white text-slate-700 hover:border-violet-200 dark:border-slate-800 dark:bg-slate-950/40 dark:text-slate-200'"
+                :disabled="isPermissionSubmitDisabled"
+                @click="toggleReferencedPermission(permission.id)"
+              >
+                <span
+                  class="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md border text-[11px]"
+                  :class="form.referencedPermissionIds.includes(permission.id)
+                    ? 'border-violet-400 bg-violet-500 text-white dark:border-violet-400 dark:bg-violet-500'
+                    : 'border-slate-300 bg-white text-transparent dark:border-slate-600 dark:bg-slate-950'"
+                >
+                  <i class="pi pi-check" />
+                </span>
+                <span class="min-w-0">
+                  <span class="block font-semibold">{{ permission.code }} - {{ permission.name }}</span>
+                  <span class="mt-1 block text-xs text-slate-500 dark:text-slate-400">{{ permission.lawReference }}</span>
+                </span>
+              </button>
+            </div>
+          </div>
+          <select v-else v-model="form.referencedPermissionIds" multiple :class="textAreaClass" :disabled="isSubmitting">
             <option v-for="permission in mergedPermissionOptions" :key="permission.id" :value="permission.id">
               {{ permission.code }} - {{ permission.name }}
             </option>
           </select>
-        </label>
+        </div>
       </div>
       <template #footer>
         <div class="flex w-full justify-end gap-3">
           <button type="button" :class="secondaryButtonClass" :disabled="isSubmitting" @click="editDialogVisible = false">Huỷ</button>
-          <button type="button" :class="primaryButtonClass" :disabled="isSubmitting" @click="submitEdit">Lưu</button>
+          <button type="button" :class="primaryButtonClass" :disabled="isPermissionSubmitDisabled" @click="submitEdit">Lưu</button>
         </div>
       </template>
     </Dialog>
