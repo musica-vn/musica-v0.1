@@ -29,9 +29,6 @@ export class ComplianceProductSnapshotDto {
   trackId: string
 
   @ApiProperty()
-  productCode: string
-
-  @ApiProperty()
   title: string
 
   @ApiProperty()
@@ -47,9 +44,6 @@ export class ComplianceProductSnapshotDto {
 export class ComplianceListItemDto {
   @ApiProperty()
   complianceId: string
-
-  @ApiProperty()
-  complianceCode: string
 
   @ApiProperty({ enum: ['PENDING', 'SUFFICIENT', 'INSUFFICIENT'] })
   legalStatus: ComplianceLegalStatus
@@ -76,9 +70,6 @@ export class ComplianceListItemDto {
 export class ComplianceDetailDto {
   @ApiProperty()
   complianceId: string
-
-  @ApiProperty()
-  complianceCode: string
 
   @ApiProperty({ enum: ['PENDING', 'SUFFICIENT', 'INSUFFICIENT'] })
   legalStatus: ComplianceLegalStatus

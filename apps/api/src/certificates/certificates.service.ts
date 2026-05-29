@@ -35,7 +35,7 @@ type DbUserRow = {
 };
 
 type DbTemplateRow = {
-  code: string;
+  id: number;
   html_template: string;
   updated_at: string;
 };
@@ -295,8 +295,9 @@ export class CertificatesService {
   async getCertificateTemplate(): Promise<CertificateTemplateDto> {
     const { data, error } = await this.supabaseService.client
       .from('certificate_templates')
-      .select('code,html_template,updated_at')
-      .eq('code', 'DEFAULT')
+      .select('id,html_template,updated_at')
+      .order('updated_at', { ascending: false })
+      .limit(1)
       .maybeSingle<DbTemplateRow>();
 
     if (error) {
@@ -305,14 +306,14 @@ export class CertificatesService {
 
     if (!data) {
       return {
-        code: 'DEFAULT',
+        id: null,
         htmlTemplate: defaultCertificateTemplateHtml,
         updatedAt: new Date().toISOString(),
       };
     }
 
     return {
-      code: data.code,
+      id: data.id,
       htmlTemplate: data.html_template,
       updatedAt: data.updated_at,
     };
@@ -321,13 +322,16 @@ export class CertificatesService {
   async updateCertificateTemplate(
     htmlTemplate: string,
   ): Promise<CertificateTemplateDto> {
+    const currentTemplate = await this.getCertificateTemplate();
     const { data, error } = await this.supabaseService.client
       .from('certificate_templates')
       .upsert(
-        { code: 'DEFAULT', html_template: htmlTemplate },
-        { onConflict: 'code' },
+        currentTemplate.id === null
+          ? { html_template: htmlTemplate }
+          : { id: currentTemplate.id, html_template: htmlTemplate },
+        currentTemplate.id === null ? undefined : { onConflict: 'id' },
       )
-      .select('code,html_template,updated_at')
+      .select('id,html_template,updated_at')
       .single<DbTemplateRow>();
 
     if (error) {
@@ -335,7 +339,7 @@ export class CertificatesService {
     }
 
     return {
-      code: data.code,
+      id: data.id,
       htmlTemplate: data.html_template,
       updatedAt: data.updated_at,
     };

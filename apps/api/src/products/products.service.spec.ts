@@ -31,7 +31,6 @@ describe('ProductsService - upload URLs', () => {
 
     jest.spyOn(service, 'getProductById').mockResolvedValue({
       id: productId,
-      productCode: 'PROD-000001',
       title: 't',
       artistId: '00000000-0000-0000-0000-000000000002',
       authorName: null,
@@ -108,7 +107,6 @@ describe('ProductsService - upload URLs', () => {
 
     jest.spyOn(service, 'getProductById').mockResolvedValue({
       id: productId,
-      productCode: 'PROD-000001',
       title: 't',
       artistId: '00000000-0000-0000-0000-000000000002',
       authorName: null,
@@ -164,7 +162,6 @@ describe('ProductsService - upload URLs', () => {
 
     jest.spyOn(service, 'getProductById').mockResolvedValue({
       id: productId,
-      productCode: 'PROD-000001',
       title: 't',
       artistId: '00000000-0000-0000-0000-000000000002',
       authorName: null,
@@ -246,7 +243,6 @@ describe('ProductsService - playback URLs', () => {
 
     jest.spyOn(service, 'getProductById').mockResolvedValue({
       id: productId,
-      productCode: 'PROD-000001',
       title: 't',
       artistId: '00000000-0000-0000-0000-000000000002',
       authorName: null,
@@ -310,7 +306,6 @@ describe('ProductsService - allowed permissions', () => {
 
     jest.spyOn(service, 'getProductById').mockResolvedValue({
       id: productId,
-      productCode: 'PROD-000001',
       title: 't',
       artistId: '00000000-0000-0000-0000-000000000002',
       authorName: null,
@@ -362,7 +357,6 @@ describe('ProductsService - allowed permissions', () => {
 
     jest.spyOn(service, 'getProductById').mockResolvedValue({
       id: productId,
-      productCode: 'PROD-000001',
       title: 't',
       artistId: '00000000-0000-0000-0000-000000000002',
       authorName: null,

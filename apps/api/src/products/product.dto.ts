@@ -13,9 +13,6 @@ export class ProductDto {
   id: string;
 
   @ApiProperty()
-  productCode: string;
-
-  @ApiProperty()
   title: string;
 
   @ApiProperty()

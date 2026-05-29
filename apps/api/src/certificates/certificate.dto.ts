@@ -91,8 +91,8 @@ export class CertificateDownloadUrlDataDto {
 }
 
 export class CertificateTemplateDto {
-  @ApiProperty({ example: 'DEFAULT' })
-  code: string;
+  @ApiProperty({ type: Number, nullable: true })
+  id: number | null;
 
   @ApiProperty()
   htmlTemplate: string;

@@ -16,7 +16,6 @@ import { ProductDto } from './product.dto';
 
 type DbProductRow = {
   id: string;
-  product_code: string;
   title: string;
   artist_id: string;
   author_name: string | null;
@@ -76,7 +75,6 @@ const mapProductRowToDto = (row: DbProductJoinRow): ProductDto => {
 
   return {
     id: row.id,
-    productCode: row.product_code,
     title: row.title,
     artistId: row.artist_id,
     authorName: row.author_name,
@@ -158,44 +156,6 @@ export class ProductsService {
     return `${data}.${extension}`;
   }
 
-  private async allocateNextProductCode(): Promise<string> {
-    const { data, error } = await this.supabaseService.client.rpc(
-      'allocate_next_product_code',
-    );
-
-    if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
-    }
-
-    if (typeof data !== 'string' || data.trim().length === 0) {
-      throw new HttpException(
-        'Invalid allocate_next_product_code response',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-
-    return data;
-  }
-
-  private async allocateNextComplianceCode(): Promise<string> {
-    const { data, error } = await this.supabaseService.client.rpc(
-      'allocate_next_compliance_code',
-    );
-
-    if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
-    }
-
-    if (typeof data !== 'string' || data.trim().length === 0) {
-      throw new HttpException(
-        'Invalid allocate_next_compliance_code response',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-
-    return data;
-  }
-
   async listAdminProducts(
     query: AdminProductsListQueryDto,
   ): Promise<ApiEnvelopePayload<{ items: ProductDto[] }, PaginationMeta>> {
@@ -263,7 +223,7 @@ export class ProductsService {
     if (keyword) {
       const escaped = keyword.replaceAll(',', ' ');
       requestBuilder = requestBuilder.or(
-        `title.ilike.%${escaped}%,author_name.ilike.%${escaped}%,product_code.ilike.%${escaped}%`,
+        `title.ilike.%${escaped}%,author_name.ilike.%${escaped}%,genre.ilike.%${escaped}%,use_case.ilike.%${escaped}%`,
       );
     }
 
@@ -292,12 +252,9 @@ export class ProductsService {
     payload: AdminCreateProductRequestDto,
     createdBy: string,
   ): Promise<ProductDto> {
-    const productCode = await this.allocateNextProductCode();
-
     const { data, error } = await this.supabaseService.client
       .from('products')
       .insert({
-        product_code: productCode,
         title: payload.title,
         artist_id: payload.artistId,
         author_name: payload.authorName ?? null,
@@ -317,10 +274,9 @@ export class ProductsService {
       throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
-    const complianceCode = await this.allocateNextComplianceCode();
     const { error: complianceError } = await this.supabaseService.client
       .from('compliance_reviews')
-      .insert({ code: complianceCode, track_id: data.id });
+      .insert({ track_id: data.id });
 
     if (complianceError) {
       throw new HttpException(

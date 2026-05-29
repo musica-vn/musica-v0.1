@@ -18,7 +18,6 @@ import { randomUUID } from 'crypto'
 
 type DbTrackRow = {
   id: string
-  product_code: string
   title: string
   artist_id: string
   status: ProductStatus
@@ -26,7 +25,6 @@ type DbTrackRow = {
 
 type DbComplianceRow = {
   id: string
-  code: string
   track_id: string
   uploaded_legal_files: UploadedLegalFileDto[] | null
   legal_status: ComplianceLegalStatus
@@ -206,7 +204,7 @@ export class ComplianceService {
 
     if (hasKeyword) {
       const escaped = keyword.replaceAll(',', '')
-      sb = sb.or(`title.ilike.%${escaped}%,product_code.ilike.%${escaped}%`)
+      sb = sb.or(`title.ilike.%${escaped}%`)
     }
 
     const { data, error } = await sb.returns<{ id: string }[]>()
@@ -299,7 +297,7 @@ export class ComplianceService {
 
     let sb = this.supabaseService.client
       .from('compliance_reviews')
-      .select('*, products(id,product_code,title,artist_id,status), compliance_legal_files(file_key)', { count: 'exact' })
+      .select('*, products(id,title,artist_id,status), compliance_legal_files(file_key)', { count: 'exact' })
       .order('updated_at', { ascending: false })
 
     if (query.legalStatus) sb = sb.eq('legal_status', query.legalStatus)
@@ -323,7 +321,6 @@ export class ComplianceService {
         const files = mapComplianceLegalFiles(row.compliance_legal_files, row.uploaded_legal_files)
         return {
           complianceId: row.id,
-          complianceCode: row.code,
           legalStatus: row.legal_status,
           reviewStatus: row.review_status,
           filesCount: files.length,
@@ -333,7 +330,6 @@ export class ComplianceService {
           reviewedAt: row.reviewed_at,
           product: {
             trackId: row.products.id,
-            productCode: row.products.product_code,
             title: row.products.title,
             artistId: row.products.artist_id,
             artistName: userDisplayNameMap.get(row.products.artist_id) ?? row.products.artist_id,
@@ -349,7 +345,7 @@ export class ComplianceService {
     const { data, error } = await this.supabaseService.client
       .from('compliance_reviews')
       .select(
-        '*, products(id,product_code,title,artist_id,status), compliance_approved_permissions(permission_id, core_permissions(name,law_reference)), compliance_legal_files(file_key,file_name,mime_type,file_size_bytes,uploaded_at)',
+        '*, products(id,title,artist_id,status), compliance_approved_permissions(permission_id, core_permissions(name,law_reference)), compliance_legal_files(file_key,file_name,mime_type,file_size_bytes,uploaded_at)',
       )
       .eq('track_id', trackId)
       .maybeSingle<DbComplianceJoinRow>()
@@ -379,7 +375,6 @@ export class ComplianceService {
 
     return {
       complianceId: data.id,
-      complianceCode: data.code,
       legalStatus: data.legal_status,
       reviewStatus: data.review_status,
       rejectReason: data.reject_reason,
@@ -392,7 +387,6 @@ export class ComplianceService {
       uploadedLegalFiles,
       product: {
         trackId: data.products.id,
-        productCode: data.products.product_code,
         title: data.products.title,
         artistId: data.products.artist_id,
         artistName: userDisplayNameMap.get(data.products.artist_id) ?? data.products.artist_id,
