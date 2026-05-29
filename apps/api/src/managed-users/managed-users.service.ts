@@ -5,13 +5,11 @@ import type { CreateManagedUserRequestDto, ManagedUserListQueryDto, UpdateManage
 
 type UserStatus = 'ACTIVE' | 'LOCKED' | 'DELETED'
 
-type ManagedRoleCode = 'BUYER' | 'ARTIST'
-
-type DbRoleRow = { id: number; code: string }
+type DbRoleRow = { id: number; name: string }
 
 type DbUserRoleRow = {
   role_id: number
-  role?: { code?: unknown }
+  role?: { id?: unknown; name?: unknown } | null
 }
 
 type DbManagedUserRow = {
@@ -28,14 +26,29 @@ export type ManagedUserItem = {
   email: string
   fullName: string
   status: UserStatus
-  roleCodes: ManagedRoleCode[]
+  roles: Array<{ roleId: number; roleName: string }>
   createdAt: string
 }
 
-const normalizeRoleCodes = (userRoles: DbUserRoleRow[]): ManagedRoleCode[] =>
+const normalizeRoles = (
+  userRoles: DbUserRoleRow[],
+): Array<{ roleId: number; roleName: string }> =>
   (userRoles ?? [])
-    .map((x) => x?.role?.code)
-    .filter((x): x is ManagedRoleCode => x === 'BUYER' || x === 'ARTIST')
+    .map((x) => {
+      const roleId = typeof x.role_id === 'number' ? x.role_id : null
+      const roleName =
+        x?.role && typeof x.role.name === 'string' ? x.role.name : null
+      if (!roleId || !roleName) return null
+      return { roleId, roleName }
+    })
+    .filter(
+      (
+        value,
+      ): value is {
+        roleId: number
+        roleName: string
+      } => value !== null,
+    )
 
 const isUniqueViolation = (error: unknown): boolean => {
   if (typeof error !== 'object' || error === null) return false
@@ -54,18 +67,32 @@ export class ManagedUsersService {
     return true
   }
 
-  private async getRoleIdsByCodes(codes: string[]): Promise<number[]> {
+  private async getRolesByNames(names: string[]): Promise<DbRoleRow[]> {
     const { data, error } = await this.supabaseService.client
       .from('roles')
-      .select('id,code')
-      .in('code', codes)
+      .select('id,name')
+      .in('name', names)
       .returns<DbRoleRow[]>()
 
     if (error) {
       throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
     }
 
-    return (data ?? []).map((x) => x.id)
+    return data ?? []
+  }
+
+  private async getRoleById(roleId: number): Promise<DbRoleRow | null> {
+    const { data, error } = await this.supabaseService.client
+      .from('roles')
+      .select('id,name')
+      .eq('id', roleId)
+      .maybeSingle<DbRoleRow>()
+
+    if (error) {
+      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
+    }
+
+    return data ?? null
   }
 
   private buildManagedUserItem(row: DbManagedUserRow): ManagedUserItem {
@@ -74,13 +101,13 @@ export class ManagedUsersService {
       email: row.email,
       fullName: row.full_name,
       status: row.status,
-      roleCodes: normalizeRoleCodes(row.user_roles),
+      roles: normalizeRoles(row.user_roles),
       createdAt: row.created_at,
     }
   }
 
   private async getManagedScopeRoleIds(): Promise<number[]> {
-    return this.getRoleIdsByCodes(['BUYER', 'ARTIST'])
+    return (await this.getRolesByNames(['Buyer', 'Artist'])).map((role) => role.id)
   }
 
   private async getManagedUserById(userId: string): Promise<ManagedUserItem | null> {
@@ -89,7 +116,7 @@ export class ManagedUsersService {
 
     const { data, error } = await this.supabaseService.client
       .from('users')
-      .select('id,email,full_name,status,created_at,user_roles!inner(role_id,role:roles(code))')
+      .select('id,email,full_name,status,created_at,user_roles!inner(role_id,role:roles(id,name))')
       .eq('id', userId)
       .in('user_roles.role_id', scopeRoleIds)
       .maybeSingle<DbManagedUserRow>()
@@ -103,8 +130,10 @@ export class ManagedUsersService {
   }
 
   async listUsers(query: ManagedUserListQueryDto): Promise<{ items: ManagedUserItem[]; totalItems: number }> {
-    const roleCodes = query.roleCode ? [query.roleCode] : (['BUYER', 'ARTIST'] satisfies ManagedRoleCode[])
-    const roleIds = await this.getRoleIdsByCodes(roleCodes)
+    const roleIds =
+      typeof query.roleId === 'number'
+        ? [query.roleId]
+        : await this.getManagedScopeRoleIds()
     if (roleIds.length === 0) return { items: [], totalItems: 0 }
 
     const from = (query.page - 1) * query.pageSize
@@ -112,7 +141,7 @@ export class ManagedUsersService {
 
     let sb = this.supabaseService.client
       .from('users')
-      .select('id,email,full_name,status,created_at,user_roles!inner(role_id,role:roles(code))', {
+      .select('id,email,full_name,status,created_at,user_roles!inner(role_id,role:roles(id,name))', {
         count: 'exact',
       })
       .in('user_roles.role_id', roleIds)
@@ -142,9 +171,8 @@ export class ManagedUsersService {
   }
 
   async createUser(payload: CreateManagedUserRequestDto): Promise<ManagedUserItem> {
-    const roleIds = await this.getRoleIdsByCodes([payload.roleCode])
-    const roleId = roleIds[0]
-    if (!roleId) {
+    const role = await this.getRoleById(payload.roleId)
+    if (!role || !['Buyer', 'Artist'].includes(role.name)) {
       throw new HttpException('Invalid role', HttpStatus.BAD_REQUEST)
     }
 
@@ -175,7 +203,7 @@ export class ManagedUsersService {
 
     const { error: insertRoleError } = await this.supabaseService.client.from('user_roles').insert({
       user_id: inserted.id,
-      role_id: roleId,
+      role_id: role.id,
     })
 
     if (insertRoleError) {

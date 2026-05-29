@@ -1,10 +1,11 @@
 export type AuthUserContext = {
   userId: string
-  roles: string[]
+  roleId: number | null
+  roleName: string | null
 }
 
 export type JwtPayload = {
   sub: string
-  roles: unknown
+  roleId?: unknown
+  roleName?: unknown
 }
-

@@ -1,5 +1,13 @@
 import { ApiProperty } from '@nestjs/swagger'
 
+export class ManagedUserRoleDto {
+  @ApiProperty()
+  roleId: number
+
+  @ApiProperty()
+  roleName: string
+}
+
 export class ManagedUserDto {
   @ApiProperty()
   id: string
@@ -13,8 +21,8 @@ export class ManagedUserDto {
   @ApiProperty({ enum: ['ACTIVE', 'LOCKED', 'DELETED'] })
   status: 'ACTIVE' | 'LOCKED' | 'DELETED'
 
-  @ApiProperty({ type: [String], enum: ['BUYER', 'ARTIST'] })
-  roleCodes: Array<'BUYER' | 'ARTIST'>
+  @ApiProperty({ type: [ManagedUserRoleDto] })
+  roles: ManagedUserRoleDto[]
 
   @ApiProperty()
   createdAt: string

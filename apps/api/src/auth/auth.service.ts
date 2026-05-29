@@ -13,6 +13,14 @@ type DbUserRow = {
   password_hash: string;
 };
 
+type DbUserRoleRow = {
+  role_id: number;
+  role?: {
+    id?: unknown;
+    name?: unknown;
+  } | null;
+};
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -51,8 +59,9 @@ export class AuthService {
     const { data: userRoles, error: rolesError } =
       await this.supabaseService.client
         .from('user_roles')
-        .select('role:roles(code)')
-        .eq('user_id', user.id);
+        .select('role_id,role:roles(id,name)')
+        .eq('user_id', user.id)
+        .returns<DbUserRoleRow[]>();
 
     if (rolesError) {
       throw new HttpException(
@@ -62,25 +71,44 @@ export class AuthService {
     }
 
     const roles = (userRoles ?? [])
-      .map((x) =>
-        typeof x === 'object' && x !== null
-          ? (x as { role?: { code?: unknown } }).role
-          : undefined,
-      )
-      .map((r) => (r && typeof r.code === 'string' ? r.code : undefined))
-      .filter((x): x is string => typeof x === 'string');
+      .map((row) => {
+        const roleId = typeof row.role_id === 'number' ? row.role_id : null;
+        const roleName =
+          row.role && typeof row.role.name === 'string' ? row.role.name : null;
+
+        if (!roleId || !roleName) return null;
+        return { roleId, roleName };
+      })
+      .filter(
+        (
+          value,
+        ): value is {
+          roleId: number;
+          roleName: string;
+        } => value !== null,
+      );
 
     if (roles.length === 0) {
       throw new HttpException('User has no roles', HttpStatus.FORBIDDEN);
     }
 
+    const primaryRole = roles[0];
+
     const jwtSecret =
       this.configService.get<string>('JWT_SECRET') ?? 'dev-secret';
     const expiresInSeconds = 60 * 60 * 24 * 7;
 
-    const accessToken = jwt.sign({ sub: user.id, roles }, jwtSecret, {
+    const accessToken = jwt.sign(
+      {
+        sub: user.id,
+        roleId: primaryRole.roleId,
+        roleName: primaryRole.roleName,
+      },
+      jwtSecret,
+      {
       expiresIn: expiresInSeconds,
-    });
+      },
+    );
 
     return {
       accessToken,
@@ -91,8 +119,9 @@ export class AuthService {
         email: user.email,
         fullName: user.full_name,
         status: user.status,
+        roleId: primaryRole.roleId,
+        roleName: primaryRole.roleName,
       },
-      roles,
     };
   }
 }

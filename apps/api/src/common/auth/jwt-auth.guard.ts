@@ -12,11 +12,6 @@ const readBearerToken = (request: Request): string | null => {
   return token
 }
 
-const normalizeRoles = (roles: unknown): string[] => {
-  if (!Array.isArray(roles)) return []
-  return roles.filter((x): x is string => typeof x === 'string')
-}
-
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
   constructor(private readonly configService: ConfigService) {}
@@ -35,8 +30,10 @@ export class JwtAuthGuard implements CanActivate {
     try {
       const decoded = jwt.verify(token, jwtSecret) as JwtPayload
       const userId = typeof decoded?.sub === 'string' ? decoded.sub : null
-      if (!userId) throw new Error('Invalid token payload')
-      request.user = { userId, roles: normalizeRoles(decoded.roles) }
+      const roleId = typeof decoded?.roleId === 'number' ? decoded.roleId : null
+      const roleName = typeof decoded?.roleName === 'string' ? decoded.roleName : null
+      if (!userId || !roleId || !roleName) throw new Error('Invalid token payload')
+      request.user = { userId, roleId, roleName }
       return true
     } catch {
       throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED)

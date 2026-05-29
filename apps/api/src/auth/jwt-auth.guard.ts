@@ -11,7 +11,8 @@ import type { AuthenticatedRequest, RequestUser } from './auth.types';
 
 type JwtPayload = {
   sub?: unknown;
-  roles?: unknown;
+  roleId?: unknown;
+  roleName?: unknown;
 };
 
 @Injectable()
@@ -43,15 +44,15 @@ export class JwtAuthGuard implements CanActivate {
     }
 
     const userId = typeof decoded.sub === 'string' ? decoded.sub : undefined;
-    const roles = Array.isArray(decoded.roles)
-      ? decoded.roles.filter((x): x is string => typeof x === 'string')
-      : [];
+    const roleId = typeof decoded.roleId === 'number' ? decoded.roleId : null;
+    const roleName =
+      typeof decoded.roleName === 'string' ? decoded.roleName : null;
 
-    if (!userId || roles.length === 0) {
+    if (!userId || !roleId || !roleName) {
       throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED);
     }
 
-    const user: RequestUser = { userId, roles };
+    const user: RequestUser = { userId, roleId, roleName };
     request.user = user;
 
     return true;

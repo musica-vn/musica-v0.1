@@ -24,6 +24,12 @@ export class AuthUserDto {
 
   @ApiProperty({ enum: ['ACTIVE', 'LOCKED', 'DELETED'] })
   status: string;
+
+  @ApiProperty({ nullable: true, type: Number })
+  roleId: number | null;
+
+  @ApiProperty({ nullable: true })
+  roleName: string | null;
 }
 
 export class AuthLoginDataDto {
@@ -38,7 +44,4 @@ export class AuthLoginDataDto {
 
   @ApiProperty({ type: AuthUserDto })
   user: AuthUserDto;
-
-  @ApiProperty({ type: [String], example: ['ADMIN'] })
-  roles: string[];
 }

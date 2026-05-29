@@ -1,5 +1,5 @@
 import { Transform } from 'class-transformer'
-import { IsEmail, IsIn, IsOptional, IsString, MinLength } from 'class-validator'
+import { IsEmail, IsIn, IsInt, IsOptional, IsString, Min, MinLength } from 'class-validator'
 import { ApiPropertyOptional } from '@nestjs/swagger'
 import { PaginationQueryDto } from '../common/pagination.dto'
 
@@ -23,8 +23,9 @@ export class CreateAdminUserRequestDto {
   password: string
 
   @IsOptional()
-  @IsString()
-  roleCode?: string
+  @IsInt()
+  @Min(1)
+  roleId?: number
 }
 
 export class UpdateAdminUserRequestDto {
@@ -43,8 +44,9 @@ export class UpdateAdminUserRequestDto {
   password?: string
 
   @IsOptional()
-  @IsString()
-  roleCode?: string
+  @IsInt()
+  @Min(1)
+  roleId?: number
 }
 
 export class UpdateAdminUserStatusRequestDto {
@@ -52,4 +54,3 @@ export class UpdateAdminUserStatusRequestDto {
   @IsIn(['ACTIVE', 'LOCKED'])
   status: 'ACTIVE' | 'LOCKED'
 }
-

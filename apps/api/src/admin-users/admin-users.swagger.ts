@@ -1,5 +1,13 @@
 import { ApiProperty } from '@nestjs/swagger'
 
+export class AdminUserRoleDto {
+  @ApiProperty()
+  roleId: number
+
+  @ApiProperty()
+  roleName: string
+}
+
 export class AdminUserDto {
   @ApiProperty()
   id: string
@@ -13,8 +21,8 @@ export class AdminUserDto {
   @ApiProperty({ enum: ['ACTIVE', 'LOCKED', 'DELETED'] })
   status: 'ACTIVE' | 'LOCKED' | 'DELETED'
 
-  @ApiProperty({ type: [String] })
-  roleCodes: string[]
+  @ApiProperty({ type: [AdminUserRoleDto] })
+  roles: AdminUserRoleDto[]
 
   @ApiProperty()
   createdAt: string
@@ -69,4 +77,3 @@ export class AdminUserListResponseDto {
   @ApiProperty({ example: '2026-05-20T00:00:00.000Z' })
   timestamp: string
 }
-

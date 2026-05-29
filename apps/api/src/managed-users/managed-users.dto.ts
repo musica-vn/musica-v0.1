@@ -1,5 +1,5 @@
 import { Transform } from 'class-transformer'
-import { IsEmail, IsIn, IsOptional, IsString, MinLength } from 'class-validator'
+import { IsEmail, IsIn, IsInt, IsOptional, IsString, Min, MinLength } from 'class-validator'
 import { ApiPropertyOptional } from '@nestjs/swagger'
 import { PaginationQueryDto } from '../common/pagination.dto'
 
@@ -9,10 +9,11 @@ export class ManagedUserListQueryDto extends PaginationQueryDto {
   @IsIn(['ACTIVE', 'LOCKED', 'DELETED'])
   status?: 'ACTIVE' | 'LOCKED' | 'DELETED'
 
-  @ApiPropertyOptional({ enum: ['BUYER', 'ARTIST'] })
+  @ApiPropertyOptional({ type: Number })
   @IsOptional()
-  @IsIn(['BUYER', 'ARTIST'])
-  roleCode?: 'BUYER' | 'ARTIST'
+  @IsInt()
+  @Min(1)
+  roleId?: number
 }
 
 export class CreateManagedUserRequestDto {
@@ -27,9 +28,9 @@ export class CreateManagedUserRequestDto {
   @MinLength(8)
   password: string
 
-  @IsString()
-  @IsIn(['BUYER', 'ARTIST'])
-  roleCode: 'BUYER' | 'ARTIST'
+  @IsInt()
+  @Min(1)
+  roleId: number
 }
 
 export class UpdateManagedUserRequestDto {

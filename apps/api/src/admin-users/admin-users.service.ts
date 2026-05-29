@@ -5,11 +5,11 @@ import type { AdminUserListQueryDto, CreateAdminUserRequestDto, UpdateAdminUserR
 
 type UserStatus = 'ACTIVE' | 'LOCKED' | 'DELETED'
 
-type DbRoleRow = { id: number; code: string }
+type DbRoleRow = { id: number; name: string }
 
 type DbUserRoleRow = {
   role_id: number
-  role?: { code?: unknown }
+  role?: { id?: unknown; name?: unknown } | null
 }
 
 type DbAdminUserRow = {
@@ -26,14 +26,29 @@ type AdminUserItem = {
   email: string
   fullName: string
   status: UserStatus
-  roleCodes: string[]
+  roles: Array<{ roleId: number; roleName: string }>
   createdAt: string
 }
 
-const normalizeRoleCodes = (userRoles: DbUserRoleRow[]): string[] =>
+const normalizeRoles = (
+  userRoles: DbUserRoleRow[],
+): Array<{ roleId: number; roleName: string }> =>
   (userRoles ?? [])
-    .map((x) => x?.role?.code)
-    .filter((x): x is string => typeof x === 'string')
+    .map((x) => {
+      const roleId = typeof x.role_id === 'number' ? x.role_id : null
+      const roleName =
+        x?.role && typeof x.role.name === 'string' ? x.role.name : null
+      if (!roleId || !roleName) return null
+      return { roleId, roleName }
+    })
+    .filter(
+      (
+        value,
+      ): value is {
+        roleId: number
+        roleName: string
+      } => value !== null,
+    )
 
 const isUniqueViolation = (error: unknown): boolean => {
   if (typeof error !== 'object' || error === null) return false
@@ -44,18 +59,32 @@ const isUniqueViolation = (error: unknown): boolean => {
 export class AdminUsersService {
   constructor(private readonly supabaseService: SupabaseService) {}
 
-  private async getRoleIdsByCodes(codes: string[]): Promise<number[]> {
+  private async getRolesByNames(names: string[]): Promise<DbRoleRow[]> {
     const { data, error } = await this.supabaseService.client
       .from('roles')
-      .select('id,code')
-      .in('code', codes)
+      .select('id,name')
+      .in('name', names)
       .returns<DbRoleRow[]>()
 
     if (error) {
       throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
     }
 
-    return (data ?? []).map((x) => x.id)
+    return data ?? []
+  }
+
+  private async getRoleById(roleId: number): Promise<DbRoleRow | null> {
+    const { data, error } = await this.supabaseService.client
+      .from('roles')
+      .select('id,name')
+      .eq('id', roleId)
+      .maybeSingle<DbRoleRow>()
+
+    if (error) {
+      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
+    }
+
+    return data ?? null
   }
 
   private buildAdminUserItem(row: DbAdminUserRow): AdminUserItem {
@@ -64,13 +93,13 @@ export class AdminUsersService {
       email: row.email,
       fullName: row.full_name,
       status: row.status,
-      roleCodes: normalizeRoleCodes(row.user_roles),
+      roles: normalizeRoles(row.user_roles),
       createdAt: row.created_at,
     }
   }
 
   async listAdmins(query: AdminUserListQueryDto): Promise<{ items: AdminUserItem[]; totalItems: number }> {
-    const roleIds = await this.getRoleIdsByCodes(['ADMIN'])
+    const roleIds = (await this.getRolesByNames(['Admin'])).map((role) => role.id)
     if (roleIds.length === 0) return { items: [], totalItems: 0 }
 
     const from = (query.page - 1) * query.pageSize
@@ -78,7 +107,7 @@ export class AdminUsersService {
 
     let sb = this.supabaseService.client
       .from('users')
-      .select('id,email,full_name,status,created_at,user_roles!inner(role_id,role:roles(code))', {
+      .select('id,email,full_name,status,created_at,user_roles!inner(role_id,role:roles(id,name))', {
         count: 'exact',
       })
       .in('user_roles.role_id', roleIds)
@@ -108,12 +137,14 @@ export class AdminUsersService {
   }
 
   async getAdminById(adminId: string): Promise<AdminUserItem | null> {
-    const roleIds = await this.getRoleIdsByCodes(['ADMIN', 'SUPER_ADMIN'])
+    const roleIds = (await this.getRolesByNames(['Admin', 'Super Admin'])).map(
+      (role) => role.id,
+    )
     if (roleIds.length === 0) return null
 
     const { data, error } = await this.supabaseService.client
       .from('users')
-      .select('id,email,full_name,status,created_at,user_roles!inner(role_id,role:roles(code))')
+      .select('id,email,full_name,status,created_at,user_roles!inner(role_id,role:roles(id,name))')
       .eq('id', adminId)
       .in('user_roles.role_id', roleIds)
       .maybeSingle<DbAdminUserRow>()
@@ -127,15 +158,15 @@ export class AdminUsersService {
   }
 
   async createAdmin(payload: CreateAdminUserRequestDto): Promise<AdminUserItem> {
-    const roleCode = payload.roleCode && payload.roleCode.length > 0 ? payload.roleCode : 'ADMIN'
-    if (roleCode === 'SUPER_ADMIN') {
-      throw new HttpException('Forbidden', HttpStatus.FORBIDDEN)
-    }
+    const defaultAdminRole = (await this.getRolesByNames(['Admin']))[0]
+    const role =
+      typeof payload.roleId === 'number'
+        ? await this.getRoleById(payload.roleId)
+        : defaultAdminRole
 
-    const roleIds = await this.getRoleIdsByCodes([roleCode])
-    const roleId = roleIds[0]
-    if (!roleId) {
-      throw new HttpException('Invalid role', HttpStatus.BAD_REQUEST)
+    if (!role) throw new HttpException('Invalid role', HttpStatus.BAD_REQUEST)
+    if (role.name === 'Super Admin') {
+      throw new HttpException('Forbidden', HttpStatus.FORBIDDEN)
     }
 
     const passwordHash = await hash(payload.password, 10)
@@ -165,7 +196,7 @@ export class AdminUsersService {
 
     const { error: insertRoleError } = await this.supabaseService.client.from('user_roles').insert({
       user_id: inserted.id,
-      role_id: roleId,
+      role_id: role.id,
     })
 
     if (insertRoleError) {
@@ -180,14 +211,14 @@ export class AdminUsersService {
     return admin
   }
 
-  private isSuperAdmin(roleCodes: string[]): boolean {
-    return roleCodes.includes('SUPER_ADMIN')
+  private isSuperAdmin(roles: Array<{ roleId: number; roleName: string }>): boolean {
+    return roles.some((role) => role.roleName === 'Super Admin')
   }
 
   async updateAdmin(adminId: string, payload: UpdateAdminUserRequestDto): Promise<AdminUserItem> {
     const existing = await this.getAdminById(adminId)
     if (!existing) throw new HttpException('Not Found', HttpStatus.NOT_FOUND)
-    if (this.isSuperAdmin(existing.roleCodes)) throw new HttpException('Forbidden', HttpStatus.FORBIDDEN)
+    if (this.isSuperAdmin(existing.roles)) throw new HttpException('Forbidden', HttpStatus.FORBIDDEN)
 
     const updates: Record<string, unknown> = {}
     if (typeof payload.email === 'string') updates.email = payload.email
@@ -204,16 +235,16 @@ export class AdminUsersService {
       }
     }
 
-    if (typeof payload.roleCode === 'string' && payload.roleCode.length > 0) {
-      if (payload.roleCode === 'SUPER_ADMIN') {
+    if (typeof payload.roleId === 'number') {
+      const role = await this.getRoleById(payload.roleId)
+      if (!role) throw new HttpException('Invalid role', HttpStatus.BAD_REQUEST)
+      if (role.name === 'Super Admin') {
         throw new HttpException('Forbidden', HttpStatus.FORBIDDEN)
       }
 
-      const roleIds = await this.getRoleIdsByCodes([payload.roleCode])
-      const roleId = roleIds[0]
-      if (!roleId) throw new HttpException('Invalid role', HttpStatus.BAD_REQUEST)
-
-      const adminRoleIds = await this.getRoleIdsByCodes(['ADMIN', 'SUPER_ADMIN'])
+      const adminRoleIds = (await this.getRolesByNames(['Admin', 'Super Admin'])).map(
+        (item) => item.id,
+      )
       if (adminRoleIds.length > 0) {
         const { error: deleteError } = await this.supabaseService.client
           .from('user_roles')
@@ -226,7 +257,7 @@ export class AdminUsersService {
 
       const { error: insertError } = await this.supabaseService.client.from('user_roles').insert({
         user_id: adminId,
-        role_id: roleId,
+        role_id: role.id,
       })
       if (insertError) throw new HttpException(insertError.message, HttpStatus.INTERNAL_SERVER_ERROR)
     }
@@ -239,7 +270,7 @@ export class AdminUsersService {
   async updateAdminStatus(adminId: string, status: 'ACTIVE' | 'LOCKED'): Promise<AdminUserItem> {
     const existing = await this.getAdminById(adminId)
     if (!existing) throw new HttpException('Not Found', HttpStatus.NOT_FOUND)
-    if (this.isSuperAdmin(existing.roleCodes)) throw new HttpException('Forbidden', HttpStatus.FORBIDDEN)
+    if (this.isSuperAdmin(existing.roles)) throw new HttpException('Forbidden', HttpStatus.FORBIDDEN)
 
     const { error } = await this.supabaseService.client.from('users').update({ status }).eq('id', adminId)
     if (error) throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
@@ -252,7 +283,7 @@ export class AdminUsersService {
   async softDeleteAdmin(adminId: string): Promise<void> {
     const existing = await this.getAdminById(adminId)
     if (!existing) throw new HttpException('Not Found', HttpStatus.NOT_FOUND)
-    if (this.isSuperAdmin(existing.roleCodes)) throw new HttpException('Forbidden', HttpStatus.FORBIDDEN)
+    if (this.isSuperAdmin(existing.roles)) throw new HttpException('Forbidden', HttpStatus.FORBIDDEN)
 
     const { error } = await this.supabaseService.client
       .from('users')
@@ -262,4 +293,3 @@ export class AdminUsersService {
     if (error) throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
   }
 }
-

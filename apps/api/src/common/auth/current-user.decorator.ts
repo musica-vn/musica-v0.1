@@ -7,10 +7,11 @@ export const CurrentUser = createParamDecorator(
     const user = request.user
     if (typeof user !== 'object' || user === null) return null
     const userId = (user as any).userId
-    const roles = (user as any).roles
+    const roleId = (user as any).roleId
+    const roleName = (user as any).roleName
     if (typeof userId !== 'string') return null
-    if (!Array.isArray(roles) || !roles.every((x) => typeof x === 'string')) return null
-    return { userId, roles }
+    if (roleId !== null && typeof roleId !== 'number') return null
+    if (roleName !== null && typeof roleName !== 'string') return null
+    return { userId, roleId: roleId ?? null, roleName: roleName ?? null }
   },
 )
-
