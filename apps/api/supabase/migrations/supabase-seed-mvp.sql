@@ -1,7 +1,6 @@
 begin;
 
-delete from public.certificate_templates
-where code = 'DEFAULT';
+delete from public.certificate_templates;
 
 delete from public.certificates
 where buyer_id in (select id from public.users where email like '%@musica.local')
@@ -22,21 +21,21 @@ with seed_users as (
   select *
   from (
     values
-      ('superadmin@musica.local', 'Super Admin', 'SUPER_ADMIN'),
-      ('admin01@musica.local', 'Admin 01', 'ADMIN'),
-      ('admin02@musica.local', 'Admin 02', 'ADMIN'),
-      ('artist01@musica.local', 'Artist 01', 'ARTIST'),
-      ('artist02@musica.local', 'Artist 02', 'ARTIST'),
-      ('artist03@musica.local', 'Artist 03', 'ARTIST'),
-      ('buyer01@musica.local', 'Buyer 01', 'BUYER'),
-      ('buyer02@musica.local', 'Buyer 02', 'BUYER'),
-      ('buyer03@musica.local', 'Buyer 03', 'BUYER'),
-      ('buyer04@musica.local', 'Buyer 04', 'BUYER'),
-      ('buyer05@musica.local', 'Buyer 05', 'BUYER'),
-      ('buyer06@musica.local', 'Buyer 06', 'BUYER'),
-      ('buyer07@musica.local', 'Buyer 07', 'BUYER'),
-      ('buyer08@musica.local', 'Buyer 08', 'BUYER')
-  ) as t(email, full_name, role_code)
+      ('superadmin@musica.local', 'Super Admin', 'Super Admin'),
+      ('admin01@musica.local', 'Admin 01', 'Admin'),
+      ('admin02@musica.local', 'Admin 02', 'Admin'),
+      ('artist01@musica.local', 'Artist 01', 'Artist'),
+      ('artist02@musica.local', 'Artist 02', 'Artist'),
+      ('artist03@musica.local', 'Artist 03', 'Artist'),
+      ('buyer01@musica.local', 'Buyer 01', 'Buyer'),
+      ('buyer02@musica.local', 'Buyer 02', 'Buyer'),
+      ('buyer03@musica.local', 'Buyer 03', 'Buyer'),
+      ('buyer04@musica.local', 'Buyer 04', 'Buyer'),
+      ('buyer05@musica.local', 'Buyer 05', 'Buyer'),
+      ('buyer06@musica.local', 'Buyer 06', 'Buyer'),
+      ('buyer07@musica.local', 'Buyer 07', 'Buyer'),
+      ('buyer08@musica.local', 'Buyer 08', 'Buyer')
+  ) as t(email, full_name, role_name)
 ),
 inserted_users as (
   insert into public.users (email, password_hash, full_name, status)
@@ -55,7 +54,7 @@ inserted_user_roles as (
     r.id
   from inserted_users iu
   join seed_users su on su.email = iu.email
-  join public.roles r on r.code = su.role_code
+  join public.roles r on r.name = su.role_name
   returning user_id, role_id
 ),
 admin_picker as (
@@ -153,11 +152,10 @@ join inserted_tracks it on it.title = sc.track_title
 join public.users bu on bu.email = sc.buyer_email
 join public.users au on au.id = it.artist_id;
 
-insert into public.certificate_templates (code, html_template)
+insert into public.certificate_templates (html_template)
 values (
-  'DEFAULT',
   '<!doctype html><html><head><meta charset="utf-8" /><title>Certificate</title></head><body><h1>License Certificate</h1><p>Certificate ID: {{certificateId}}</p><p>Track: {{trackSnapshotName}}</p><p>Buyer: {{buyerSnapshotName}}</p><p>Artist: {{artistSnapshotName}}</p><p>Usage Rights: {{selectedUsageRights}}</p><p>Valid From: {{validFrom}}</p><p>Valid Until: {{validUntil}}</p><p>Issued At: {{createdAt}}</p></body></html>'
 )
-on conflict (code) do update set html_template = excluded.html_template;
+;
 
 commit;

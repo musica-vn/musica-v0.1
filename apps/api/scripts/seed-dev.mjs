@@ -100,21 +100,29 @@ const client = createClient(supabaseUrl, supabaseServiceRoleKey, {
 const seedPassword = 'Password123!'
 const seedTag = ' (Seed)'
 
+const seedPermissionIds = {
+  reproduction: '3c6c1819-73b5-4d50-8a62-2c84c6152c11',
+  distribution: '3c6c1819-73b5-4d50-8a62-2c84c6152c12',
+  communication: '3c6c1819-73b5-4d50-8a62-2c84c6152c13',
+  performance: '3c6c1819-73b5-4d50-8a62-2c84c6152c14',
+  derivative: '3c6c1819-73b5-4d50-8a62-2c84c6152c15',
+}
+
 const usersSeed = [
-  { email: 'superadmin@musica.local', full_name: 'Super Admin', role: 'SUPER_ADMIN' },
-  { email: 'admin01@musica.local', full_name: 'Admin 01', role: 'ADMIN' },
-  { email: 'admin02@musica.local', full_name: 'Admin 02', role: 'ADMIN' },
-  { email: 'artist01@musica.local', full_name: 'Artist 01', role: 'ARTIST' },
-  { email: 'artist02@musica.local', full_name: 'Artist 02', role: 'ARTIST' },
-  { email: 'artist03@musica.local', full_name: 'Artist 03', role: 'ARTIST' },
-  { email: 'buyer01@musica.local', full_name: 'Buyer 01', role: 'BUYER' },
-  { email: 'buyer02@musica.local', full_name: 'Buyer 02', role: 'BUYER' },
-  { email: 'buyer03@musica.local', full_name: 'Buyer 03', role: 'BUYER' },
-  { email: 'buyer04@musica.local', full_name: 'Buyer 04', role: 'BUYER' },
-  { email: 'buyer05@musica.local', full_name: 'Buyer 05', role: 'BUYER' },
-  { email: 'buyer06@musica.local', full_name: 'Buyer 06', role: 'BUYER' },
-  { email: 'buyer07@musica.local', full_name: 'Buyer 07', role: 'BUYER' },
-  { email: 'buyer08@musica.local', full_name: 'Buyer 08', role: 'BUYER' },
+  { email: 'superadmin@musica.local', full_name: 'Super Admin', roleName: 'Super Admin' },
+  { email: 'admin01@musica.local', full_name: 'Admin 01', roleName: 'Admin' },
+  { email: 'admin02@musica.local', full_name: 'Admin 02', roleName: 'Admin' },
+  { email: 'artist01@musica.local', full_name: 'Artist 01', roleName: 'Artist' },
+  { email: 'artist02@musica.local', full_name: 'Artist 02', roleName: 'Artist' },
+  { email: 'artist03@musica.local', full_name: 'Artist 03', roleName: 'Artist' },
+  { email: 'buyer01@musica.local', full_name: 'Buyer 01', roleName: 'Buyer' },
+  { email: 'buyer02@musica.local', full_name: 'Buyer 02', roleName: 'Buyer' },
+  { email: 'buyer03@musica.local', full_name: 'Buyer 03', roleName: 'Buyer' },
+  { email: 'buyer04@musica.local', full_name: 'Buyer 04', roleName: 'Buyer' },
+  { email: 'buyer05@musica.local', full_name: 'Buyer 05', roleName: 'Buyer' },
+  { email: 'buyer06@musica.local', full_name: 'Buyer 06', roleName: 'Buyer' },
+  { email: 'buyer07@musica.local', full_name: 'Buyer 07', roleName: 'Buyer' },
+  { email: 'buyer08@musica.local', full_name: 'Buyer 08', roleName: 'Buyer' },
 ]
 
 const tracksSeed = [
@@ -158,35 +166,35 @@ const certificatesSeed = [
 
 const corePermissionsSeed = [
   {
-    code: 'PERM-SEED-REPRODUCTION',
+    id: seedPermissionIds.reproduction,
     name: `Quyen sao chep${seedTag}`,
     law_reference: 'Khoan 1 Dieu 20 Luat SHTT',
     description: 'Cho phep sao chep ban ghi va tac pham phuc vu khai thac thuong mai.',
     status: 'ACTIVE',
   },
   {
-    code: 'PERM-SEED-DISTRIBUTION',
+    id: seedPermissionIds.distribution,
     name: `Quyen phan phoi${seedTag}`,
     law_reference: 'Khoan 2 Dieu 20 Luat SHTT',
     description: 'Cho phep phan phoi ban sao, ban ghi va cac hinh thuc luu hanh hop phap.',
     status: 'ACTIVE',
   },
   {
-    code: 'PERM-SEED-COMMUNICATION',
+    id: seedPermissionIds.communication,
     name: `Quyen truyen dat den cong chung${seedTag}`,
     law_reference: 'Khoan 3 Dieu 20 Luat SHTT',
     description: 'Cho phep dua tac pham den cong chung thong qua nen tang so va kenh phat hanh.',
     status: 'ACTIVE',
   },
   {
-    code: 'PERM-SEED-PERFORMANCE',
+    id: seedPermissionIds.performance,
     name: `Quyen bieu dien truoc cong chung${seedTag}`,
     law_reference: 'Khoan 4 Dieu 20 Luat SHTT',
     description: 'Cho phep bieu dien, phat nhac va khai thac trong cac khong gian cong cong.',
     status: 'ACTIVE',
   },
   {
-    code: 'PERM-SEED-DERIVATIVE',
+    id: seedPermissionIds.derivative,
     name: `Quyen lam tac pham phai sinh${seedTag}`,
     law_reference: 'Khoan 5 Dieu 20 Luat SHTT',
     description: 'Cho phep cai bien, phoi khi va tao san pham phai sinh tu tac pham goc.',
@@ -196,71 +204,79 @@ const corePermissionsSeed = [
 
 const digitalRightConfigsSeed = [
   {
-    code: 'DIGI-SEED-YT-1Y',
+    id: '8b53d577-0815-4d1d-bc4c-1d1e58f28501',
     target_platform: 'YOUTUBE',
     duration_type: 'ONE_YEAR',
     base_price_multiplier: 1.25,
     status: 'ACTIVE',
-    permissionCodes: ['PERM-SEED-REPRODUCTION', 'PERM-SEED-COMMUNICATION'],
+    permissionIds: [seedPermissionIds.reproduction, seedPermissionIds.communication],
   },
   {
-    code: 'DIGI-SEED-TT-PERP',
+    id: '8b53d577-0815-4d1d-bc4c-1d1e58f28502',
     target_platform: 'TIKTOK',
     duration_type: 'PERPETUAL',
     base_price_multiplier: 1.6,
     status: 'ACTIVE',
-    permissionCodes: ['PERM-SEED-REPRODUCTION', 'PERM-SEED-COMMUNICATION', 'PERM-SEED-DISTRIBUTION'],
+    permissionIds: [
+      seedPermissionIds.reproduction,
+      seedPermissionIds.communication,
+      seedPermissionIds.distribution,
+    ],
   },
 ]
 
 const physicalRightConfigsSeed = [
   {
-    code: 'PHYS-SEED-COFFEE',
+    id: '8b53d577-0815-4d1d-bc4c-1d1e58f28511',
     venue_usage_type: `Quan cafe${seedTag}`,
     base_price_multiplier: 1.1,
     status: 'ACTIVE',
-    permissionCodes: ['PERM-SEED-PERFORMANCE'],
+    permissionIds: [seedPermissionIds.performance],
   },
   {
-    code: 'PHYS-SEED-FAIR',
+    id: '8b53d577-0815-4d1d-bc4c-1d1e58f28512',
     venue_usage_type: `Hoi cho su kien${seedTag}`,
     base_price_multiplier: 1.45,
     status: 'ACTIVE',
-    permissionCodes: ['PERM-SEED-PERFORMANCE', 'PERM-SEED-COMMUNICATION'],
+    permissionIds: [seedPermissionIds.performance, seedPermissionIds.communication],
   },
 ]
 
 const expressionConfigsSeed = [
   {
-    code: 'EXPR-SEED-BGM',
+    id: '8b53d577-0815-4d1d-bc4c-1d1e58f28521',
     name: `Nhac nen Vlog${seedTag}`,
     price_multiplier: 1.2,
     status: 'ACTIVE',
-    permissionCodes: ['PERM-SEED-REPRODUCTION', 'PERM-SEED-COMMUNICATION'],
+    permissionIds: [seedPermissionIds.reproduction, seedPermissionIds.communication],
   },
   {
-    code: 'EXPR-SEED-ADS',
+    id: '8b53d577-0815-4d1d-bc4c-1d1e58f28522',
     name: `Nhac quang cao${seedTag}`,
     price_multiplier: 1.85,
     status: 'ACTIVE',
-    permissionCodes: ['PERM-SEED-REPRODUCTION', 'PERM-SEED-COMMUNICATION', 'PERM-SEED-DISTRIBUTION'],
+    permissionIds: [
+      seedPermissionIds.reproduction,
+      seedPermissionIds.communication,
+      seedPermissionIds.distribution,
+    ],
   },
 ]
 
 const modificationConfigsSeed = [
   {
-    code: 'MOD-SEED-ORIGINAL',
+    id: '8b53d577-0815-4d1d-bc4c-1d1e58f28531',
     name: `Giu nguyen master${seedTag}`,
     price_multiplier: 1,
     status: 'ACTIVE',
-    permissionCodes: ['PERM-SEED-REPRODUCTION'],
+    permissionIds: [seedPermissionIds.reproduction],
   },
   {
-    code: 'MOD-SEED-REARRANGE',
+    id: '8b53d577-0815-4d1d-bc4c-1d1e58f28532',
     name: `Cai bien phoi khi${seedTag}`,
     price_multiplier: 2.1,
     status: 'ACTIVE',
-    permissionCodes: ['PERM-SEED-REPRODUCTION', 'PERM-SEED-DERIVATIVE'],
+    permissionIds: [seedPermissionIds.reproduction, seedPermissionIds.derivative],
   },
 ]
 
@@ -268,10 +284,10 @@ const buildComplianceSeedEntries = () =>
   tracksSeed.map((trackSeed, index) => {
     if (trackSeed.status === 'PUBLISHED') {
       const approvedPermissionGroups = [
-        ['PERM-SEED-REPRODUCTION', 'PERM-SEED-COMMUNICATION'],
-        ['PERM-SEED-REPRODUCTION', 'PERM-SEED-DISTRIBUTION'],
-        ['PERM-SEED-PERFORMANCE', 'PERM-SEED-COMMUNICATION'],
-        ['PERM-SEED-REPRODUCTION', 'PERM-SEED-DERIVATIVE'],
+        [seedPermissionIds.reproduction, seedPermissionIds.communication],
+        [seedPermissionIds.reproduction, seedPermissionIds.distribution],
+        [seedPermissionIds.performance, seedPermissionIds.communication],
+        [seedPermissionIds.reproduction, seedPermissionIds.derivative],
       ]
 
       return {
@@ -279,7 +295,7 @@ const buildComplianceSeedEntries = () =>
         legal_status: 'SUFFICIENT',
         review_status: 'APPROVED',
         reject_reason: null,
-        permissionCodes: approvedPermissionGroups[index % approvedPermissionGroups.length],
+        permissionIds: approvedPermissionGroups[index % approvedPermissionGroups.length],
         fileCount: 2,
       }
     }
@@ -290,7 +306,7 @@ const buildComplianceSeedEntries = () =>
         legal_status: 'INSUFFICIENT',
         review_status: 'REJECTED',
         reject_reason: 'Ho so phap ly seed chua dat yeu cau doi voi tac pham nay.',
-        permissionCodes: [],
+        permissionIds: [],
         fileCount: 1,
       }
     }
@@ -300,7 +316,7 @@ const buildComplianceSeedEntries = () =>
       legal_status: 'PENDING',
       review_status: 'PENDING',
       reject_reason: null,
-      permissionCodes: [],
+      permissionIds: [],
       fileCount: 1,
     }
   })
@@ -311,51 +327,29 @@ const getMonthPath = (date) => {
   return `${year}/${month}`
 }
 
-const withStableIdsByCode = async (tableName, rows) => {
-  const codes = rows.map((row) => row.code)
-  const { data: existingRows, error: existingRowsError } = await client
-    .from(tableName)
-    .select('id,code')
-    .in('code', codes)
-
-  if (existingRowsError) throw new Error(existingRowsError.message)
-
-  const codeToId = new Map((existingRows ?? []).map((row) => [row.code, row.id]))
-
-  return rows.map((row) => ({
-    ...row,
-    id: codeToId.get(row.code) ?? randomUUID(),
-  }))
-}
-
 const upsertSeedConfigs = async ({
   tableName,
   mappingTableName,
   configForeignKey,
   configs,
-  permissionCodeToId,
+  permissionIdSet,
 }) => {
-  const configRows = await withStableIdsByCode(
-    tableName,
-    configs.map(({ permissionCodes, ...rest }) => rest),
-  )
+  const configRows = configs.map(({ permissionIds, ...rest }) => rest)
 
   const { error: upsertConfigsError } = await client
     .from(tableName)
-    .upsert(configRows, { onConflict: 'code' })
+    .upsert(configRows, { onConflict: 'id' })
 
   if (upsertConfigsError) throw new Error(upsertConfigsError.message)
 
-  const configCodes = configs.map((item) => item.code)
   const { data: insertedConfigs, error: fetchConfigsError } = await client
     .from(tableName)
-    .select('id,code')
-    .in('code', configCodes)
+    .select('id')
+    .in('id', configs.map((item) => item.id))
 
   if (fetchConfigsError) throw new Error(fetchConfigsError.message)
 
-  const configCodeToId = new Map((insertedConfigs ?? []).map((item) => [item.code, item.id]))
-  const configIds = [...configCodeToId.values()]
+  const configIds = (insertedConfigs ?? []).map((item) => item.id)
 
   if (configIds.length > 0) {
     const { error: deleteMappingsError } = await client
@@ -367,15 +361,11 @@ const upsertSeedConfigs = async ({
   }
 
   const mappingRows = configs.flatMap((config) => {
-    const configId = configCodeToId.get(config.code)
-    if (!configId) throw new Error(`Missing config id for ${config.code}`)
-
-    return config.permissionCodes.map((permissionCode) => {
-      const permissionId = permissionCodeToId.get(permissionCode)
-      if (!permissionId) throw new Error(`Missing permission id for ${permissionCode}`)
+    return config.permissionIds.map((permissionId) => {
+      if (!permissionIdSet.has(permissionId)) throw new Error(`Missing permission id for ${permissionId}`)
 
       return {
-        [configForeignKey]: configId,
+        [configForeignKey]: config.id,
         core_permission_id: permissionId,
       }
     })
@@ -464,7 +454,7 @@ const main = async () => {
   const { error: delTemplateError } = await client
     .from('certificate_templates')
     .delete()
-    .eq('code', 'DEFAULT')
+    .gt('id', 0)
   if (delTemplateError && !isMissingTableError(delTemplateError.message)) {
     throw new Error(delTemplateError.message)
   }
@@ -488,14 +478,14 @@ const main = async () => {
   const emailToUser = new Map((insertedUsers ?? []).map((u) => [u.email, u]))
   const userIdToFullName = new Map((insertedUsers ?? []).map((u) => [u.id, u.full_name]))
 
-  const { data: roles, error: rolesError } = await client.from('roles').select('id,code')
+  const { data: roles, error: rolesError } = await client.from('roles').select('id,name')
   if (rolesError) throw new Error(rolesError.message)
 
-  const roleCodeToId = new Map((roles ?? []).map((r) => [r.code, r.id]))
+  const roleNameToId = new Map((roles ?? []).map((r) => [r.name, r.id]))
 
   const userRolesToInsert = usersSeed.map((u) => {
     const user = emailToUser.get(u.email)
-    const roleId = roleCodeToId.get(u.role)
+    const roleId = roleNameToId.get(u.roleName)
     if (!user || !roleId) throw new Error(`Missing user/role mapping for ${u.email}`)
     return { user_id: user.id, role_id: roleId }
   })
@@ -503,30 +493,27 @@ const main = async () => {
   const { error: insertUserRolesError } = await client.from('user_roles').insert(userRolesToInsert)
   if (insertUserRolesError) throw new Error(insertUserRolesError.message)
 
-  const corePermissionsRows = await withStableIdsByCode('core_permissions', corePermissionsSeed)
-
   const { error: upsertCorePermissionsError } = await client
     .from('core_permissions')
-    .upsert(corePermissionsRows, { onConflict: 'code' })
+    .upsert(corePermissionsSeed, { onConflict: 'id' })
 
   if (upsertCorePermissionsError) throw new Error(upsertCorePermissionsError.message)
 
-  const permissionCodes = corePermissionsSeed.map((permission) => permission.code)
   const { data: insertedCorePermissions, error: fetchCorePermissionsError } = await client
     .from('core_permissions')
-    .select('id,code')
-    .in('code', permissionCodes)
+    .select('id')
+    .in('id', corePermissionsSeed.map((permission) => permission.id))
 
   if (fetchCorePermissionsError) throw new Error(fetchCorePermissionsError.message)
 
-  const permissionCodeToId = new Map((insertedCorePermissions ?? []).map((item) => [item.code, item.id]))
+  const permissionIdSet = new Set((insertedCorePermissions ?? []).map((item) => item.id))
 
   await upsertSeedConfigs({
     tableName: 'digital_right_configs',
     mappingTableName: 'digital_right_config_permissions',
     configForeignKey: 'digital_right_config_id',
     configs: digitalRightConfigsSeed,
-    permissionCodeToId,
+    permissionIdSet,
   })
 
   await upsertSeedConfigs({
@@ -534,7 +521,7 @@ const main = async () => {
     mappingTableName: 'physical_right_config_permissions',
     configForeignKey: 'physical_right_config_id',
     configs: physicalRightConfigsSeed,
-    permissionCodeToId,
+    permissionIdSet,
   })
 
   await upsertSeedConfigs({
@@ -542,7 +529,7 @@ const main = async () => {
     mappingTableName: 'expression_config_permissions',
     configForeignKey: 'expression_config_id',
     configs: expressionConfigsSeed,
-    permissionCodeToId,
+    permissionIdSet,
   })
 
   await upsertSeedConfigs({
@@ -550,7 +537,7 @@ const main = async () => {
     mappingTableName: 'modification_config_permissions',
     configForeignKey: 'modification_config_id',
     configs: modificationConfigsSeed,
-    permissionCodeToId,
+    permissionIdSet,
   })
 
   const admin01 = emailToUser.get('admin01@musica.local')
@@ -561,7 +548,6 @@ const main = async () => {
     if (!artist) throw new Error(`Missing artist ${t.artistEmail}`)
     return {
       id: randomUUID(),
-      product_code: `PROD-SEED-${String(index + 1).padStart(4, '0')}`,
       title: t.title,
       artist_id: artist.id,
       author_name: artist.full_name,
@@ -575,7 +561,7 @@ const main = async () => {
   const { data: insertedTracks, error: insertTracksError } = await client
     .from('products')
     .insert(tracksToInsert)
-    .select('id,title,artist_id,product_code')
+    .select('id,title,artist_id')
 
   if (insertTracksError) throw new Error(insertTracksError.message)
 
@@ -599,7 +585,6 @@ const main = async () => {
     }))
 
     return {
-      code: `CMP-SEED-${String(index + 1).padStart(4, '0')}`,
       track_id: track.id,
       uploaded_legal_files: uploadedLegalFiles,
       legal_status: entry.legal_status,
@@ -613,7 +598,7 @@ const main = async () => {
   const { data: insertedComplianceReviews, error: insertComplianceReviewsError } = await client
     .from('compliance_reviews')
     .insert(complianceReviewsToInsert)
-    .select('id,code,track_id,uploaded_legal_files')
+    .select('id,track_id,uploaded_legal_files')
 
   if (insertComplianceReviewsError) throw new Error(insertComplianceReviewsError.message)
 
@@ -646,10 +631,8 @@ const main = async () => {
     const compliance = trackIdToCompliance.get(track.id)
     if (!compliance) throw new Error(`Missing compliance for track ${entry.trackTitle}`)
 
-    return entry.permissionCodes.map((permissionCode) => {
-      const permissionId = permissionCodeToId.get(permissionCode)
-      if (!permissionId) throw new Error(`Missing permission id for ${permissionCode}`)
-
+    return entry.permissionIds.map((permissionId) => {
+      if (!permissionIdSet.has(permissionId)) throw new Error(`Missing permission id for ${permissionId}`)
       return {
         compliance_id: compliance.id,
         permission_id: permissionId,
@@ -671,10 +654,8 @@ const main = async () => {
     const track = titleToTrack.get(entry.trackTitle)
     if (!track) throw new Error(`Missing track for allowed permission seed ${entry.trackTitle}`)
 
-    return entry.permissionCodes.map((permissionCode) => {
-      const permissionId = permissionCodeToId.get(permissionCode)
-      if (!permissionId) throw new Error(`Missing permission id for ${permissionCode}`)
-
+    return entry.permissionIds.map((permissionId) => {
+      if (!permissionIdSet.has(permissionId)) throw new Error(`Missing permission id for ${permissionId}`)
       return {
         track_id: track.id,
         permission_id: permissionId,
@@ -721,7 +702,7 @@ const main = async () => {
 
   const { error: insertTemplateError } = await client
     .from('certificate_templates')
-    .insert({ code: 'DEFAULT', html_template: defaultTemplate })
+    .insert({ html_template: defaultTemplate })
 
   if (insertTemplateError && !isMissingTableError(insertTemplateError.message)) {
     throw new Error(insertTemplateError.message)
