@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import Dialog from 'primevue/dialog'
 import Message from 'primevue/message'
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { ApiClientError } from '../../../shared/api/http'
 import { useCorePermissionsStore } from '../../core-permissions/core-permissions.store'
 import {
@@ -86,27 +86,27 @@ const resourceConfigMap: Record<
     supportsDigitalFilters: false,
   },
   expression: {
-    title: 'Expression Configs',
+    title: 'Hình thức biểu hiện',
     description:
-      'Quản lý hình thức biểu hiện của sản phẩm âm nhạc, hệ số giá và các quyền cốt lõi bắt buộc đi kèm.',
-    createLabel: 'Thêm expression',
-    editLabel: 'Cập nhật cấu hình',
-    detailColumnLabel: 'Expression name',
+      'Quản lý danh mục hình thức biểu hiện của sản phẩm âm nhạc cùng hệ số giá và danh sách quyền tham khảo.',
+    createLabel: 'Thêm hình thức biểu hiện',
+    editLabel: 'Cập nhật hình thức biểu hiện',
+    detailColumnLabel: 'Hình thức biểu hiện',
     detailPlaceholder: 'Tên hình thức biểu hiện',
-    priceLabel: 'Price multiplier',
-    emptyState: 'Chưa có expression config nào.',
+    priceLabel: 'Hệ số giá',
+    emptyState: 'Chưa có hình thức biểu hiện nào.',
     supportsDigitalFilters: false,
   },
   modification: {
-    title: 'Modification Configs',
+    title: 'Mức độ biến đổi',
     description:
-      'Quản lý mức độ biến đổi tác phẩm, hệ số giá và tập core permissions phải có khi can thiệp tác phẩm gốc.',
-    createLabel: 'Thêm modification',
-    editLabel: 'Cập nhật cấu hình',
-    detailColumnLabel: 'Modification name',
+      'Quản lý mức độ biến đổi tác phẩm cùng hệ số giá và danh sách quyền tham khảo.',
+    createLabel: 'Thêm mức độ biến đổi',
+    editLabel: 'Cập nhật mức độ biến đổi',
+    detailColumnLabel: 'Mức độ biến đổi',
     detailPlaceholder: 'Tên mức độ biến đổi',
-    priceLabel: 'Price multiplier',
-    emptyState: 'Chưa có modification config nào.',
+    priceLabel: 'Hệ số giá',
+    emptyState: 'Chưa có mức độ biến đổi nào.',
     supportsDigitalFilters: false,
   },
 }
@@ -139,6 +139,9 @@ const editDialogVisible = ref(false)
 const selectedItem = ref<AnyLicensingConfig | null>(null)
 const isSubmitting = ref(false)
 const hasLoadedPermissionOptions = ref(false)
+const permissionsDialogVisible = ref(false)
+const permissionsDialogTitle = ref('Quyền tham khảo')
+const permissionsDialogPermissions = ref<ReferencedPermissionSummary[]>([])
 
 const form = reactive<{
   code: string
@@ -161,6 +164,13 @@ const form = reactive<{
 })
 
 const currentResource = computed(() => resourceConfigMap[props.resource])
+const isExpressionOrModification = computed(
+  () => props.resource === 'expression' || props.resource === 'modification',
+)
+const isNameValid = computed(() => {
+  if (!isExpressionOrModification.value) return true
+  return form.name.trim().length > 0
+})
 
 const currentItems = computed<AnyLicensingConfig[]>(() => {
   switch (props.resource) {
@@ -220,24 +230,32 @@ const pageEnd = computed(() => Math.min(pagination.page * pagination.pageSize, c
 const isDigitalResource = computed(() => props.resource === 'digital')
 const isPhysicalResource = computed(() => props.resource === 'physical')
 const isDigitalOrPhysicalResource = computed(() => isDigitalResource.value || isPhysicalResource.value)
-const keywordLabel = computed(() => (isDigitalOrPhysicalResource.value ? 'Từ khoá' : 'Keyword'))
+const supportsPermissionPicker = computed(
+  () =>
+    isDigitalOrPhysicalResource.value ||
+    props.resource === 'expression' ||
+    props.resource === 'modification',
+)
+const keywordLabel = computed(() => 'Từ khoá')
 const keywordPlaceholder = computed(() =>
-  isDigitalOrPhysicalResource.value ? 'Tìm theo mã cấu hình hoặc tên hiển thị' : 'Tìm theo code hoặc tên hiển thị',
+  isDigitalOrPhysicalResource.value ? 'Tìm theo mã cấu hình hoặc tên hiển thị' : 'Tìm theo mã hoặc tên hiển thị',
 )
-const statusFieldLabel = computed(() => (isDigitalOrPhysicalResource.value ? 'Trạng thái' : 'Status'))
-const codeLabel = computed(() => (isDigitalOrPhysicalResource.value ? 'Mã cấu hình' : 'Code'))
+const statusFieldLabel = computed(() => 'Trạng thái')
+const codeLabel = computed(() => 'Mã cấu hình')
 const permissionsLabel = computed(() =>
-  isDigitalOrPhysicalResource.value ? 'Quyền phụ thuộc' : 'Referenced core permissions',
+  isDigitalOrPhysicalResource.value ? 'Quyền phụ thuộc' : 'Quyền tham khảo',
 )
-const actionsLabel = computed(() => (isDigitalOrPhysicalResource.value ? 'Thao tác' : 'Actions'))
+const actionsLabel = computed(() => 'Thao tác')
 const emptyPermissionsText = computed(() =>
-  isDigitalOrPhysicalResource.value ? 'Chưa chọn quyền phụ thuộc' : 'Chưa gắn quyền',
+  isDigitalOrPhysicalResource.value ? 'Chưa chọn quyền phụ thuộc' : 'Chưa chọn quyền tham khảo',
 )
 const editDialogTitle = computed(() => currentResource.value.editLabel)
 const isPermissionOptionsLoading = computed(
-  () => isDigitalOrPhysicalResource.value && (!hasLoadedPermissionOptions.value || corePermissionsStore.isLoading),
+  () => supportsPermissionPicker.value && (!hasLoadedPermissionOptions.value || corePermissionsStore.isLoading),
 )
-const isPermissionSubmitDisabled = computed(() => isSubmitting.value || isPermissionOptionsLoading.value)
+const isPermissionSubmitDisabled = computed(
+  () => isSubmitting.value || isPermissionOptionsLoading.value || !isNameValid.value,
+)
 const permissionOptionsLoadingMessage = computed(() =>
   isDigitalOrPhysicalResource.value ? 'Đang tải quyền phụ thuộc...' : 'Đang tải danh sách quyền...',
 )
@@ -267,6 +285,12 @@ const toggleReferencedPermission = (permissionId: string) => {
     : [...form.referencedPermissionIds, permissionId]
 }
 
+const openPermissionsDialog = (item: AnyLicensingConfig) => {
+  permissionsDialogTitle.value = `${item.code} - ${isDigitalOrPhysicalResource.value ? 'Quyền phụ thuộc' : 'Quyền tham khảo'}`
+  permissionsDialogPermissions.value = item.referencedPermissions
+  permissionsDialogVisible.value = true
+}
+
 const clearMessages = () => {
   errorMessage.value = null
   successMessage.value = null
@@ -276,9 +300,9 @@ const fetchPermissionOptions = async () => {
   hasLoadedPermissionOptions.value = false
 
   try {
-    await corePermissionsStore.fetchCorePermissions({ page: 1, pageSize: 200, status: 'ACTIVE' })
-  } catch {
-    // Keep the dialog usable even if preloading fails; the UI will fall back to the empty state.
+    await corePermissionsStore.fetchCorePermissions({ page: 1, pageSize: 100, status: 'ACTIVE' })
+  } catch (error) {
+    setError(error)
   } finally {
     hasLoadedPermissionOptions.value = true
   }
@@ -293,8 +317,16 @@ const setError = (error: unknown) => {
   errorMessage.value = error instanceof Error ? error.message : 'Đã xảy ra lỗi'
 }
 
+const fetchListSafely = async () => {
+  try {
+    await fetchList()
+  } catch (error) {
+    setError(error)
+  }
+}
+
 const formatStatusLabel = (status: LicensingConfigStatus) =>
-  status === 'ACTIVE' ? 'Đang hoạt động' : 'Ngừng hoạt động'
+  status === 'ACTIVE' ? 'Hoạt động' : 'Tắt'
 
 const formatDigitalPlatformLabel = (platform: DigitalPlatform) => platform
 
@@ -379,7 +411,7 @@ const openCreate = () => {
   clearMessages()
   selectedItem.value = null
   resetForm()
-  if (isDigitalOrPhysicalResource.value && !hasLoadedPermissionOptions.value && !corePermissionsStore.isLoading) {
+  if (supportsPermissionPicker.value && !hasLoadedPermissionOptions.value && !corePermissionsStore.isLoading) {
     void fetchPermissionOptions()
   }
   editDialogVisible.value = false
@@ -390,7 +422,7 @@ const openEdit = (item: AnyLicensingConfig) => {
   clearMessages()
   selectedItem.value = item
   fillFormFromItem(item)
-  if (isDigitalOrPhysicalResource.value && !hasLoadedPermissionOptions.value && !corePermissionsStore.isLoading) {
+  if (supportsPermissionPicker.value && !hasLoadedPermissionOptions.value && !corePermissionsStore.isLoading) {
     void fetchPermissionOptions()
   }
   createDialogVisible.value = false
@@ -468,6 +500,10 @@ const buildUpdatePayload = () => {
 
 const submitCreate = async () => {
   clearMessages()
+  if (!isNameValid.value) {
+    errorMessage.value = 'Vui lòng nhập tên.'
+    return
+  }
   isSubmitting.value = true
 
   try {
@@ -500,6 +536,10 @@ const submitEdit = async () => {
   if (!selectedItem.value) return
 
   clearMessages()
+  if (!isNameValid.value) {
+    errorMessage.value = 'Vui lòng nhập tên.'
+    return
+  }
   isSubmitting.value = true
 
   try {
@@ -617,9 +657,56 @@ const getPriceValue = (item: AnyLicensingConfig) => {
   }
 }
 
+let keywordDebounceTimer: ReturnType<typeof setTimeout> | null = null
+
+watch(
+  () => filters.keyword,
+  () => {
+    if (keywordDebounceTimer) clearTimeout(keywordDebounceTimer)
+    keywordDebounceTimer = setTimeout(() => {
+      pagination.page = 1
+      void fetchListSafely()
+    }, 500)
+  },
+)
+
+watch(
+  () => [filters.status, filters.targetPlatform, filters.durationType],
+  () => {
+    pagination.page = 1
+    void fetchListSafely()
+  },
+)
+
+watch(
+  () => props.resource,
+  () => {
+    clearMessages()
+    selectedItem.value = null
+    createDialogVisible.value = false
+    editDialogVisible.value = false
+    permissionsDialogVisible.value = false
+    pagination.page = 1
+    filters.keyword = ''
+    filters.status = ''
+    filters.targetPlatform = ''
+    filters.durationType = ''
+    if (keywordDebounceTimer) {
+      clearTimeout(keywordDebounceTimer)
+      keywordDebounceTimer = null
+    }
+    void fetchPermissionOptions()
+    void fetchListSafely()
+  },
+  { immediate: true },
+)
+
+onBeforeUnmount(() => {
+  if (keywordDebounceTimer) clearTimeout(keywordDebounceTimer)
+})
+
 onMounted(() => {
   void fetchPermissionOptions()
-  void fetchList()
 })
 </script>
 
@@ -646,8 +733,8 @@ onMounted(() => {
           <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">{{ statusFieldLabel }}</span>
           <select v-model="filters.status" :class="fieldClass" :disabled="currentIsLoading">
             <option value="">Tất cả</option>
-            <option value="ACTIVE">{{ isDigitalOrPhysicalResource ? 'Đang hoạt động' : 'ACTIVE' }}</option>
-            <option value="INACTIVE">{{ isDigitalOrPhysicalResource ? 'Ngừng hoạt động' : 'INACTIVE' }}</option>
+            <option value="ACTIVE">{{ isDigitalOrPhysicalResource ? formatStatusLabel('ACTIVE') : 'ACTIVE' }}</option>
+            <option value="INACTIVE">{{ isDigitalOrPhysicalResource ? formatStatusLabel('INACTIVE') : 'INACTIVE' }}</option>
           </select>
         </label>
         <label v-if="currentResource.supportsDigitalFilters" class="space-y-2">
@@ -673,13 +760,6 @@ onMounted(() => {
         </label>
       </div>
 
-      <div class="mt-3 flex justify-end">
-        <button type="button" :class="secondaryButtonClass" :disabled="currentIsLoading" @click="fetchList">
-          <i class="pi pi-filter mr-2" />
-          Lọc
-        </button>
-      </div>
-
       <div class="mt-4 space-y-3">
         <Message v-if="errorMessage" severity="error">{{ errorMessage }}</Message>
         <Message v-if="successMessage" severity="success">{{ successMessage }}</Message>
@@ -690,7 +770,6 @@ onMounted(() => {
           <table class="min-w-full border-separate border-spacing-0 text-left text-sm">
             <thead class="bg-slate-50 text-xs uppercase tracking-[0.18em] text-slate-500 dark:bg-slate-950/60 dark:text-slate-300">
               <tr>
-                <th class="px-4 py-4 font-semibold">{{ codeLabel }}</th>
                 <th class="px-4 py-4 font-semibold">{{ currentResource.detailColumnLabel }}</th>
                 <th class="px-4 py-4 font-semibold">{{ currentResource.priceLabel }}</th>
                 <th class="px-4 py-4 font-semibold">{{ permissionsLabel }}</th>
@@ -701,11 +780,6 @@ onMounted(() => {
             <tbody class="divide-y divide-slate-200/70 dark:divide-slate-800">
               <tr v-for="item in currentItems" :key="item.id" class="bg-white transition hover:bg-slate-50/70 dark:bg-transparent dark:hover:bg-slate-900/30">
                 <td class="px-4 py-4">
-                  <div class="font-mono text-xs font-semibold uppercase tracking-[0.18em] text-violet-600 dark:text-violet-300">
-                    {{ item.code }}
-                  </div>
-                </td>
-                <td class="px-4 py-4">
                   <div class="font-semibold text-slate-900 dark:text-white">{{ getDetailText(item) }}</div>
                   <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">
                     {{ currentResource.detailPlaceholder }}
@@ -714,20 +788,13 @@ onMounted(() => {
                 <td class="px-4 py-4 text-slate-600 dark:text-slate-300">{{ getPriceValue(item) }}</td>
                 <td class="px-4 py-4">
                   <div v-if="item.referencedPermissions.length === 0" class="text-slate-400 dark:text-slate-500">{{ emptyPermissionsText }}</div>
-                  <div v-else class="flex flex-wrap gap-2">
-                    <span
-                      v-for="permission in item.referencedPermissions.slice(0, 3)"
-                      :key="`${item.id}-${permission.id}`"
-                      class="inline-flex items-center rounded-full border border-violet-200 bg-violet-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-violet-700 dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-violet-200"
-                    >
-                      {{ isDigitalOrPhysicalResource ? permission.name : permission.code }}
-                    </span>
-                    <span
-                      v-if="item.referencedPermissions.length > 3"
-                      class="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
-                    >
-                      +{{ item.referencedPermissions.length - 3 }}
-                    </span>
+                  <div v-else class="flex items-center gap-3">
+                    <button type="button" :class="iconButtonClass" :disabled="currentIsLoading" @click="openPermissionsDialog(item)">
+                      <i class="pi pi-eye" />
+                    </button>
+                    <div class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                      {{ item.referencedPermissions.length }} quyền
+                    </div>
                   </div>
                 </td>
                 <td class="px-4 py-4">
@@ -761,7 +828,7 @@ onMounted(() => {
               </tr>
 
               <tr v-if="!currentIsLoading && currentItems.length === 0">
-                <td colspan="6" class="px-6 py-12 text-center text-sm text-slate-500 dark:text-slate-400">
+                <td colspan="5" class="px-6 py-12 text-center text-sm text-slate-500 dark:text-slate-400">
                   {{ currentResource.emptyState }}
                 </td>
               </tr>
@@ -824,19 +891,19 @@ onMounted(() => {
         <template v-if="props.resource === 'expression' || props.resource === 'modification'">
           <label class="space-y-2 sm:col-span-2">
             <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
-              {{ props.resource === 'expression' ? 'Expression name' : 'Modification name' }}
+              {{ props.resource === 'expression' ? 'Tên hình thức biểu hiện' : 'Tên mức độ biến đổi' }}
             </span>
             <input v-model="form.name" :class="fieldClass" :placeholder="props.resource === 'expression' ? 'Nhạc nền Vlog' : 'Cải biên phối khí'" :disabled="isSubmitting" />
           </label>
           <label class="space-y-2 sm:col-span-2">
-            <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Price multiplier</span>
+            <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Hệ số giá</span>
             <input v-model.number="form.priceMultiplier" type="number" min="1" step="0.01" :class="fieldClass" :disabled="isSubmitting" />
           </label>
         </template>
 
         <div class="space-y-3 sm:col-span-2">
           <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">{{ permissionsLabel }}</span>
-          <div v-if="isDigitalOrPhysicalResource" class="space-y-3">
+          <div v-if="supportsPermissionPicker" class="space-y-3">
             <div
               v-if="isPermissionOptionsLoading || mergedPermissionOptions.length === 0"
               class="rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 px-4 py-4 dark:border-slate-700 dark:bg-slate-900/40"
@@ -946,19 +1013,19 @@ onMounted(() => {
         <template v-if="props.resource === 'expression' || props.resource === 'modification'">
           <label class="space-y-2 sm:col-span-2">
             <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
-              {{ props.resource === 'expression' ? 'Expression name' : 'Modification name' }}
+              {{ props.resource === 'expression' ? 'Tên hình thức biểu hiện' : 'Tên mức độ biến đổi' }}
             </span>
             <input v-model="form.name" :class="fieldClass" :disabled="isSubmitting" />
           </label>
           <label class="space-y-2 sm:col-span-2">
-            <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Price multiplier</span>
+            <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Hệ số giá</span>
             <input v-model.number="form.priceMultiplier" type="number" min="1" step="0.01" :class="fieldClass" :disabled="isSubmitting" />
           </label>
         </template>
 
         <div class="space-y-3 sm:col-span-2">
           <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">{{ permissionsLabel }}</span>
-          <div v-if="isDigitalOrPhysicalResource" class="space-y-3">
+          <div v-if="supportsPermissionPicker" class="space-y-3">
             <div
               v-if="isPermissionOptionsLoading || mergedPermissionOptions.length === 0"
               class="rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 px-4 py-4 dark:border-slate-700 dark:bg-slate-900/40"
@@ -1021,6 +1088,27 @@ onMounted(() => {
         <div class="flex w-full justify-end gap-3">
           <button type="button" :class="secondaryButtonClass" :disabled="isSubmitting" @click="editDialogVisible = false">Huỷ</button>
           <button type="button" :class="primaryButtonClass" :disabled="isPermissionSubmitDisabled" @click="submitEdit">Lưu</button>
+        </div>
+      </template>
+    </Dialog>
+
+    <Dialog v-model:visible="permissionsDialogVisible" modal class="w-[min(720px,96vw)]" :header="permissionsDialogTitle">
+      <div v-if="permissionsDialogPermissions.length === 0" class="text-sm text-slate-500 dark:text-slate-400">
+        Chưa chọn quyền tham khảo.
+      </div>
+      <div v-else class="space-y-2">
+        <div
+          v-for="permission in permissionsDialogPermissions"
+          :key="permission.id"
+          class="rounded-2xl border border-slate-200/80 bg-white/90 px-4 py-3 text-sm text-slate-700 shadow-sm dark:border-slate-800 dark:bg-slate-950/50 dark:text-slate-200"
+        >
+          <div class="font-semibold">{{ permission.code }} - {{ permission.name }}</div>
+          <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ permission.lawReference }}</div>
+        </div>
+      </div>
+      <template #footer>
+        <div class="flex w-full justify-end">
+          <button type="button" :class="secondaryButtonClass" @click="permissionsDialogVisible = false">Đóng</button>
         </div>
       </template>
     </Dialog>
