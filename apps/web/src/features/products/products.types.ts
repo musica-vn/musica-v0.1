@@ -19,7 +19,6 @@ export type ProductAllowedPermission = {
 
 export type Product = {
   id: string
-  productCode: string
   title: string
   artistId: string
   authorName: string | null

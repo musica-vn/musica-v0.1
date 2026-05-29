@@ -150,6 +150,9 @@ const formatDateTime = (value: string) => {
   return Number.isNaN(date.getTime()) ? value : date.toLocaleString()
 }
 
+const formatRoleNames = (roles: Array<{ roleName: string }>) =>
+  roles.map((role) => role.roleName).join(', ')
+
 const loadDashboard = async () => {
   errorMessage.value = null
   isLoading.value = true
@@ -157,8 +160,8 @@ const loadDashboard = async () => {
   try {
     const tasks = [
       getAdminProductsSummary({}),
-      listManagedUsers({ page: 1, pageSize: 3, roleCode: 'BUYER' }),
-      listManagedUsers({ page: 1, pageSize: 3, roleCode: 'ARTIST' }),
+      listManagedUsers({ page: 1, pageSize: 3, roleName: 'Buyer' }),
+      listManagedUsers({ page: 1, pageSize: 3, roleName: 'Artist' }),
       listAdminCertificates({ page: 1, pageSize: 1 }),
       listAdminCorePermissions({ page: 1, pageSize: 1, status: 'ACTIVE' }),
       listAdminDigitalRightConfigs({ page: 1, pageSize: 1, status: 'ACTIVE' }),
@@ -320,7 +323,7 @@ onMounted(() => {
               </div>
               <div class="flex flex-wrap items-center gap-2">
                 <span class="rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-sky-700 dark:bg-sky-500/15 dark:text-sky-300">
-                  {{ user.roleCodes.join(', ') }}
+                  {{ formatRoleNames(user.roles) }}
                 </span>
                 <span
                   class="rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em]"
@@ -383,11 +386,11 @@ onMounted(() => {
               </div>
               <div class="mt-3 flex flex-wrap gap-2">
                 <span
-                  v-for="role in admin.roleCodes"
-                  :key="`${admin.id}-${role}`"
+                  v-for="role in admin.roles"
+                  :key="`${admin.id}-${role.roleId}`"
                   class="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
                 >
-                  {{ role }}
+                  {{ role.roleName }}
                 </span>
               </div>
               <div class="mt-3 text-xs text-slate-400 dark:text-slate-500">

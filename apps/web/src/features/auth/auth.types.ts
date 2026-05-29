@@ -1,12 +1,14 @@
 export type UserStatus = 'ACTIVE' | 'LOCKED' | 'DELETED'
 
-export type UserRole = 'SUPER_ADMIN' | 'ADMIN' | 'ARTIST' | 'BUYER'
+export type UserRoleName = 'Super Admin' | 'Admin' | 'Artist' | 'Buyer'
 
 export type AuthUser = {
   id: string
   email: string
   fullName: string
   status: UserStatus
+  roleId: number | null
+  roleName: UserRoleName | null
 }
 
 export type AuthLoginData = {
@@ -14,6 +16,4 @@ export type AuthLoginData = {
   tokenType: 'Bearer'
   expiresInSeconds: number
   user: AuthUser
-  roles: UserRole[]
 }
-

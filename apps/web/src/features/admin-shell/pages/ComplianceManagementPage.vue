@@ -350,7 +350,7 @@ watch(
             <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Keyword</span>
             <div class="relative">
               <i class="pi pi-search absolute left-4 top-1/2 -translate-y-1/2 text-xs text-slate-400 dark:text-slate-500" />
-              <input v-model="filters.keyword" :class="fieldClass" class="pl-10" placeholder="Tìm theo Title hoặc PROD-xxxxxx..." :disabled="isLoading" />
+              <input v-model="filters.keyword" :class="fieldClass" class="pl-10" placeholder="Tìm theo tên sản phẩm hoặc nghệ sĩ" :disabled="isLoading" />
             </div>
           </label>
 
@@ -437,7 +437,7 @@ watch(
                 <td class="px-4 py-4">
                   <div class="font-semibold text-slate-900 dark:text-white">{{ item.product.title }}</div>
                   <div class="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-                    <span>{{ item.product.productCode }}</span>
+                    <span>{{ item.product.artistName || item.product.artistId }}</span>
                     <span class="h-1 w-1 rounded-full bg-slate-300 dark:bg-slate-600" />
                     <span class="inline-flex items-center rounded-full border px-2.5 py-1 font-semibold" :class="getProductStatusClass(item.product.status)">
                       {{ formatProductStatusLabel(item.product.status) }}
@@ -502,9 +502,9 @@ watch(
               Chi tiết hồ sơ: {{ selectedDetail.product.title }}
             </h2>
             <p class="m-0 mt-1.5 text-xs text-slate-500 dark:text-slate-400 flex flex-wrap items-center gap-2">
-              <span>Mã SP: <strong class="text-slate-700 dark:text-slate-300">{{ selectedDetail.product.productCode }}</strong></span>
+              <span>Nghệ sĩ: <strong class="text-slate-700 dark:text-slate-300">{{ selectedDetail.product.artistName || selectedDetail.product.artistId }}</strong></span>
               <span class="h-1 w-1 rounded-full bg-slate-300 dark:bg-slate-600" />
-              <span>Mã pháp lý: <strong class="text-slate-700 dark:text-slate-300">{{ selectedDetail.complianceCode }}</strong></span>
+              <span>Hồ sơ: <strong class="text-slate-700 dark:text-slate-300">{{ formatReviewStatusLabel(selectedDetail.reviewStatus) }}</strong></span>
             </p>
           </div>
           <div class="flex flex-wrap items-center gap-2">

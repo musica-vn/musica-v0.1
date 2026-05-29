@@ -53,7 +53,7 @@ export type CertificateDownloadUrlData = {
 }
 
 export type CertificateTemplate = {
-  code: string
+  id: number | null
   htmlTemplate: string
   updatedAt: string
 }
@@ -61,4 +61,3 @@ export type CertificateTemplate = {
 export type CertificateRenderedHtml = {
   html: string
 }
-

@@ -2228,7 +2228,7 @@ export interface operations {
                 q?: string;
                 sort?: string;
                 status?: "ACTIVE" | "LOCKED" | "DELETED";
-                roleId?: number;
+                roleName?: "Buyer" | "Artist";
             };
             header?: never;
             path?: never;

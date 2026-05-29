@@ -28,7 +28,10 @@ const logout = async () => {
           <div><b>Email:</b> {{ authStore.user?.email }}</div>
           <div><b>Name:</b> {{ authStore.user?.fullName }}</div>
           <div class="roles">
-            <Tag v-for="role in authStore.roles" :key="role" :value="role" />
+            <Tag
+              v-if="authStore.user?.roleName"
+              :value="authStore.user.roleName"
+            />
           </div>
           <div class="hint">
             Nếu role là <code>ADMIN</code> hoặc <code>SUPER_ADMIN</code> thì sẽ redirect sang
@@ -72,4 +75,3 @@ const logout = async () => {
   opacity: 0.85;
 }
 </style>
-

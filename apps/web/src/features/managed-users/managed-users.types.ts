@@ -1,13 +1,18 @@
 import type { UserStatus } from '../auth/auth.types'
 
-export type ManagedRoleCode = 'BUYER' | 'ARTIST'
+export type ManagedRoleName = 'Buyer' | 'Artist'
+
+export type ManagedUserRoleSummary = {
+  roleId: number
+  roleName: ManagedRoleName
+}
 
 export type ManagedUser = {
   id: string
   fullName: string
   email: string
   status: UserStatus
-  roleCodes: ManagedRoleCode[]
+  roles: ManagedUserRoleSummary[]
   createdAt: string
 }
 
@@ -15,7 +20,7 @@ export type CreateManagedUserPayload = {
   email: string
   fullName: string
   password: string
-  roleCode: ManagedRoleCode
+  roleName: ManagedRoleName
 }
 
 export type UpdateManagedUserPayload = Partial<{

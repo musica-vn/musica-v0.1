@@ -12,7 +12,6 @@ export type UploadedLegalFile = {
 
 export type ComplianceProductSnapshot = {
   trackId: string
-  productCode: string
   title: string
   artistId: string
   artistName: string | null
@@ -21,7 +20,6 @@ export type ComplianceProductSnapshot = {
 
 export type ComplianceListItem = {
   complianceId: string
-  complianceCode: string
   legalStatus: ComplianceLegalStatus
   reviewStatus: ComplianceReviewStatus
   filesCount: number
@@ -33,7 +31,6 @@ export type ComplianceListItem = {
 
 export type ComplianceDetail = {
   complianceId: string
-  complianceCode: string
   legalStatus: ComplianceLegalStatus
   reviewStatus: ComplianceReviewStatus
   rejectReason: string | null

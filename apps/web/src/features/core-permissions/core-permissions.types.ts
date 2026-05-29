@@ -4,7 +4,6 @@ export type CorePermissionStatus = 'ACTIVE' | 'INACTIVE'
 
 export type CorePermission = {
   id: string
-  code: string
   name: string
   lawReference: string
   status: CorePermissionStatus
@@ -30,7 +29,6 @@ export type AdminCorePermissionsListResult = {
 }
 
 export type CreateCorePermissionPayload = {
-  code: string
   name: string
   lawReference: string
   description?: string

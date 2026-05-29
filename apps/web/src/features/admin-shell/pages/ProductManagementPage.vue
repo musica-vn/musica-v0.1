@@ -7,6 +7,8 @@ import { useRouter } from 'vue-router'
 import { ApiClientError } from '../../../shared/api/http'
 import type { ComplianceDetail } from '../../compliance/compliance.types'
 import { getAdminComplianceDetail } from '../../compliance/compliance.api'
+import { listManagedUsers } from '../../managed-users/managed-users.api'
+import type { ManagedUser } from '../../managed-users/managed-users.types'
 import type {
   Product,
   ProductSortValue,
@@ -45,6 +47,8 @@ type ProductForm = {
 const defaultSort: ProductSortValue = 'createdAt:desc'
 const fieldClass =
   'h-12 w-full rounded-2xl border border-slate-200/80 bg-white/90 px-4 text-sm text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-violet-400 focus:ring-4 focus:ring-violet-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-800 dark:bg-slate-950/70 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-violet-500 dark:focus:ring-violet-500/20'
+const selectFieldClass =
+  'h-12 w-full appearance-none rounded-2xl border border-slate-200/80 bg-white/90 px-4 pr-11 text-sm text-slate-700 shadow-sm outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-800 dark:bg-slate-950/70 dark:text-slate-100 dark:focus:border-violet-500 dark:focus:ring-violet-500/20'
 const fileInputClass =
   'block w-full text-sm text-slate-500 file:mr-4 file:rounded-2xl file:border-0 file:bg-violet-100 file:px-4 file:py-2.5 file:text-sm file:font-semibold file:text-violet-700 hover:file:bg-violet-200 dark:text-slate-400 dark:file:bg-violet-500/20 dark:file:text-violet-200'
 const primaryButtonClass =
@@ -130,6 +134,11 @@ type ApprovedPermissionOption = {
   name: string
   lawReference: string
 }
+type ArtistOption = {
+  value: string
+  label: string
+  email: string
+}
 const createForm = reactive<ProductForm>({
   title: '',
   artistId: '',
@@ -165,10 +174,19 @@ const originalAudioUrls = ref<Record<string, string>>({})
 const originalAudioLoading = ref<Record<string, boolean>>({})
 const thumbnailUrls = ref<Record<string, string>>({})
 const thumbnailLoading = ref<Record<string, boolean>>({})
+const artistOptions = ref<ArtistOption[]>([])
+const isArtistsLoading = ref(false)
+const hasLoadedArtists = ref(false)
 
 const totalPages = computed(() => Math.max(1, Math.ceil(totalItems.value / pagination.pageSize)))
 const pageStart = computed(() => (totalItems.value === 0 ? 0 : (pagination.page - 1) * pagination.pageSize + 1))
 const pageEnd = computed(() => Math.min(pagination.page * pagination.pageSize, totalItems.value))
+const selectedCreateArtistOption = computed(() =>
+  artistOptions.value.find((option) => option.value === createForm.artistId) ?? null,
+)
+const selectedEditArtistOption = computed(() =>
+  artistOptions.value.find((option) => option.value === editForm.artistId) ?? null,
+)
 const summaryCards = computed(() => [
   {
     title: 'Tổng số sản phẩm',
@@ -232,6 +250,10 @@ const selectedTrackAttributeItems = computed<TrackAttributeItem[]>(() => {
   const track = selectedTrack.value
 
   return [
+    {
+      label: 'Nghệ sĩ',
+      value: resolveArtistDisplay(track.artistId),
+    },
     {
       label: 'Tên tác giả',
       value: track.authorName || 'Chưa có',
@@ -300,12 +322,43 @@ const parseDuration = (value: string): number | undefined => {
   return Number.isFinite(num) ? num : undefined
 }
 
+const formatArtistOptionLabel = (artist: ManagedUser) => `${artist.fullName} · ${artist.email}`
+
+const resolveArtistDisplay = (artistId: string) =>
+  artistOptions.value.find((option) => option.value === artistId)?.label ?? artistId
+
+const fetchArtistOptions = async () => {
+  isArtistsLoading.value = true
+
+  try {
+    const response = await listManagedUsers({
+      page: 1,
+      pageSize: 200,
+      roleName: 'Artist',
+      status: 'ACTIVE',
+    })
+
+    artistOptions.value = [...response.data.items]
+      .sort((left, right) => left.fullName.localeCompare(right.fullName, undefined, { sensitivity: 'base' }))
+      .map((artist) => ({
+        value: artist.id,
+        label: formatArtistOptionLabel(artist),
+        email: artist.email,
+      }))
+    hasLoadedArtists.value = true
+  } catch (error) {
+    setError(error)
+  } finally {
+    isArtistsLoading.value = false
+  }
+}
+
 const summaryCardToneClass = (tone: keyof typeof summaryToneClassMap) => summaryToneClassMap[tone]
 
 const exportCurrentTracksCsv = () => {
   const headers = [
     'title',
-    'productCode',
+    'id',
     'authorName',
     'genre',
     'duration',
@@ -325,7 +378,7 @@ const exportCurrentTracksCsv = () => {
     ...rows.value.map((track) =>
       [
         track.title,
-        track.productCode,
+        track.id,
         track.authorName ?? '',
         track.genre ?? '',
         track.duration ?? '',
@@ -684,7 +737,7 @@ const validateTrackForm = (
   },
 ) => {
   if (form.title.trim().length === 0) return 'Tên track là bắt buộc'
-  if (form.artistId.trim().length === 0) return 'Artist ID là bắt buộc'
+  if (form.artistId.trim().length === 0) return 'Vui lòng chọn nghệ sĩ'
   if (options.requireThumbnailFile && !options.thumbnailFile) return 'Cần chọn thumbnail cho track'
   if (
     !options.requireThumbnailFile &&
@@ -839,6 +892,9 @@ const openCreateDialog = () => {
   detailDialogVisible.value = false
   clearCreateDialogError()
   resetCreateForm()
+  if (!hasLoadedArtists.value && !isArtistsLoading.value) {
+    void fetchArtistOptions()
+  }
   createDialogVisible.value = true
 }
 
@@ -849,6 +905,9 @@ const openEditDialog = (track: Product) => {
   detailDialogVisible.value = false
   clearEditDialogError()
   resetEditForm(track)
+  if (!hasLoadedArtists.value && !isArtistsLoading.value) {
+    void fetchArtistOptions()
+  }
   editDialogVisible.value = true
   void ensureThumbnailUrl(track)
 }
@@ -867,7 +926,7 @@ const openDetailDialog = (track: Product) => {
 }
 
 const openComplianceDashboard = (track: Product) => {
-  void router.push({ path: '/admin/compliance', query: { keyword: track.productCode } })
+  void router.push({ path: '/admin/compliance', query: { keyword: track.title } })
 }
 
 const uploadToSignedUrl = async (url: string, file: File) => {
@@ -1124,6 +1183,7 @@ const goToPage = async (page: number) => {
 }
 
 onMounted(() => {
+  void fetchArtistOptions()
   void refreshTrackDashboard()
 })
 
@@ -1210,7 +1270,7 @@ onBeforeUnmount(() => {
 
         <div class="flex flex-col gap-3 xl:min-w-[980px]">
           <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            <ProductFilterInput v-model="filters.keyword" icon-class="pi pi-search" placeholder="Tìm theo tên, tác giả, mã sản phẩm" :disabled="isLoading" />
+            <ProductFilterInput v-model="filters.keyword" icon-class="pi pi-search" placeholder="Tìm theo tên, tác giả hoặc thể loại" :disabled="isLoading" />
             <ProductFilterInput v-model="filters.genre" icon-class="pi pi-sliders-h" placeholder="Thể loại" :disabled="isLoading" />
             <ProductFilterSelect v-model="filters.status" icon-class="pi pi-tag" :options="statusOptions" :disabled="isLoading" />
             <ProductFilterSelect v-model="filters.sort" icon-class="pi pi-sort-alt" :options="sortOptions" :disabled="isLoading" />
@@ -1465,8 +1525,23 @@ onBeforeUnmount(() => {
               <input v-model="createForm.title" :class="fieldClass" placeholder="Nhập tên track" />
             </label>
             <label class="space-y-2">
-              <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Artist ID</span>
-              <input v-model="createForm.artistId" :class="fieldClass" placeholder="UUID" />
+              <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Nghệ sĩ</span>
+              <div class="relative">
+                <select v-model="createForm.artistId" :class="selectFieldClass" :disabled="isArtistsLoading">
+                  <option value="">Chọn nghệ sĩ</option>
+                  <option v-for="artist in artistOptions" :key="artist.value" :value="artist.value">
+                    {{ artist.label }}
+                  </option>
+                </select>
+                <i class="pi pi-chevron-down pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs text-slate-400 dark:text-slate-500" />
+              </div>
+              <span class="text-xs text-slate-500 dark:text-slate-400">
+                {{
+                  isArtistsLoading
+                    ? 'Đang tải danh sách nghệ sĩ...'
+                    : selectedCreateArtistOption?.email || 'Chọn nghệ sĩ active để gắn cho sản phẩm'
+                }}
+              </span>
             </label>
             <label class="space-y-2">
               <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Tên tác giả hiển thị</span>
@@ -1554,8 +1629,13 @@ onBeforeUnmount(() => {
             <input v-model="editForm.title" :class="fieldClass" />
           </label>
           <label class="space-y-2">
-            <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Artist ID</span>
-            <input v-model="editForm.artistId" :class="fieldClass" readonly disabled />
+            <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Nghệ sĩ</span>
+            <div class="rounded-2xl border border-slate-200/80 bg-slate-50/80 px-4 py-3 text-sm font-medium text-slate-700 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-200">
+              {{ selectedEditArtistOption?.label || editForm.artistId }}
+            </div>
+            <span class="text-xs text-slate-500 dark:text-slate-400">
+              {{ selectedEditArtistOption?.email || 'ID nội bộ được giữ nguyên khi chỉnh sửa sản phẩm' }}
+            </span>
           </label>
           <label class="space-y-2">
             <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Tên tác giả hiển thị</span>
@@ -1770,7 +1850,7 @@ onBeforeUnmount(() => {
             <div class="min-w-0">
               <div class="font-semibold text-slate-950 dark:text-white">{{ approvedPermissionsTrack.title }}</div>
               <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                {{ approvedPermissionsTrack.productCode }} · Chọn quyền bán trong đúng tập được Pháp lý cấp cho sản phẩm này.
+                Chọn quyền bán trong đúng tập được Pháp lý cấp cho sản phẩm này.
               </div>
             </div>
             <span class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold" :class="approvedPermissionsTrack.status === 'PUBLISHED'

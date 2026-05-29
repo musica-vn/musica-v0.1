@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { createManagedUser, deleteManagedUser, listManagedUsers, updateManagedUser, updateManagedUserStatus } from './managed-users.api'
-import type { CreateManagedUserPayload, ManagedRoleCode, ManagedUser, UpdateManagedUserPayload } from './managed-users.types'
+import type { CreateManagedUserPayload, ManagedRoleName, ManagedUser, UpdateManagedUserPayload } from './managed-users.types'
 import type { PaginationMeta } from '@musica/contracts'
 import type { UserStatus } from '../auth/auth.types'
 
@@ -19,7 +19,7 @@ export const useManagedUsersStore = defineStore('managed-users', () => {
     pageSize: number
     q?: string
     status?: UserStatus
-    roleCode?: ManagedRoleCode
+    roleName?: ManagedRoleName
   }) => {
     isLoading.value = true
     try {

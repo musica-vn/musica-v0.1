@@ -5,6 +5,7 @@ import Message from 'primevue/message'
 import Textarea from 'primevue/textarea'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { ApiClientError } from '../../../shared/api/http'
+import { listManagedUsers } from '../../managed-users/managed-users.api'
 import {
   getAdminCertificateDetail,
   getAdminCertificateDownloadUrl,
@@ -17,6 +18,7 @@ import type { CertificateDetail, CertificateListItem as CertificateListItemType 
 import CertificateListItemCard from '../../certificates/components/CertificateListItem.vue'
 import ProductFilterInput from '../../products/components/ProductFilterInput.vue'
 import ProductFilterSelect from '../../products/components/ProductFilterSelect.vue'
+import type { ManagedUser } from '../../managed-users/managed-users.types'
 
 const usageRightLabelMap: Record<string, string> = {
   REPRODUCTION_RIGHT: 'Quyền sao chép tác phẩm',
@@ -48,6 +50,8 @@ const filters = reactive({
 
 const fieldClass =
   'h-12 w-full rounded-2xl border border-slate-200/80 bg-white/90 px-4 text-sm text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-violet-400 focus:ring-4 focus:ring-violet-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-800 dark:bg-slate-950/70 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-violet-500 dark:focus:ring-violet-500/20'
+const selectFieldClass =
+  'h-12 w-full appearance-none rounded-2xl border border-slate-200/80 bg-white/90 px-4 pr-11 text-sm text-slate-700 shadow-sm outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-800 dark:bg-slate-950/70 dark:text-slate-100 dark:focus:border-violet-500 dark:focus:ring-violet-500/20'
 const primaryButtonClass =
   'inline-flex items-center justify-center rounded-2xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-600 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-violet-500 dark:hover:bg-violet-400'
 const secondaryButtonClass =
@@ -66,6 +70,8 @@ const renderedHtml = ref<string | null>(null)
 const templateHtml = ref('')
 const templateUpdatedAt = ref<string | null>(null)
 const templateSaveLoading = ref(false)
+const artistOptions = ref<Array<{ value: string; label: string }>>([])
+const isArtistsLoading = ref(false)
 
 const previewCertificateId = ref('')
 const previewHtml = ref<string | null>(null)
@@ -141,6 +147,31 @@ const formatDateTime = (value: string | null) => {
 const formatCertificateStatus = (value: string) => (value === 'ACTIVE' ? 'Đang hiệu lực' : value)
 const formatUsageRights = (values: string[]) => values.map((value) => usageRightLabelMap[value] ?? value).join(', ')
 const summaryCardToneClass = (tone: keyof typeof summaryToneClassMap) => summaryToneClassMap[tone]
+const formatArtistOptionLabel = (artist: ManagedUser) => `${artist.fullName} · ${artist.email}`
+
+const fetchArtistOptions = async () => {
+  isArtistsLoading.value = true
+
+  try {
+    const response = await listManagedUsers({
+      page: 1,
+      pageSize: 200,
+      roleName: 'Artist',
+      status: 'ACTIVE',
+    })
+
+    artistOptions.value = [...response.data.items]
+      .sort((left, right) => left.fullName.localeCompare(right.fullName, undefined, { sensitivity: 'base' }))
+      .map((artist) => ({
+        value: artist.id,
+        label: formatArtistOptionLabel(artist),
+      }))
+  } catch (error) {
+    setError(error)
+  } finally {
+    isArtistsLoading.value = false
+  }
+}
 
 const fetchCertificates = async () => {
   clearMessages()
@@ -277,7 +308,7 @@ const goToPage = async (page: number) => {
 }
 
 onMounted(async () => {
-  await Promise.all([fetchCertificates(), loadTemplate()])
+  await Promise.all([fetchCertificates(), loadTemplate(), fetchArtistOptions()])
 })
 </script>
 
@@ -332,7 +363,15 @@ onMounted(async () => {
               <ProductFilterInput v-model="filters.buyerKeyword" icon-class="pi pi-user" placeholder="Người mua" :disabled="isLoading" />
               <ProductFilterInput v-model="filters.trackKeyword" icon-class="pi pi-wave-pulse" placeholder="Track" :disabled="isLoading" />
               <ProductFilterSelect v-model="filters.status" icon-class="pi pi-tag" :options="statusOptions" :disabled="isLoading" />
-              <input v-model="filters.artistId" :class="fieldClass" placeholder="Artist ID" />
+              <div class="relative">
+                <select v-model="filters.artistId" :class="selectFieldClass" :disabled="isLoading || isArtistsLoading">
+                  <option value="">Tất cả nghệ sĩ</option>
+                  <option v-for="artist in artistOptions" :key="artist.value" :value="artist.value">
+                    {{ artist.label }}
+                  </option>
+                </select>
+                <i class="pi pi-chevron-down pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs text-slate-400 dark:text-slate-500" />
+              </div>
               <input v-model="filters.fromDate" :class="fieldClass" placeholder="Từ ngày (ISO date)" />
               <input v-model="filters.toDate" :class="fieldClass" placeholder="Đến ngày (ISO date)" />
             </div>

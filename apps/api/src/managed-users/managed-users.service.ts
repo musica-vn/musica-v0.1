@@ -131,8 +131,8 @@ export class ManagedUsersService {
 
   async listUsers(query: ManagedUserListQueryDto): Promise<{ items: ManagedUserItem[]; totalItems: number }> {
     const roleIds =
-      typeof query.roleId === 'number'
-        ? [query.roleId]
+      typeof query.roleName === 'string'
+        ? (await this.getRolesByNames([query.roleName])).map((role) => role.id)
         : await this.getManagedScopeRoleIds()
     if (roleIds.length === 0) return { items: [], totalItems: 0 }
 
@@ -171,7 +171,7 @@ export class ManagedUsersService {
   }
 
   async createUser(payload: CreateManagedUserRequestDto): Promise<ManagedUserItem> {
-    const role = await this.getRoleById(payload.roleId)
+    const role = (await this.getRolesByNames([payload.roleName]))[0] ?? null
     if (!role || !['Buyer', 'Artist'].includes(role.name)) {
       throw new HttpException('Invalid role', HttpStatus.BAD_REQUEST)
     }

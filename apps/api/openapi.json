@@ -1325,11 +1325,15 @@
             }
           },
           {
-            "name": "roleId",
+            "name": "roleName",
             "required": false,
             "in": "query",
             "schema": {
-              "type": "number"
+              "type": "string",
+              "enum": [
+                "Buyer",
+                "Artist"
+              ]
             }
           }
         ],

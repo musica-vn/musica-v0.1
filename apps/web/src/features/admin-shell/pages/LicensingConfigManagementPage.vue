@@ -151,7 +151,6 @@ const permissionsDialogTitle = ref('Quyền tham khảo')
 const permissionsDialogPermissions = ref<ReferencedPermissionSummary[]>([])
 
 const form = reactive<{
-  code: string
   targetPlatform: DigitalPlatform
   durationType: DigitalDurationType
   basePriceMultiplier: number
@@ -160,7 +159,6 @@ const form = reactive<{
   priceMultiplier: number
   referencedPermissionIds: string[]
 }>({
-  code: '',
   targetPlatform: 'YOUTUBE',
   durationType: 'ONE_YEAR',
   basePriceMultiplier: 1,
@@ -245,10 +243,11 @@ const supportsPermissionPicker = computed(
 )
 const keywordLabel = computed(() => 'Từ khoá')
 const keywordPlaceholder = computed(() =>
-  isDigitalOrPhysicalResource.value ? 'Tìm theo mã cấu hình hoặc tên hiển thị' : 'Tìm theo mã hoặc tên hiển thị',
+  isDigitalOrPhysicalResource.value
+    ? 'Tìm theo nền tảng, thời hạn hoặc loại sử dụng'
+    : 'Tìm theo tên hiển thị',
 )
 const statusFieldLabel = computed(() => 'Trạng thái')
-const codeLabel = computed(() => 'Mã cấu hình')
 const permissionsLabel = computed(() =>
   isDigitalOrPhysicalResource.value ? 'Quyền phụ thuộc' : 'Quyền tham khảo',
 )
@@ -271,7 +270,6 @@ const permissionOptionsEmptyMessage = computed(() => 'Hiện chưa có quyền c
 const mergedPermissionOptions = computed<ReferencedPermissionSummary[]>(() => {
   const activePermissions = corePermissionsStore.activeItems.map((item) => ({
     id: item.id,
-    code: item.code,
     name: item.name,
     lawReference: item.lawReference,
   }))
@@ -293,7 +291,7 @@ const toggleReferencedPermission = (permissionId: string) => {
 }
 
 const openPermissionsDialog = (item: AnyLicensingConfig) => {
-  permissionsDialogTitle.value = `${item.code} - ${isDigitalOrPhysicalResource.value ? 'Quyền phụ thuộc' : 'Quyền tham khảo'}`
+  permissionsDialogTitle.value = `${getDetailText(item)} - ${isDigitalOrPhysicalResource.value ? 'Quyền phụ thuộc' : 'Quyền tham khảo'}`
   permissionsDialogPermissions.value = item.referencedPermissions
   permissionsDialogVisible.value = true
 }
@@ -341,7 +339,6 @@ const formatDurationTypeLabel = (durationType: DigitalDurationType) =>
   durationType === 'ONE_YEAR' ? '1 năm' : 'Vĩnh viễn'
 
 const resetForm = () => {
-  form.code = ''
   form.targetPlatform = 'YOUTUBE'
   form.durationType = 'ONE_YEAR'
   form.basePriceMultiplier = 1
@@ -353,7 +350,6 @@ const resetForm = () => {
 
 const fillFormFromItem = (item: AnyLicensingConfig) => {
   resetForm()
-  form.code = item.code
   form.referencedPermissionIds = [...item.referencedPermissionIds]
 
   switch (props.resource) {
@@ -437,13 +433,11 @@ const openEdit = (item: AnyLicensingConfig) => {
 }
 
 const buildCreatePayload = () => {
-  const code = form.code.trim().length > 0 ? form.code.trim().toUpperCase() : undefined
   const referencedPermissionIds = [...form.referencedPermissionIds]
 
   switch (props.resource) {
     case 'digital':
       return {
-        code,
         targetPlatform: form.targetPlatform,
         durationType: form.durationType,
         basePriceMultiplier: Number(form.basePriceMultiplier),
@@ -451,21 +445,18 @@ const buildCreatePayload = () => {
       } satisfies CreateDigitalRightConfigPayload
     case 'physical':
       return {
-        code,
         venueUsageType: form.venueUsageType.trim(),
         basePriceMultiplier: Number(form.basePriceMultiplier),
         referencedPermissionIds,
       } satisfies CreatePhysicalRightConfigPayload
     case 'expression':
       return {
-        code,
         name: form.name.trim(),
         priceMultiplier: Number(form.priceMultiplier),
         referencedPermissionIds,
       } satisfies CreateExpressionConfigPayload
     case 'modification':
       return {
-        code,
         name: form.name.trim(),
         priceMultiplier: Number(form.priceMultiplier),
         referencedPermissionIds,
@@ -901,11 +892,6 @@ onMounted(() => {
 
     <Dialog v-model:visible="createDialogVisible" modal class="w-[min(860px,96vw)]" :header="currentResource.createLabel">
       <div class="grid gap-4 sm:grid-cols-2">
-        <label class="space-y-2 sm:col-span-2">
-          <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">{{ codeLabel }}</span>
-          <input v-model="form.code" :class="fieldClass" placeholder="Để trống nếu muốn hệ thống tự cấp mã" :disabled="isSubmitting" />
-        </label>
-
         <template v-if="props.resource === 'digital'">
           <label class="space-y-2">
             <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Nền tảng áp dụng</span>
@@ -1006,7 +992,7 @@ onMounted(() => {
                   <i class="pi pi-check" />
                 </span>
                 <span class="min-w-0">
-                  <span class="block font-semibold">{{ permission.code }} - {{ permission.name }}</span>
+                  <span class="block font-semibold">{{ permission.name }}</span>
                   <span class="mt-1 block text-xs text-slate-500 dark:text-slate-400">{{ permission.lawReference }}</span>
                 </span>
               </button>
@@ -1014,7 +1000,7 @@ onMounted(() => {
           </div>
           <select v-else v-model="form.referencedPermissionIds" multiple :class="textAreaClass" :disabled="isSubmitting">
             <option v-for="permission in mergedPermissionOptions" :key="permission.id" :value="permission.id">
-              {{ permission.code }} - {{ permission.name }}
+              {{ permission.name }} - {{ permission.lawReference }}
             </option>
           </select>
         </div>
@@ -1029,11 +1015,6 @@ onMounted(() => {
 
     <Dialog v-model:visible="editDialogVisible" modal class="w-[min(860px,96vw)]" :header="editDialogTitle">
       <div class="grid gap-4 sm:grid-cols-2">
-        <label class="space-y-2 sm:col-span-2">
-          <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">{{ codeLabel }}</span>
-          <input v-model="form.code" :class="fieldClass" disabled />
-        </label>
-
         <template v-if="props.resource === 'digital'">
           <label class="space-y-2">
             <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Nền tảng áp dụng</span>
@@ -1134,7 +1115,7 @@ onMounted(() => {
                   <i class="pi pi-check" />
                 </span>
                 <span class="min-w-0">
-                  <span class="block font-semibold">{{ permission.code }} - {{ permission.name }}</span>
+                  <span class="block font-semibold">{{ permission.name }}</span>
                   <span class="mt-1 block text-xs text-slate-500 dark:text-slate-400">{{ permission.lawReference }}</span>
                 </span>
               </button>
@@ -1142,7 +1123,7 @@ onMounted(() => {
           </div>
           <select v-else v-model="form.referencedPermissionIds" multiple :class="textAreaClass" :disabled="isSubmitting">
             <option v-for="permission in mergedPermissionOptions" :key="permission.id" :value="permission.id">
-              {{ permission.code }} - {{ permission.name }}
+              {{ permission.name }} - {{ permission.lawReference }}
             </option>
           </select>
         </div>
@@ -1165,7 +1146,7 @@ onMounted(() => {
           :key="permission.id"
           class="rounded-2xl border border-slate-200/80 bg-white/90 px-4 py-3 text-sm text-slate-700 shadow-sm dark:border-slate-800 dark:bg-slate-950/50 dark:text-slate-200"
         >
-          <div class="font-semibold">{{ permission.code }} - {{ permission.name }}</div>
+          <div class="font-semibold">{{ permission.name }}</div>
           <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ permission.lawReference }}</div>
         </div>
       </div>

@@ -1,6 +1,6 @@
 import type { ListData, PaginationMeta } from '@musica/contracts'
 import { apiDelete, apiGet, apiPatch, apiPost } from '../../shared/api/http'
-import type { CreateManagedUserPayload, ManagedRoleCode, ManagedUser, UpdateManagedUserPayload } from './managed-users.types'
+import type { CreateManagedUserPayload, ManagedRoleName, ManagedUser, UpdateManagedUserPayload } from './managed-users.types'
 import type { UserStatus } from '../auth/auth.types'
 
 export const listManagedUsers = async (params: {
@@ -8,7 +8,7 @@ export const listManagedUsers = async (params: {
   pageSize: number
   q?: string
   status?: UserStatus
-  roleCode?: ManagedRoleCode
+  roleName?: ManagedRoleName
 }) => {
   return apiGet<ListData<ManagedUser>, PaginationMeta>('/admin/users', { params })
 }

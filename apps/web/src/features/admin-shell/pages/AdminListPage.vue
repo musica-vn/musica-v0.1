@@ -31,7 +31,7 @@ const lockedCount = computed(
   () => adminsStore.items.filter((admin) => admin.status === 'LOCKED').length,
 )
 const protectedCount = computed(
-  () => adminsStore.items.filter((admin) => admin.roleCodes.includes('SUPER_ADMIN')).length,
+  () => adminsStore.items.filter((admin) => admin.roles.some((role) => role.roleName === 'Super Admin')).length,
 )
 
 const sortValue = ref<
@@ -57,8 +57,6 @@ const sortOptions = [
   { label: 'Email A-Z', value: 'email:asc' as const },
   { label: 'Email Z-A', value: 'email:desc' as const },
 ]
-const roleOptions = [{ label: 'ADMIN', value: 'ADMIN' as const }]
-
 const loadAdmins = async () => {
   errorMessage.value = null
 
@@ -145,7 +143,8 @@ const formatDateTime = (value: string) => {
   return Number.isNaN(date.getTime()) ? value : date.toLocaleString()
 }
 
-const isProtectedRow = (row: AdminUser) => row.roleCodes.includes('SUPER_ADMIN')
+const isProtectedRow = (row: AdminUser) =>
+  row.roles.some((role) => role.roleName === 'Super Admin')
 
 const createDialogVisible = ref(false)
 const createError = ref<string | null>(null)
@@ -153,7 +152,6 @@ const createForm = ref({
   fullName: '',
   email: '',
   password: '',
-  roleCode: 'ADMIN' as const,
 })
 
 const openCreate = () => {
@@ -162,7 +160,6 @@ const openCreate = () => {
     fullName: '',
     email: '',
     password: '',
-    roleCode: 'ADMIN',
   }
   createDialogVisible.value = true
 }
@@ -194,7 +191,6 @@ const editForm = ref({
   fullName: '',
   email: '',
   password: '',
-  roleCode: 'ADMIN' as const,
 })
 
 const openEdit = (row: AdminUser) => {
@@ -204,7 +200,6 @@ const openEdit = (row: AdminUser) => {
     fullName: row.fullName,
     email: row.email,
     password: '',
-    roleCode: 'ADMIN',
   }
   editDialogVisible.value = true
 }
@@ -218,7 +213,6 @@ const submitEdit = async () => {
     const payload: UpdateAdminUserPayload = {
       fullName: editForm.value.fullName,
       email: editForm.value.email,
-      roleCode: editForm.value.roleCode,
     }
 
     if (editForm.value.password.length > 0) {
@@ -442,7 +436,7 @@ const confirmDelete = async () => {
                         {{ admin.fullName }}
                       </div>
                       <div class="truncate text-xs text-slate-500 dark:text-slate-400">
-                        {{ admin.id }}
+                        Tạo lúc {{ formatDateTime(admin.createdAt) }}
                       </div>
                     </div>
                   </div>
@@ -453,11 +447,11 @@ const confirmDelete = async () => {
                 <td class="px-5 py-4">
                   <div class="flex flex-wrap gap-2">
                     <span
-                      v-for="role in admin.roleCodes"
-                      :key="`${admin.id}-${role}`"
+                      v-for="role in admin.roles"
+                      :key="`${admin.id}-${role.roleId}`"
                       class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300"
                     >
-                      {{ role }}
+                      {{ role.roleName }}
                     </span>
                   </div>
                 </td>
@@ -623,15 +617,6 @@ const confirmDelete = async () => {
             <span class="font-medium">Mật khẩu</span>
             <Password v-model="createForm.password" toggleMask class="w-full" :feedback="false" />
           </label>
-          <label class="grid gap-2 text-sm text-slate-600 dark:text-slate-300">
-            <span class="font-medium">Role</span>
-            <Dropdown
-              v-model="createForm.roleCode"
-              :options="roleOptions"
-              optionLabel="label"
-              optionValue="value"
-            />
-          </label>
         </div>
       </div>
       <template #footer>
@@ -657,15 +642,6 @@ const confirmDelete = async () => {
           <label class="grid gap-2 text-sm text-slate-600 dark:text-slate-300">
             <span class="font-medium">Mật khẩu mới (không bắt buộc)</span>
             <Password v-model="editForm.password" toggleMask class="w-full" :feedback="false" />
-          </label>
-          <label class="grid gap-2 text-sm text-slate-600 dark:text-slate-300">
-            <span class="font-medium">Role</span>
-            <Dropdown
-              v-model="editForm.roleCode"
-              :options="roleOptions"
-              optionLabel="label"
-              optionValue="value"
-            />
           </label>
         </div>
       </div>

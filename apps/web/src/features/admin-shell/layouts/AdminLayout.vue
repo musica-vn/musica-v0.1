@@ -114,7 +114,9 @@ const pageTitle = computed(() =>
   typeof route.meta.title === 'string' ? route.meta.title : 'Quản trị Musica',
 )
 
-const roleBadges = computed(() => authStore.roles.map((role) => role.replace('_', ' ')))
+const roleBadges = computed(() =>
+  authStore.user?.roleName ? [authStore.user.roleName] : [],
+)
 
 const isRouteActive = (targetPath: string) =>
   route.path === targetPath || route.path.startsWith(`${targetPath}/`)

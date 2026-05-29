@@ -1,11 +1,16 @@
-import type { UserRole, UserStatus } from '../auth/auth.types'
+import type { UserRoleName, UserStatus } from '../auth/auth.types'
+
+export type AdminRoleSummary = {
+  roleId: number
+  roleName: UserRoleName
+}
 
 export type AdminUser = {
   id: string
   fullName: string
   email: string
   status: UserStatus
-  roleCodes: UserRole[]
+  roles: AdminRoleSummary[]
   createdAt: string
 }
 
@@ -13,13 +18,12 @@ export type CreateAdminUserPayload = {
   email: string
   fullName: string
   password: string
-  roleCode?: 'ADMIN'
+  roleId?: number
 }
 
 export type UpdateAdminUserPayload = Partial<{
   email: string
   fullName: string
   password: string
-  roleCode: 'ADMIN'
+  roleId: number
 }>
-

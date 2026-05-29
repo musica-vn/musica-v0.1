@@ -7,14 +7,12 @@ export type LicensingConfigResource = 'digital' | 'physical' | 'expression' | 'm
 
 export type ReferencedPermissionSummary = {
   id: string
-  code: string
   name: string
   lawReference: string
 }
 
 export type LicensingConfigBase = {
   id: string
-  code: string
   status: LicensingConfigStatus
   referencedPermissionIds: string[]
   referencedPermissions: ReferencedPermissionSummary[]
@@ -96,7 +94,6 @@ export type ModificationConfigsListResult = {
 }
 
 export type CreateDigitalRightConfigPayload = {
-  code?: string
   targetPlatform: DigitalPlatform
   durationType: DigitalDurationType
   basePriceMultiplier: number
@@ -104,38 +101,35 @@ export type CreateDigitalRightConfigPayload = {
 }
 
 export type UpdateDigitalRightConfigPayload = Partial<
-  Omit<CreateDigitalRightConfigPayload, 'code'>
+  CreateDigitalRightConfigPayload
 >
 
 export type CreatePhysicalRightConfigPayload = {
-  code?: string
   venueUsageType: string
   basePriceMultiplier: number
   referencedPermissionIds?: string[]
 }
 
 export type UpdatePhysicalRightConfigPayload = Partial<
-  Omit<CreatePhysicalRightConfigPayload, 'code'>
+  CreatePhysicalRightConfigPayload
 >
 
 export type CreateExpressionConfigPayload = {
-  code?: string
   name: string
   priceMultiplier: number
   referencedPermissionIds?: string[]
 }
 
 export type UpdateExpressionConfigPayload = Partial<
-  Omit<CreateExpressionConfigPayload, 'code'>
+  CreateExpressionConfigPayload
 >
 
 export type CreateModificationConfigPayload = {
-  code?: string
   name: string
   priceMultiplier: number
   referencedPermissionIds?: string[]
 }
 
 export type UpdateModificationConfigPayload = Partial<
-  Omit<CreateModificationConfigPayload, 'code'>
+  CreateModificationConfigPayload
 >

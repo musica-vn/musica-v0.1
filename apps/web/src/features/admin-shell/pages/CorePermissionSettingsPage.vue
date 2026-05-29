@@ -37,13 +37,11 @@ const isSubmitting = ref(false)
 const dialogMode = ref<'create' | 'edit'>('create')
 
 const form = reactive<{
-  code: string
   name: string
   lawReference: string
   description: string
   status: CorePermissionStatus
 }>({
-  code: '',
   name: '',
   lawReference: '',
   description: '',
@@ -105,7 +103,6 @@ const openCreate = () => {
   clearGlobalFeedback()
   dialogMode.value = 'create'
   selectedPermission.value = null
-  form.code = ''
   form.name = ''
   form.lawReference = ''
   form.description = ''
@@ -117,7 +114,6 @@ const openEdit = (permission: CorePermission) => {
   clearGlobalFeedback()
   dialogMode.value = 'edit'
   selectedPermission.value = permission
-  form.code = permission.code
   form.name = permission.name
   form.lawReference = permission.lawReference
   form.description = permission.description ?? ''
@@ -131,7 +127,6 @@ const submitCreate = async () => {
 
   try {
     await store.createOne({
-      code: form.code.trim().toUpperCase(),
       name: form.name.trim(),
       lawReference: form.lawReference.trim(),
       description: form.description.trim().length > 0 ? form.description.trim() : undefined,
@@ -185,7 +180,7 @@ const removeOne = async (permission: CorePermission) => {
 const confirmDelete = (permission: CorePermission) => {
   confirm.require({
     header: 'Xác nhận xoá quyền cốt lõi',
-    message: `Bạn có chắc muốn xoá quyền "${permission.name}" (${permission.code})?`,
+    message: `Bạn có chắc muốn xoá quyền "${permission.name}" không?`,
     icon: 'pi pi-exclamation-triangle',
     acceptLabel: 'Xoá',
     rejectLabel: 'Huỷ',
@@ -417,18 +412,6 @@ onBeforeUnmount(() => {
       <div class="grid gap-8 lg:grid-cols-[1.08fr_0.92fr]">
         <section class="space-y-8 rounded-[28px] border border-slate-200/80 bg-slate-50/80 p-6 dark:border-slate-800 dark:bg-slate-900/50">
           <div class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Thông tin chính</div>
-
-          <template v-if="isCreateMode">
-            <label class="block">
-              <span class="mb-4 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Code</span>
-              <input v-model="form.code" :class="fieldClass" placeholder="PERFORM_PUBLIC" :disabled="isSubmitting" />
-            </label>
-          </template>
-
-          <div v-else class="rounded-[24px] border border-slate-200/80 bg-white/80 px-4 py-4 text-sm dark:border-slate-800 dark:bg-slate-950/60">
-            <div class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Code</div>
-            <div class="mt-3 font-mono text-sm font-semibold uppercase text-violet-600 dark:text-violet-300">{{ form.code }}</div>
-          </div>
 
           <label class="block">
             <span class="mb-4 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Name</span>

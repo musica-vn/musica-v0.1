@@ -14,7 +14,7 @@ import { ApiClientError } from '../../../shared/api/http'
 import { useManagedUsersStore } from '../../managed-users/managed-users.store'
 import type {
   CreateManagedUserPayload,
-  ManagedRoleCode,
+  ManagedRoleName,
   ManagedUser,
   UpdateManagedUserPayload,
 } from '../../managed-users/managed-users.types'
@@ -22,7 +22,7 @@ import type { UserStatus } from '../../auth/auth.types'
 import AdminStatCard from '../components/AdminStatCard.vue'
 
 const props = defineProps<{
-  initialRole: ManagedRoleCode
+  initialRole: ManagedRoleName
 }>()
 
 const managedUsersStore = useManagedUsersStore()
@@ -35,7 +35,7 @@ const errorMessage = ref<string | null>(null)
 const isActionLoading = ref(false)
 
 const roleMeta = computed(() =>
-  props.initialRole === 'BUYER'
+  props.initialRole === 'Buyer'
     ? {
         title: 'Quản lý buyer',
         subtitle: 'Theo dõi tài khoản người mua và tình trạng vận hành',
@@ -119,7 +119,7 @@ const loadUsers = async () => {
       pageSize: pageSize.value,
       q: keyword.value.trim().length > 0 ? keyword.value.trim() : undefined,
       status: statusFilter.value.length > 0 ? (statusFilter.value as UserStatus) : undefined,
-      roleCode: props.initialRole,
+      roleName: props.initialRole,
     })
   } catch (error) {
     errorMessage.value =
@@ -156,7 +156,7 @@ const createForm = ref<CreateManagedUserPayload>({
   fullName: '',
   email: '',
   password: '',
-  roleCode: props.initialRole,
+  roleName: props.initialRole,
 })
 
 const openCreate = () => {
@@ -165,7 +165,7 @@ const openCreate = () => {
     fullName: '',
     email: '',
     password: '',
-    roleCode: props.initialRole,
+    roleName: props.initialRole,
   }
   createDialogVisible.value = true
 }
@@ -314,7 +314,7 @@ const removeUser = (row: ManagedUser) => {
 
     <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
       <AdminStatCard
-        :title="props.initialRole === 'BUYER' ? 'Tổng buyer' : 'Tổng artist'"
+        :title="props.initialRole === 'Buyer' ? 'Tổng buyer' : 'Tổng artist'"
         :value="managedUsersStore.totalItems"
         description="Tổng bản ghi phù hợp với bộ lọc hiện tại"
         icon="pi pi-users"
@@ -405,11 +405,11 @@ const removeUser = (row: ManagedUser) => {
             <template #body="{ data }">
               <div class="flex flex-wrap gap-2">
                 <span
-                  v-for="role in data.roleCodes"
-                  :key="`${data.id}-${role}`"
+                  v-for="role in data.roles"
+                  :key="`${data.id}-${role.roleId}`"
                   class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300"
                 >
-                  {{ role }}
+                  {{ role.roleName }}
                 </span>
               </div>
             </template>
