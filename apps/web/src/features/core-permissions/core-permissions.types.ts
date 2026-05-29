@@ -34,6 +34,7 @@ export type CreateCorePermissionPayload = {
   name: string
   lawReference: string
   description?: string
+  status?: CorePermissionStatus
 }
 
 export type UpdateCorePermissionPayload = Partial<CreateCorePermissionPayload> & {

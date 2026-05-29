@@ -175,6 +175,7 @@ export class CorePermissionsService {
         name: payload.name,
         law_reference: payload.lawReference,
         description: payload.description ?? null,
+        status: payload.status ?? 'INACTIVE',
       })
       .select('*')
       .maybeSingle<DbCorePermissionRow>()

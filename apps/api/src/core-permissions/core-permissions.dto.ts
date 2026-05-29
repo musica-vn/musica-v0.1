@@ -71,6 +71,11 @@ export class AdminCreateCorePermissionRequestDto {
   @IsOptional()
   @IsString()
   description?: string
+
+  @ApiPropertyOptional({ enum: ['ACTIVE', 'INACTIVE'] })
+  @IsOptional()
+  @IsIn(['ACTIVE', 'INACTIVE'])
+  status?: CorePermissionStatus
 }
 
 export class AdminUpdateCorePermissionRequestDto {

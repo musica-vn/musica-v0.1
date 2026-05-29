@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import Dialog from 'primevue/dialog'
 import Message from 'primevue/message'
+import { useConfirm } from 'primevue/useconfirm'
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { ApiClientError } from '../../../shared/api/http'
 import { useCorePermissionsStore } from '../../core-permissions/core-permissions.store'
@@ -10,6 +11,8 @@ const fieldClass =
   'h-12 w-full rounded-2xl border border-slate-200/80 bg-white/90 px-4 text-sm text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-violet-400 focus:ring-4 focus:ring-violet-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-800 dark:bg-slate-950/70 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-violet-500 dark:focus:ring-violet-500/20'
 const textAreaClass =
   'min-h-[132px] w-full rounded-2xl border border-slate-200/80 bg-white/90 px-4 py-3 text-sm text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-violet-400 focus:ring-4 focus:ring-violet-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-800 dark:bg-slate-950/70 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-violet-500 dark:focus:ring-violet-500/20'
+const selectFieldClass =
+  'h-12 w-full appearance-none rounded-2xl border border-slate-200/80 bg-white/90 px-4 pr-11 text-sm text-slate-700 shadow-sm outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-800 dark:bg-slate-950/70 dark:text-slate-100 dark:focus:border-violet-500 dark:focus:ring-violet-500/20'
 const primaryButtonClass =
   'inline-flex items-center justify-center rounded-2xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-600 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-violet-500 dark:hover:bg-violet-400'
 const secondaryButtonClass =
@@ -28,10 +31,10 @@ const filters = reactive<{ keyword: string; status: CorePermissionStatus | '' }>
 
 const pagination = reactive({ page: 1, pageSize: 20 })
 
-const createDialogVisible = ref(false)
-const editDialogVisible = ref(false)
+const permissionDialogVisible = ref(false)
 const selectedPermission = ref<CorePermission | null>(null)
 const isSubmitting = ref(false)
+const dialogMode = ref<'create' | 'edit'>('create')
 
 const form = reactive<{
   code: string
@@ -44,7 +47,7 @@ const form = reactive<{
   name: '',
   lawReference: '',
   description: '',
-  status: 'ACTIVE',
+  status: 'INACTIVE',
 })
 
 const totalPages = computed(() => store.meta?.pagination.totalPages ?? 1)
@@ -52,6 +55,14 @@ const pageStart = computed(() => (store.totalItems === 0 ? 0 : (pagination.page 
 const pageEnd = computed(() => Math.min(pagination.page * pagination.pageSize, store.totalItems))
 const totalActive = computed(() => store.items.filter((item) => item.status === 'ACTIVE').length)
 const totalInactive = computed(() => store.items.filter((item) => item.status === 'INACTIVE').length)
+const isCreateMode = computed(() => dialogMode.value === 'create')
+const dialogTitle = computed(() => (isCreateMode.value ? 'Thêm core permission' : 'Chỉnh sửa core permission'))
+const dialogDescription = computed(() =>
+  isCreateMode.value
+    ? 'Tạo quyền cốt lõi mới cho luồng Product và Compliance.'
+    : 'Cập nhật nội dung và trạng thái trong cùng một form.',
+)
+const dialogSubmitLabel = computed(() => (isCreateMode.value ? 'Tạo' : 'Lưu'))
 
 const clearGlobalFeedback = () => {
   errorMessage.value = null
@@ -92,26 +103,26 @@ const fetchList = async () => {
 
 const openCreate = () => {
   clearGlobalFeedback()
+  dialogMode.value = 'create'
   selectedPermission.value = null
   form.code = ''
   form.name = ''
   form.lawReference = ''
   form.description = ''
-  form.status = 'ACTIVE'
-  editDialogVisible.value = false
-  createDialogVisible.value = true
+  form.status = 'INACTIVE'
+  permissionDialogVisible.value = true
 }
 
 const openEdit = (permission: CorePermission) => {
   clearGlobalFeedback()
+  dialogMode.value = 'edit'
   selectedPermission.value = permission
   form.code = permission.code
   form.name = permission.name
   form.lawReference = permission.lawReference
   form.description = permission.description ?? ''
   form.status = permission.status
-  createDialogVisible.value = false
-  editDialogVisible.value = true
+  permissionDialogVisible.value = true
 }
 
 const submitCreate = async () => {
@@ -124,9 +135,10 @@ const submitCreate = async () => {
       name: form.name.trim(),
       lawReference: form.lawReference.trim(),
       description: form.description.trim().length > 0 ? form.description.trim() : undefined,
+      status: form.status,
     })
     successMessage.value = 'Đã tạo quyền cốt lõi.'
-    createDialogVisible.value = false
+    permissionDialogVisible.value = false
     await fetchList()
   } catch (error) {
     setGlobalError(error)
@@ -149,7 +161,7 @@ const submitEdit = async () => {
       status: form.status,
     })
     successMessage.value = 'Đã cập nhật quyền cốt lõi.'
-    editDialogVisible.value = false
+    permissionDialogVisible.value = false
     await fetchList()
   } catch (error) {
     setGlobalError(error)
@@ -181,23 +193,13 @@ const confirmDelete = (permission: CorePermission) => {
   })
 }
 
-const confirmStatusChange = () => {
-  if (!selectedPermission.value) return
+const submitPermission = async () => {
+  if (isCreateMode.value) {
+    await submitCreate()
+    return
+  }
 
-  const nextStatus: CorePermissionStatus =
-    selectedPermission.value.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE'
-
-  confirm.require({
-    header: 'Xác nhận đổi trạng thái',
-    message:
-      nextStatus === 'ACTIVE'
-        ? `Bạn có chắc muốn chuyển quyền "${selectedPermission.value.name}" sang hoạt động?`
-        : `Bạn có chắc muốn chuyển quyền "${selectedPermission.value.name}" sang ngừng hoạt động?`,
-    icon: 'pi pi-exclamation-triangle',
-    acceptLabel: nextStatus === 'ACTIVE' ? 'Chuyển sang hoạt động' : 'Ngừng hoạt động',
-    rejectLabel: 'Huỷ',
-    accept: () => void updateStatusFromEdit(selectedPermission.value as CorePermission, nextStatus),
-  })
+  await submitEdit()
 }
 
 const goToPage = async (page: number) => {
@@ -241,7 +243,7 @@ onBeforeUnmount(() => {
           Master Data
         </div>
         <div>
-          <h1 class="m-0 text-3xl font-semibold tracking-tight text-slate-950 dark:text-white">Core Permission Settings</h1>
+          <h1 class="m-0 text-3xl font-semibold tracking-tight !text-slate-950 dark:!text-white">Core Permission Settings</h1>
           <div class="mt-2 text-sm text-slate-500 dark:text-slate-400">
             Quản lý quyền cốt lõi cho Product và Compliance, đồng bộ trạng thái ngay trong form chỉnh sửa.
           </div>
@@ -282,15 +284,18 @@ onBeforeUnmount(() => {
             </label>
             <label class="space-y-2">
               <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Status</span>
-              <select v-model="filters.status" :class="fieldClass" :disabled="store.isLoading">
-                <option value="">Tất cả</option>
-                <option value="ACTIVE">ACTIVE</option>
-                <option value="INACTIVE">INACTIVE</option>
-              </select>
+              <div class="relative">
+                <select v-model="filters.status" :class="selectFieldClass" :disabled="store.isLoading">
+                  <option value="">Tất cả</option>
+                  <option value="ACTIVE">ACTIVE</option>
+                  <option value="INACTIVE">INACTIVE</option>
+                </select>
+                <i class="pi pi-chevron-down pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs text-slate-400 dark:text-slate-500" />
+              </div>
             </label>
             <div class="flex items-end">
               <button type="button" :class="primaryButtonClass" :disabled="store.isLoading" @click="openCreate">
-                <i class="pi pi-plus mr-2" />
+                <i class="pi pi-plus mr-2 text-xs" />
                 Thêm quyền
               </button>
             </div>
@@ -365,7 +370,7 @@ onBeforeUnmount(() => {
                       type="button"
                       class="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-rose-600 transition hover:border-rose-200 hover:text-rose-700 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-rose-300 dark:hover:border-rose-500/30 dark:hover:text-rose-200"
                       :disabled="store.isLoading"
-                      @click="removeOne(permission)"
+                      @click="confirmDelete(permission)"
                     >
                       <i class="pi pi-trash" />
                     </button>
@@ -401,32 +406,37 @@ onBeforeUnmount(() => {
       </div>
     </section>
 
-    <Dialog v-model:visible="createDialogVisible" modal class="w-[min(820px,94vw)]">
+    <Dialog v-model:visible="permissionDialogVisible" modal class="w-[min(920px,94vw)]">
       <template #header>
-        <div class="flex w-full items-center justify-between gap-4">
-          <div>
-            <div class="text-lg font-semibold text-slate-950 dark:text-white">Thêm core permission</div>
-            <div class="mt-1 text-sm text-slate-500 dark:text-slate-400">Tạo quyền cốt lõi mới cho luồng Product và Compliance.</div>
-          </div>
-          <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-200">
-            <i class="pi pi-plus" />
-          </div>
+        <div class="w-full">
+          <div class="text-lg font-semibold text-slate-950 dark:text-white">{{ dialogTitle }}</div>
+          <div class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ dialogDescription }}</div>
         </div>
       </template>
 
-      <div class="grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
-        <section class="space-y-4 rounded-[28px] border border-slate-200/80 bg-slate-50/80 p-5 dark:border-slate-800 dark:bg-slate-900/50">
+      <div class="grid gap-8 lg:grid-cols-[1.08fr_0.92fr]">
+        <section class="space-y-8 rounded-[28px] border border-slate-200/80 bg-slate-50/80 p-6 dark:border-slate-800 dark:bg-slate-900/50">
           <div class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Thông tin chính</div>
-          <label class="space-y-2">
-            <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Code</span>
-            <input v-model="form.code" :class="fieldClass" placeholder="PERFORM_PUBLIC" :disabled="isSubmitting" />
-          </label>
-          <label class="space-y-2">
-            <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Name</span>
+
+          <template v-if="isCreateMode">
+            <label class="block">
+              <span class="mb-4 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Code</span>
+              <input v-model="form.code" :class="fieldClass" placeholder="PERFORM_PUBLIC" :disabled="isSubmitting" />
+            </label>
+          </template>
+
+          <div v-else class="rounded-[24px] border border-slate-200/80 bg-white/80 px-4 py-4 text-sm dark:border-slate-800 dark:bg-slate-950/60">
+            <div class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Code</div>
+            <div class="mt-3 font-mono text-sm font-semibold uppercase text-violet-600 dark:text-violet-300">{{ form.code }}</div>
+          </div>
+
+          <label class="block">
+            <span class="mb-4 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Name</span>
             <input v-model="form.name" :class="fieldClass" :disabled="isSubmitting" />
           </label>
-          <label class="space-y-2">
-            <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Law Reference</span>
+
+          <label class="block">
+            <span class="mb-4 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Law Reference</span>
             <input
               v-model="form.lawReference"
               :class="fieldClass"
@@ -436,110 +446,73 @@ onBeforeUnmount(() => {
           </label>
         </section>
 
-        <section class="space-y-4 rounded-[28px] border border-slate-200/80 bg-slate-50/80 p-5 dark:border-slate-800 dark:bg-slate-900/50">
-          <div class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Mô tả</div>
-          <label class="space-y-2">
-            <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Description</span>
-            <textarea v-model="form.description" :class="textAreaClass" :disabled="isSubmitting" placeholder="Mô tả ngắn về phạm vi sử dụng của quyền này" />
+        <section class="space-y-8 rounded-[28px] border border-slate-200/80 bg-slate-50/80 p-6 dark:border-slate-800 dark:bg-slate-900/50">
+          <label class="block">
+            <span class="mb-4 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Description</span>
+            <textarea
+              v-model="form.description"
+              :class="textAreaClass"
+              :disabled="isSubmitting"
+              placeholder="Mô tả ngắn về phạm vi sử dụng của quyền này"
+            />
           </label>
-          <div class="rounded-[24px] border border-dashed border-emerald-200 bg-emerald-50/80 p-4 text-sm text-emerald-800 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-200">
-            Core permission mới sẽ khởi tạo với trạng thái `ACTIVE`.
+
+          <div class="space-y-5">
+            <div class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+              {{ isCreateMode ? 'Trạng thái mặc định' : 'Trạng thái quyền' }}
+            </div>
+
+            <button
+              type="button"
+              class="w-full rounded-[24px] border px-4 py-4 text-left transition"
+              :class="
+                form.status === 'ACTIVE'
+                  ? 'border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200'
+                  : 'border-slate-200 bg-white text-slate-700 hover:border-emerald-200 dark:border-slate-800 dark:bg-slate-950/40 dark:text-slate-200'
+              "
+              :disabled="isSubmitting"
+              @click="form.status = 'ACTIVE'"
+            >
+              <div class="flex items-center justify-between gap-3">
+                <div class="space-y-2">
+                  <div class="font-semibold">ACTIVE</div>
+                  <div class="text-sm opacity-80">
+                    {{ isCreateMode ? 'Cho phép quyền này sẵn sàng dùng ngay sau khi tạo.' : 'Quyền đang sẵn sàng để dùng cho Product và Compliance.' }}
+                  </div>
+                </div>
+                <i class="pi pi-check-circle text-base" />
+              </div>
+            </button>
+
+            <button
+              type="button"
+              class="w-full rounded-[24px] border px-4 py-4 text-left transition"
+              :class="
+                form.status === 'INACTIVE'
+                  ? 'border-rose-300 bg-rose-50 text-rose-800 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200'
+                  : 'border-slate-200 bg-white text-slate-700 hover:border-rose-200 dark:border-slate-800 dark:bg-slate-950/40 dark:text-slate-200'
+              "
+              :disabled="isSubmitting"
+              @click="form.status = 'INACTIVE'"
+            >
+              <div class="flex items-center justify-between gap-3">
+                <div class="space-y-2">
+                  <div class="font-semibold">INACTIVE</div>
+                  <div class="text-sm opacity-80">
+                    {{ isCreateMode ? 'Mặc định an toàn hơn, chỉ kích hoạt khi bạn sẵn sàng sử dụng.' : 'Ngừng sử dụng quyền này trong các flow mới nếu không còn được tham chiếu.' }}
+                  </div>
+                </div>
+                <i class="pi pi-ban text-base" />
+              </div>
+            </button>
           </div>
         </section>
       </div>
 
       <template #footer>
         <div class="flex w-full justify-end gap-3">
-          <button type="button" :class="secondaryButtonClass" :disabled="isSubmitting" @click="createDialogVisible = false">Huỷ</button>
-          <button type="button" :class="primaryButtonClass" :disabled="isSubmitting" @click="submitCreate">Tạo</button>
-        </div>
-      </template>
-    </Dialog>
-
-    <Dialog v-model:visible="editDialogVisible" modal class="w-[min(860px,94vw)]">
-      <template #header>
-        <div class="flex w-full items-center justify-between gap-4">
-          <div>
-            <div class="text-lg font-semibold text-slate-950 dark:text-white">Chỉnh sửa core permission</div>
-            <div class="mt-1 text-sm text-slate-500 dark:text-slate-400">Cập nhật nội dung và trạng thái ngay trong cùng một form.</div>
-          </div>
-          <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-200">
-            <i class="pi pi-pencil" />
-          </div>
-        </div>
-      </template>
-
-      <div class="grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
-        <section class="space-y-4 rounded-[28px] border border-slate-200/80 bg-slate-50/80 p-5 dark:border-slate-800 dark:bg-slate-900/50">
-          <div class="rounded-[24px] border border-slate-200/80 bg-white/80 px-4 py-3 text-sm dark:border-slate-800 dark:bg-slate-950/60">
-            <div class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Code</div>
-            <div class="mt-2 font-mono text-sm font-semibold uppercase text-violet-600 dark:text-violet-300">{{ form.code }}</div>
-          </div>
-          <label class="space-y-2">
-            <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Name</span>
-            <input v-model="form.name" :class="fieldClass" :disabled="isSubmitting" />
-          </label>
-          <label class="space-y-2">
-            <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Law Reference</span>
-            <input v-model="form.lawReference" :class="fieldClass" :disabled="isSubmitting" />
-          </label>
-          <label class="space-y-2">
-            <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Description</span>
-            <textarea v-model="form.description" :class="textAreaClass" :disabled="isSubmitting" placeholder="Mô tả ngắn về phạm vi sử dụng của quyền này" />
-          </label>
-        </section>
-
-        <section class="space-y-4 rounded-[28px] border border-slate-200/80 bg-slate-50/80 p-5 dark:border-slate-800 dark:bg-slate-900/50">
-          <div class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Trạng thái quyền</div>
-          <button
-            type="button"
-            class="w-full rounded-[24px] border px-4 py-4 text-left transition"
-            :class="
-              form.status === 'ACTIVE'
-                ? 'border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200'
-                : 'border-slate-200 bg-white text-slate-700 hover:border-emerald-200 dark:border-slate-800 dark:bg-slate-950/40 dark:text-slate-200'
-            "
-            :disabled="isSubmitting"
-            @click="form.status = 'ACTIVE'"
-          >
-            <div class="flex items-center justify-between gap-3">
-              <div>
-                <div class="font-semibold">ACTIVE</div>
-                <div class="mt-1 text-sm opacity-80">Quyền đang sẵn sàng để dùng cho Product và Compliance.</div>
-              </div>
-              <i class="pi pi-check-circle text-base" />
-            </div>
-          </button>
-          <button
-            type="button"
-            class="w-full rounded-[24px] border px-4 py-4 text-left transition"
-            :class="
-              form.status === 'INACTIVE'
-                ? 'border-slate-300 bg-slate-100 text-slate-800 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200'
-                : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 dark:border-slate-800 dark:bg-slate-950/40 dark:text-slate-200'
-            "
-            :disabled="isSubmitting"
-            @click="form.status = 'INACTIVE'"
-          >
-            <div class="flex items-center justify-between gap-3">
-              <div>
-                <div class="font-semibold">INACTIVE</div>
-                <div class="mt-1 text-sm opacity-80">Ngừng sử dụng quyền này trong các flow mới nếu không còn được tham chiếu.</div>
-              </div>
-              <i class="pi pi-ban text-base" />
-            </div>
-          </button>
-
-          <div class="rounded-[24px] border border-dashed border-amber-200 bg-amber-50/80 p-4 text-sm text-amber-800 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-200">
-            Khi chuyển sang `INACTIVE`, hệ thống sẽ chặn nếu quyền này vẫn đang được sử dụng.
-          </div>
-        </section>
-      </div>
-
-      <template #footer>
-        <div class="flex w-full justify-end gap-3">
-          <button type="button" :class="secondaryButtonClass" :disabled="isSubmitting" @click="editDialogVisible = false">Huỷ</button>
-          <button type="button" :class="primaryButtonClass" :disabled="isSubmitting" @click="submitEdit">Lưu</button>
+          <button type="button" :class="secondaryButtonClass" :disabled="isSubmitting" @click="permissionDialogVisible = false">Huỷ</button>
+          <button type="button" :class="primaryButtonClass" :disabled="isSubmitting" @click="submitPermission">{{ dialogSubmitLabel }}</button>
         </div>
       </template>
     </Dialog>

@@ -139,27 +139,6 @@ export class ComplianceService {
     private readonly configService: ConfigService,
   ) {}
 
-  private async replaceTrackAllowedPermissions(trackId: string, permissionIds: string[]): Promise<void> {
-    const { error: deleteError } = await this.supabaseService.client
-      .from('track_allowed_permissions')
-      .delete()
-      .eq('track_id', trackId)
-
-    if (deleteError) {
-      throw new HttpException(deleteError.message, HttpStatus.INTERNAL_SERVER_ERROR)
-    }
-
-    if (permissionIds.length === 0) return
-
-    const { error: insertError } = await this.supabaseService.client
-      .from('track_allowed_permissions')
-      .insert(permissionIds.map((permissionId) => ({ track_id: trackId, permission_id: permissionId })))
-
-    if (insertError) {
-      throw new HttpException(insertError.message, HttpStatus.INTERNAL_SERVER_ERROR)
-    }
-  }
-
   private async ensureReviewerUserExists(userId: string) {
     const { data: reviewer, error } = await this.supabaseService.client
       .from('users')
@@ -586,14 +565,6 @@ export class ComplianceService {
         throw new HttpException(insertError.message, HttpStatus.INTERNAL_SERVER_ERROR)
       }
     }
-
-    const shouldSyncApprovedPermissions =
-      params.payload.legalStatus === 'SUFFICIENT' && params.payload.reviewStatus === 'APPROVED'
-
-    await this.replaceTrackAllowedPermissions(
-      params.trackId,
-      shouldSyncApprovedPermissions ? approvedPermissionIds : [],
-    )
 
     return this.getAdminComplianceDetail(params.trackId)
   }

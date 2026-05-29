@@ -124,6 +124,12 @@ const selectedTrack = ref<Product | null>(null)
 const approvedPermissionsTrack = ref<Product | null>(null)
 const approvedPermissionsDetail = ref<ComplianceDetail | null>(null)
 const selectedAllowedPermissionIds = ref<string[]>([])
+
+type ApprovedPermissionOption = {
+  id: string
+  name: string
+  lawReference: string
+}
 const createForm = reactive<ProductForm>({
   title: '',
   artistId: '',
@@ -476,7 +482,8 @@ const openApprovedPermissionsDialog = (track: Product) => {
   void getAdminComplianceDetail(track.id)
     .then(({ data }) => {
       approvedPermissionsDetail.value = data
-      selectedAllowedPermissionIds.value = [...track.allowedPermissionIds]
+      const approvedPermissionIdSet = new Set(data.approvedPermissionIds.filter((item) => item.length > 0))
+      selectedAllowedPermissionIds.value = track.allowedPermissionIds.filter((item) => approvedPermissionIdSet.has(item))
     })
     .catch((error) => {
       setError(error)
@@ -492,7 +499,64 @@ const canChooseAllowedPermissions = computed(
     approvedPermissionsDetail.value?.reviewStatus === 'APPROVED',
 )
 
+const approvedPermissionOptions = computed<ApprovedPermissionOption[]>(() => {
+  if (!approvedPermissionsDetail.value) return []
+
+  return approvedPermissionsDetail.value.approvedPermissions.flatMap((permission, index) => {
+    const permissionId = approvedPermissionsDetail.value?.approvedPermissionIds[index] ?? ''
+    if (permissionId.length === 0) return []
+
+    return [{
+      id: permissionId,
+      name: permission.name,
+      lawReference: permission.lawReference,
+    }]
+  })
+})
+
+const selectedApprovedPermissionCount = computed(
+  () => approvedPermissionOptions.value.filter((permission) => selectedAllowedPermissionIds.value.includes(permission.id)).length,
+)
+
+const canSaveAllowedPermissions = computed(
+  () =>
+    !approvedPermissionsLoading.value &&
+    !approvedPermissionsSaving.value &&
+    canChooseAllowedPermissions.value &&
+    approvedPermissionOptions.value.length > 0,
+)
+
+const formatApprovedPermissionSelectionState = (isSelected: boolean) => (isSelected ? 'Đã chọn' : 'Chưa chọn')
+
+const formatProductComplianceReviewStatusLabel = (value: ComplianceDetail['reviewStatus']) => {
+  if (value === 'APPROVED') return 'Đã duyệt'
+  if (value === 'REJECTED') return 'Từ chối'
+  return 'Chờ kiểm duyệt'
+}
+
+const getProductComplianceLegalStatusClass = (value: ComplianceDetail['legalStatus']) => {
+  if (value === 'SUFFICIENT') {
+    return 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300'
+  }
+  if (value === 'INSUFFICIENT') {
+    return 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300'
+  }
+  return 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300'
+}
+
+const getProductComplianceReviewStatusClass = (value: ComplianceDetail['reviewStatus']) => {
+  if (value === 'APPROVED') {
+    return 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300'
+  }
+  if (value === 'REJECTED') {
+    return 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300'
+  }
+  return 'border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300'
+}
+
 const toggleAllowedPermissionSelection = (permissionId: string) => {
+  if (permissionId.length === 0 || approvedPermissionsSaving.value || !canChooseAllowedPermissions.value) return
+
   selectedAllowedPermissionIds.value = selectedAllowedPermissionIds.value.includes(permissionId)
     ? selectedAllowedPermissionIds.value.filter((item) => item !== permissionId)
     : [...selectedAllowedPermissionIds.value, permissionId]
@@ -1687,75 +1751,117 @@ onBeforeUnmount(() => {
       </template>
     </Dialog>
 
-    <Dialog v-model:visible="approvedPermissionsDialogVisible" modal class="w-[min(780px,96vw)]" header="Chọn quyền bán theo hồ sơ Pháp lý">
-      <div class="space-y-4">
-        <div
-          v-if="approvedPermissionsTrack"
-          class="rounded-[24px] border border-slate-200/80 bg-slate-50/80 p-4 text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-900/40 dark:text-slate-300"
-        >
-          <div class="font-semibold text-slate-900 dark:text-white">{{ approvedPermissionsTrack.title }}</div>
-          <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">Sản phẩm đang chọn quyền bán theo hồ sơ Pháp lý 1-1.</div>
+    <Dialog v-model:visible="approvedPermissionsDialogVisible" modal class="w-[min(860px,96vw)]">
+      <template #header>
+        <div class="w-full" v-if="approvedPermissionsTrack">
+          <div class="text-lg font-semibold text-slate-950 dark:text-white">Chọn quyền bán theo hồ sơ Pháp lý</div>
+          <div class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            Tinh chỉnh subset quyền bán cuối cùng cho <span class="font-semibold text-slate-700 dark:text-slate-200">{{ approvedPermissionsTrack.title }}</span>.
+          </div>
         </div>
+      </template>
 
-        <div class="rounded-[24px] border border-slate-200/80 bg-white/80 p-4 dark:border-slate-800 dark:bg-slate-950/60">
+      <div class="space-y-5">
+        <section
+          v-if="approvedPermissionsTrack"
+          class="rounded-[24px] border border-slate-200/80 bg-[linear-gradient(135deg,rgba(255,255,255,0.95),rgba(245,243,255,0.92))] p-4 dark:border-slate-800 dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.92),rgba(30,27,75,0.88))]"
+        >
+          <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+            <div class="min-w-0">
+              <div class="font-semibold text-slate-950 dark:text-white">{{ approvedPermissionsTrack.title }}</div>
+              <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                {{ approvedPermissionsTrack.productCode }} · Chọn quyền bán trong đúng tập được Pháp lý cấp cho sản phẩm này.
+              </div>
+            </div>
+            <span class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold" :class="approvedPermissionsTrack.status === 'PUBLISHED'
+              ? 'border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-violet-300'
+              : approvedPermissionsTrack.status === 'HIDDEN'
+                ? 'border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300'
+                : 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300'"
+            >
+              {{ formatProductStatusLabel(approvedPermissionsTrack.status) }}
+            </span>
+          </div>
+        </section>
+
+        <section class="rounded-[24px] border border-slate-200/80 bg-white/80 p-4 dark:border-slate-800 dark:bg-slate-950/60">
           <div class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Trạng thái hồ sơ Pháp lý</div>
-          <div v-if="approvedPermissionsLoading" class="mt-3 text-sm text-slate-500 dark:text-slate-400">
+
+          <div v-if="approvedPermissionsLoading" class="mt-3 rounded-2xl border border-slate-200/80 bg-slate-50 px-4 py-4 text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-400">
             Đang tải thông tin hồ sơ Pháp lý...
           </div>
-          <div v-else-if="approvedPermissionsDetail" class="mt-3 space-y-3">
+
+          <div v-else-if="approvedPermissionsDetail" class="mt-3 space-y-4">
             <div class="flex flex-wrap gap-2">
-              <span class="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
-                Legal: {{ approvedPermissionsDetail.legalStatus }}
+              <span class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold" :class="getProductComplianceLegalStatusClass(approvedPermissionsDetail.legalStatus)">
+                Legal: {{ formatComplianceLegalStatusLabel(approvedPermissionsDetail.legalStatus) }}
               </span>
-              <span class="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
-                Review: {{ approvedPermissionsDetail.reviewStatus }}
+              <span class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold" :class="getProductComplianceReviewStatusClass(approvedPermissionsDetail.reviewStatus)">
+                Review: {{ formatProductComplianceReviewStatusLabel(approvedPermissionsDetail.reviewStatus) }}
               </span>
             </div>
 
             <div v-if="!canChooseAllowedPermissions" class="rounded-2xl border border-amber-200 bg-amber-50/80 px-4 py-3 text-sm text-amber-800 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-200">
-              Chưa đủ điều kiện để chọn quyền bán. Sản phẩm chỉ được chọn quyền sau khi hồ sơ có `legalStatus = SUFFICIENT` và `reviewStatus = APPROVED`.
+              Chỉ có thể chọn quyền bán khi hồ sơ đang ở trạng thái `SUFFICIENT` và `APPROVED`.
             </div>
 
-            <div v-else-if="approvedPermissionsDetail.approvedPermissions.length === 0" class="rounded-2xl border border-amber-200 bg-amber-50/80 px-4 py-3 text-sm text-amber-800 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-200">
-              Pháp lý đã mở quyền nhưng chưa cấp `Approved permissions` nào cho sản phẩm này.
+            <div v-else-if="approvedPermissionOptions.length === 0" class="rounded-2xl border border-amber-200 bg-amber-50/80 px-4 py-3 text-sm text-amber-800 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-200">
+              Hồ sơ đã đủ điều kiện nhưng hiện chưa có quyền nào trong tập `Approved permissions`.
             </div>
 
-            <div v-else class="space-y-3">
-              <div class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Approved permissions do Pháp lý cấp</div>
-              <div class="grid gap-2 sm:grid-cols-2">
-                <button
-                  v-for="(permission, index) in approvedPermissionsDetail.approvedPermissions"
-                  :key="`${approvedPermissionsTrack?.id ?? 'track'}-${permission.name}-${permission.lawReference}`"
-                  type="button"
-                  class="rounded-2xl border px-4 py-3 text-left text-sm transition"
-                  :class="selectedAllowedPermissionIds.includes(approvedPermissionsDetail.approvedPermissionIds[index] ?? '')
-                    ? 'border-violet-300 bg-violet-100 text-violet-700 dark:border-violet-500/40 dark:bg-violet-500/15 dark:text-violet-200'
-                    : 'border-slate-200 bg-white text-slate-700 hover:border-violet-200 dark:border-slate-800 dark:bg-slate-950/40 dark:text-slate-200'"
-                  :disabled="approvedPermissionsSaving"
-                  @click="toggleAllowedPermissionSelection(approvedPermissionsDetail.approvedPermissionIds[index] ?? '')"
-                >
-                  <div class="truncate font-semibold">{{ permission.name }}</div>
-                  <div class="mt-1 truncate text-xs text-slate-500 dark:text-slate-400">{{ permission.lawReference }}</div>
-                </button>
+            <div v-else class="grid gap-4">
+              <div class="flex items-center justify-between gap-3">
+                <div>
+                  <div class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Approved permissions do Pháp lý cấp</div>
+                  <div class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                    Chọn trực tiếp các quyền bán bạn muốn áp dụng cho Product.
+                  </div>
+                </div>
+                <div class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-900 dark:text-slate-300">
+                  {{ selectedApprovedPermissionCount }}/{{ approvedPermissionOptions.length }} đã chọn
+                </div>
               </div>
-              <div class="text-sm text-slate-500 dark:text-slate-400">
-                Khi Compliance được duyệt, hệ thống auto-sync toàn bộ `Approved permissions` vào Product. Dialog này dùng để tinh chỉnh subset quyền bán cuối cùng trước khi publish.
+
+              <div class="grid gap-3 sm:grid-cols-2">
+                <button
+                  v-for="permission in approvedPermissionOptions"
+                  :key="`${approvedPermissionsTrack?.id ?? 'track'}-${permission.id}`"
+                  type="button"
+                  class="rounded-[24px] border px-4 py-4 text-left text-sm transition"
+                  :class="selectedAllowedPermissionIds.includes(permission.id)
+                    ? 'border-violet-300 bg-violet-100 text-violet-700 shadow-sm dark:border-violet-500/40 dark:bg-violet-500/15 dark:text-violet-200'
+                    : 'border-slate-200 bg-white text-slate-700 hover:border-violet-200 hover:bg-violet-50/40 dark:border-slate-800 dark:bg-slate-950/40 dark:text-slate-200 dark:hover:border-violet-500/30 dark:hover:bg-slate-900/70'"
+                  :disabled="approvedPermissionsSaving"
+                  @click="toggleAllowedPermissionSelection(permission.id)"
+                >
+                  <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                      <div class="truncate font-semibold">{{ permission.name }}</div>
+                      <div class="mt-1 line-clamp-2 text-xs text-slate-500 dark:text-slate-400">{{ permission.lawReference }}</div>
+                    </div>
+                    <div
+                      class="inline-flex h-8 w-8 items-center justify-center rounded-full border text-xs"
+                      :class="selectedAllowedPermissionIds.includes(permission.id)
+                        ? 'border-violet-300 bg-white/80 text-violet-600 dark:border-violet-400/50 dark:bg-violet-500/10 dark:text-violet-200'
+                        : 'border-slate-200 bg-slate-50 text-slate-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-500'"
+                    >
+                      <i :class="selectedAllowedPermissionIds.includes(permission.id) ? 'pi pi-check' : 'pi pi-plus'" />
+                    </div>
+                  </div>
+                  <div class="mt-3 text-[11px] font-semibold uppercase tracking-[0.16em]" :class="selectedAllowedPermissionIds.includes(permission.id) ? 'text-violet-600 dark:text-violet-300' : 'text-slate-400 dark:text-slate-500'">
+                    {{ formatApprovedPermissionSelectionState(selectedAllowedPermissionIds.includes(permission.id)) }}
+                  </div>
+                </button>
               </div>
             </div>
           </div>
-
-        </div>
+        </section>
       </div>
 
       <template #footer>
         <div class="flex w-full justify-end gap-3">
           <button type="button" :class="secondaryButtonClass" @click="approvedPermissionsDialogVisible = false">Đóng</button>
-          <button
-            type="button"
-            :class="primaryButtonClass"
-            :disabled="approvedPermissionsLoading || approvedPermissionsSaving || !canChooseAllowedPermissions || (approvedPermissionsDetail?.approvedPermissions.length ?? 0) === 0"
-            @click="submitAllowedPermissions"
-          >
+          <button type="button" :class="primaryButtonClass" :disabled="!canSaveAllowedPermissions" @click="submitAllowedPermissions">
             Lưu quyền bán
           </button>
         </div>
