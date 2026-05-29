@@ -823,6 +823,8 @@ export interface components {
             fullName: string;
             /** @enum {string} */
             status: "ACTIVE" | "LOCKED" | "DELETED";
+            roleId: number | null;
+            roleName: Record<string, never> | null;
         };
         AuthLoginDataDto: {
             accessToken: string;
@@ -831,12 +833,6 @@ export interface components {
             /** @example 604800 */
             expiresInSeconds: number;
             user: components["schemas"]["AuthUserDto"];
-            /**
-             * @example [
-             *       "ADMIN"
-             *     ]
-             */
-            roles: string[];
         };
         AuthLoginResponseDto: {
             /** @example true */
@@ -855,7 +851,6 @@ export interface components {
         };
         ProductDto: {
             id: string;
-            productCode: string;
             title: string;
             artistId: string;
             authorName?: Record<string, never> | null;
@@ -1039,8 +1034,7 @@ export interface components {
             timestamp: string;
         };
         CertificateTemplateDto: {
-            /** @example DEFAULT */
-            code: string;
+            id: number | null;
             htmlTemplate: string;
             updatedAt: string;
         };
@@ -1115,13 +1109,17 @@ export interface components {
             /** @example 2026-05-20T00:00:00.000Z */
             timestamp: string;
         };
+        AdminUserRoleDto: {
+            roleId: number;
+            roleName: string;
+        };
         AdminUserDto: {
             id: string;
             fullName: string;
             email: string;
             /** @enum {string} */
             status: "ACTIVE" | "LOCKED" | "DELETED";
-            roleCodes: string[];
+            roles: components["schemas"]["AdminUserRoleDto"][];
             createdAt: string;
         };
         AdminUserListDataDto: {
@@ -1145,13 +1143,17 @@ export interface components {
         CreateAdminUserRequestDto: Record<string, never>;
         UpdateAdminUserRequestDto: Record<string, never>;
         UpdateAdminUserStatusRequestDto: Record<string, never>;
+        ManagedUserRoleDto: {
+            roleId: number;
+            roleName: string;
+        };
         ManagedUserDto: {
             id: string;
             fullName: string;
             email: string;
             /** @enum {string} */
             status: "ACTIVE" | "LOCKED" | "DELETED";
-            roleCodes: ("BUYER" | "ARTIST")[];
+            roles: components["schemas"]["ManagedUserRoleDto"][];
             createdAt: string;
         };
         ManagedUserListDataDto: {
@@ -1177,7 +1179,6 @@ export interface components {
         UpdateManagedUserStatusRequestDto: Record<string, never>;
         CorePermissionDto: {
             id: string;
-            code: string;
             name: string;
             lawReference: string;
             /** @enum {string} */
@@ -1202,10 +1203,11 @@ export interface components {
             timestamp: string;
         };
         AdminCreateCorePermissionRequestDto: {
-            code: string;
             name: string;
             lawReference: string;
             description?: string;
+            /** @enum {string} */
+            status?: "ACTIVE" | "INACTIVE";
         };
         AdminCorePermissionResponseDto: {
             /** @example true */
@@ -1222,6 +1224,8 @@ export interface components {
             name?: string;
             lawReference?: string;
             description?: string;
+            /** @enum {string} */
+            status?: "ACTIVE" | "INACTIVE";
         };
         AdminUpdateCorePermissionStatusRequestDto: {
             /** @enum {string} */
@@ -1229,21 +1233,21 @@ export interface components {
         };
         ComplianceProductSnapshotDto: {
             trackId: string;
-            productCode: string;
             title: string;
             artistId: string;
+            artistName?: Record<string, never> | null;
             /** @enum {string} */
             status: "PENDING" | "HIDDEN" | "PUBLISHED";
         };
         ComplianceListItemDto: {
             complianceId: string;
-            complianceCode: string;
             /** @enum {string} */
             legalStatus: "PENDING" | "SUFFICIENT" | "INSUFFICIENT";
             /** @enum {string} */
             reviewStatus: "PENDING" | "APPROVED" | "REJECTED";
             filesCount: number;
             reviewedBy?: Record<string, never> | null;
+            reviewedByName?: Record<string, never> | null;
             reviewedAt?: Record<string, never> | null;
             product: components["schemas"]["ComplianceProductSnapshotDto"];
         };
@@ -1268,13 +1272,13 @@ export interface components {
         };
         ComplianceDetailDto: {
             complianceId: string;
-            complianceCode: string;
             /** @enum {string} */
             legalStatus: "PENDING" | "SUFFICIENT" | "INSUFFICIENT";
             /** @enum {string} */
             reviewStatus: "PENDING" | "APPROVED" | "REJECTED";
             rejectReason?: Record<string, never> | null;
             reviewedBy?: Record<string, never> | null;
+            reviewedByName?: Record<string, never> | null;
             reviewedAt?: Record<string, never> | null;
             approvedPermissionIds: string[];
             approvedPermissions: components["schemas"]["CorePermissionSummaryDto"][];
@@ -1319,13 +1323,11 @@ export interface components {
         };
         ConfigPermissionSummaryDto: {
             id: string;
-            code: string;
             name: string;
             lawReference: string;
         };
         DigitalRightConfigDto: {
             id: string;
-            code: string;
             /** @enum {string} */
             status: "ACTIVE" | "INACTIVE";
             referencedPermissionIds: string[];
@@ -1365,8 +1367,6 @@ export interface components {
             data: components["schemas"]["DigitalRightConfigDto"];
         };
         CreateDigitalRightConfigRequestDto: {
-            /** @description Bo trong de backend tu allocate code tiep theo. */
-            code?: string;
             /** @enum {string} */
             targetPlatform: "YOUTUBE" | "TIKTOK" | "FACEBOOK";
             /** @enum {string} */
@@ -1398,7 +1398,6 @@ export interface components {
         };
         PhysicalRightConfigDto: {
             id: string;
-            code: string;
             /** @enum {string} */
             status: "ACTIVE" | "INACTIVE";
             referencedPermissionIds: string[];
@@ -1435,8 +1434,6 @@ export interface components {
             data: components["schemas"]["PhysicalRightConfigDto"];
         };
         CreatePhysicalRightConfigRequestDto: {
-            /** @description Bo trong de backend tu allocate code tiep theo. */
-            code?: string;
             venueUsageType: string;
             basePriceMultiplier: number;
             /** @default [] */
@@ -1455,7 +1452,6 @@ export interface components {
         };
         ExpressionConfigDto: {
             id: string;
-            code: string;
             /** @enum {string} */
             status: "ACTIVE" | "INACTIVE";
             referencedPermissionIds: string[];
@@ -1492,8 +1488,6 @@ export interface components {
             data: components["schemas"]["ExpressionConfigDto"];
         };
         CreateExpressionConfigRequestDto: {
-            /** @description Bo trong de backend tu allocate code tiep theo. */
-            code?: string;
             name: string;
             priceMultiplier: number;
             /** @default [] */
@@ -1512,7 +1506,6 @@ export interface components {
         };
         ModificationConfigDto: {
             id: string;
-            code: string;
             /** @enum {string} */
             status: "ACTIVE" | "INACTIVE";
             referencedPermissionIds: string[];
@@ -1549,8 +1542,6 @@ export interface components {
             data: components["schemas"]["ModificationConfigDto"];
         };
         CreateModificationConfigRequestDto: {
-            /** @description Bo trong de backend tu allocate code tiep theo. */
-            code?: string;
             name: string;
             priceMultiplier: number;
             /** @default [] */
@@ -2237,7 +2228,7 @@ export interface operations {
                 q?: string;
                 sort?: string;
                 status?: "ACTIVE" | "LOCKED" | "DELETED";
-                roleCode?: "BUYER" | "ARTIST";
+                roleId?: number;
             };
             header?: never;
             path?: never;

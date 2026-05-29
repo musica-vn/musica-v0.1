@@ -1325,15 +1325,11 @@
             }
           },
           {
-            "name": "roleCode",
+            "name": "roleId",
             "required": false,
             "in": "query",
             "schema": {
-              "type": "string",
-              "enum": [
-                "BUYER",
-                "ARTIST"
-              ]
+              "type": "number"
             }
           }
         ],
@@ -3236,13 +3232,23 @@
               "LOCKED",
               "DELETED"
             ]
+          },
+          "roleId": {
+            "type": "number",
+            "nullable": true
+          },
+          "roleName": {
+            "type": "object",
+            "nullable": true
           }
         },
         "required": [
           "id",
           "email",
           "fullName",
-          "status"
+          "status",
+          "roleId",
+          "roleName"
         ]
       },
       "AuthLoginDataDto": {
@@ -3261,23 +3267,13 @@
           },
           "user": {
             "$ref": "#/components/schemas/AuthUserDto"
-          },
-          "roles": {
-            "example": [
-              "ADMIN"
-            ],
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
           }
         },
         "required": [
           "accessToken",
           "tokenType",
           "expiresInSeconds",
-          "user",
-          "roles"
+          "user"
         ]
       },
       "AuthLoginResponseDto": {
@@ -3330,9 +3326,6 @@
         "type": "object",
         "properties": {
           "id": {
-            "type": "string"
-          },
-          "productCode": {
             "type": "string"
           },
           "title": {
@@ -3418,7 +3411,6 @@
         },
         "required": [
           "id",
-          "productCode",
           "title",
           "artistId",
           "status",
@@ -3960,9 +3952,9 @@
       "CertificateTemplateDto": {
         "type": "object",
         "properties": {
-          "code": {
-            "type": "string",
-            "example": "DEFAULT"
+          "id": {
+            "type": "number",
+            "nullable": true
           },
           "htmlTemplate": {
             "type": "string"
@@ -3972,7 +3964,7 @@
           }
         },
         "required": [
-          "code",
+          "id",
           "htmlTemplate",
           "updatedAt"
         ]
@@ -4207,6 +4199,21 @@
           "timestamp"
         ]
       },
+      "AdminUserRoleDto": {
+        "type": "object",
+        "properties": {
+          "roleId": {
+            "type": "number"
+          },
+          "roleName": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "roleId",
+          "roleName"
+        ]
+      },
       "AdminUserDto": {
         "type": "object",
         "properties": {
@@ -4227,10 +4234,10 @@
               "DELETED"
             ]
           },
-          "roleCodes": {
+          "roles": {
             "type": "array",
             "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/AdminUserRoleDto"
             }
           },
           "createdAt": {
@@ -4242,7 +4249,7 @@
           "fullName",
           "email",
           "status",
-          "roleCodes",
+          "roles",
           "createdAt"
         ]
       },
@@ -4318,6 +4325,21 @@
         "type": "object",
         "properties": {}
       },
+      "ManagedUserRoleDto": {
+        "type": "object",
+        "properties": {
+          "roleId": {
+            "type": "number"
+          },
+          "roleName": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "roleId",
+          "roleName"
+        ]
+      },
       "ManagedUserDto": {
         "type": "object",
         "properties": {
@@ -4338,14 +4360,10 @@
               "DELETED"
             ]
           },
-          "roleCodes": {
+          "roles": {
             "type": "array",
             "items": {
-              "type": "string",
-              "enum": [
-                "BUYER",
-                "ARTIST"
-              ]
+              "$ref": "#/components/schemas/ManagedUserRoleDto"
             }
           },
           "createdAt": {
@@ -4357,7 +4375,7 @@
           "fullName",
           "email",
           "status",
-          "roleCodes",
+          "roles",
           "createdAt"
         ]
       },
@@ -4439,9 +4457,6 @@
           "id": {
             "type": "string"
           },
-          "code": {
-            "type": "string"
-          },
           "name": {
             "type": "string"
           },
@@ -4468,7 +4483,6 @@
         },
         "required": [
           "id",
-          "code",
           "name",
           "lawReference",
           "status",
@@ -4528,9 +4542,6 @@
       "AdminCreateCorePermissionRequestDto": {
         "type": "object",
         "properties": {
-          "code": {
-            "type": "string"
-          },
           "name": {
             "type": "string"
           },
@@ -4539,10 +4550,16 @@
           },
           "description": {
             "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "INACTIVE"
+            ]
           }
         },
         "required": [
-          "code",
           "name",
           "lawReference"
         ]
@@ -4589,6 +4606,13 @@
           },
           "description": {
             "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "INACTIVE"
+            ]
           }
         }
       },
@@ -4613,9 +4637,6 @@
           "trackId": {
             "type": "string"
           },
-          "productCode": {
-            "type": "string"
-          },
           "title": {
             "type": "string"
           },
@@ -4637,7 +4658,6 @@
         },
         "required": [
           "trackId",
-          "productCode",
           "title",
           "artistId",
           "status"
@@ -4647,9 +4667,6 @@
         "type": "object",
         "properties": {
           "complianceId": {
-            "type": "string"
-          },
-          "complianceCode": {
             "type": "string"
           },
           "legalStatus": {
@@ -4689,7 +4706,6 @@
         },
         "required": [
           "complianceId",
-          "complianceCode",
           "legalStatus",
           "reviewStatus",
           "filesCount",
@@ -4766,9 +4782,6 @@
           "complianceId": {
             "type": "string"
           },
-          "complianceCode": {
-            "type": "string"
-          },
           "legalStatus": {
             "type": "string",
             "enum": [
@@ -4825,7 +4838,6 @@
         },
         "required": [
           "complianceId",
-          "complianceCode",
           "legalStatus",
           "reviewStatus",
           "approvedPermissionIds",
@@ -4959,9 +4971,6 @@
           "id": {
             "type": "string"
           },
-          "code": {
-            "type": "string"
-          },
           "name": {
             "type": "string"
           },
@@ -4971,7 +4980,6 @@
         },
         "required": [
           "id",
-          "code",
           "name",
           "lawReference"
         ]
@@ -4980,9 +4988,6 @@
         "type": "object",
         "properties": {
           "id": {
-            "type": "string"
-          },
-          "code": {
             "type": "string"
           },
           "status": {
@@ -5031,7 +5036,6 @@
         },
         "required": [
           "id",
-          "code",
           "status",
           "referencedPermissionIds",
           "referencedPermissions",
@@ -5125,10 +5129,6 @@
       "CreateDigitalRightConfigRequestDto": {
         "type": "object",
         "properties": {
-          "code": {
-            "type": "string",
-            "description": "Bo trong de backend tu allocate code tiep theo."
-          },
           "targetPlatform": {
             "type": "string",
             "enum": [
@@ -5220,9 +5220,6 @@
           "id": {
             "type": "string"
           },
-          "code": {
-            "type": "string"
-          },
           "status": {
             "type": "string",
             "enum": [
@@ -5257,7 +5254,6 @@
         },
         "required": [
           "id",
-          "code",
           "status",
           "referencedPermissionIds",
           "referencedPermissions",
@@ -5350,10 +5346,6 @@
       "CreatePhysicalRightConfigRequestDto": {
         "type": "object",
         "properties": {
-          "code": {
-            "type": "string",
-            "description": "Bo trong de backend tu allocate code tiep theo."
-          },
           "venueUsageType": {
             "type": "string"
           },
@@ -5407,9 +5399,6 @@
           "id": {
             "type": "string"
           },
-          "code": {
-            "type": "string"
-          },
           "status": {
             "type": "string",
             "enum": [
@@ -5444,7 +5433,6 @@
         },
         "required": [
           "id",
-          "code",
           "status",
           "referencedPermissionIds",
           "referencedPermissions",
@@ -5537,10 +5525,6 @@
       "CreateExpressionConfigRequestDto": {
         "type": "object",
         "properties": {
-          "code": {
-            "type": "string",
-            "description": "Bo trong de backend tu allocate code tiep theo."
-          },
           "name": {
             "type": "string"
           },
@@ -5594,9 +5578,6 @@
           "id": {
             "type": "string"
           },
-          "code": {
-            "type": "string"
-          },
           "status": {
             "type": "string",
             "enum": [
@@ -5631,7 +5612,6 @@
         },
         "required": [
           "id",
-          "code",
           "status",
           "referencedPermissionIds",
           "referencedPermissions",
@@ -5724,10 +5704,6 @@
       "CreateModificationConfigRequestDto": {
         "type": "object",
         "properties": {
-          "code": {
-            "type": "string",
-            "description": "Bo trong de backend tu allocate code tiep theo."
-          },
           "name": {
             "type": "string"
           },
