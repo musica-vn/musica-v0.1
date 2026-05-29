@@ -15,6 +15,7 @@ const primaryButtonClass =
 const secondaryButtonClass =
   'inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-violet-300 hover:text-violet-600 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-violet-500 dark:hover:text-violet-300'
 
+const confirm = useConfirm()
 const store = useCorePermissionsStore()
 
 const errorMessage = ref<string | null>(null)
@@ -59,7 +60,7 @@ const clearGlobalFeedback = () => {
 
 const resolveErrorMessage = (error: unknown) => {
   if (error instanceof ApiClientError) {
-    return error.message
+      return error.message
   }
 
   return error instanceof Error ? error.message : 'Đã xảy ra lỗi'
@@ -67,6 +68,11 @@ const resolveErrorMessage = (error: unknown) => {
 
 const setGlobalError = (error: unknown) => {
   errorMessage.value = resolveErrorMessage(error)
+}
+
+const formatStatusLabel = (status: CorePermissionStatus) => {
+  if (status === 'ACTIVE') return 'Đang hoạt động'
+  return 'Ngừng hoạt động'
 }
 
 const fetchList = async () => {
@@ -119,7 +125,7 @@ const submitCreate = async () => {
       lawReference: form.lawReference.trim(),
       description: form.description.trim().length > 0 ? form.description.trim() : undefined,
     })
-    successMessage.value = 'Đã tạo core permission.'
+    successMessage.value = 'Đã tạo quyền cốt lõi.'
     createDialogVisible.value = false
     await fetchList()
   } catch (error) {
@@ -142,7 +148,7 @@ const submitEdit = async () => {
       description: form.description.trim().length > 0 ? form.description.trim() : undefined,
       status: form.status,
     })
-    successMessage.value = 'Đã cập nhật core permission.'
+    successMessage.value = 'Đã cập nhật quyền cốt lõi.'
     editDialogVisible.value = false
     await fetchList()
   } catch (error) {
@@ -157,11 +163,41 @@ const removeOne = async (permission: CorePermission) => {
 
   try {
     await store.removeOne(permission.id)
-    successMessage.value = 'Đã xoá core permission.'
+    successMessage.value = 'Đã xoá quyền cốt lõi.'
     await fetchList()
   } catch (error) {
     setGlobalError(error)
   }
+}
+
+const confirmDelete = (permission: CorePermission) => {
+  confirm.require({
+    header: 'Xác nhận xoá quyền cốt lõi',
+    message: `Bạn có chắc muốn xoá quyền "${permission.name}" (${permission.code})?`,
+    icon: 'pi pi-exclamation-triangle',
+    acceptLabel: 'Xoá',
+    rejectLabel: 'Huỷ',
+    accept: () => void removeOne(permission),
+  })
+}
+
+const confirmStatusChange = () => {
+  if (!selectedPermission.value) return
+
+  const nextStatus: CorePermissionStatus =
+    selectedPermission.value.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE'
+
+  confirm.require({
+    header: 'Xác nhận đổi trạng thái',
+    message:
+      nextStatus === 'ACTIVE'
+        ? `Bạn có chắc muốn chuyển quyền "${selectedPermission.value.name}" sang hoạt động?`
+        : `Bạn có chắc muốn chuyển quyền "${selectedPermission.value.name}" sang ngừng hoạt động?`,
+    icon: 'pi pi-exclamation-triangle',
+    acceptLabel: nextStatus === 'ACTIVE' ? 'Chuyển sang hoạt động' : 'Ngừng hoạt động',
+    rejectLabel: 'Huỷ',
+    accept: () => void updateStatusFromEdit(selectedPermission.value as CorePermission, nextStatus),
+  })
 }
 
 const goToPage = async (page: number) => {
@@ -309,7 +345,7 @@ onBeforeUnmount(() => {
                         : 'border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300'
                     "
                   >
-                    {{ permission.status }}
+                    {{ formatStatusLabel(permission.status) }}
                   </span>
                 </td>
                 <td class="px-4 py-4 text-slate-500 dark:text-slate-400">

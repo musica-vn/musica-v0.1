@@ -38,7 +38,7 @@ const toggleSidebar = () => {
 const primaryNavItems = computed<AdminNavItem[]>(() => {
   const items: AdminNavItem[] = [
     {
-      label: 'Dashboard',
+      label: 'Bảng điều khiển',
       icon: 'pi pi-chart-bar',
       to: '/admin/dashboard',
     },
@@ -58,27 +58,27 @@ const primaryNavItems = computed<AdminNavItem[]>(() => {
       to: '/admin/certificates',
     },
     {
-      label: 'Core permissions',
+      label: 'Quyền cốt lõi',
       icon: 'pi pi-sliders-h',
       to: '/admin/settings/permissions',
     },
     {
-      label: 'Digital rights',
+      label: 'Quyền nền tảng số',
       icon: 'pi pi-youtube',
       to: '/admin/settings/digital-rights',
     },
     {
-      label: 'Physical rights',
+      label: 'Quyền sử dụng vật lý',
       icon: 'pi pi-building',
       to: '/admin/settings/physical-rights',
     },
     {
-      label: 'Expression configs',
+      label: 'Hình thức biểu hiện',
       icon: 'pi pi-images',
       to: '/admin/settings/expression-configs',
     },
     {
-      label: 'Modification configs',
+      label: 'Mức độ biến đổi',
       icon: 'pi pi-wrench',
       to: '/admin/settings/modification-configs',
     },
@@ -86,7 +86,7 @@ const primaryNavItems = computed<AdminNavItem[]>(() => {
 
   if (authStore.isSuperAdmin) {
     items.splice(1, 0, {
-      label: 'Admin list',
+      label: 'Quản trị viên',
       icon: 'pi pi-shield',
       to: '/admin/admins',
     })
