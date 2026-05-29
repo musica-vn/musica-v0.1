@@ -194,10 +194,15 @@ export class CorePermissionsService {
     permissionId: string,
     payload: AdminUpdateCorePermissionRequestDto,
   ): Promise<CorePermissionDto> {
+    if (payload.status === 'INACTIVE') {
+      await this.assertPermissionNotInUse(permissionId)
+    }
+
     const updatePayload: Partial<DbCorePermissionRow> & Record<string, unknown> = {}
     if (payload.name !== undefined) updatePayload.name = payload.name
     if (payload.lawReference !== undefined) updatePayload.law_reference = payload.lawReference
     if (payload.description !== undefined) updatePayload.description = payload.description
+    if (payload.status !== undefined) updatePayload.status = payload.status
 
     const { data, error } = await this.supabaseService.client
       .from('core_permissions')

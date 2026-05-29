@@ -63,6 +63,8 @@ const router = useRouter()
 const isLoading = ref(false)
 const errorMessage = ref<string | null>(null)
 const successMessage = ref<string | null>(null)
+const createDialogErrorMessage = ref<string | null>(null)
+const editDialogErrorMessage = ref<string | null>(null)
 
 const rows = ref<Product[]>([])
 const totalItems = ref(0)
@@ -340,37 +342,66 @@ const exportCurrentTracksCsv = () => {
   URL.revokeObjectURL(url)
 }
 
-const setError = (error: unknown) => {
+const extractValidationDetailsMessage = (details: unknown) => {
+  if (typeof details !== 'object' || details === null || !('message' in details)) return null
+
+  const detailMessage = (details as { message?: unknown }).message
+  if (typeof detailMessage === 'string') return detailMessage
+  if (Array.isArray(detailMessage)) {
+    const messages = detailMessage.filter((item): item is string => typeof item === 'string')
+    return messages.length > 0 ? messages.join(', ') : null
+  }
+
+  return null
+}
+
+const resolveErrorMessage = (error: unknown) => {
   if (error instanceof ApiClientError) {
     if (error.message === 'PRODUCT_THUMBNAIL_REQUIRED') {
-      errorMessage.value = 'Cần upload thumbnail trước khi phát hành track'
-      return
+      return 'Cần upload thumbnail trước khi phát hành track'
     }
     if (error.message === 'PRODUCT_ALLOWED_PERMISSIONS_REQUIRED') {
-      errorMessage.value = 'Cần chọn ít nhất 1 quyền bán ở sản phẩm sau khi Pháp lý duyệt'
-      return
+      return 'Cần chọn ít nhất 1 quyền bán ở sản phẩm sau khi Pháp lý duyệt'
     }
     if (error.message === 'PRODUCT_ALLOWED_PERMISSIONS_LOCKED_UNTIL_COMPLIANCE_APPROVED') {
-      errorMessage.value = 'Chỉ được chọn quyền bán sau khi hồ sơ Pháp lý được duyệt thành công'
-      return
+      return 'Chỉ được chọn quyền bán sau khi hồ sơ Pháp lý được duyệt thành công'
     }
     if (error.message === 'PERMISSION_NOT_APPROVED_FOR_PRODUCT') {
-      errorMessage.value = 'Có quyền bán không nằm trong danh sách Approved permissions của hồ sơ Pháp lý'
-      return
+      return 'Có quyền bán không nằm trong danh sách Approved permissions của hồ sơ Pháp lý'
     }
-    errorMessage.value = `${error.code}: ${error.message}`
-    return
+    const validationMessage = extractValidationDetailsMessage(error.details)
+    if (validationMessage) return validationMessage
+    return `${error.code}: ${error.message}`
   }
   if (error instanceof Error) {
-    errorMessage.value = error.message
-    return
+    return error.message
   }
-  errorMessage.value = 'Đã xảy ra lỗi không xác định'
+  return 'Đã xảy ra lỗi không xác định'
+}
+
+const setError = (error: unknown) => {
+  errorMessage.value = resolveErrorMessage(error)
+}
+
+const setCreateDialogError = (error: unknown) => {
+  createDialogErrorMessage.value = resolveErrorMessage(error)
+}
+
+const setEditDialogError = (error: unknown) => {
+  editDialogErrorMessage.value = resolveErrorMessage(error)
 }
 
 const clearMessages = () => {
   errorMessage.value = null
   successMessage.value = null
+}
+
+const clearCreateDialogError = () => {
+  createDialogErrorMessage.value = null
+}
+
+const clearEditDialogError = () => {
+  editDialogErrorMessage.value = null
 }
 
 const revokeObjectUrl = (url: string | null) => {
@@ -616,7 +647,7 @@ const setEditThumbnailPreviewUrl = (file: File | null) => {
 }
 
 const handleCreateThumbnailFileChange = (event: Event) => {
-  clearMessages()
+  clearCreateDialogError()
   const file = extractEventFile(event)
   createThumbnailFile.value = file
   setCreateThumbnailPreviewUrl(file)
@@ -628,12 +659,12 @@ const handleCreateThumbnailFileChange = (event: Event) => {
   } catch (error) {
     createThumbnailFile.value = null
     setCreateThumbnailPreviewUrl(null)
-    setError(error)
+    setCreateDialogError(error)
   }
 }
 
 const handleEditThumbnailFileChange = (event: Event) => {
-  clearMessages()
+  clearEditDialogError()
   const file = extractEventFile(event)
   editThumbnailFile.value = file
   setEditThumbnailPreviewUrl(file)
@@ -645,12 +676,12 @@ const handleEditThumbnailFileChange = (event: Event) => {
   } catch (error) {
     editThumbnailFile.value = null
     setEditThumbnailPreviewUrl(null)
-    setError(error)
+    setEditDialogError(error)
   }
 }
 
 const handleCreateAudioFileChange = async (event: Event) => {
-  clearMessages()
+  clearCreateDialogError()
   const file = extractEventFile(event)
   createOriginalFile.value = file
   setCreateAudioUrl(file)
@@ -666,12 +697,12 @@ const handleCreateAudioFileChange = async (event: Event) => {
     createOriginalFile.value = null
     createForm.duration = ''
     setCreateAudioUrl(null)
-    setError(error)
+    setCreateDialogError(error)
   }
 }
 
 const handleEditAudioFileChange = async (event: Event) => {
-  clearMessages()
+  clearEditDialogError()
   const file = extractEventFile(event)
   editOriginalFile.value = file
   if (!file) {
@@ -685,7 +716,7 @@ const handleEditAudioFileChange = async (event: Event) => {
   } catch (error) {
     editOriginalFile.value = null
     editForm.duration = selectedTrack.value?.duration === null || !selectedTrack.value ? '' : String(selectedTrack.value.duration)
-    setError(error)
+    setEditDialogError(error)
   }
 }
 
@@ -742,6 +773,7 @@ const openCreateDialog = () => {
   editDialogVisible.value = false
   uploadDialogVisible.value = false
   detailDialogVisible.value = false
+  clearCreateDialogError()
   resetCreateForm()
   createDialogVisible.value = true
 }
@@ -751,6 +783,7 @@ const openEditDialog = (track: Product) => {
   createDialogVisible.value = false
   uploadDialogVisible.value = false
   detailDialogVisible.value = false
+  clearEditDialogError()
   resetEditForm(track)
   editDialogVisible.value = true
   void ensureThumbnailUrl(track)
@@ -825,7 +858,8 @@ const uploadTrackThumbnailFile = async (trackId: string, file: File) => {
 }
 
 const submitCreate = async () => {
-  clearMessages()
+  clearCreateDialogError()
+  successMessage.value = null
   const validationError = validateTrackForm(createForm, {
     requireOriginalFile: true,
     originalFile: createOriginalFile.value,
@@ -834,7 +868,7 @@ const submitCreate = async () => {
   })
 
   if (validationError) {
-    errorMessage.value = validationError
+    createDialogErrorMessage.value = validationError
     return
   }
 
@@ -862,7 +896,7 @@ const submitCreate = async () => {
     await refreshTrackDashboard()
   } catch (error) {
     if (createdProduct) {
-      setError(
+      setCreateDialogError(
         new Error(
           `Track đã được tạo nhưng upload file thất bại. ${error instanceof Error ? error.message : String(error)}`,
         ),
@@ -870,7 +904,7 @@ const submitCreate = async () => {
       await refreshTrackDashboard()
       return
     }
-    setError(error)
+    setCreateDialogError(error)
   } finally {
     isLoading.value = false
   }
@@ -879,7 +913,8 @@ const submitCreate = async () => {
 const submitEdit = async () => {
   if (!selectedTrack.value) return
 
-  clearMessages()
+  clearEditDialogError()
+  successMessage.value = null
   const validationError = validateTrackForm(editForm, {
     requireOriginalFile: false,
     originalFile: editOriginalFile.value,
@@ -889,7 +924,7 @@ const submitEdit = async () => {
   })
 
   if (validationError) {
-    errorMessage.value = validationError
+    editDialogErrorMessage.value = validationError
     return
   }
 
@@ -917,7 +952,7 @@ const submitEdit = async () => {
     successMessage.value = 'Đã cập nhật track'
     await refreshTrackDashboard()
   } catch (error) {
-    setError(error)
+    setEditDialogError(error)
   } finally {
     isLoading.value = false
   }
@@ -1352,6 +1387,8 @@ onBeforeUnmount(() => {
         </div>
       </template>
 
+      <Message v-if="createDialogErrorMessage" severity="error" class="mb-4">{{ createDialogErrorMessage }}</Message>
+
       <div class="grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
         <section class="space-y-4 rounded-[28px] border border-slate-200/80 bg-slate-50/80 p-5 dark:border-slate-800 dark:bg-slate-900/50">
           <div class="flex items-center gap-3 text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
@@ -1444,6 +1481,8 @@ onBeforeUnmount(() => {
     </Dialog>
 
     <Dialog v-model:visible="editDialogVisible" modal class="w-[min(900px,94vw)]" header="Chỉnh sửa track">
+      <Message v-if="editDialogErrorMessage" severity="error" class="mb-4">{{ editDialogErrorMessage }}</Message>
+
       <div class="space-y-4">
         <div class="grid gap-4 sm:grid-cols-2">
           <label class="space-y-2">
