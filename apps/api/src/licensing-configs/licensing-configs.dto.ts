@@ -9,7 +9,6 @@ import {
   IsOptional,
   IsString,
   IsUUID,
-  Matches,
   Min,
 } from 'class-validator'
 import { PaginationQueryDto } from '../common/pagination.dto'
@@ -17,9 +16,6 @@ import { PaginationQueryDto } from '../common/pagination.dto'
 export type ConfigStatus = 'ACTIVE' | 'INACTIVE'
 export type DigitalPlatform = 'YOUTUBE' | 'TIKTOK' | 'FACEBOOK'
 export type DigitalDurationType = 'ONE_YEAR' | 'PERPETUAL'
-
-const normalizeCode = ({ value }: { value: unknown }) =>
-  typeof value === 'string' ? value.trim().toUpperCase() : value
 
 const normalizeString = ({ value }: { value: unknown }) =>
   typeof value === 'string' ? value.trim() : value
@@ -35,9 +31,6 @@ export class ConfigPermissionSummaryDto {
   id: string
 
   @ApiProperty()
-  code: string
-
-  @ApiProperty()
   name: string
 
   @ApiProperty()
@@ -47,9 +40,6 @@ export class ConfigPermissionSummaryDto {
 export class ConfigBaseDto {
   @ApiProperty()
   id: string
-
-  @ApiProperty()
-  code: string
 
   @ApiProperty({ enum: ['ACTIVE', 'INACTIVE'] })
   status: ConfigStatus
@@ -156,15 +146,6 @@ export class ModificationConfigsListDataDto {
   items: ModificationConfigDto[]
 }
 
-class ConfigCodeFieldDto {
-  @ApiPropertyOptional({ description: 'Bo trong de backend tu allocate code tiep theo.' })
-  @IsOptional()
-  @Transform(normalizeCode)
-  @IsString()
-  @Matches(/^[A-Z0-9_-]+$/)
-  code?: string
-}
-
 class ConfigPermissionIdsFieldDto {
   @ApiPropertyOptional({ type: [String], default: [] })
   @IsOptional()
@@ -182,7 +163,7 @@ class ConfigStatusFieldDto {
   status?: ConfigStatus
 }
 
-export class CreateDigitalRightConfigRequestDto extends ConfigCodeFieldDto {
+export class CreateDigitalRightConfigRequestDto {
   @ApiProperty({ enum: ['YOUTUBE', 'TIKTOK', 'FACEBOOK'] })
   @IsIn(['YOUTUBE', 'TIKTOK', 'FACEBOOK'])
   targetPlatform: DigitalPlatform
@@ -230,7 +211,7 @@ export class UpdateDigitalRightConfigRequestDto extends ConfigPermissionIdsField
   basePriceMultiplier?: number
 }
 
-export class CreatePhysicalRightConfigRequestDto extends ConfigCodeFieldDto {
+export class CreatePhysicalRightConfigRequestDto {
   @ApiProperty()
   @Transform(normalizeString)
   @IsString()
@@ -271,7 +252,7 @@ export class UpdatePhysicalRightConfigRequestDto extends ConfigPermissionIdsFiel
   basePriceMultiplier?: number
 }
 
-export class CreateExpressionConfigRequestDto extends ConfigCodeFieldDto {
+export class CreateExpressionConfigRequestDto {
   @ApiProperty()
   @Transform(normalizeString)
   @IsString()
@@ -314,7 +295,7 @@ export class UpdateExpressionConfigRequestDto extends ConfigPermissionIdsFieldDt
   priceMultiplier?: number
 }
 
-export class CreateModificationConfigRequestDto extends ConfigCodeFieldDto {
+export class CreateModificationConfigRequestDto {
   @ApiProperty()
   @Transform(normalizeString)
   @IsString()

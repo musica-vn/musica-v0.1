@@ -28,7 +28,6 @@ type DbConfigPermissionRelationRow = {
   core_permissions:
     | {
         id: string
-        code: string
         name: string
         law_reference: string
       }
@@ -37,7 +36,6 @@ type DbConfigPermissionRelationRow = {
 
 type DbDigitalRightConfigRow = {
   id: string
-  code: string
   target_platform: 'YOUTUBE' | 'TIKTOK' | 'FACEBOOK'
   duration_type: 'ONE_YEAR' | 'PERPETUAL'
   base_price_multiplier: number | string
@@ -49,7 +47,6 @@ type DbDigitalRightConfigRow = {
 
 type DbPhysicalRightConfigRow = {
   id: string
-  code: string
   venue_usage_type: string
   base_price_multiplier: number | string
   status: ConfigStatus
@@ -60,7 +57,6 @@ type DbPhysicalRightConfigRow = {
 
 type DbExpressionConfigRow = {
   id: string
-  code: string
   name: string
   price_multiplier: number | string
   status: ConfigStatus
@@ -71,7 +67,6 @@ type DbExpressionConfigRow = {
 
 type DbModificationConfigRow = {
   id: string
-  code: string
   name: string
   price_multiplier: number | string
   status: ConfigStatus
@@ -84,35 +79,30 @@ type ConfigResourceDefinition = {
   tableName: string
   mappingTableName: string
   mappingForeignKey: string
-  allocateCodeRpc: string
 }
 
 const digitalRightConfigResource: ConfigResourceDefinition = {
   tableName: 'digital_right_configs',
   mappingTableName: 'digital_right_config_permissions',
   mappingForeignKey: 'digital_right_config_id',
-  allocateCodeRpc: 'allocate_next_digital_right_config_code',
 }
 
 const physicalRightConfigResource: ConfigResourceDefinition = {
   tableName: 'physical_right_configs',
   mappingTableName: 'physical_right_config_permissions',
   mappingForeignKey: 'physical_right_config_id',
-  allocateCodeRpc: 'allocate_next_physical_right_config_code',
 }
 
 const expressionConfigResource: ConfigResourceDefinition = {
   tableName: 'expression_configs',
   mappingTableName: 'expression_config_permissions',
   mappingForeignKey: 'expression_config_id',
-  allocateCodeRpc: 'allocate_next_expression_config_code',
 }
 
 const modificationConfigResource: ConfigResourceDefinition = {
   tableName: 'modification_configs',
   mappingTableName: 'modification_config_permissions',
   mappingForeignKey: 'modification_config_id',
-  allocateCodeRpc: 'allocate_next_modification_config_code',
 }
 
 const normalizeSearchKeyword = (value?: string): string | undefined => {
@@ -129,7 +119,6 @@ const mapPermissionSummary = (row: DbConfigPermissionRelationRow): ConfigPermiss
 
   return {
     id: row.core_permissions.id,
-    code: row.core_permissions.code,
     name: row.core_permissions.name,
     lawReference: row.core_permissions.law_reference,
   }
@@ -154,7 +143,6 @@ const mapDigitalRightConfig = (row: DbDigitalRightConfigRow): DigitalRightConfig
 
   return {
     id: row.id,
-    code: row.code,
     targetPlatform: row.target_platform,
     durationType: row.duration_type,
     basePriceMultiplier: toNumber(row.base_price_multiplier),
@@ -171,7 +159,6 @@ const mapPhysicalRightConfig = (row: DbPhysicalRightConfigRow): PhysicalRightCon
 
   return {
     id: row.id,
-    code: row.code,
     venueUsageType: row.venue_usage_type,
     basePriceMultiplier: toNumber(row.base_price_multiplier),
     status: row.status,
@@ -187,7 +174,6 @@ const mapExpressionConfig = (row: DbExpressionConfigRow): ExpressionConfigDto =>
 
   return {
     id: row.id,
-    code: row.code,
     name: row.name,
     priceMultiplier: toNumber(row.price_multiplier),
     status: row.status,
@@ -203,7 +189,6 @@ const mapModificationConfig = (row: DbModificationConfigRow): ModificationConfig
 
   return {
     id: row.id,
-    code: row.code,
     name: row.name,
     priceMultiplier: toNumber(row.price_multiplier),
     status: row.status,
@@ -217,20 +202,6 @@ const mapModificationConfig = (row: DbModificationConfigRow): ModificationConfig
 @Injectable()
 export class LicensingConfigsService {
   constructor(private readonly supabaseService: SupabaseService) {}
-
-  private async allocateCode(rpcName: string): Promise<string> {
-    const { data, error } = await this.supabaseService.client.rpc(rpcName)
-
-    if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
-    }
-
-    if (typeof data !== 'string' || data.trim().length === 0) {
-      throw new HttpException('CONFIG_CODE_ALLOCATION_FAILED', HttpStatus.INTERNAL_SERVER_ERROR)
-    }
-
-    return data
-  }
 
   private async validateActivePermissionIds(permissionIds: string[]): Promise<string[]> {
     const normalizedIds = [...new Set(permissionIds.filter((item) => item.length > 0))]
@@ -288,7 +259,7 @@ export class LicensingConfigsService {
     const { data, error } = await this.supabaseService.client
       .from(digitalRightConfigResource.tableName)
       .select(
-        '*, digital_right_config_permissions(core_permission_id, core_permissions(id, code, name, law_reference))',
+        '*, digital_right_config_permissions(core_permission_id, core_permissions(id, name, law_reference))',
       )
       .eq('id', configId)
       .maybeSingle<DbDigitalRightConfigRow>()
@@ -308,7 +279,7 @@ export class LicensingConfigsService {
     const { data, error } = await this.supabaseService.client
       .from(physicalRightConfigResource.tableName)
       .select(
-        '*, physical_right_config_permissions(core_permission_id, core_permissions(id, code, name, law_reference))',
+        '*, physical_right_config_permissions(core_permission_id, core_permissions(id, name, law_reference))',
       )
       .eq('id', configId)
       .maybeSingle<DbPhysicalRightConfigRow>()
@@ -327,7 +298,7 @@ export class LicensingConfigsService {
   private async getExpressionConfigById(configId: string): Promise<ExpressionConfigDto> {
     const { data, error } = await this.supabaseService.client
       .from(expressionConfigResource.tableName)
-      .select('*, expression_config_permissions(core_permission_id, core_permissions(id, code, name, law_reference))')
+      .select('*, expression_config_permissions(core_permission_id, core_permissions(id, name, law_reference))')
       .eq('id', configId)
       .maybeSingle<DbExpressionConfigRow>()
 
@@ -346,7 +317,7 @@ export class LicensingConfigsService {
     const { data, error } = await this.supabaseService.client
       .from(modificationConfigResource.tableName)
       .select(
-        '*, modification_config_permissions(core_permission_id, core_permissions(id, code, name, law_reference))',
+        '*, modification_config_permissions(core_permission_id, core_permissions(id, name, law_reference))',
       )
       .eq('id', configId)
       .maybeSingle<DbModificationConfigRow>()
@@ -372,12 +343,12 @@ export class LicensingConfigsService {
     let sb = this.supabaseService.client
       .from(digitalRightConfigResource.tableName)
       .select(
-        '*, digital_right_config_permissions(core_permission_id, core_permissions(id, code, name, law_reference))',
+        '*, digital_right_config_permissions(core_permission_id, core_permissions(id, name, law_reference))',
         { count: 'exact' },
       )
 
     if (search) {
-      sb = sb.or(`code.ilike.%${search}%`)
+      sb = sb.or(`target_platform.ilike.%${search}%,duration_type.ilike.%${search}%`)
     }
 
     if (query.status) sb = sb.eq('status', query.status)
@@ -404,11 +375,9 @@ export class LicensingConfigsService {
   }
 
   async createDigitalRightConfig(payload: CreateDigitalRightConfigRequestDto): Promise<DigitalRightConfigDto> {
-    const code = payload.code ?? (await this.allocateCode(digitalRightConfigResource.allocateCodeRpc))
     const { data, error } = await this.supabaseService.client
       .from(digitalRightConfigResource.tableName)
       .insert({
-        code,
         target_platform: payload.targetPlatform,
         duration_type: payload.durationType,
         base_price_multiplier: payload.basePriceMultiplier,
@@ -497,12 +466,12 @@ export class LicensingConfigsService {
     let sb = this.supabaseService.client
       .from(physicalRightConfigResource.tableName)
       .select(
-        '*, physical_right_config_permissions(core_permission_id, core_permissions(id, code, name, law_reference))',
+        '*, physical_right_config_permissions(core_permission_id, core_permissions(id, name, law_reference))',
         { count: 'exact' },
       )
 
     if (search) {
-      sb = sb.or(`code.ilike.%${search}%,venue_usage_type.ilike.%${search}%`)
+      sb = sb.or(`venue_usage_type.ilike.%${search}%`)
     }
 
     if (query.status) sb = sb.eq('status', query.status)
@@ -527,11 +496,9 @@ export class LicensingConfigsService {
   }
 
   async createPhysicalRightConfig(payload: CreatePhysicalRightConfigRequestDto): Promise<PhysicalRightConfigDto> {
-    const code = payload.code ?? (await this.allocateCode(physicalRightConfigResource.allocateCodeRpc))
     const { data, error } = await this.supabaseService.client
       .from(physicalRightConfigResource.tableName)
       .insert({
-        code,
         venue_usage_type: payload.venueUsageType,
         base_price_multiplier: payload.basePriceMultiplier,
         status: payload.status ?? 'ACTIVE',
@@ -617,12 +584,12 @@ export class LicensingConfigsService {
 
     let sb = this.supabaseService.client
       .from(expressionConfigResource.tableName)
-      .select('*, expression_config_permissions(core_permission_id, core_permissions(id, code, name, law_reference))', {
+      .select('*, expression_config_permissions(core_permission_id, core_permissions(id, name, law_reference))', {
         count: 'exact',
       })
 
     if (search) {
-      sb = sb.or(`code.ilike.%${search}%,name.ilike.%${search}%`)
+      sb = sb.or(`name.ilike.%${search}%`)
     }
 
     if (query.status) sb = sb.eq('status', query.status)
@@ -647,11 +614,9 @@ export class LicensingConfigsService {
   }
 
   async createExpressionConfig(payload: CreateExpressionConfigRequestDto): Promise<ExpressionConfigDto> {
-    const code = payload.code ?? (await this.allocateCode(expressionConfigResource.allocateCodeRpc))
     const { data, error } = await this.supabaseService.client
       .from(expressionConfigResource.tableName)
       .insert({
-        code,
         name: payload.name,
         price_multiplier: payload.priceMultiplier,
         status: payload.status ?? 'ACTIVE',
@@ -734,12 +699,12 @@ export class LicensingConfigsService {
     let sb = this.supabaseService.client
       .from(modificationConfigResource.tableName)
       .select(
-        '*, modification_config_permissions(core_permission_id, core_permissions(id, code, name, law_reference))',
+        '*, modification_config_permissions(core_permission_id, core_permissions(id, name, law_reference))',
         { count: 'exact' },
       )
 
     if (search) {
-      sb = sb.or(`code.ilike.%${search}%,name.ilike.%${search}%`)
+      sb = sb.or(`name.ilike.%${search}%`)
     }
 
     if (query.status) sb = sb.eq('status', query.status)
@@ -764,11 +729,9 @@ export class LicensingConfigsService {
   }
 
   async createModificationConfig(payload: CreateModificationConfigRequestDto): Promise<ModificationConfigDto> {
-    const code = payload.code ?? (await this.allocateCode(modificationConfigResource.allocateCodeRpc))
     const { data, error } = await this.supabaseService.client
       .from(modificationConfigResource.tableName)
       .insert({
-        code,
         name: payload.name,
         price_multiplier: payload.priceMultiplier,
         status: payload.status ?? 'ACTIVE',

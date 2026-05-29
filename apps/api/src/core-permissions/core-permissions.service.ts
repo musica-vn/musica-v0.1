@@ -1,4 +1,5 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common'
+import { randomUUID } from 'node:crypto'
 import { buildPaginationMeta } from '../common/pagination-meta'
 import type { PaginationMeta } from '@musica/contracts'
 import type { ApiEnvelopePayload } from '../common/api-response.interceptor'
@@ -13,8 +14,6 @@ import type {
 
 type DbCorePermissionRow = {
   id: string
-  code: string
-  legacy_code?: string | null
   name: string
   law_reference: string
   status: 'ACTIVE' | 'INACTIVE'
@@ -25,7 +24,6 @@ type DbCorePermissionRow = {
 
 const mapRowToDto = (row: DbCorePermissionRow): CorePermissionDto => ({
   id: row.id,
-  code: row.code,
   name: row.name,
   lawReference: row.law_reference,
   status: row.status,
@@ -146,7 +144,7 @@ export class CorePermissionsService {
     if (search) {
       const escaped = search.replaceAll(',', '')
       sb = sb.or(
-        `code.ilike.%${escaped}%,name.ilike.%${escaped}%,law_reference.ilike.%${escaped}%,legacy_code.ilike.%${escaped}%`,
+        `name.ilike.%${escaped}%,law_reference.ilike.%${escaped}%,description.ilike.%${escaped}%`,
       )
     }
 
@@ -171,7 +169,7 @@ export class CorePermissionsService {
     const { data, error } = await this.supabaseService.client
       .from('core_permissions')
       .insert({
-        code: payload.code,
+        id: randomUUID(),
         name: payload.name,
         law_reference: payload.lawReference,
         description: payload.description ?? null,

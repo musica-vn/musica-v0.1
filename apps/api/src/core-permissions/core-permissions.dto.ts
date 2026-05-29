@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 import { Transform } from 'class-transformer'
-import { IsIn, IsOptional, IsString, Matches } from 'class-validator'
+import { IsIn, IsOptional, IsString } from 'class-validator'
 import { PaginationQueryDto } from '../common/pagination.dto'
 
 export type CorePermissionStatus = 'ACTIVE' | 'INACTIVE'
@@ -8,9 +8,6 @@ export type CorePermissionStatus = 'ACTIVE' | 'INACTIVE'
 export class CorePermissionDto {
   @ApiProperty()
   id: string
-
-  @ApiProperty()
-  code: string
 
   @ApiProperty()
   name: string
@@ -53,12 +50,6 @@ export class AdminCorePermissionsListDataDto {
 }
 
 export class AdminCreateCorePermissionRequestDto {
-  @ApiProperty()
-  @Transform(({ value }) => (typeof value === 'string' ? value.trim().toUpperCase() : value))
-  @IsString()
-  @Matches(/^[A-Z0-9_-]+$/)
-  code: string
-
   @ApiProperty()
   @IsString()
   name: string
