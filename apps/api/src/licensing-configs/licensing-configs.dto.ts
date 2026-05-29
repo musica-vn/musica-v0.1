@@ -4,6 +4,7 @@ import {
   ArrayUnique,
   IsArray,
   IsIn,
+  IsNotEmpty,
   IsNumber,
   IsOptional,
   IsString,
@@ -274,6 +275,7 @@ export class CreateExpressionConfigRequestDto extends ConfigCodeFieldDto {
   @ApiProperty()
   @Transform(normalizeString)
   @IsString()
+  @IsNotEmpty()
   name: string
 
   @ApiProperty({ minimum: 1 })
@@ -301,6 +303,7 @@ export class UpdateExpressionConfigRequestDto extends ConfigPermissionIdsFieldDt
   @IsOptional()
   @Transform(normalizeString)
   @IsString()
+  @IsNotEmpty()
   name?: string
 
   @ApiPropertyOptional({ minimum: 1 })
@@ -315,6 +318,7 @@ export class CreateModificationConfigRequestDto extends ConfigCodeFieldDto {
   @ApiProperty()
   @Transform(normalizeString)
   @IsString()
+  @IsNotEmpty()
   name: string
 
   @ApiProperty({ minimum: 1 })
@@ -342,6 +346,7 @@ export class UpdateModificationConfigRequestDto extends ConfigPermissionIdsField
   @IsOptional()
   @Transform(normalizeString)
   @IsString()
+  @IsNotEmpty()
   name?: string
 
   @ApiPropertyOptional({ minimum: 1 })

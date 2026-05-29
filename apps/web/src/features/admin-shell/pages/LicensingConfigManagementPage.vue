@@ -164,6 +164,13 @@ const form = reactive<{
 })
 
 const currentResource = computed(() => resourceConfigMap[props.resource])
+const isExpressionOrModification = computed(
+  () => props.resource === 'expression' || props.resource === 'modification',
+)
+const isNameValid = computed(() => {
+  if (!isExpressionOrModification.value) return true
+  return form.name.trim().length > 0
+})
 
 const currentItems = computed<AnyLicensingConfig[]>(() => {
   switch (props.resource) {
@@ -224,7 +231,10 @@ const isDigitalResource = computed(() => props.resource === 'digital')
 const isPhysicalResource = computed(() => props.resource === 'physical')
 const isDigitalOrPhysicalResource = computed(() => isDigitalResource.value || isPhysicalResource.value)
 const supportsPermissionPicker = computed(
-  () => isDigitalOrPhysicalResource.value || props.resource === 'expression',
+  () =>
+    isDigitalOrPhysicalResource.value ||
+    props.resource === 'expression' ||
+    props.resource === 'modification',
 )
 const keywordLabel = computed(() => 'Từ khoá')
 const keywordPlaceholder = computed(() =>
@@ -243,7 +253,9 @@ const editDialogTitle = computed(() => currentResource.value.editLabel)
 const isPermissionOptionsLoading = computed(
   () => supportsPermissionPicker.value && (!hasLoadedPermissionOptions.value || corePermissionsStore.isLoading),
 )
-const isPermissionSubmitDisabled = computed(() => isSubmitting.value || isPermissionOptionsLoading.value)
+const isPermissionSubmitDisabled = computed(
+  () => isSubmitting.value || isPermissionOptionsLoading.value || !isNameValid.value,
+)
 const permissionOptionsLoadingMessage = computed(() =>
   isDigitalOrPhysicalResource.value ? 'Đang tải quyền phụ thuộc...' : 'Đang tải danh sách quyền...',
 )
@@ -488,6 +500,10 @@ const buildUpdatePayload = () => {
 
 const submitCreate = async () => {
   clearMessages()
+  if (!isNameValid.value) {
+    errorMessage.value = 'Vui lòng nhập tên.'
+    return
+  }
   isSubmitting.value = true
 
   try {
@@ -520,6 +536,10 @@ const submitEdit = async () => {
   if (!selectedItem.value) return
 
   clearMessages()
+  if (!isNameValid.value) {
+    errorMessage.value = 'Vui lòng nhập tên.'
+    return
+  }
   isSubmitting.value = true
 
   try {
@@ -768,7 +788,7 @@ onMounted(() => {
                 <td class="px-4 py-4 text-slate-600 dark:text-slate-300">{{ getPriceValue(item) }}</td>
                 <td class="px-4 py-4">
                   <div v-if="item.referencedPermissions.length === 0" class="text-slate-400 dark:text-slate-500">{{ emptyPermissionsText }}</div>
-                  <div v-else-if="props.resource === 'expression'" class="flex items-center gap-3">
+                  <div v-else-if="props.resource === 'expression' || props.resource === 'modification'" class="flex items-center gap-3">
                     <button type="button" :class="iconButtonClass" :disabled="currentIsLoading" @click="openPermissionsDialog(item)">
                       <i class="pi pi-eye" />
                     </button>
