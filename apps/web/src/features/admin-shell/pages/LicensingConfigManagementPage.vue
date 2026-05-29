@@ -286,7 +286,7 @@ const toggleReferencedPermission = (permissionId: string) => {
 }
 
 const openPermissionsDialog = (item: AnyLicensingConfig) => {
-  permissionsDialogTitle.value = `${item.code} - Quyền tham khảo`
+  permissionsDialogTitle.value = `${item.code} - ${isDigitalOrPhysicalResource.value ? 'Quyền phụ thuộc' : 'Quyền tham khảo'}`
   permissionsDialogPermissions.value = item.referencedPermissions
   permissionsDialogVisible.value = true
 }
@@ -326,7 +326,7 @@ const fetchListSafely = async () => {
 }
 
 const formatStatusLabel = (status: LicensingConfigStatus) =>
-  status === 'ACTIVE' ? 'Đang hoạt động' : 'Ngừng hoạt động'
+  status === 'ACTIVE' ? 'Hoạt động' : 'Tắt'
 
 const formatDigitalPlatformLabel = (platform: DigitalPlatform) => platform
 
@@ -733,8 +733,8 @@ onMounted(() => {
           <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">{{ statusFieldLabel }}</span>
           <select v-model="filters.status" :class="fieldClass" :disabled="currentIsLoading">
             <option value="">Tất cả</option>
-            <option value="ACTIVE">{{ isDigitalOrPhysicalResource ? 'Đang hoạt động' : 'ACTIVE' }}</option>
-            <option value="INACTIVE">{{ isDigitalOrPhysicalResource ? 'Ngừng hoạt động' : 'INACTIVE' }}</option>
+            <option value="ACTIVE">{{ isDigitalOrPhysicalResource ? formatStatusLabel('ACTIVE') : 'ACTIVE' }}</option>
+            <option value="INACTIVE">{{ isDigitalOrPhysicalResource ? formatStatusLabel('INACTIVE') : 'INACTIVE' }}</option>
           </select>
         </label>
         <label v-if="currentResource.supportsDigitalFilters" class="space-y-2">
@@ -788,28 +788,13 @@ onMounted(() => {
                 <td class="px-4 py-4 text-slate-600 dark:text-slate-300">{{ getPriceValue(item) }}</td>
                 <td class="px-4 py-4">
                   <div v-if="item.referencedPermissions.length === 0" class="text-slate-400 dark:text-slate-500">{{ emptyPermissionsText }}</div>
-                  <div v-else-if="props.resource === 'expression' || props.resource === 'modification'" class="flex items-center gap-3">
+                  <div v-else class="flex items-center gap-3">
                     <button type="button" :class="iconButtonClass" :disabled="currentIsLoading" @click="openPermissionsDialog(item)">
                       <i class="pi pi-eye" />
                     </button>
                     <div class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
                       {{ item.referencedPermissions.length }} quyền
                     </div>
-                  </div>
-                  <div v-else class="flex flex-wrap gap-2">
-                    <span
-                      v-for="permission in item.referencedPermissions.slice(0, 3)"
-                      :key="`${item.id}-${permission.id}`"
-                      class="inline-flex items-center rounded-full border border-violet-200 bg-violet-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-violet-700 dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-violet-200"
-                    >
-                      {{ isDigitalOrPhysicalResource ? permission.name : `${permission.code} - ${permission.name}` }}
-                    </span>
-                    <span
-                      v-if="item.referencedPermissions.length > 3"
-                      class="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
-                    >
-                      +{{ item.referencedPermissions.length - 3 }}
-                    </span>
                   </div>
                 </td>
                 <td class="px-4 py-4">
