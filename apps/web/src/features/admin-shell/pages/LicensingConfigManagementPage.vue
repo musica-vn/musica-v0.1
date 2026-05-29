@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import Dialog from 'primevue/dialog'
 import Message from 'primevue/message'
+import { useConfirm } from 'primevue/useconfirm'
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { ApiClientError } from '../../../shared/api/http'
 import { useCorePermissionsStore } from '../../core-permissions/core-permissions.store'
@@ -36,8 +37,12 @@ const props = defineProps<{
   resource: LicensingConfigResource
 }>()
 
+const confirm = useConfirm()
+
 const fieldClass =
   'h-12 w-full rounded-2xl border border-slate-200/80 bg-white/90 px-4 text-sm text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-violet-400 focus:ring-4 focus:ring-violet-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-800 dark:bg-slate-950/70 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-violet-500 dark:focus:ring-violet-500/20'
+const selectFieldClass =
+  'h-12 w-full appearance-none rounded-2xl border border-slate-200/80 bg-white/90 pl-4 pr-12 text-sm text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-violet-400 focus:ring-4 focus:ring-violet-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-800 dark:bg-slate-950/70 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-violet-500 dark:focus:ring-violet-500/20'
 const textAreaClass =
   'min-h-[140px] w-full rounded-2xl border border-slate-200/80 bg-white/90 px-4 py-3 text-sm text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-violet-400 focus:ring-4 focus:ring-violet-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-800 dark:bg-slate-950/70 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-violet-500 dark:focus:ring-violet-500/20'
 const primaryButtonClass =
@@ -46,6 +51,8 @@ const secondaryButtonClass =
   'inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-violet-300 hover:text-violet-600 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-violet-500 dark:hover:text-violet-300'
 const iconButtonClass =
   'inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 transition hover:border-slate-300 hover:text-slate-900 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:text-white'
+const selectChevronClass =
+  'pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500'
 
 const resourceConfigMap: Record<
   LicensingConfigResource,
@@ -127,7 +134,7 @@ const filters = reactive<{
   durationType: DigitalDurationType | ''
 }>({
   keyword: '',
-  status: '',
+  status: 'ACTIVE',
   targetPlatform: '',
   durationType: '',
 })
@@ -568,7 +575,7 @@ const submitEdit = async () => {
   }
 }
 
-const toggleStatus = async (item: AnyLicensingConfig) => {
+const performToggleStatus = async (item: AnyLicensingConfig) => {
   clearMessages()
   const nextStatus: LicensingConfigStatus = item.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE'
 
@@ -595,7 +602,7 @@ const toggleStatus = async (item: AnyLicensingConfig) => {
   }
 }
 
-const removeOne = async (item: AnyLicensingConfig) => {
+const performRemoveOne = async (item: AnyLicensingConfig) => {
   clearMessages()
 
   try {
@@ -644,6 +651,36 @@ const getDetailText = (item: AnyLicensingConfig) => {
   }
 }
 
+const confirmToggleStatus = (item: AnyLicensingConfig) => {
+  const nextStatus: LicensingConfigStatus = item.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE'
+  const statusLabel = formatStatusLabel(nextStatus)
+  const title = getDetailText(item)
+  const header = nextStatus === 'INACTIVE' ? 'Xác nhận tắt' : 'Xác nhận bật'
+
+  confirm.require({
+    header,
+    message: `Bạn có chắc muốn ${statusLabel.toLowerCase()} "${title}" không?`,
+    icon: 'pi pi-exclamation-triangle',
+    acceptLabel: nextStatus === 'INACTIVE' ? 'Tắt' : 'Bật',
+    rejectLabel: 'Huỷ',
+    accept: () => void performToggleStatus(item),
+  })
+}
+
+const confirmRemoveOne = (item: AnyLicensingConfig) => {
+  const title = getDetailText(item)
+
+  confirm.require({
+    header: 'Xác nhận xoá',
+    message: `Bạn có chắc muốn xoá "${title}" không? Thao tác này không thể hoàn tác.`,
+    icon: 'pi pi-trash',
+    acceptLabel: 'Xoá',
+    rejectLabel: 'Huỷ',
+    acceptClass: 'p-button-danger',
+    accept: () => void performRemoveOne(item),
+  })
+}
+
 const getPriceValue = (item: AnyLicensingConfig) => {
   switch (props.resource) {
     case 'digital':
@@ -688,7 +725,7 @@ watch(
     permissionsDialogVisible.value = false
     pagination.page = 1
     filters.keyword = ''
-    filters.status = ''
+    filters.status = 'ACTIVE'
     filters.targetPlatform = ''
     filters.durationType = ''
     if (keywordDebounceTimer) {
@@ -731,32 +768,41 @@ onMounted(() => {
         </label>
         <label class="space-y-2">
           <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">{{ statusFieldLabel }}</span>
-          <select v-model="filters.status" :class="fieldClass" :disabled="currentIsLoading">
-            <option value="">Tất cả</option>
-            <option value="ACTIVE">{{ isDigitalOrPhysicalResource ? formatStatusLabel('ACTIVE') : 'ACTIVE' }}</option>
-            <option value="INACTIVE">{{ isDigitalOrPhysicalResource ? formatStatusLabel('INACTIVE') : 'INACTIVE' }}</option>
-          </select>
+          <div class="relative">
+            <select v-model="filters.status" :class="selectFieldClass" :disabled="currentIsLoading">
+              <option value="">Tất cả</option>
+              <option value="ACTIVE">{{ isDigitalOrPhysicalResource ? formatStatusLabel('ACTIVE') : 'ACTIVE' }}</option>
+              <option value="INACTIVE">{{ isDigitalOrPhysicalResource ? formatStatusLabel('INACTIVE') : 'INACTIVE' }}</option>
+            </select>
+            <i class="pi pi-chevron-down" :class="selectChevronClass" />
+          </div>
         </label>
         <label v-if="currentResource.supportsDigitalFilters" class="space-y-2">
           <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
             {{ isDigitalOrPhysicalResource ? 'Nền tảng áp dụng' : 'Platform' }}
           </span>
-          <select v-model="filters.targetPlatform" :class="fieldClass" :disabled="currentIsLoading">
-            <option value="">Tất cả</option>
-            <option value="YOUTUBE">YOUTUBE</option>
-            <option value="TIKTOK">TIKTOK</option>
-            <option value="FACEBOOK">FACEBOOK</option>
-          </select>
+          <div class="relative">
+            <select v-model="filters.targetPlatform" :class="selectFieldClass" :disabled="currentIsLoading">
+              <option value="">Tất cả</option>
+              <option value="YOUTUBE">YOUTUBE</option>
+              <option value="TIKTOK">TIKTOK</option>
+              <option value="FACEBOOK">FACEBOOK</option>
+            </select>
+            <i class="pi pi-chevron-down" :class="selectChevronClass" />
+          </div>
         </label>
         <label v-if="currentResource.supportsDigitalFilters" class="space-y-2">
           <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
             {{ isDigitalOrPhysicalResource ? 'Thời hạn áp dụng' : 'Duration' }}
           </span>
-          <select v-model="filters.durationType" :class="fieldClass" :disabled="currentIsLoading">
-            <option value="">Tất cả</option>
-            <option value="ONE_YEAR">{{ isDigitalOrPhysicalResource ? '1 năm' : 'ONE_YEAR' }}</option>
-            <option value="PERPETUAL">{{ isDigitalOrPhysicalResource ? 'Vĩnh viễn' : 'PERPETUAL' }}</option>
-          </select>
+          <div class="relative">
+            <select v-model="filters.durationType" :class="selectFieldClass" :disabled="currentIsLoading">
+              <option value="">Tất cả</option>
+              <option value="ONE_YEAR">{{ isDigitalOrPhysicalResource ? '1 năm' : 'ONE_YEAR' }}</option>
+              <option value="PERPETUAL">{{ isDigitalOrPhysicalResource ? 'Vĩnh viễn' : 'PERPETUAL' }}</option>
+            </select>
+            <i class="pi pi-chevron-down" :class="selectChevronClass" />
+          </div>
         </label>
       </div>
 
@@ -780,7 +826,12 @@ onMounted(() => {
             <tbody class="divide-y divide-slate-200/70 dark:divide-slate-800">
               <tr v-for="item in currentItems" :key="item.id" class="bg-white transition hover:bg-slate-50/70 dark:bg-transparent dark:hover:bg-slate-900/30">
                 <td class="px-4 py-4">
-                  <div class="font-semibold text-slate-900 dark:text-white">{{ getDetailText(item) }}</div>
+                  <div
+                    class="max-w-[240px] truncate font-semibold text-slate-900 dark:text-white md:max-w-[360px] lg:max-w-[480px]"
+                    :title="getDetailText(item)"
+                  >
+                    {{ getDetailText(item) }}
+                  </div>
                   <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">
                     {{ currentResource.detailPlaceholder }}
                   </div>
@@ -812,14 +863,14 @@ onMounted(() => {
                     <button type="button" :class="iconButtonClass" :disabled="currentIsLoading" @click="openEdit(item)">
                       <i class="pi pi-pencil" />
                     </button>
-                    <button type="button" :class="iconButtonClass" :disabled="currentIsLoading" @click="toggleStatus(item)">
+                    <button type="button" :class="iconButtonClass" :disabled="currentIsLoading" @click="confirmToggleStatus(item)">
                       <i :class="item.status === 'ACTIVE' ? 'pi pi-ban' : 'pi pi-check'" />
                     </button>
                     <button
                       type="button"
                       class="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-rose-600 transition hover:border-rose-200 hover:text-rose-700 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-rose-300 dark:hover:border-rose-500/30 dark:hover:text-rose-200"
                       :disabled="currentIsLoading"
-                      @click="removeOne(item)"
+                      @click="confirmRemoveOne(item)"
                     >
                       <i class="pi pi-trash" />
                     </button>
@@ -858,18 +909,24 @@ onMounted(() => {
         <template v-if="props.resource === 'digital'">
           <label class="space-y-2">
             <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Nền tảng áp dụng</span>
-            <select v-model="form.targetPlatform" :class="fieldClass" :disabled="isSubmitting">
-              <option value="YOUTUBE">YOUTUBE</option>
-              <option value="TIKTOK">TIKTOK</option>
-              <option value="FACEBOOK">FACEBOOK</option>
-            </select>
+            <div class="relative">
+              <select v-model="form.targetPlatform" :class="selectFieldClass" :disabled="isSubmitting">
+                <option value="YOUTUBE">YOUTUBE</option>
+                <option value="TIKTOK">TIKTOK</option>
+                <option value="FACEBOOK">FACEBOOK</option>
+              </select>
+              <i class="pi pi-chevron-down" :class="selectChevronClass" />
+            </div>
           </label>
           <label class="space-y-2">
             <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Thời hạn áp dụng</span>
-            <select v-model="form.durationType" :class="fieldClass" :disabled="isSubmitting">
-              <option value="ONE_YEAR">1 năm</option>
-              <option value="PERPETUAL">Vĩnh viễn</option>
-            </select>
+            <div class="relative">
+              <select v-model="form.durationType" :class="selectFieldClass" :disabled="isSubmitting">
+                <option value="ONE_YEAR">1 năm</option>
+                <option value="PERPETUAL">Vĩnh viễn</option>
+              </select>
+              <i class="pi pi-chevron-down" :class="selectChevronClass" />
+            </div>
           </label>
           <label class="space-y-2 sm:col-span-2">
             <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Hệ số giá cơ sở</span>
@@ -980,18 +1037,24 @@ onMounted(() => {
         <template v-if="props.resource === 'digital'">
           <label class="space-y-2">
             <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Nền tảng áp dụng</span>
-            <select v-model="form.targetPlatform" :class="fieldClass" :disabled="isSubmitting">
-              <option value="YOUTUBE">YOUTUBE</option>
-              <option value="TIKTOK">TIKTOK</option>
-              <option value="FACEBOOK">FACEBOOK</option>
-            </select>
+            <div class="relative">
+              <select v-model="form.targetPlatform" :class="selectFieldClass" :disabled="isSubmitting">
+                <option value="YOUTUBE">YOUTUBE</option>
+                <option value="TIKTOK">TIKTOK</option>
+                <option value="FACEBOOK">FACEBOOK</option>
+              </select>
+              <i class="pi pi-chevron-down" :class="selectChevronClass" />
+            </div>
           </label>
           <label class="space-y-2">
             <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Thời hạn áp dụng</span>
-            <select v-model="form.durationType" :class="fieldClass" :disabled="isSubmitting">
-              <option value="ONE_YEAR">1 năm</option>
-              <option value="PERPETUAL">Vĩnh viễn</option>
-            </select>
+            <div class="relative">
+              <select v-model="form.durationType" :class="selectFieldClass" :disabled="isSubmitting">
+                <option value="ONE_YEAR">1 năm</option>
+                <option value="PERPETUAL">Vĩnh viễn</option>
+              </select>
+              <i class="pi pi-chevron-down" :class="selectChevronClass" />
+            </div>
           </label>
           <label class="space-y-2 sm:col-span-2">
             <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Hệ số giá cơ sở</span>
