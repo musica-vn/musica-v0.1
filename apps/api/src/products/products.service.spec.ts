@@ -1,7 +1,42 @@
 import { HttpException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { SupabaseService } from '../supabase/supabase.service';
+import { ProductDto } from './product.dto';
 import { ProductsService } from './products.service';
+
+const createMockProductDto = (
+  overrides: Partial<ProductDto> = {},
+): ProductDto => ({
+  id: '00000000-0000-0000-0000-000000000001',
+  title: 't',
+  artistId: '00000000-0000-0000-0000-000000000002',
+  authorName: null,
+  genre: null,
+  duration: null,
+  status: 'HIDDEN',
+  useCase: null,
+  description: null,
+  allowedPermissionIds: [],
+  allowedPermissions: [],
+  licensingEligibility: {
+    digitalConfigs: [],
+    physicalConfigs: [],
+    summary: {
+      eligibleDigitalCount: 0,
+      ineligibleDigitalCount: 0,
+      eligiblePhysicalCount: 0,
+      ineligiblePhysicalCount: 0,
+    },
+  },
+  complianceLegalStatus: null,
+  complianceReviewStatus: null,
+  originalAudioKey: null,
+  thumbnailKey: null,
+  createdBy: '00000000-0000-0000-0000-000000000003',
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
+  ...overrides,
+});
 
 describe('ProductsService - upload URLs', () => {
   const mockConfigService: Pick<ConfigService, 'get'> = {
@@ -29,26 +64,9 @@ describe('ProductsService - upload URLs', () => {
     const service = createService();
     const productId = '00000000-0000-0000-0000-000000000001';
 
-    jest.spyOn(service, 'getProductById').mockResolvedValue({
-      id: productId,
-      title: 't',
-      artistId: '00000000-0000-0000-0000-000000000002',
-      authorName: null,
-      genre: null,
-      duration: null,
-      status: 'HIDDEN',
-      useCase: null,
-      description: null,
-      allowedPermissionIds: [],
-      allowedPermissions: [],
-      complianceLegalStatus: null,
-      complianceReviewStatus: null,
-      originalAudioKey: null,
-      thumbnailKey: null,
-      createdBy: '00000000-0000-0000-0000-000000000003',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    });
+    jest
+      .spyOn(service, 'getProductById')
+      .mockResolvedValue(createMockProductDto({ id: productId }));
 
     (mockConfigService.get as jest.Mock).mockImplementation((key: string) => {
       if (key === 'STORAGE_BUCKET_ORIGINAL_AUDIO') return 'original-audio';
@@ -105,26 +123,9 @@ describe('ProductsService - upload URLs', () => {
     const service = createService();
     const productId = '00000000-0000-0000-0000-000000000001';
 
-    jest.spyOn(service, 'getProductById').mockResolvedValue({
-      id: productId,
-      title: 't',
-      artistId: '00000000-0000-0000-0000-000000000002',
-      authorName: null,
-      genre: null,
-      duration: null,
-      status: 'HIDDEN',
-      useCase: null,
-      description: null,
-      allowedPermissionIds: [],
-      allowedPermissions: [],
-      complianceLegalStatus: null,
-      complianceReviewStatus: null,
-      originalAudioKey: null,
-      thumbnailKey: null,
-      createdBy: '00000000-0000-0000-0000-000000000003',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    });
+    jest
+      .spyOn(service, 'getProductById')
+      .mockResolvedValue(createMockProductDto({ id: productId }));
 
     (mockConfigService.get as jest.Mock).mockImplementation((key: string) => {
       if (key === 'STORAGE_BUCKET_TRACK_THUMBNAILS') return 'track-thumbnails';
@@ -160,26 +161,9 @@ describe('ProductsService - upload URLs', () => {
     const service = createService();
     const productId = '00000000-0000-0000-0000-000000000001';
 
-    jest.spyOn(service, 'getProductById').mockResolvedValue({
-      id: productId,
-      title: 't',
-      artistId: '00000000-0000-0000-0000-000000000002',
-      authorName: null,
-      genre: null,
-      duration: null,
-      status: 'HIDDEN',
-      useCase: null,
-      description: null,
-      allowedPermissionIds: [],
-      allowedPermissions: [],
-      complianceLegalStatus: null,
-      complianceReviewStatus: null,
-      originalAudioKey: null,
-      thumbnailKey: null,
-      createdBy: '00000000-0000-0000-0000-000000000003',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    });
+    jest
+      .spyOn(service, 'getProductById')
+      .mockResolvedValue(createMockProductDto({ id: productId }));
 
     const maybeSingle = jest.fn().mockResolvedValue({
       data: {
@@ -241,26 +225,13 @@ describe('ProductsService - playback URLs', () => {
     const service = createService();
     const productId = '00000000-0000-0000-0000-000000000001';
 
-    jest.spyOn(service, 'getProductById').mockResolvedValue({
-      id: productId,
-      title: 't',
-      artistId: '00000000-0000-0000-0000-000000000002',
-      authorName: null,
-      genre: null,
-      duration: null,
-      status: 'HIDDEN',
-      useCase: null,
-      description: null,
-      allowedPermissionIds: [],
-      allowedPermissions: [],
-      complianceLegalStatus: null,
-      complianceReviewStatus: null,
-      originalAudioKey: '1.mp3',
-      thumbnailKey: '3.png',
-      createdBy: '00000000-0000-0000-0000-000000000003',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    });
+    jest.spyOn(service, 'getProductById').mockResolvedValue(
+      createMockProductDto({
+        id: productId,
+        originalAudioKey: '1.mp3',
+        thumbnailKey: '3.png',
+      }),
+    );
 
     (mockConfigService.get as jest.Mock).mockImplementation((key: string) => {
       if (key === 'STORAGE_BUCKET_ORIGINAL_AUDIO') return 'original-audio';
@@ -304,26 +275,14 @@ describe('ProductsService - allowed permissions', () => {
     const service = createService();
     const productId = '00000000-0000-0000-0000-000000000001';
 
-    jest.spyOn(service, 'getProductById').mockResolvedValue({
-      id: productId,
-      title: 't',
-      artistId: '00000000-0000-0000-0000-000000000002',
-      authorName: null,
-      genre: null,
-      duration: null,
-      status: 'PENDING',
-      useCase: null,
-      description: null,
-      allowedPermissionIds: [],
-      allowedPermissions: [],
-      complianceLegalStatus: 'PENDING',
-      complianceReviewStatus: 'PENDING',
-      originalAudioKey: null,
-      thumbnailKey: null,
-      createdBy: '00000000-0000-0000-0000-000000000003',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    });
+    jest.spyOn(service, 'getProductById').mockResolvedValue(
+      createMockProductDto({
+        id: productId,
+        status: 'PENDING',
+        complianceLegalStatus: 'PENDING',
+        complianceReviewStatus: 'PENDING',
+      }),
+    );
 
     const maybeSingle = jest.fn().mockResolvedValue({
       data: {
@@ -355,26 +314,14 @@ describe('ProductsService - allowed permissions', () => {
     const approvedPermissionId = '00000000-0000-4000-8000-000000000010';
     const invalidPermissionId = '00000000-0000-4000-8000-000000000011';
 
-    jest.spyOn(service, 'getProductById').mockResolvedValue({
-      id: productId,
-      title: 't',
-      artistId: '00000000-0000-0000-0000-000000000002',
-      authorName: null,
-      genre: null,
-      duration: null,
-      status: 'PENDING',
-      useCase: null,
-      description: null,
-      allowedPermissionIds: [],
-      allowedPermissions: [],
-      complianceLegalStatus: 'SUFFICIENT',
-      complianceReviewStatus: 'APPROVED',
-      originalAudioKey: null,
-      thumbnailKey: null,
-      createdBy: '00000000-0000-0000-0000-000000000003',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    });
+    jest.spyOn(service, 'getProductById').mockResolvedValue(
+      createMockProductDto({
+        id: productId,
+        status: 'PENDING',
+        complianceLegalStatus: 'SUFFICIENT',
+        complianceReviewStatus: 'APPROVED',
+      }),
+    );
 
     const maybeSingle = jest.fn().mockResolvedValue({
       data: {

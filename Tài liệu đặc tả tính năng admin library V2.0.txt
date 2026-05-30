@@ -1,15 +1,9 @@
 ﻿TÀI LIỆU ĐẶC TẢ TÍNH NĂNG QUẢN TRỊ CẤU HÌNH HỆ THỐNG (ADMIN MANAGEMENT SYSTEM)
 1. Core Permission Management (Tính năng Quản lý Quyền Cốt Lõi)
-
-
 Mục tiêu:
 Quản lý danh sách các quyền cốt lõi theo Luật Sở hữu trí tuệ Việt Nam dưới dạng các dòng dữ liệu động trong Cơ sở dữ liệu, làm gốc tham chiếu để liên kết các gói bản quyền thương mại và xuất chứng nhận pháp lý.
-
-
 Đối tượng sử dụng:
 Admin
-
-
 Màn hình hiển thị:
 Admin Permission Settings (Giao diện bảng danh sách quyền và Form chỉnh sửa)
 Bảng số liệu hiển thị:
@@ -39,118 +33,97 @@ Logic hoạt động:
 * Logic Ràng buộc toàn vẹn dữ liệu (Foreign Key Constraint Check): Khi Admin thực hiện hành động Xóa hoặc chuyển trạng thái một Quyền sang INACTIVE, hệ thống sẽ tự động quét qua tất cả các bảng phụ thuộc ở tầng dưới bao gồm: Digital Rights, Physical Rights, Expression Config, Modification Config.
 * Nếu quyền này đang được liên kết ở bất kỳ module cấu hình nào bên dưới, hệ thống sẽ chặn hoàn toàn hành động và hiển thị thông báo lỗi chi tiết trên giao diện: "Không thể thay đổi trạng thái quyền này vì đang có cấu hình tính năng khác tham chiếu đến".
 * Tất cả các bản ghi Core Permission có trạng thái INACTIVE sẽ tự động bị ẩn đi, không hiển thị trong danh sách lựa chọn cấu hình của các tính năng khác trên hệ thống Admin.
-
-
 Định nghĩa hoàn thành (DoD):
 * Admin đăng nhập thành công, truy cập được vào màn hình danh sách quyền, dữ liệu hiển thị rõ ràng và không bị lỗi giao diện.
 * Tính năng Chỉnh sửa (Update) hoạt động đúng: Admin sửa thông tin của một quyền, bấm Lưu thì hệ thống cập nhật thành công xuống Database.
 * Tính năng Chuyển đổi trạng thái (Toggle Status) hoạt động đúng logic ràng buộc: Hệ thống chặn thành công và báo lỗi nếu quyền đó đang được map với các cấu hình bên dưới.
-
-
 2. Digital Platform Rights Management (Tính năng Quản lý Bản quyền Nền tảng Số)
 Mục tiêu:
-Cấu hình biểu phí thương mại và liên kết quyền cốt lõi cho các hành vi sử dụng âm nhạc trên môi trường mạng xã hội kỹ thuật số, phân tách rõ ràng theo từng nền tảng và gói thời hạn cố định.
-
-
+Cấu hình thị trường thương mại mạng xã hội kỹ thuật số, thiết lập các quyền cốt lõi bắt buộc làm tiêu chuẩn phân loại và duyệt sản phẩm âm nhạc tham gia kinh doanh trên từng nền tảng số.
 Đối tượng sử dụng:
-Admin
-
-
+Admin / Creator (Đăng ký sản phẩm tham gia)
 Màn hình hiển thị:
-Admin Digital Configuration (Giao diện quản lý cấu hình quyền số)
-
-
+* Admin View: Giao diện tạo gói số, thiết lập quyền tiêu chuẩn và theo dõi danh sách sản phẩm tham gia.
+* Creator View: Giao diện lựa chọn gói số để đăng ký bán sản phẩm đã qua kiểm duyệt.
 Bảng số liệu hiển thị:
 Tên thuộc tính
 	Mô tả thuộc tính
 	Ràng buộc / Kiểu dữ liệu
 	Digital Right ID
-	Mã cấu hình quyền số trong hệ thống
+	Mã cấu hình gói quyền số
 	String (Khóa chính - PK, UNIQUE, viết hoa)
 	Target Platform
-	Nền tảng mạng xã hội áp dụng
+	Nền tảng mạng xã hội kinh doanh
 	Enum (YOUTUBE, TIKTOK, FACEBOOK)
-	Duration Type
-	Thời hạn áp dụng gói quyền số
-	Enum (ONE_YEAR - 1 năm, PERPETUAL - Vĩnh viễn)
 	Referenced Permissions
-	Các quyền cốt lõi bắt buộc đi kèm khi mua gói này
+	Bộ quyền cốt lõi tiêu chuẩn cần có để bán trên gói này
 	Multiselect Tag (Chọn các Permission ID đang ACTIVE)
 	Base Price / Multiplier
 	Mức giá cơ sở hoặc Hệ số nhân của gói quyền số
 	Float / Decimal (Giá trị >= 1.0)
 	Status
-	Trạng thái hoạt động của cấu hình
-	Enum (ACTIVE, INACTIVE)
-	Admin action:
-* Create Digital Configuration: Thêm mới gói cấu hình bản quyền cho một nền tảng số cụ thể kèm thời hạn.
-* Edit Digital Configuration: Thay đổi hệ số giá, cập nhật danh sách quyền cốt lõi đính kèm hoặc tắt kích hoạt gói.
-Logic hoạt động:
-* Hệ thống cố định cứng (Hardcode Enum) ở tầng Backend đối với trường Duration Type chỉ gồm 2 lựa chọn: ONE_YEAR và PERPETUAL, chặn mọi hành vi cố tình chèn hoặc tùy biến số ngày tự do từ giao diện bên ngoài.
-* Khi người dùng cuối mua gói Digital này, hệ thống tính toán tiền sẽ tự động lấy hệ số Base Price / Multiplier của bản ghi này tham gia vào chuỗi tính giá cuối cùng.
+	Trạng thái hoạt động của gói thương mại này
+	Enum (ACTIVE, INACTIVE) - Mặc định khi tạo là INACTIVE
+	Admin & User action:
+* Admin - Create Package: Tạo mới gói thương mại nền tảng số (Status khởi tạo bắt buộc là INACTIVE để làm bản nháp).
+* Admin - Publish Package: Chuyển trạng thái gói từ INACTIVE sang ACTIVE để chính thức mở cổng cho sản phẩm đăng ký tham gia.
+* Creator - Join Package: Gửi yêu cầu đăng ký sản phẩm vào gói để giới thiệu ra thị trường (Chỉ thực hiện được với sản phẩm thuộc trạng thái "Đủ điều kiện").
+Logic hoạt động phân loại sản phẩm (Permission Matching Engine):
+Sau khi một sản phẩm (Track nhạc) đã hoàn thành kiểm duyệt pháp lý ở Phần 7 và có tập dữ liệu quyền Allowed Core Permissions cụ thể, hệ thống sẽ thực hiện đối chiếu tập hợp giữa Allowed Core Permissions (ở Sản phẩm) và Referenced Permissions (ở Gói số) để tự động gắn 1 trong 3 trạng thái phân loại sau:
+* Loại 1 - Đủ điều kiện (Eligible): Khi và chỉ khi Allowed Core Permissions chứa toàn bộ (hoặc nhiều hơn) các quyền được yêu cầu trong Referenced Permissions của gói số. (Công thức logic: Referenced ⊆ Allowed). Sản phẩm hiển thị nút "Đăng ký tham gia".
+* Loại 2 - Không đủ điều kiện (Ineligible): Khi sản phẩm thiếu ít nhất một quyền cốt lõi mà gói số yêu cầu. Hệ thống sẽ vô hiệu hóa (Disable) nút đăng ký và hiển thị dòng chữ cảnh báo: "Thiếu quyền pháp lý tương thích".
+* Loại 3 - Đã đăng ký tham gia (Joined): Sản phẩm đã đủ điều kiện và người dùng đã bấm xác nhận tham gia gói thành công. Sản phẩm chính thức hiển thị ra ngoài thị trường và áp dụng biểu phí của gói này.
 Định nghĩa hoàn thành (DoD):
-* Màn hình thêm mới hiển thị trường Thời hạn ở dạng Dropdown/Radio chỉ cho phép chọn duy nhất 1 trong 2 tùy chọn: 1 Năm hoặc Vĩnh Viễn.
-* Tính năng lưu cấu hình hoạt động đúng: Lưu chính xác quan hệ giữa Digital Right và Core Permissions vào bảng trung gian.
-* Chuyển trạng thái sang INACTIVE lập tiếp ẩn cấu hình gói này khỏi giao diện hiển thị của người mua trên Frontend Client.
-
-
+* Khi Admin tạo mới một gói Digital Platform Right, hệ thống lưu xuống cơ sở dữ liệu với trạng thái Status = INACTIVE thành công, không cho phép hiển thị gói này ở giao diện đăng ký của Creator khi chưa Publish.
+* Hệ thống chạy ngầm logic so sánh tập hợp quyền chính xác: Phân loại đúng 3 trạng thái sản phẩm (Đủ điều kiện, Không đủ điều kiện, Đã tham gia) trên giao diện cấu hình tương ứng.
+* Chặn hoàn toàn hành động đăng ký gói đối với các sản phẩm nằm trong nhóm "Không đủ điều kiện".
 3. Physical Usage Rights Management (Tính năng Quản lý Quyền Sử dụng Vật lý)
-
-
 Mục tiêu:
-Quản lý các hình thức và địa điểm sử dụng âm nhạc ngoài đời thực (ngoài không gian mạng) nhằm áp dụng biểu phí thương mại tương ứng.
-
-
-
-
+Cấu hình thị trường thương mại ngoài đời thực, thiết lập bối cảnh/địa điểm và bộ quyền cốt lõi bắt buộc làm tiêu chuẩn để sản phẩm âm nhạc đăng ký tiếp cận các nhà tổ chức sự kiện offline.
 Đối tượng sử dụng:
-Admin
-
-
+Admin / Creator (Đăng ký sản phẩm tham gia)
 Màn hình hiển thị:
-Admin Physical Configuration (Giao diện quản lý phân loại sử dụng ngoài đời thực)
-
-
+* Admin View: Giao diện thiết lập bối cảnh thực tế (Phòng trà, hội chợ, sân khấu) và bộ quyền bắt buộc.
+* Creator View: Giao diện phân loại và đăng ký nhạc vào các bối cảnh biểu diễn thực tế.
 Bảng số liệu hiển thị:
 Tên thuộc tính
 	Mô tả thuộc tính
 	Ràng buộc / Kiểu dữ liệu
 	Physical Right ID
-	Mã cấu hình quyền vật lý
+	Mã cấu hình bối cảnh vật lý
 	String (Khóa chính - PK, UNIQUE, viết hoa)
 	Venue/Usage Type
 	Loại hình không gian hoặc cách thức biểu diễn thực tế
 	String (Ví dụ: PHÒNG TRÀ, HỘI CHỢ, QUÁN CAFE)
 	Referenced Permissions
-	Các quyền cốt lõi bắt buộc đi kèm khi mua địa điểm này
+	Bộ quyền cốt lõi tiêu chuẩn cần có để dùng tại địa điểm này
 	Multiselect Tag (Chọn các Permission ID đang ACTIVE)
 	Base Price / Multiplier
 	Mức giá cơ sở hoặc Hệ số nhân áp dụng cho địa điểm
 	Float / Decimal (Giá trị >= 1.0)
 	Status
-	Trạng thái hoạt động của cấu hình vật lý
-	Enum (ACTIVE, INACTIVE)
-	Admin action:
-* Create Physical Right: Thêm một loại hình địa điểm hoặc bối cảnh biểu diễn thực tế mới vào hệ thống.
-* Update Physical Right: Sửa tên loại hình, đổi hệ số giá hoặc thay đổi các quyền cốt lõi đi kèm.
-Logic hoạt động:
-* Module này chạy hoàn toàn độc lập với môi trường mạng xã hội kỹ thuật số. Engine tính tiền của hệ thống chỉ gọi đến bảng này khi người dùng lựa chọn luồng mua giấy phép cấp cho các hoạt động offline bên ngoài đời thực.
+	Trạng thái hoạt động của cấu hình bối cảnh vật lý
+	Enum (ACTIVE, INACTIVE) - Mặc định khi tạo là INACTIVE
+	Admin & User action:
+* Admin - Create Package: Tạo mới cấu hình bối cảnh vật lý (Status khởi tạo bắt buộc là INACTIVE).
+* Admin - Publish Package: Chuyển đổi trạng thái sang ACTIVE để nghiệm thu bản nháp và kích hoạt cổng thương mại ra thị trường.
+* Creator - Join Package: Đưa sản phẩm âm nhạc vào danh sách sẵn sàng cấp phép cho địa điểm thực tế này (Chỉ áp dụng cho sản phẩm "Đủ điều kiện").
+Logic hoạt động phân loại sản phẩm (Permission Matching Engine):
+Áp dụng cơ chế so sánh tập hợp quyền tương tự như môi trường số để bảo vệ an toàn pháp lý cho tác giả và người sử dụng:
+* Loại 1 - Đủ điều kiện (Eligible): Tập hợp quyền pháp lý được duyệt của sản phẩm Allowed Core Permissions bao phủ toàn bộ bộ quyền yêu cầu Referenced Permissions của bối cảnh vật lý.
+* Loại 2 - Không đủ điều kiện (Ineligible): Sản phẩm không đáp ứng đủ điều kiện quyền tối thiểu của địa điểm (Ví dụ: Gói biểu diễn tại "HỘI CHỢ" yêu cầu Quyền biểu diễn trước công chúng, nhưng sản phẩm chưa được duyệt quyền này). Hệ thống chặn không cho phép gửi đăng ký.
+* Loại 3 - Đã đăng ký tham gia (Joined): Sản phẩm đã được Creator duyệt đưa vào gói thành công và sẵn sàng hiển thị trên danh mục thương mại vật lý công khai.
 Định nghĩa hoàn thành (DoD):
-* Danh sách hiển thị rõ ràng, phân trang đầy đủ thông tin các loại hình địa điểm thực tế cùng hệ số giá đi kèm.
-* Tính năng xác thực Form hoạt động đúng, chặn không cho lưu nếu để trống các trường bắt buộc hoặc nhập sai định dạng số tiền/hệ số.
+* Hệ thống bắt buộc gán Status = INACTIVE cho mọi bản ghi bối cảnh vật lý mới được tạo lập.
+* Logic kiểm tra điều kiện quyền chạy đúng: Tách biệt chính xác danh sách sản phẩm theo 3 trạng thái điều kiện tương ứng.
+* Khi Admin/Creator chủ động đổi trạng thái gói hoặc sản phẩm đăng ký, hệ thống cập nhật tức thì theo thời gian thực xuống database.
 4. Product Expression Management (Tính năng Quản lý Hình thức Biểu hiện)
 Mục tiêu:
 Quản lý danh mục cấu hình các hình thức biểu hiện của sản phẩm âm nhạc (Ví dụ: Hát cover, Sử dụng làm nhạc nền, Nhạc phim, Nhạc quảng cáo) và quản lý hệ số nhân biểu phí riêng cho từng hình thức.
-
-
 Đối tượng sử dụng:
 Admin
-
-
 Màn hình hiển thị:
 Admin Expression Settings Dashboard
-
-
 Bảng số liệu hiển thị:
 Tên thuộc tính
 	Mô tả thuộc tính
@@ -175,22 +148,14 @@ Tên thuộc tính
 * Update Expression Rule: Chỉnh sửa tên, cập nhật tăng giảm hệ số nhân hoặc thay đổi quyền liên kết.
 Logic hoạt động:
 * Tách biệt module này giúp Admin có thể cấu hình chi tiết: Để người dùng được quyền dùng bài hát làm "Nhạc phim Quảng cáo thương mại", ngoài việc nhân hệ số giá lên cao, hệ thống sẽ bắt buộc phải đính kèm thêm các quyền cốt lõi đặc thù (Ví dụ: Quyền phân phối, Quyền truyền đạt đến công chúng). Khi người dùng chọn hình thức này, các quyền đính kèm sẽ tự động được thêm vào giỏ hàng pháp lý của họ.
-
-
 Định nghĩa hoàn thành (DoD):
 * Admin tạo mới thành công một hình thức biểu hiện, hệ thống lưu đúng hệ số nhân và liên kết quyền cốt lõi tương ứng xuống Database.
 * Engine tính tiền tự động lấy đúng hệ số nhân của hình thức biểu hiện được chọn để nhân vào công thức giá cuối cùng.
-
-
 5. Product Modification Management (Tính năng Quản lý Mức độ Biến đổi Tác phẩm)
 Mục tiêu:
 Quản lý danh mục cấu hình các mức độ can thiệp, thay đổi, chỉnh sửa cấu trúc của tác phẩm gốc và ràng buộc các quyền làm sản phẩm phái sinh đi kèm hệ số phí tương ứng.
-
-
 Đối tượng sử dụng:
 Admin
-
-
 Màn hình hiển thị:
 Admin Modification Config Dashboard
 Bảng số liệu hiển thị:
@@ -223,16 +188,10 @@ Logic hoạt động:
 6. Product Management (Tính năng Quản lý Sản phẩm Core)
 Mục tiêu:
 Quản lý các thông tin thuộc tính vật lý, hình ảnh đại diện (Thumbnail) của sản phẩm (Track nhạc) và danh sách các quyền thương mại được phép khai thác sau khi đã qua kiểm duyệt pháp lý.
-
-
 Đối tượng sử dụng:
 Admin / Creator
-
-
 Màn hình hiển thị:
 Admin Product Overview (Bảng danh sách sản phẩm và Form cấu hình quyền thương mại)
-
-
 Bảng số liệu hiển thị:
 Tên thuộc tính
 	Mô tả thuộc tính
@@ -288,16 +247,10 @@ Logic hoạt động:
 7. Compliance & Legal Management (Module Quản lý Giấy tờ Pháp lý & Kiểm duyệt)
 Mục tiêu:
 Quản lý quy trình tải lên trực tiếp các tệp tin chứng minh pháp lý, thực hiện kiểm duyệt chất lượng nội dung âm thanh và tiến hành cấp quyền thương mại hợp pháp cho từng sản phẩm.
-
-
 Đối tượng sử dụng:
 Admin (Bộ phận Pháp chế / Kiểm duyệt viên)
-
-
 Màn hình hiển thị:
 Admin Compliance & Review Dashboard (Màn hình thẩm định hồ sơ, xem file đính kèm và cấp quyền)
-
-
 Bảng số liệu hiển thị:
 Tên thuộc tính
 	Mô tả thuộc tính
@@ -334,8 +287,6 @@ Tên thuộc tính
 * View/Download Files: Admin có thể click để tải về hoặc xem trực tiếp các file đã upload thông qua Secure S3 Presigned URL.
 * Assign Approved Permissions: Đánh giá giấy tờ và chọn các quyền cụ thể được phép áp dụng cho sản phẩm này.
 * Submit Review Decision: Xác nhận kết quả duyệt để kích hoạt trạng thái cho sản phẩm.
-
-
 Logic hoạt động:
 * Luồng xử lý Upload File: Thay vì lưu một đường dẫn text (URL) tĩnh cố định, hệ thống cung cấp API Endpoint dạng Multipart/Form-Data cho phép upload nhiều file cùng lúc lên Object Storage (S3). Hệ thống sẽ Validate định dạng file (Chỉ nhận PDF, tài liệu văn bản hoặc ảnh scan rõ nét) và giới hạn dung lượng file (< 25MB mỗi file) trước khi lưu thông tin vào trường Uploaded Legal Files.
 * Luồng đồng bộ tự động và Cấp quyền (Event Trigger & Data Sync):
@@ -344,8 +295,6 @@ Logic hoạt động:
 3. Khi Admin bấm "Xác nhận" và hệ thống ghi nhận Legal Status = SUFFICIENT VÀ Review Status = APPROVED:
 * Hệ thống sẽ tự động thực hiện một lệnh Update (hoặc bắn Event đồng bộ dữ liệu) để sao chép toàn bộ danh sách quyền từ Approved Permissions (Phần 7) ghi đè vào trường Allowed Core Permissions của bảng Product (Phần 6).
 * Đồng thời, hệ thống tự động giải phóng lệnh khóa, cho phép Admin/Creator có quyền chuyển trạng thái sản phẩm bên Phần 6 từ PENDING sang PUBLISH hoặc HIDDEN.
-
-
 Định nghĩa hoàn thành (DoD):
 * Tính năng Tải tệp tin (Upload File) hoạt động chính xác: Hệ thống lưu trữ thành công danh sách file đính kèm dưới dạng mảng JSON gồm tên file và S3 key, chặn thành công các file sai định dạng (ví dụ: chặn file .exe, .mp3 gài vào phần giấy tờ).
 * Tính năng Xem tệp đính kèm hoạt động đúng: Admin click vào từng file trong danh sách Uploaded Legal Files hiển thị trên giao diện, hệ thống tự động sinh mã Token bảo mật để mở file hoặc tải file về máy thành công.

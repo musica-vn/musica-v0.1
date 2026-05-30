@@ -4,6 +4,9 @@ import type { Request } from 'express'
 import { REQUIRE_ROLES_KEY } from './require-roles.decorator'
 import type { AuthUserContext } from './auth.types'
 
+const normalizeRoleName = (roleName: string) =>
+  roleName.trim().replaceAll(/[\s-]+/g, '_').toUpperCase()
+
 @Injectable()
 export class RolesGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
@@ -22,7 +25,12 @@ export class RolesGuard implements CanActivate {
       throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED)
     }
 
-    const hasRole = typeof user.roleName === 'string' && requiredRoles.includes(user.roleName)
+    const normalizedUserRole =
+      typeof user.roleName === 'string' ? normalizeRoleName(user.roleName) : null
+    const normalizedRequiredRoles = requiredRoles.map(normalizeRoleName)
+    const hasRole =
+      typeof normalizedUserRole === 'string' &&
+      normalizedRequiredRoles.includes(normalizedUserRole)
     if (!hasRole) {
       throw new HttpException('Forbidden', HttpStatus.FORBIDDEN)
     }

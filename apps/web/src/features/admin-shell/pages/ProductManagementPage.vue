@@ -11,6 +11,7 @@ import { listManagedUsers } from '../../managed-users/managed-users.api'
 import type { ManagedUser } from '../../managed-users/managed-users.types'
 import type {
   Product,
+  ProductLicensingEligibilityConfig,
   ProductSortValue,
   ProductStatus,
   ProductThumbnailExtension,
@@ -217,6 +218,36 @@ const summaryCards = computed(() => [
     tone: 'primary' as const,
   },
 ])
+const getEligibilityTotal = (track: Product, type: 'digital' | 'physical') =>
+  type === 'digital'
+    ? track.licensingEligibility.summary.eligibleDigitalCount + track.licensingEligibility.summary.ineligibleDigitalCount
+    : track.licensingEligibility.summary.eligiblePhysicalCount + track.licensingEligibility.summary.ineligiblePhysicalCount
+const formatEligibilityStatusLabel = (status: ProductLicensingEligibilityConfig['status']) =>
+  status === 'ELIGIBLE' ? 'Đủ điều kiện' : 'Không đủ điều kiện'
+const getEligibilityStatusClass = (status: ProductLicensingEligibilityConfig['status']) =>
+  status === 'ELIGIBLE'
+    ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300'
+    : 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300'
+const formatTrackEligibilitySummary = (track: Product) => {
+  const digitalTotal = getEligibilityTotal(track, 'digital')
+  const physicalTotal = getEligibilityTotal(track, 'physical')
+
+  if (digitalTotal === 0 && physicalTotal === 0) {
+    return 'Chưa có gói active để đối chiếu'
+  }
+
+  return `Digital ${track.licensingEligibility.summary.eligibleDigitalCount}/${digitalTotal} · Physical ${track.licensingEligibility.summary.eligiblePhysicalCount}/${physicalTotal}`
+}
+const getEligibilityMissingSummary = (config: ProductLicensingEligibilityConfig) =>
+  config.missingPermissions.map((permission) => permission.name).join(', ')
+const hasSelectedTrackEligibility = computed(() => {
+  if (!selectedTrack.value) return false
+
+  return (
+    getEligibilityTotal(selectedTrack.value, 'digital') > 0 ||
+    getEligibilityTotal(selectedTrack.value, 'physical') > 0
+  )
+})
 const createDurationDisplay = computed(() => {
   const parsed = parseDuration(createForm.duration)
   return parsed === undefined ? null : formatDuration(Math.max(0, Math.round(parsed)))
@@ -236,13 +267,14 @@ const selectedTrackDescription = computed(() => {
     track.allowedPermissions.length > 0
       ? track.allowedPermissions.map((item) => item.name).join(', ')
       : 'chưa chọn quyền bán'
+  const eligibilitySummary = formatTrackEligibilitySummary(track).toLowerCase()
   const audioStateLabel = track.originalAudioKey ? 'đã có file MP3 gốc' : 'chưa có file MP3 gốc'
 
   if (track.description && track.description.trim().length > 0) {
     return track.description
   }
 
-  return `Track "${track.title}" hiện ${statusLabel}. Bản ghi này hiển thị tác giả ${authorLabel}, thuộc nhóm ${genreLabel}, phù hợp use-case ${useCaseLabel}, thời lượng ${durationLabel}, ${audioStateLabel} và đang có các quyền bán: ${allowedPermissionsLabel}.`
+  return `Track "${track.title}" hiện ${statusLabel}. Bản ghi này hiển thị tác giả ${authorLabel}, thuộc nhóm ${genreLabel}, phù hợp use-case ${useCaseLabel}, thời lượng ${durationLabel}, ${audioStateLabel}, đang có các quyền bán: ${allowedPermissionsLabel} và phân loại licensing hiện tại là ${eligibilitySummary}.`
 })
 const selectedTrackAttributeItems = computed<TrackAttributeItem[]>(() => {
   if (!selectedTrack.value) return []
@@ -323,6 +355,7 @@ const parseDuration = (value: string): number | undefined => {
 }
 
 const formatArtistOptionLabel = (artist: ManagedUser) => `${artist.fullName} · ${artist.email}`
+const ARTIST_OPTIONS_PAGE_SIZE = 100
 
 const resolveArtistDisplay = (artistId: string) =>
   artistOptions.value.find((option) => option.value === artistId)?.label ?? artistId
@@ -331,14 +364,24 @@ const fetchArtistOptions = async () => {
   isArtistsLoading.value = true
 
   try {
-    const response = await listManagedUsers({
-      page: 1,
-      pageSize: 200,
-      roleName: 'Artist',
-      status: 'ACTIVE',
-    })
+    let currentPage = 1
+    let hasNextPage = true
+    const artists: ManagedUser[] = []
 
-    artistOptions.value = [...response.data.items]
+    while (hasNextPage) {
+      const response = await listManagedUsers({
+        page: currentPage,
+        pageSize: ARTIST_OPTIONS_PAGE_SIZE,
+        roleName: 'Artist',
+        status: 'ACTIVE',
+      })
+
+      artists.push(...response.data.items)
+      hasNextPage = response.meta.pagination.hasNextPage
+      currentPage += 1
+    }
+
+    artistOptions.value = [...artists]
       .sort((left, right) => left.fullName.localeCompare(right.fullName, undefined, { sensitivity: 'base' }))
       .map((artist) => ({
         value: artist.id,
@@ -1344,15 +1387,20 @@ onBeforeUnmount(() => {
                   </div>
                 </td>
                 <td class="px-3 py-4">
-                  <button
-                    type="button"
-                    class="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-violet-300 hover:text-violet-700 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:border-violet-500/40 dark:hover:text-violet-200"
-                    :disabled="isLoading"
-                    @click="openApprovedPermissionsDialog(track)"
-                  >
-                    <i class="pi pi-book text-xs" />
-                    {{ track.allowedPermissions?.length ?? track.allowedPermissionIds?.length ?? 0 }} quyền
-                  </button>
+                  <div class="space-y-2">
+                    <button
+                      type="button"
+                      class="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-violet-300 hover:text-violet-700 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:border-violet-500/40 dark:hover:text-violet-200"
+                      :disabled="isLoading"
+                      @click="openApprovedPermissionsDialog(track)"
+                    >
+                      <i class="pi pi-book text-xs" />
+                      {{ track.allowedPermissions?.length ?? track.allowedPermissionIds?.length ?? 0 }} quyền
+                    </button>
+                    <div class="text-[11px] text-slate-500 dark:text-slate-400">
+                      {{ formatTrackEligibilitySummary(track) }}
+                    </div>
+                  </div>
                 </td>
                 <td class="px-3 py-4">
                   <button
@@ -1817,6 +1865,100 @@ onBeforeUnmount(() => {
                 {{ permission.name }}
               </span>
               <span v-if="selectedTrack.allowedPermissions.length === 0" class="text-sm text-slate-500 dark:text-slate-400">Chưa chọn quyền bán cho sản phẩm.</span>
+            </div>
+          </article>
+
+          <article class="rounded-[28px] border border-slate-200/80 bg-white/80 p-5 dark:border-slate-800 dark:bg-slate-950/60 lg:col-span-2">
+            <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <div class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Matching Digital / Physical Rights</div>
+                <div class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                  Đối chiếu các gói đang `ACTIVE` với tập `Allowed Core Permissions` hiện tại của product.
+                </div>
+              </div>
+              <div class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-900 dark:text-slate-300">
+                {{ formatTrackEligibilitySummary(selectedTrack) }}
+              </div>
+            </div>
+
+            <div v-if="!hasSelectedTrackEligibility" class="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-400">
+              Chưa có cấu hình digital hoặc physical nào đang `ACTIVE` để hệ thống đối chiếu.
+            </div>
+
+            <div v-else class="mt-4 grid gap-4 lg:grid-cols-2">
+              <section class="rounded-[24px] border border-slate-200/80 bg-slate-50/80 p-4 dark:border-slate-800 dark:bg-slate-900/50">
+                <div class="flex items-center justify-between gap-3">
+                  <div class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Digital Platform Rights</div>
+                  <div class="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-950 dark:text-slate-300">
+                    {{ selectedTrack.licensingEligibility.summary.eligibleDigitalCount }}/{{ getEligibilityTotal(selectedTrack, 'digital') }} đủ điều kiện
+                  </div>
+                </div>
+
+                <div v-if="selectedTrack.licensingEligibility.digitalConfigs.length === 0" class="mt-3 text-sm text-slate-500 dark:text-slate-400">
+                  Chưa có gói quyền số nào đang `ACTIVE`.
+                </div>
+
+                <div v-else class="mt-3 space-y-3">
+                  <article
+                    v-for="config in selectedTrack.licensingEligibility.digitalConfigs"
+                    :key="`${selectedTrack.id}-digital-${config.configId}`"
+                    class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-950"
+                  >
+                    <div class="flex items-start justify-between gap-3">
+                      <div class="min-w-0">
+                        <div class="font-semibold text-slate-900 dark:text-white">{{ config.title }}</div>
+                        <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                          {{ config.referencedPermissions.length }} quyền tham chiếu
+                        </div>
+                      </div>
+                      <span class="inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold" :class="getEligibilityStatusClass(config.status)">
+                        {{ formatEligibilityStatusLabel(config.status) }}
+                      </span>
+                    </div>
+
+                    <div v-if="config.status === 'INELIGIBLE' && config.missingPermissions.length > 0" class="mt-3 text-xs text-rose-700 dark:text-rose-300">
+                      Thiếu quyền: {{ getEligibilityMissingSummary(config) }}
+                    </div>
+                  </article>
+                </div>
+              </section>
+
+              <section class="rounded-[24px] border border-slate-200/80 bg-slate-50/80 p-4 dark:border-slate-800 dark:bg-slate-900/50">
+                <div class="flex items-center justify-between gap-3">
+                  <div class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Physical Usage Rights</div>
+                  <div class="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-950 dark:text-slate-300">
+                    {{ selectedTrack.licensingEligibility.summary.eligiblePhysicalCount }}/{{ getEligibilityTotal(selectedTrack, 'physical') }} đủ điều kiện
+                  </div>
+                </div>
+
+                <div v-if="selectedTrack.licensingEligibility.physicalConfigs.length === 0" class="mt-3 text-sm text-slate-500 dark:text-slate-400">
+                  Chưa có cấu hình quyền vật lý nào đang `ACTIVE`.
+                </div>
+
+                <div v-else class="mt-3 space-y-3">
+                  <article
+                    v-for="config in selectedTrack.licensingEligibility.physicalConfigs"
+                    :key="`${selectedTrack.id}-physical-${config.configId}`"
+                    class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-950"
+                  >
+                    <div class="flex items-start justify-between gap-3">
+                      <div class="min-w-0">
+                        <div class="font-semibold text-slate-900 dark:text-white">{{ config.title }}</div>
+                        <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                          {{ config.referencedPermissions.length }} quyền tham chiếu
+                        </div>
+                      </div>
+                      <span class="inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold" :class="getEligibilityStatusClass(config.status)">
+                        {{ formatEligibilityStatusLabel(config.status) }}
+                      </span>
+                    </div>
+
+                    <div v-if="config.status === 'INELIGIBLE' && config.missingPermissions.length > 0" class="mt-3 text-xs text-rose-700 dark:text-rose-300">
+                      Thiếu quyền: {{ getEligibilityMissingSummary(config) }}
+                    </div>
+                  </article>
+                </div>
+              </section>
             </div>
           </article>
         </section>

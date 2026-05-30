@@ -65,31 +65,58 @@ const resourceConfigMap: Record<
     detailPlaceholder: string
     priceLabel: string
     emptyState: string
+    keywordPlaceholder: string
+    permissionLabel: string
+    emptyPermissionsText: string
+    permissionLoadingMessage: string
+    createSuccessMessage: string
+    updateSuccessMessage: string
+    deleteSuccessMessage: string
+    permissionsDialogEmptyState: string
+    draftNotice?: string
     supportsDigitalFilters: boolean
   }
 > = {
   digital: {
-    title: 'Cấu hình quyền nền tảng số',
+    title: 'Gói quyền nền tảng số',
     description:
-      'Quản lý cấu hình bản quyền nền tảng số theo từng nền tảng áp dụng, thời hạn và quyền phụ thuộc.',
-    createLabel: 'Thêm cấu hình quyền số',
-    editLabel: 'Cập nhật cấu hình quyền số',
+      'Thiết lập gói thương mại cho nền tảng số, chọn bộ quyền cốt lõi bắt buộc và quản lý vòng đời bản nháp hoặc publish.',
+    createLabel: 'Tạo gói quyền số',
+    editLabel: 'Cập nhật gói quyền số',
     detailColumnLabel: 'Nền tảng / Thời hạn',
-    detailPlaceholder: 'Nền tảng áp dụng và thời hạn',
-    priceLabel: 'Hệ số giá cơ sở',
-    emptyState: 'Chưa có cấu hình quyền nền tảng số nào.',
+    detailPlaceholder: 'Nền tảng thương mại và thời hạn áp dụng',
+    priceLabel: 'Giá cơ sở / hệ số',
+    emptyState: 'Chưa có gói quyền nền tảng số nào.',
+    keywordPlaceholder: 'Tìm theo nền tảng hoặc thời hạn gói số',
+    permissionLabel: 'Quyền cốt lõi bắt buộc',
+    emptyPermissionsText: 'Chưa chọn quyền cốt lõi bắt buộc',
+    permissionLoadingMessage: 'Đang tải bộ quyền cốt lõi bắt buộc...',
+    createSuccessMessage: 'Đã tạo bản nháp gói quyền số.',
+    updateSuccessMessage: 'Đã cập nhật gói quyền số.',
+    deleteSuccessMessage: 'Đã xoá gói quyền số.',
+    permissionsDialogEmptyState: 'Chưa cấu hình quyền cốt lõi bắt buộc.',
+    draftNotice: 'Bản ghi mới sẽ được tạo ở trạng thái Bản nháp. Dùng thao tác Publish sau khi hoàn tất cấu hình.',
     supportsDigitalFilters: true,
   },
   physical: {
     title: 'Cấu hình quyền sử dụng vật lý',
     description:
-      'Quản lý các loại hình sử dụng âm nhạc ngoài đời thực cùng hệ số giá và quyền phụ thuộc áp dụng cho từng bối cảnh.',
-    createLabel: 'Thêm cấu hình quyền vật lý',
+      'Thiết lập bối cảnh hoặc địa điểm sử dụng thực tế, bộ quyền cốt lõi bắt buộc và quản lý trạng thái bản nháp hoặc kích hoạt.',
+    createLabel: 'Tạo cấu hình quyền vật lý',
     editLabel: 'Cập nhật cấu hình quyền vật lý',
-    detailColumnLabel: 'Loại hình sử dụng thực tế',
-    detailPlaceholder: 'Loại hình sử dụng ngoài đời thực',
-    priceLabel: 'Hệ số giá cơ sở',
+    detailColumnLabel: 'Bối cảnh / địa điểm sử dụng',
+    detailPlaceholder: 'Bối cảnh hoặc địa điểm sử dụng thực tế',
+    priceLabel: 'Giá cơ sở / hệ số',
     emptyState: 'Chưa có cấu hình quyền sử dụng vật lý nào.',
+    keywordPlaceholder: 'Tìm theo bối cảnh hoặc địa điểm sử dụng',
+    permissionLabel: 'Quyền cốt lõi bắt buộc',
+    emptyPermissionsText: 'Chưa chọn quyền cốt lõi bắt buộc',
+    permissionLoadingMessage: 'Đang tải bộ quyền cốt lõi bắt buộc...',
+    createSuccessMessage: 'Đã tạo bản nháp cấu hình quyền vật lý.',
+    updateSuccessMessage: 'Đã cập nhật cấu hình quyền vật lý.',
+    deleteSuccessMessage: 'Đã xoá cấu hình quyền vật lý.',
+    permissionsDialogEmptyState: 'Chưa cấu hình quyền cốt lõi bắt buộc.',
+    draftNotice: 'Bản ghi mới sẽ được tạo ở trạng thái Bản nháp. Chỉ kích hoạt sau khi hoàn tất bộ quyền và biểu phí áp dụng.',
     supportsDigitalFilters: false,
   },
   expression: {
@@ -102,6 +129,14 @@ const resourceConfigMap: Record<
     detailPlaceholder: 'Tên hình thức biểu hiện',
     priceLabel: 'Hệ số giá',
     emptyState: 'Chưa có hình thức biểu hiện nào.',
+    keywordPlaceholder: 'Tìm theo tên hình thức biểu hiện',
+    permissionLabel: 'Quyền tham khảo',
+    emptyPermissionsText: 'Chưa chọn quyền tham khảo',
+    permissionLoadingMessage: 'Đang tải danh sách quyền...',
+    createSuccessMessage: 'Đã tạo cấu hình thành công.',
+    updateSuccessMessage: 'Đã cập nhật cấu hình.',
+    deleteSuccessMessage: 'Đã xoá cấu hình.',
+    permissionsDialogEmptyState: 'Chưa chọn quyền tham khảo.',
     supportsDigitalFilters: false,
   },
   modification: {
@@ -114,6 +149,14 @@ const resourceConfigMap: Record<
     detailPlaceholder: 'Tên mức độ biến đổi',
     priceLabel: 'Hệ số giá',
     emptyState: 'Chưa có mức độ biến đổi nào.',
+    keywordPlaceholder: 'Tìm theo tên mức độ biến đổi',
+    permissionLabel: 'Quyền tham khảo',
+    emptyPermissionsText: 'Chưa chọn quyền tham khảo',
+    permissionLoadingMessage: 'Đang tải danh sách quyền...',
+    createSuccessMessage: 'Đã tạo cấu hình thành công.',
+    updateSuccessMessage: 'Đã cập nhật cấu hình.',
+    deleteSuccessMessage: 'Đã xoá cấu hình.',
+    permissionsDialogEmptyState: 'Chưa chọn quyền tham khảo.',
     supportsDigitalFilters: false,
   },
 }
@@ -235,6 +278,7 @@ const pageEnd = computed(() => Math.min(pagination.page * pagination.pageSize, c
 const isDigitalResource = computed(() => props.resource === 'digital')
 const isPhysicalResource = computed(() => props.resource === 'physical')
 const isDigitalOrPhysicalResource = computed(() => isDigitalResource.value || isPhysicalResource.value)
+const isDraftManagedResource = computed(() => isDigitalOrPhysicalResource.value)
 const supportsPermissionPicker = computed(
   () =>
     isDigitalOrPhysicalResource.value ||
@@ -242,30 +286,23 @@ const supportsPermissionPicker = computed(
     props.resource === 'modification',
 )
 const keywordLabel = computed(() => 'Từ khoá')
-const keywordPlaceholder = computed(() =>
-  isDigitalOrPhysicalResource.value
-    ? 'Tìm theo nền tảng, thời hạn hoặc loại sử dụng'
-    : 'Tìm theo tên hiển thị',
-)
+const keywordPlaceholder = computed(() => currentResource.value.keywordPlaceholder)
 const statusFieldLabel = computed(() => 'Trạng thái')
-const permissionsLabel = computed(() =>
-  isDigitalOrPhysicalResource.value ? 'Quyền phụ thuộc' : 'Quyền tham khảo',
-)
+const permissionsLabel = computed(() => currentResource.value.permissionLabel)
 const actionsLabel = computed(() => 'Thao tác')
-const emptyPermissionsText = computed(() =>
-  isDigitalOrPhysicalResource.value ? 'Chưa chọn quyền phụ thuộc' : 'Chưa chọn quyền tham khảo',
-)
+const emptyPermissionsText = computed(() => currentResource.value.emptyPermissionsText)
 const editDialogTitle = computed(() => currentResource.value.editLabel)
+const draftNotice = computed(() => currentResource.value.draftNotice ?? null)
 const isPermissionOptionsLoading = computed(
   () => supportsPermissionPicker.value && (!hasLoadedPermissionOptions.value || corePermissionsStore.isLoading),
 )
 const isPermissionSubmitDisabled = computed(
   () => isSubmitting.value || isPermissionOptionsLoading.value || !isNameValid.value,
 )
-const permissionOptionsLoadingMessage = computed(() =>
-  isDigitalOrPhysicalResource.value ? 'Đang tải quyền phụ thuộc...' : 'Đang tải danh sách quyền...',
-)
+const permissionOptionsLoadingMessage = computed(() => currentResource.value.permissionLoadingMessage)
 const permissionOptionsEmptyMessage = computed(() => 'Hiện chưa có quyền cốt lõi đang hoạt động để lựa chọn.')
+const permissionsDialogEmptyState = computed(() => currentResource.value.permissionsDialogEmptyState)
+const createActionLabel = computed(() => (isDraftManagedResource.value ? 'Tạo bản nháp' : 'Tạo'))
 
 const mergedPermissionOptions = computed<ReferencedPermissionSummary[]>(() => {
   const activePermissions = corePermissionsStore.activeItems.map((item) => ({
@@ -291,7 +328,7 @@ const toggleReferencedPermission = (permissionId: string) => {
 }
 
 const openPermissionsDialog = (item: AnyLicensingConfig) => {
-  permissionsDialogTitle.value = `${getDetailText(item)} - ${isDigitalOrPhysicalResource.value ? 'Quyền phụ thuộc' : 'Quyền tham khảo'}`
+  permissionsDialogTitle.value = `${getDetailText(item)} - ${currentResource.value.permissionLabel}`
   permissionsDialogPermissions.value = item.referencedPermissions
   permissionsDialogVisible.value = true
 }
@@ -330,8 +367,13 @@ const fetchListSafely = async () => {
   }
 }
 
-const formatStatusLabel = (status: LicensingConfigStatus) =>
-  status === 'ACTIVE' ? 'Hoạt động' : 'Tắt'
+const formatStatusLabel = (status: LicensingConfigStatus) => {
+  if (isDraftManagedResource.value) {
+    return status === 'ACTIVE' ? 'Đã publish' : 'Bản nháp'
+  }
+
+  return status === 'ACTIVE' ? 'Hoạt động' : 'Tắt'
+}
 
 const formatDigitalPlatformLabel = (platform: DigitalPlatform) => platform
 
@@ -520,7 +562,7 @@ const submitCreate = async () => {
         break
     }
 
-    successMessage.value = 'Đã tạo cấu hình thành công.'
+    successMessage.value = currentResource.value.createSuccessMessage
     createDialogVisible.value = false
     await fetchList()
   } catch (error) {
@@ -556,7 +598,7 @@ const submitEdit = async () => {
         break
     }
 
-    successMessage.value = 'Đã cập nhật cấu hình.'
+    successMessage.value = currentResource.value.updateSuccessMessage
     editDialogVisible.value = false
     await fetchList()
   } catch (error) {
@@ -586,7 +628,11 @@ const performToggleStatus = async (item: AnyLicensingConfig) => {
         break
     }
 
-    successMessage.value = 'Đã cập nhật trạng thái.'
+    successMessage.value = isDraftManagedResource.value
+      ? nextStatus === 'ACTIVE'
+        ? 'Đã publish cấu hình.'
+        : 'Đã chuyển cấu hình về bản nháp.'
+      : 'Đã cập nhật trạng thái.'
     await fetchList()
   } catch (error) {
     setError(error)
@@ -612,7 +658,7 @@ const performRemoveOne = async (item: AnyLicensingConfig) => {
         break
     }
 
-    successMessage.value = 'Đã xoá cấu hình.'
+    successMessage.value = currentResource.value.deleteSuccessMessage
     await fetchList()
   } catch (error) {
     setError(error)
@@ -644,8 +690,29 @@ const getDetailText = (item: AnyLicensingConfig) => {
 
 const confirmToggleStatus = (item: AnyLicensingConfig) => {
   const nextStatus: LicensingConfigStatus = item.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE'
-  const statusLabel = formatStatusLabel(nextStatus)
   const title = getDetailText(item)
+
+  if (isDraftManagedResource.value) {
+    const header = nextStatus === 'ACTIVE' ? 'Xác nhận publish' : 'Xác nhận chuyển bản nháp'
+    const message =
+      nextStatus === 'ACTIVE'
+        ? `Bạn có chắc muốn publish "${title}" để mở cấu hình này cho đăng ký không?`
+        : `Bạn có chắc muốn chuyển "${title}" về trạng thái bản nháp không?`
+    const acceptLabel = nextStatus === 'ACTIVE' ? 'Publish' : 'Chuyển nháp'
+
+    confirm.require({
+      header,
+      message,
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel,
+      rejectLabel: 'Huỷ',
+      accept: () => void performToggleStatus(item),
+    })
+
+    return
+  }
+
+  const statusLabel = formatStatusLabel(nextStatus)
   const header = nextStatus === 'INACTIVE' ? 'Xác nhận tắt' : 'Xác nhận bật'
 
   confirm.require({
@@ -893,6 +960,9 @@ onMounted(() => {
     <Dialog v-model:visible="createDialogVisible" modal class="w-[min(860px,96vw)]" :header="currentResource.createLabel">
       <div class="grid gap-4 sm:grid-cols-2">
         <template v-if="props.resource === 'digital'">
+          <div v-if="draftNotice" class="sm:col-span-2">
+            <Message severity="info">{{ draftNotice }}</Message>
+          </div>
           <label class="space-y-2">
             <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Nền tảng áp dụng</span>
             <div class="relative">
@@ -921,8 +991,11 @@ onMounted(() => {
         </template>
 
         <template v-if="props.resource === 'physical'">
+          <div v-if="draftNotice" class="sm:col-span-2">
+            <Message severity="info">{{ draftNotice }}</Message>
+          </div>
           <label class="space-y-2 sm:col-span-2">
-            <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Loại hình sử dụng thực tế</span>
+            <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Bối cảnh / địa điểm sử dụng</span>
             <input v-model="form.venueUsageType" :class="fieldClass" placeholder="PHÒNG TRÀ / HỘI CHỢ / QUÁN CAFE" :disabled="isSubmitting" />
           </label>
           <label class="space-y-2 sm:col-span-2">
@@ -1008,7 +1081,7 @@ onMounted(() => {
       <template #footer>
         <div class="flex w-full justify-end gap-3">
           <button type="button" :class="secondaryButtonClass" :disabled="isSubmitting" @click="createDialogVisible = false">Huỷ</button>
-          <button type="button" :class="primaryButtonClass" :disabled="isPermissionSubmitDisabled" @click="submitCreate">Tạo</button>
+          <button type="button" :class="primaryButtonClass" :disabled="isPermissionSubmitDisabled" @click="submitCreate">{{ createActionLabel }}</button>
         </div>
       </template>
     </Dialog>
@@ -1045,7 +1118,7 @@ onMounted(() => {
 
         <template v-if="props.resource === 'physical'">
           <label class="space-y-2 sm:col-span-2">
-            <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Loại hình sử dụng thực tế</span>
+            <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Bối cảnh / địa điểm sử dụng</span>
             <input v-model="form.venueUsageType" :class="fieldClass" :disabled="isSubmitting" />
           </label>
           <label class="space-y-2 sm:col-span-2">
@@ -1138,7 +1211,7 @@ onMounted(() => {
 
     <Dialog v-model:visible="permissionsDialogVisible" modal class="w-[min(720px,96vw)]" :header="permissionsDialogTitle">
       <div v-if="permissionsDialogPermissions.length === 0" class="text-sm text-slate-500 dark:text-slate-400">
-        Chưa chọn quyền tham khảo.
+        {{ permissionsDialogEmptyState }}
       </div>
       <div v-else class="space-y-2">
         <div

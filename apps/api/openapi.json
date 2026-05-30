@@ -3314,6 +3314,9 @@
       "ProductAllowedPermissionDto": {
         "type": "object",
         "properties": {
+          "id": {
+            "type": "string"
+          },
           "name": {
             "type": "string"
           },
@@ -3322,8 +3325,102 @@
           }
         },
         "required": [
+          "id",
           "name",
           "lawReference"
+        ]
+      },
+      "ProductLicensingEligibilityConfigDto": {
+        "type": "object",
+        "properties": {
+          "configId": {
+            "type": "string"
+          },
+          "configType": {
+            "type": "string",
+            "enum": [
+              "DIGITAL",
+              "PHYSICAL"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ELIGIBLE",
+              "INELIGIBLE"
+            ]
+          },
+          "referencedPermissions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductAllowedPermissionDto"
+            }
+          },
+          "missingPermissions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductAllowedPermissionDto"
+            }
+          }
+        },
+        "required": [
+          "configId",
+          "configType",
+          "title",
+          "status",
+          "referencedPermissions",
+          "missingPermissions"
+        ]
+      },
+      "ProductLicensingEligibilitySummaryDto": {
+        "type": "object",
+        "properties": {
+          "eligibleDigitalCount": {
+            "type": "number"
+          },
+          "ineligibleDigitalCount": {
+            "type": "number"
+          },
+          "eligiblePhysicalCount": {
+            "type": "number"
+          },
+          "ineligiblePhysicalCount": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "eligibleDigitalCount",
+          "ineligibleDigitalCount",
+          "eligiblePhysicalCount",
+          "ineligiblePhysicalCount"
+        ]
+      },
+      "ProductLicensingEligibilityDto": {
+        "type": "object",
+        "properties": {
+          "digitalConfigs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductLicensingEligibilityConfigDto"
+            }
+          },
+          "physicalConfigs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductLicensingEligibilityConfigDto"
+            }
+          },
+          "summary": {
+            "$ref": "#/components/schemas/ProductLicensingEligibilitySummaryDto"
+          }
+        },
+        "required": [
+          "digitalConfigs",
+          "physicalConfigs",
+          "summary"
         ]
       },
       "ProductDto": {
@@ -3377,6 +3474,9 @@
               "$ref": "#/components/schemas/ProductAllowedPermissionDto"
             }
           },
+          "licensingEligibility": {
+            "$ref": "#/components/schemas/ProductLicensingEligibilityDto"
+          },
           "complianceLegalStatus": {
             "type": "string",
             "enum": [
@@ -3420,6 +3520,7 @@
           "status",
           "allowedPermissionIds",
           "allowedPermissions",
+          "licensingEligibility",
           "createdBy",
           "createdAt",
           "updatedAt"
@@ -5165,7 +5266,8 @@
               "ACTIVE",
               "INACTIVE"
             ],
-            "default": "ACTIVE"
+            "default": "INACTIVE",
+            "description": "Mặc định tạo mới là INACTIVE để lưu ở trạng thái bản nháp trước khi publish."
           }
         },
         "required": [
@@ -5370,7 +5472,8 @@
               "ACTIVE",
               "INACTIVE"
             ],
-            "default": "ACTIVE"
+            "default": "INACTIVE",
+            "description": "Mặc định tạo mới là INACTIVE để lưu ở trạng thái bản nháp trước khi publish."
           }
         },
         "required": [

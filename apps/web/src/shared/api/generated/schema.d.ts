@@ -846,8 +846,30 @@ export interface components {
             timestamp: string;
         };
         ProductAllowedPermissionDto: {
+            id: string;
             name: string;
             lawReference: string;
+        };
+        ProductLicensingEligibilityConfigDto: {
+            configId: string;
+            /** @enum {string} */
+            configType: "DIGITAL" | "PHYSICAL";
+            title: string;
+            /** @enum {string} */
+            status: "ELIGIBLE" | "INELIGIBLE";
+            referencedPermissions: components["schemas"]["ProductAllowedPermissionDto"][];
+            missingPermissions: components["schemas"]["ProductAllowedPermissionDto"][];
+        };
+        ProductLicensingEligibilitySummaryDto: {
+            eligibleDigitalCount: number;
+            ineligibleDigitalCount: number;
+            eligiblePhysicalCount: number;
+            ineligiblePhysicalCount: number;
+        };
+        ProductLicensingEligibilityDto: {
+            digitalConfigs: components["schemas"]["ProductLicensingEligibilityConfigDto"][];
+            physicalConfigs: components["schemas"]["ProductLicensingEligibilityConfigDto"][];
+            summary: components["schemas"]["ProductLicensingEligibilitySummaryDto"];
         };
         ProductDto: {
             id: string;
@@ -862,6 +884,7 @@ export interface components {
             description?: Record<string, never> | null;
             allowedPermissionIds: string[];
             allowedPermissions: components["schemas"]["ProductAllowedPermissionDto"][];
+            licensingEligibility: components["schemas"]["ProductLicensingEligibilityDto"];
             /** @enum {string|null} */
             complianceLegalStatus?: "PENDING" | "SUFFICIENT" | "INSUFFICIENT" | null;
             /** @enum {string|null} */
@@ -1375,7 +1398,8 @@ export interface components {
             /** @default [] */
             referencedPermissionIds: string[];
             /**
-             * @default ACTIVE
+             * @description Mặc định tạo mới là INACTIVE để lưu ở trạng thái bản nháp trước khi publish.
+             * @default INACTIVE
              * @enum {string}
              */
             status: "ACTIVE" | "INACTIVE";
@@ -1439,7 +1463,8 @@ export interface components {
             /** @default [] */
             referencedPermissionIds: string[];
             /**
-             * @default ACTIVE
+             * @description Mặc định tạo mới là INACTIVE để lưu ở trạng thái bản nháp trước khi publish.
+             * @default INACTIVE
              * @enum {string}
              */
             status: "ACTIVE" | "INACTIVE";

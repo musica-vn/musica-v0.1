@@ -13,8 +13,33 @@ export type ProductSortValue =
   | 'genre:desc'
 
 export type ProductAllowedPermission = {
+  id: string
   name: string
   lawReference: string
+}
+
+export type ProductLicensingEligibilityStatus = 'ELIGIBLE' | 'INELIGIBLE'
+
+export type ProductLicensingEligibilityConfig = {
+  configId: string
+  configType: 'DIGITAL' | 'PHYSICAL'
+  title: string
+  status: ProductLicensingEligibilityStatus
+  referencedPermissions: ProductAllowedPermission[]
+  missingPermissions: ProductAllowedPermission[]
+}
+
+export type ProductLicensingEligibilitySummary = {
+  eligibleDigitalCount: number
+  ineligibleDigitalCount: number
+  eligiblePhysicalCount: number
+  ineligiblePhysicalCount: number
+}
+
+export type ProductLicensingEligibility = {
+  digitalConfigs: ProductLicensingEligibilityConfig[]
+  physicalConfigs: ProductLicensingEligibilityConfig[]
+  summary: ProductLicensingEligibilitySummary
 }
 
 export type Product = {
@@ -29,6 +54,7 @@ export type Product = {
   description: string | null
   allowedPermissionIds: string[]
   allowedPermissions: ProductAllowedPermission[]
+  licensingEligibility: ProductLicensingEligibility
   complianceLegalStatus: 'PENDING' | 'SUFFICIENT' | 'INSUFFICIENT' | null
   complianceReviewStatus: 'PENDING' | 'APPROVED' | 'REJECTED' | null
   originalAudioKey: string | null

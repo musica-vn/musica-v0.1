@@ -186,7 +186,11 @@ export class CreateDigitalRightConfigRequestDto {
   @IsUUID('4', { each: true })
   referencedPermissionIds?: string[]
 
-  @ApiPropertyOptional({ enum: ['ACTIVE', 'INACTIVE'], default: 'ACTIVE' })
+  @ApiPropertyOptional({
+    enum: ['ACTIVE', 'INACTIVE'],
+    default: 'INACTIVE',
+    description: 'Mặc định tạo mới là INACTIVE để lưu ở trạng thái bản nháp trước khi publish.',
+  })
   @IsOptional()
   @IsIn(['ACTIVE', 'INACTIVE'])
   status?: ConfigStatus
@@ -231,7 +235,11 @@ export class CreatePhysicalRightConfigRequestDto {
   @IsUUID('4', { each: true })
   referencedPermissionIds?: string[]
 
-  @ApiPropertyOptional({ enum: ['ACTIVE', 'INACTIVE'], default: 'ACTIVE' })
+  @ApiPropertyOptional({
+    enum: ['ACTIVE', 'INACTIVE'],
+    default: 'INACTIVE',
+    description: 'Mặc định tạo mới là INACTIVE để lưu ở trạng thái bản nháp trước khi publish.',
+  })
   @IsOptional()
   @IsIn(['ACTIVE', 'INACTIVE'])
   status?: ConfigStatus

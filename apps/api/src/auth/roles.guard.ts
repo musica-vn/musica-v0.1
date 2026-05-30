@@ -9,6 +9,9 @@ import { Reflector } from '@nestjs/core';
 import type { AuthenticatedRequest } from './auth.types';
 import { ROLES_KEY } from './roles.decorator';
 
+const normalizeRoleName = (roleName: string) =>
+  roleName.trim().replaceAll(/[\s-]+/g, '_').toUpperCase();
+
 @Injectable()
 export class RolesGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
@@ -28,8 +31,12 @@ export class RolesGuard implements CanActivate {
       throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED);
     }
 
+    const normalizedUserRole =
+      typeof user.roleName === 'string' ? normalizeRoleName(user.roleName) : null;
+    const normalizedRequiredRoles = requiredRoles.map(normalizeRoleName);
     const isAllowed =
-      typeof user.roleName === 'string' && requiredRoles.includes(user.roleName);
+      typeof normalizedUserRole === 'string' &&
+      normalizedRequiredRoles.includes(normalizedUserRole);
 
     if (!isAllowed) {
       throw new HttpException('Forbidden', HttpStatus.FORBIDDEN);

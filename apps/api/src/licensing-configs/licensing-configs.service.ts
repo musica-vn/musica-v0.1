@@ -381,7 +381,7 @@ export class LicensingConfigsService {
         target_platform: payload.targetPlatform,
         duration_type: payload.durationType,
         base_price_multiplier: payload.basePriceMultiplier,
-        status: payload.status ?? 'ACTIVE',
+        status: payload.status ?? 'INACTIVE',
       })
       .select('id')
       .maybeSingle<{ id: string }>()
@@ -501,7 +501,7 @@ export class LicensingConfigsService {
       .insert({
         venue_usage_type: payload.venueUsageType,
         base_price_multiplier: payload.basePriceMultiplier,
-        status: payload.status ?? 'ACTIVE',
+        status: payload.status ?? 'INACTIVE',
       })
       .select('id')
       .maybeSingle<{ id: string }>()
