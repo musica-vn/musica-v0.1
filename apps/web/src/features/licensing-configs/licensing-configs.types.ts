@@ -1,4 +1,5 @@
 import type { PaginationMeta } from '@musica/contracts'
+import type { ProductPackageRegistration } from '../products/products.types'
 
 export type LicensingConfigStatus = 'ACTIVE' | 'INACTIVE'
 export type DigitalPlatform = 'YOUTUBE' | 'TIKTOK' | 'FACEBOOK'
@@ -133,3 +134,19 @@ export type CreateModificationConfigPayload = {
 export type UpdateModificationConfigPayload = Partial<
   CreateModificationConfigPayload
 >
+
+export type PackageRegistrationsListQuery = {
+  page: number
+  pageSize: number
+  keyword?: string
+  status?: 'JOINED' | 'REMOVED'
+}
+
+export type PackageRegistrationsListData = {
+  items: ProductPackageRegistration[]
+}
+
+export type PackageRegistrationsListResult = {
+  data: PackageRegistrationsListData
+  meta: PaginationMeta
+}

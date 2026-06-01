@@ -4,6 +4,10 @@ import Message from 'primevue/message'
 import { useConfirm } from 'primevue/useconfirm'
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { ApiClientError } from '../../../shared/api/http'
+import {
+  listAdminDigitalRightConfigProducts,
+  listAdminPhysicalRightConfigProducts,
+} from '../../licensing-configs/licensing-configs.api'
 import { useCorePermissionsStore } from '../../core-permissions/core-permissions.store'
 import {
   useDigitalRightConfigsStore,
@@ -22,6 +26,7 @@ import type {
   ExpressionConfig,
   LicensingConfigResource,
   LicensingConfigStatus,
+  PackageRegistrationsListQuery,
   ModificationConfig,
   PhysicalRightConfig,
   ReferencedPermissionSummary,
@@ -30,6 +35,7 @@ import type {
   UpdateModificationConfigPayload,
   UpdatePhysicalRightConfigPayload,
 } from '../../licensing-configs/licensing-configs.types'
+import type { ProductPackageRegistration } from '../../products/products.types'
 
 type AnyLicensingConfig = DigitalRightConfig | PhysicalRightConfig | ExpressionConfig | ModificationConfig
 
@@ -192,6 +198,10 @@ const hasLoadedPermissionOptions = ref(false)
 const permissionsDialogVisible = ref(false)
 const permissionsDialogTitle = ref('Quyền tham khảo')
 const permissionsDialogPermissions = ref<ReferencedPermissionSummary[]>([])
+const packageProductsDialogVisible = ref(false)
+const packageProductsDialogTitle = ref('')
+const packageProductsLoading = ref(false)
+const packageProducts = ref<ProductPackageRegistration[]>([])
 
 const form = reactive<{
   targetPlatform: DigitalPlatform
@@ -331,6 +341,28 @@ const openPermissionsDialog = (item: AnyLicensingConfig) => {
   permissionsDialogTitle.value = `${getDetailText(item)} - ${currentResource.value.permissionLabel}`
   permissionsDialogPermissions.value = item.referencedPermissions
   permissionsDialogVisible.value = true
+}
+
+const openPackageProductsDialog = async (item: AnyLicensingConfig) => {
+  if (!isDigitalOrPhysicalResource.value) return
+
+  packageProductsDialogTitle.value = `Sản phẩm đã tham gia - ${getDetailText(item)}`
+  packageProducts.value = []
+  packageProductsDialogVisible.value = true
+  packageProductsLoading.value = true
+
+  try {
+    const query: PackageRegistrationsListQuery = { page: 1, pageSize: 100, status: 'JOINED' }
+    const response = props.resource === 'digital'
+      ? await listAdminDigitalRightConfigProducts(item.id, query)
+      : await listAdminPhysicalRightConfigProducts(item.id, query)
+
+    packageProducts.value = response.data.items
+  } catch (error) {
+    setError(error)
+  } finally {
+    packageProductsLoading.value = false
+  }
 }
 
 const clearMessages = () => {
@@ -918,6 +950,15 @@ onMounted(() => {
                 </td>
                 <td class="px-4 py-4">
                   <div class="flex justify-end gap-2">
+                    <button
+                      v-if="isDigitalOrPhysicalResource"
+                      type="button"
+                      :class="iconButtonClass"
+                      :disabled="currentIsLoading"
+                      @click="openPackageProductsDialog(item)"
+                    >
+                      <i class="pi pi-users" />
+                    </button>
                     <button type="button" :class="iconButtonClass" :disabled="currentIsLoading" @click="openEdit(item)">
                       <i class="pi pi-pencil" />
                     </button>
@@ -1226,6 +1267,39 @@ onMounted(() => {
       <template #footer>
         <div class="flex w-full justify-end">
           <button type="button" :class="secondaryButtonClass" @click="permissionsDialogVisible = false">Đóng</button>
+        </div>
+      </template>
+    </Dialog>
+
+    <Dialog v-model:visible="packageProductsDialogVisible" modal class="w-[min(860px,96vw)]" :header="packageProductsDialogTitle">
+      <div v-if="packageProductsLoading" class="space-y-3">
+        <div v-for="index in 3" :key="`package-product-loading-${index}`" class="h-20 animate-pulse rounded-2xl border border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900/40" />
+      </div>
+      <div v-else-if="packageProducts.length === 0" class="text-sm text-slate-500 dark:text-slate-400">
+        Chưa có sản phẩm nào đang tham gia gói này.
+      </div>
+      <div v-else class="space-y-3">
+        <article
+          v-for="registration in packageProducts"
+          :key="registration.registrationId"
+          class="rounded-2xl border border-slate-200/80 bg-white/90 px-4 py-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/50"
+        >
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <div class="font-semibold text-slate-900 dark:text-white">{{ registration.productTitle }}</div>
+              <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                {{ registration.title }} · {{ registration.configType === 'DIGITAL' ? 'Digital package' : 'Physical package' }} · {{ registration.configStatus === 'ACTIVE' ? 'Đang hoạt động' : 'Tạm ngừng' }}
+              </div>
+            </div>
+            <span class="inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-violet-300">
+              Đã đăng ký
+            </span>
+          </div>
+        </article>
+      </div>
+      <template #footer>
+        <div class="flex w-full justify-end">
+          <button type="button" :class="secondaryButtonClass" @click="packageProductsDialogVisible = false">Đóng</button>
         </div>
       </template>
     </Dialog>

@@ -77,9 +77,43 @@ const clearMessages = () => {
   successMessage.value = null
 }
 
+const extractApiErrorDetails = (details: unknown) => {
+  if (typeof details !== 'object' || details === null) return null
+  if (!('details' in details)) return null
+  const inner = (details as { details?: unknown }).details
+  return typeof inner === 'object' && inner !== null ? inner : null
+}
+
+const resolveErrorMessage = (error: ApiClientError) => {
+  const inner = extractApiErrorDetails(error.details)
+
+  if (error.message === 'NO_FILES_UPLOADED') {
+    return 'Vui lòng chọn ít nhất 1 file pháp lý.'
+  }
+
+  if (error.message === 'LEGAL_FILE_TOO_LARGE') {
+    const fileName = typeof (inner as any)?.fileName === 'string' ? (inner as any).fileName : null
+    const maxBytes = typeof (inner as any)?.maxBytes === 'number' ? (inner as any).maxBytes : null
+    const maxMb = maxBytes ? Math.round(maxBytes / (1024 * 1024)) : null
+    const namePart = fileName ? ` (${fileName})` : ''
+    const sizePart = maxMb ? ` Giới hạn ${maxMb}MB.` : ''
+    return `File quá lớn${namePart}.${sizePart}`.trim()
+  }
+
+  if (error.message === 'LEGAL_FILE_TYPE_NOT_ALLOWED') {
+    const fileName = typeof (inner as any)?.fileName === 'string' ? (inner as any).fileName : null
+    const mimeType = typeof (inner as any)?.mimeType === 'string' ? (inner as any).mimeType : null
+    const namePart = fileName ? ` (${fileName})` : ''
+    const mimePart = mimeType ? ` (mime: ${mimeType})` : ''
+    return `Định dạng file không được hỗ trợ${namePart}.${mimePart} Chỉ hỗ trợ: PDF, DOC, DOCX, PNG, JPG/JPEG, WEBP.`
+  }
+
+  return error.message
+}
+
 const setError = (error: unknown) => {
   if (error instanceof ApiClientError) {
-    errorMessage.value = error.message
+    errorMessage.value = resolveErrorMessage(error)
     return
   }
   errorMessage.value = error instanceof Error ? error.message : 'Đã xảy ra lỗi'
@@ -588,7 +622,7 @@ watch(
               <h3 class="text-xs font-bold uppercase tracking-[0.16em] text-slate-400 mb-3 mt-0">Tải tệp tin pháp lý</h3>
               
               <div class="border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl p-5 text-center hover:border-violet-400 dark:hover:border-violet-500/50 transition cursor-pointer bg-white dark:bg-slate-950/20" @click="fileInput?.click()">
-                <input ref="fileInput" type="file" multiple class="hidden" :disabled="isUploadingFiles" @change="onUploadFilesChange" />
+                <input ref="fileInput" type="file" multiple accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.webp" class="hidden" :disabled="isUploadingFiles" @change="onUploadFilesChange" />
                 <div class="flex flex-col items-center gap-2">
                   <i class="pi pi-cloud-upload text-3xl text-slate-400 dark:text-slate-500" />
                   <span class="text-xs font-semibold text-slate-700 dark:text-slate-300">

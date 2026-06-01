@@ -777,6 +777,210 @@ export interface paths {
         patch: operations["AdminModificationConfigsController_updateStatus"];
         trace?: never;
     };
+    "/admin/products/{productId}/digital-right-registrations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Join digital package for product (admin) */
+        post: operations["AdminProductPackageRegistrationsController_createDigitalRegistration"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/products/{productId}/digital-right-registrations/{registrationId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove digital package registration from product (admin) */
+        delete: operations["AdminProductPackageRegistrationsController_removeDigitalRegistration"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/products/{productId}/physical-right-registrations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Join physical package for product (admin) */
+        post: operations["AdminProductPackageRegistrationsController_createPhysicalRegistration"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/products/{productId}/physical-right-registrations/{registrationId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove physical package registration from product (admin) */
+        delete: operations["AdminProductPackageRegistrationsController_removePhysicalRegistration"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/digital-right-configs/{configId}/products": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List products registered to digital package (admin) */
+        get: operations["AdminProductPackageRegistrationsController_listProductsForDigitalConfig"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/physical-right-configs/{configId}/products": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List products registered to physical package (admin) */
+        get: operations["AdminProductPackageRegistrationsController_listProductsForPhysicalConfig"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/creator/products": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List creator products */
+        get: operations["CreatorProductPackageRegistrationsController_listMyProducts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/creator/products/{productId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get creator product detail */
+        get: operations["CreatorProductPackageRegistrationsController_getMyProductDetail"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/creator/products/{productId}/digital-right-registrations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Join digital package for own product (creator) */
+        post: operations["CreatorProductPackageRegistrationsController_createDigitalRegistration"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/creator/products/{productId}/digital-right-registrations/{registrationId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove digital package registration from own product (creator) */
+        delete: operations["CreatorProductPackageRegistrationsController_removeDigitalRegistration"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/creator/products/{productId}/physical-right-registrations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Join physical package for own product (creator) */
+        post: operations["CreatorProductPackageRegistrationsController_createPhysicalRegistration"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/creator/products/{productId}/physical-right-registrations/{registrationId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove physical package registration from own product (creator) */
+        delete: operations["CreatorProductPackageRegistrationsController_removePhysicalRegistration"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -859,17 +1063,41 @@ export interface components {
             status: "ELIGIBLE" | "INELIGIBLE";
             referencedPermissions: components["schemas"]["ProductAllowedPermissionDto"][];
             missingPermissions: components["schemas"]["ProductAllowedPermissionDto"][];
+            /** @enum {string} */
+            registrationStatus: "NOT_JOINED" | "JOINED";
+            registrationId?: Record<string, never> | null;
+            joinedAt?: Record<string, never> | null;
+            joinedBy?: Record<string, never> | null;
         };
         ProductLicensingEligibilitySummaryDto: {
             eligibleDigitalCount: number;
             ineligibleDigitalCount: number;
             eligiblePhysicalCount: number;
             ineligiblePhysicalCount: number;
+            joinedDigitalCount: number;
+            joinedPhysicalCount: number;
         };
         ProductLicensingEligibilityDto: {
             digitalConfigs: components["schemas"]["ProductLicensingEligibilityConfigDto"][];
             physicalConfigs: components["schemas"]["ProductLicensingEligibilityConfigDto"][];
             summary: components["schemas"]["ProductLicensingEligibilitySummaryDto"];
+        };
+        ProductPackageRegistrationDto: {
+            registrationId: string;
+            configId: string;
+            /** @enum {string} */
+            configType: "DIGITAL" | "PHYSICAL";
+            title: string;
+            /** @enum {string} */
+            configStatus: "ACTIVE" | "INACTIVE";
+            /** @enum {string} */
+            registrationStatus: "JOINED" | "REMOVED";
+            referencedPermissions: components["schemas"]["ProductAllowedPermissionDto"][];
+            missingPermissions: components["schemas"]["ProductAllowedPermissionDto"][];
+            joinedAt?: Record<string, never> | null;
+            joinedBy?: Record<string, never> | null;
+            removedAt?: Record<string, never> | null;
+            removedBy?: Record<string, never> | null;
         };
         ProductDto: {
             id: string;
@@ -885,6 +1113,8 @@ export interface components {
             allowedPermissionIds: string[];
             allowedPermissions: components["schemas"]["ProductAllowedPermissionDto"][];
             licensingEligibility: components["schemas"]["ProductLicensingEligibilityDto"];
+            digitalPackageRegistrations: components["schemas"]["ProductPackageRegistrationDto"][];
+            physicalPackageRegistrations: components["schemas"]["ProductPackageRegistrationDto"][];
             /** @enum {string|null} */
             complianceLegalStatus?: "PENDING" | "SUFFICIENT" | "INSUFFICIENT" | null;
             /** @enum {string|null} */
@@ -1582,6 +1812,56 @@ export interface components {
             referencedPermissionIds: string[];
             name?: string;
             priceMultiplier?: number;
+        };
+        CreateProductPackageRegistrationRequestDto: {
+            configId: string;
+        };
+        ProductPackageRegistrationPermissionDto: {
+            id: string;
+            name: string;
+            lawReference: string;
+        };
+        ProductPackageRegistrationItemDto: {
+            registrationId: string;
+            productId: string;
+            configId: string;
+            /** @enum {string} */
+            packageType: "DIGITAL" | "PHYSICAL";
+            title: string;
+            /** @enum {string} */
+            configStatus: "ACTIVE" | "INACTIVE";
+            /** @enum {string} */
+            eligibilityStatus: "ELIGIBLE" | "INELIGIBLE";
+            /** @enum {string} */
+            registrationStatus: "JOINED" | "REMOVED";
+            referencedPermissions: components["schemas"]["ProductPackageRegistrationPermissionDto"][];
+            missingPermissions: components["schemas"]["ProductPackageRegistrationPermissionDto"][];
+            joinedAt: string;
+            joinedBy?: Record<string, never> | null;
+            removedAt?: Record<string, never> | null;
+            removedBy?: Record<string, never> | null;
+        };
+        ProductPackageRegistrationResponseDto: {
+            /** @example true */
+            success: boolean;
+            /** @example 200 */
+            statusCode: number;
+            data: components["schemas"]["ProductPackageRegistrationItemDto"];
+            requestId: string;
+            timestamp: string;
+        };
+        ProductPackageRegistrationListDataDto: {
+            items: components["schemas"]["ProductPackageRegistrationItemDto"][];
+        };
+        ProductPackageRegistrationListResponseDto: {
+            /** @example true */
+            success: boolean;
+            /** @example 200 */
+            statusCode: number;
+            data: components["schemas"]["ProductPackageRegistrationListDataDto"];
+            meta: components["schemas"]["PaginationMetaDto"];
+            requestId: string;
+            timestamp: string;
         };
     };
     responses: never;
@@ -3145,6 +3425,286 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AdminModificationConfigResponseDto"];
+                };
+            };
+        };
+    };
+    AdminProductPackageRegistrationsController_createDigitalRegistration: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                productId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateProductPackageRegistrationRequestDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductPackageRegistrationResponseDto"];
+                };
+            };
+        };
+    };
+    AdminProductPackageRegistrationsController_removeDigitalRegistration: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                productId: string;
+                registrationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductPackageRegistrationResponseDto"];
+                };
+            };
+        };
+    };
+    AdminProductPackageRegistrationsController_createPhysicalRegistration: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                productId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateProductPackageRegistrationRequestDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductPackageRegistrationResponseDto"];
+                };
+            };
+        };
+    };
+    AdminProductPackageRegistrationsController_removePhysicalRegistration: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                productId: string;
+                registrationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductPackageRegistrationResponseDto"];
+                };
+            };
+        };
+    };
+    AdminProductPackageRegistrationsController_listProductsForDigitalConfig: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                keyword?: string;
+                status?: "JOINED" | "REMOVED";
+            };
+            header?: never;
+            path: {
+                configId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductPackageRegistrationListResponseDto"];
+                };
+            };
+        };
+    };
+    AdminProductPackageRegistrationsController_listProductsForPhysicalConfig: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+                keyword?: string;
+                status?: "JOINED" | "REMOVED";
+            };
+            header?: never;
+            path: {
+                configId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductPackageRegistrationListResponseDto"];
+                };
+            };
+        };
+    };
+    CreatorProductPackageRegistrationsController_listMyProducts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminProductsListResponseDto"];
+                };
+            };
+        };
+    };
+    CreatorProductPackageRegistrationsController_getMyProductDetail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                productId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminProductResponseDto"];
+                };
+            };
+        };
+    };
+    CreatorProductPackageRegistrationsController_createDigitalRegistration: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                productId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateProductPackageRegistrationRequestDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductPackageRegistrationResponseDto"];
+                };
+            };
+        };
+    };
+    CreatorProductPackageRegistrationsController_removeDigitalRegistration: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                productId: string;
+                registrationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductPackageRegistrationResponseDto"];
+                };
+            };
+        };
+    };
+    CreatorProductPackageRegistrationsController_createPhysicalRegistration: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                productId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateProductPackageRegistrationRequestDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductPackageRegistrationResponseDto"];
+                };
+            };
+        };
+    };
+    CreatorProductPackageRegistrationsController_removePhysicalRegistration: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                productId: string;
+                registrationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductPackageRegistrationResponseDto"];
                 };
             };
         };

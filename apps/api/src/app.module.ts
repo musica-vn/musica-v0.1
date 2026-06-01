@@ -16,6 +16,7 @@ import { ManagedUsersModule } from './managed-users/managed-users.module';
 import { CorePermissionsModule } from './core-permissions/core-permissions.module';
 import { ComplianceModule } from './compliance/compliance.module';
 import { LicensingConfigsModule } from './licensing-configs/licensing-configs.module';
+import { ProductPackageRegistrationsModule } from './product-package-registrations/product-package-registrations.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { LicensingConfigsModule } from './licensing-configs/licensing-configs.mo
     CorePermissionsModule,
     ComplianceModule,
     LicensingConfigsModule,
+    ProductPackageRegistrationsModule,
   ],
   controllers: [AppController],
   providers: [

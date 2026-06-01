@@ -12,9 +12,11 @@ const createMockProductDto = (
   artistId: '00000000-0000-0000-0000-000000000002',
   authorName: null,
   genre: null,
+  genres: [],
   duration: null,
   status: 'HIDDEN',
   useCase: null,
+  useCases: [],
   description: null,
   allowedPermissionIds: [],
   allowedPermissions: [],
@@ -26,12 +28,17 @@ const createMockProductDto = (
       ineligibleDigitalCount: 0,
       eligiblePhysicalCount: 0,
       ineligiblePhysicalCount: 0,
+      joinedDigitalCount: 0,
+      joinedPhysicalCount: 0,
     },
   },
+  digitalPackageRegistrations: [],
+  physicalPackageRegistrations: [],
   complianceLegalStatus: null,
   complianceReviewStatus: null,
   originalAudioKey: null,
   thumbnailKey: null,
+  sheetMusicPdfKey: null,
   createdBy: '00000000-0000-0000-0000-000000000003',
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
@@ -60,7 +67,7 @@ describe('ProductsService - upload URLs', () => {
     jest.resetAllMocks();
   });
 
-  it('createOriginalUploadUrl allocates N.mp3 and updates only original_audio_key', async () => {
+  it('createOriginalUploadUrl allocates N.mp3', async () => {
     const service = createService();
     const productId = '00000000-0000-0000-0000-000000000001';
 
@@ -80,11 +87,6 @@ describe('ProductsService - upload URLs', () => {
       .mockResolvedValue({ data: { signedUrl: 'https://signed' }, error: null });
     mockSupabaseClient.storage.from.mockReturnValue({ createSignedUploadUrl });
 
-    const update = jest.fn();
-    const eq = jest.fn().mockResolvedValue({ error: null });
-    update.mockReturnValue({ eq });
-    mockSupabaseClient.from.mockReturnValue({ update });
-
     const result = await service.createOriginalUploadUrl(productId);
 
     expect(mockSupabaseClient.rpc).toHaveBeenCalledWith(
@@ -92,9 +94,6 @@ describe('ProductsService - upload URLs', () => {
       { p_bucket: 'original-audio' },
     );
     expect(createSignedUploadUrl).toHaveBeenCalledWith('7.mp3');
-    expect(mockSupabaseClient.from).toHaveBeenCalledWith('products');
-    expect(update).toHaveBeenCalledWith({ original_audio_key: '7.mp3' });
-    expect(eq).toHaveBeenCalledWith('id', productId);
     expect(result).toEqual({ uploadUrl: 'https://signed', fileKey: '7.mp3' });
   });
 
@@ -119,7 +118,7 @@ describe('ProductsService - upload URLs', () => {
     );
   });
 
-  it('createThumbnailUploadUrl allocates N.png and updates only thumbnail_key', async () => {
+  it('createThumbnailUploadUrl allocates N.png', async () => {
     const service = createService();
     const productId = '00000000-0000-0000-0000-000000000001';
 
@@ -139,11 +138,6 @@ describe('ProductsService - upload URLs', () => {
       .mockResolvedValue({ data: { signedUrl: 'https://signed' }, error: null });
     mockSupabaseClient.storage.from.mockReturnValue({ createSignedUploadUrl });
 
-    const update = jest.fn();
-    const eq = jest.fn().mockResolvedValue({ error: null });
-    update.mockReturnValue({ eq });
-    mockSupabaseClient.from.mockReturnValue({ update });
-
     const result = await service.createThumbnailUploadUrl(productId, 'png');
 
     expect(mockSupabaseClient.rpc).toHaveBeenCalledWith(
@@ -151,9 +145,6 @@ describe('ProductsService - upload URLs', () => {
       { p_bucket: 'track-thumbnails' },
     );
     expect(createSignedUploadUrl).toHaveBeenCalledWith('5.png');
-    expect(mockSupabaseClient.from).toHaveBeenCalledWith('products');
-    expect(update).toHaveBeenCalledWith({ thumbnail_key: '5.png' });
-    expect(eq).toHaveBeenCalledWith('id', productId);
     expect(result).toEqual({ uploadUrl: 'https://signed', fileKey: '5.png' });
   });
 

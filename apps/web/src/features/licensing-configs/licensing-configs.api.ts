@@ -16,6 +16,8 @@ import type {
   PhysicalRightConfig,
   PhysicalRightConfigsListData,
   LicensingConfigStatus,
+  PackageRegistrationsListData,
+  PackageRegistrationsListQuery,
   UpdateDigitalRightConfigPayload,
   UpdateExpressionConfigPayload,
   UpdateModificationConfigPayload,
@@ -103,3 +105,21 @@ export const updateAdminModificationConfigStatus = async (
 
 export const deleteAdminModificationConfig = async (configId: string) =>
   deleteResource(`/admin/modification-configs/${configId}`)
+
+export const listAdminDigitalRightConfigProducts = async (
+  configId: string,
+  query: PackageRegistrationsListQuery,
+) =>
+  listResource<PackageRegistrationsListData, PackageRegistrationsListQuery>(
+    `/admin/digital-right-configs/${configId}/products`,
+    query,
+  )
+
+export const listAdminPhysicalRightConfigProducts = async (
+  configId: string,
+  query: PackageRegistrationsListQuery,
+) =>
+  listResource<PackageRegistrationsListData, PackageRegistrationsListQuery>(
+    `/admin/physical-right-configs/${configId}/products`,
+    query,
+  )

@@ -17,10 +17,23 @@ import type {
   ProductThumbnailExtension,
 } from '../../products/products.types'
 import {
+  PRODUCT_GENRE_OPTIONS,
+  PRODUCT_USE_CASE_OPTIONS,
+  resolveProductGenreLabel,
+  resolveProductUseCaseLabel,
+  type ProductGenre,
+  type ProductUseCase,
+} from '../../products/products.enums'
+import {
+  createAdminDigitalRightRegistration,
+  createAdminPhysicalRightRegistration,
   confirmAdminProductAudioUpload,
+  confirmAdminProductSheetMusicUpload,
   confirmAdminProductThumbnailUpload,
   createAdminProduct,
   getAdminProductsSummary,
+  getSheetMusicUploadUrl,
+  getSheetMusicUrl,
   getThumbnailUploadUrl,
   getOriginalUploadUrl,
   getOriginalPlaybackUrl,
@@ -28,6 +41,8 @@ import {
   hideAdminProduct,
   listAdminProducts,
   publishAdminProduct,
+  removeAdminDigitalRightRegistration,
+  removeAdminPhysicalRightRegistration,
   replaceAdminProductAllowedPermissions,
   updateAdminProduct,
 } from '../../products/products.api'
@@ -39,13 +54,13 @@ type ProductForm = {
   title: string
   artistId: string
   authorName: string
-  genre: string
-  useCase: string
+  genres: ProductGenre[]
+  useCases: ProductUseCase[]
   description: string
   duration: string
 }
 
-const defaultSort: ProductSortValue = 'createdAt:desc'
+const defaultSort: ProductSortValue = 'updatedAt:desc'
 const fieldClass =
   'h-12 w-full rounded-2xl border border-slate-200/80 bg-white/90 px-4 text-sm text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-violet-400 focus:ring-4 focus:ring-violet-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-800 dark:bg-slate-950/70 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-violet-500 dark:focus:ring-violet-500/20'
 const selectFieldClass =
@@ -124,6 +139,14 @@ const detailDialogVisible = ref(false)
 const approvedPermissionsDialogVisible = ref(false)
 const approvedPermissionsLoading = ref(false)
 const approvedPermissionsSaving = ref(false)
+const packageActionTarget = ref<string | null>(null)
+const detailActiveTab = ref<'info' | 'licensing' | 'review'>('info')
+
+const detailTabs = [
+  { key: 'info' as const, label: 'Thông tin', icon: 'pi pi-file-edit' },
+  { key: 'licensing' as const, label: 'Quyền & Licensing', icon: 'pi pi-book' },
+  { key: 'review' as const, label: 'Đánh giá & Duyệt', icon: 'pi pi-verified' },
+]
 
 const selectedTrack = ref<Product | null>(null)
 const approvedPermissionsTrack = ref<Product | null>(null)
@@ -144,8 +167,8 @@ const createForm = reactive<ProductForm>({
   title: '',
   artistId: '',
   authorName: '',
-  genre: '',
-  useCase: '',
+  genres: [],
+  useCases: [],
   description: '',
   duration: '',
 })
@@ -153,14 +176,16 @@ const editForm = reactive<ProductForm>({
   title: '',
   artistId: '',
   authorName: '',
-  genre: '',
-  useCase: '',
+  genres: [],
+  useCases: [],
   description: '',
   duration: '',
 })
 
 const createOriginalFile = ref<File | null>(null)
 const editOriginalFile = ref<File | null>(null)
+const createSheetMusicFile = ref<File | null>(null)
+const editSheetMusicFile = ref<File | null>(null)
 const createThumbnailFile = ref<File | null>(null)
 const editThumbnailFile = ref<File | null>(null)
 const createOriginalAudioUrl = ref<string | null>(null)
@@ -228,18 +253,74 @@ const getEligibilityStatusClass = (status: ProductLicensingEligibilityConfig['st
   status === 'ELIGIBLE'
     ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300'
     : 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300'
-const formatTrackEligibilitySummary = (track: Product) => {
-  const digitalTotal = getEligibilityTotal(track, 'digital')
-  const physicalTotal = getEligibilityTotal(track, 'physical')
-
-  if (digitalTotal === 0 && physicalTotal === 0) {
-    return 'Chưa có gói active để đối chiếu'
-  }
-
-  return `Digital ${track.licensingEligibility.summary.eligibleDigitalCount}/${digitalTotal} · Physical ${track.licensingEligibility.summary.eligiblePhysicalCount}/${physicalTotal}`
-}
 const getEligibilityMissingSummary = (config: ProductLicensingEligibilityConfig) =>
   config.missingPermissions.map((permission) => permission.name).join(', ')
+const isConfigJoined = (config: ProductLicensingEligibilityConfig) => config.registrationStatus === 'JOINED'
+const getRegistrationStatusLabel = (config: ProductLicensingEligibilityConfig) =>
+  isConfigJoined(config) ? 'Đã đăng ký' : 'Chưa đăng ký'
+const getRegistrationStatusClass = (config: ProductLicensingEligibilityConfig) =>
+  isConfigJoined(config)
+    ? 'border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-violet-300'
+    : 'border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300'
+const getPackageActionKey = (trackId: string, configId: string) => `${trackId}:${configId}`
+const isPackageActionLoading = (trackId: string, configId: string) =>
+  packageActionTarget.value === getPackageActionKey(trackId, configId)
+const refreshTrackAfterPackageAction = async (trackId: string) => {
+  await refreshTrackDashboard()
+  const refreshed = rows.value.find((item) => item.id === trackId) ?? null
+  if (refreshed) {
+    selectedTrack.value = refreshed
+  }
+}
+const doSubmitPackageRegistration = async (
+  track: Product,
+  config: ProductLicensingEligibilityConfig,
+) => {
+  packageActionTarget.value = getPackageActionKey(track.id, config.configId)
+  clearMessages()
+
+  try {
+    if (config.configType === 'DIGITAL') {
+      if (config.registrationStatus === 'JOINED' && config.registrationId) {
+        await removeAdminDigitalRightRegistration(track.id, config.registrationId)
+        successMessage.value = `Đã gỡ sản phẩm khỏi gói ${config.title}`
+      } else {
+        await createAdminDigitalRightRegistration(track.id, { configId: config.configId })
+        successMessage.value = `Đã đăng ký sản phẩm vào gói ${config.title}`
+      }
+    } else if (config.registrationStatus === 'JOINED' && config.registrationId) {
+      await removeAdminPhysicalRightRegistration(track.id, config.registrationId)
+      successMessage.value = `Đã gỡ sản phẩm khỏi gói ${config.title}`
+    } else {
+      await createAdminPhysicalRightRegistration(track.id, { configId: config.configId })
+      successMessage.value = `Đã đăng ký sản phẩm vào gói ${config.title}`
+    }
+
+    await refreshTrackAfterPackageAction(track.id)
+  } catch (error) {
+    setError(error)
+  } finally {
+    packageActionTarget.value = null
+  }
+}
+
+const submitPackageRegistration = (
+  track: Product,
+  config: ProductLicensingEligibilityConfig,
+) => {
+  const isJoined = config.registrationStatus === 'JOINED'
+  const actionLabel = isJoined ? 'Gỡ khỏi gói' : 'Đăng ký tham gia'
+  confirm.require({
+    header: `${actionLabel} — ${config.title}`,
+    message: isJoined
+      ? `Xác nhận gỡ "${track.title}" khỏi gói "${config.title}"?`
+      : `Xác nhận đăng ký "${track.title}" vào gói "${config.title}"?`,
+    icon: 'pi pi-exclamation-triangle',
+    acceptLabel: actionLabel,
+    rejectLabel: 'Huỷ',
+    accept: () => void doSubmitPackageRegistration(track, config),
+  })
+}
 const hasSelectedTrackEligibility = computed(() => {
   if (!selectedTrack.value) return false
 
@@ -253,29 +334,6 @@ const createDurationDisplay = computed(() => {
   return parsed === undefined ? null : formatDuration(Math.max(0, Math.round(parsed)))
 })
 type TrackAttributeItem = { label: string; value: string; mono?: boolean }
-const selectedTrackDescription = computed(() => {
-  if (!selectedTrack.value) return ''
-
-  const track = selectedTrack.value
-  const authorLabel = track.authorName || 'chưa có tên tác giả hiển thị'
-  const genreLabel = track.genre || 'chưa phân loại thể loại'
-  const useCaseLabel = track.useCase || 'chưa có use-case'
-  const durationLabel = formatDuration(track.duration).toLowerCase()
-  const statusLabel =
-    track.status === 'PUBLISHED' ? 'đang ở trạng thái phát hành' : 'đang được ẩn khỏi hệ thống'
-  const allowedPermissionsLabel =
-    track.allowedPermissions.length > 0
-      ? track.allowedPermissions.map((item) => item.name).join(', ')
-      : 'chưa chọn quyền bán'
-  const eligibilitySummary = formatTrackEligibilitySummary(track).toLowerCase()
-  const audioStateLabel = track.originalAudioKey ? 'đã có file MP3 gốc' : 'chưa có file MP3 gốc'
-
-  if (track.description && track.description.trim().length > 0) {
-    return track.description
-  }
-
-  return `Track "${track.title}" hiện ${statusLabel}. Bản ghi này hiển thị tác giả ${authorLabel}, thuộc nhóm ${genreLabel}, phù hợp use-case ${useCaseLabel}, thời lượng ${durationLabel}, ${audioStateLabel}, đang có các quyền bán: ${allowedPermissionsLabel} và phân loại licensing hiện tại là ${eligibilitySummary}.`
-})
 const selectedTrackAttributeItems = computed<TrackAttributeItem[]>(() => {
   if (!selectedTrack.value) return []
 
@@ -292,7 +350,7 @@ const selectedTrackAttributeItems = computed<TrackAttributeItem[]>(() => {
     },
     {
       label: 'Thể loại',
-      value: track.genre || 'Chưa có thể loại',
+      value: formatTrackGenresDisplay(track),
     },
     {
       label: 'Thời lượng',
@@ -300,7 +358,7 @@ const selectedTrackAttributeItems = computed<TrackAttributeItem[]>(() => {
     },
     {
       label: 'Use-case',
-      value: track.useCase || 'Chưa có',
+      value: formatTrackUseCasesDisplay(track),
     },
     {
       label: 'Trạng thái',
@@ -506,8 +564,36 @@ const clearEditDialogError = () => {
   editDialogErrorMessage.value = null
 }
 
+const isAnyDialogVisible = computed(
+  () =>
+    createDialogVisible.value ||
+    editDialogVisible.value ||
+    detailDialogVisible.value ||
+    uploadDialogVisible.value ||
+    approvedPermissionsDialogVisible.value,
+)
+
 const revokeObjectUrl = (url: string | null) => {
   if (url) URL.revokeObjectURL(url)
+}
+
+const toggleSelection = <T extends string>(values: T[], value: T): T[] =>
+  values.includes(value) ? values.filter((item) => item !== value) : [...values, value]
+
+const getTrackGenreValues = (track: Product) =>
+  track.genres && track.genres.length > 0 ? track.genres : track.genre ? [track.genre] : []
+
+const getTrackUseCaseValues = (track: Product) =>
+  track.useCases && track.useCases.length > 0 ? track.useCases : track.useCase ? [track.useCase] : []
+
+const formatTrackGenresDisplay = (track: Product) => {
+  const values = getTrackGenreValues(track)
+  return values.length > 0 ? values.map(resolveProductGenreLabel).join(', ') : 'Chưa có thể loại'
+}
+
+const formatTrackUseCasesDisplay = (track: Product) => {
+  const values = getTrackUseCaseValues(track)
+  return values.length > 0 ? values.map(resolveProductUseCaseLabel).join(', ') : 'Chưa có'
 }
 
 const setCreateAudioUrl = (file: File | null) => {
@@ -554,6 +640,16 @@ const ensureThumbnailUrl = async (track: Product) => {
     return null
   } finally {
     thumbnailLoading.value = { ...thumbnailLoading.value, [track.id]: false }
+  }
+}
+
+const openSheetMusicPdf = async (track: Product) => {
+  clearMessages()
+  try {
+    const { data } = await getSheetMusicUrl(track.id)
+    window.open(data.sheetMusicUrl, '_blank', 'noopener,noreferrer')
+  } catch (error) {
+    setError(error)
   }
 }
 
@@ -650,12 +746,33 @@ const getProductComplianceReviewStatusClass = (value: ComplianceDetail['reviewSt
   return 'border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300'
 }
 
+const getProductComplianceLegalStatusClassSafe = (value: Product['complianceLegalStatus']) =>
+  getProductComplianceLegalStatusClass((value ?? 'PENDING') as ComplianceDetail['legalStatus'])
+
+const getProductComplianceReviewStatusClassSafe = (value: Product['complianceReviewStatus']) =>
+  getProductComplianceReviewStatusClass((value ?? 'PENDING') as ComplianceDetail['reviewStatus'])
+
+const formatProductComplianceReviewStatusLabelSafe = (value: Product['complianceReviewStatus']) =>
+  formatProductComplianceReviewStatusLabel((value ?? 'PENDING') as ComplianceDetail['reviewStatus'])
+
 const toggleAllowedPermissionSelection = (permissionId: string) => {
   if (permissionId.length === 0 || approvedPermissionsSaving.value || !canChooseAllowedPermissions.value) return
 
   selectedAllowedPermissionIds.value = selectedAllowedPermissionIds.value.includes(permissionId)
     ? selectedAllowedPermissionIds.value.filter((item) => item !== permissionId)
     : [...selectedAllowedPermissionIds.value, permissionId]
+}
+
+const confirmSaveAllowedPermissions = () => {
+  if (!approvedPermissionsTrack.value || !canSaveAllowedPermissions.value) return
+  confirm.require({
+    header: 'Xác nhận cập nhật quyền bán',
+    message: `Lưu ${selectedAllowedPermissionIds.value.length} quyền bán đã chọn cho "${approvedPermissionsTrack.value.title}"?`,
+    icon: 'pi pi-exclamation-triangle',
+    acceptLabel: 'Lưu quyền bán',
+    rejectLabel: 'Huỷ',
+    accept: () => void submitAllowedPermissions(),
+  })
 }
 
 const submitAllowedPermissions = async () => {
@@ -684,14 +801,15 @@ const resetCreateForm = () => {
   createForm.title = ''
   createForm.artistId = ''
   createForm.authorName = ''
-  createForm.genre = ''
-  createForm.useCase = ''
+  createForm.genres = []
+  createForm.useCases = []
   createForm.description = ''
   createForm.duration = ''
   revokeObjectUrl(createOriginalAudioUrl.value)
   revokeObjectUrl(createThumbnailUrl.value)
   createOriginalAudioUrl.value = null
   createOriginalFile.value = null
+  createSheetMusicFile.value = null
   createThumbnailFile.value = null
   createThumbnailUrl.value = null
 }
@@ -700,11 +818,22 @@ const resetEditForm = (track: Product) => {
   editForm.title = track.title
   editForm.artistId = track.artistId
   editForm.authorName = track.authorName ?? ''
-  editForm.genre = track.genre ?? ''
-  editForm.useCase = track.useCase ?? ''
+  editForm.genres =
+    track.genres && track.genres.length > 0
+      ? (track.genres as ProductGenre[])
+      : track.genre
+        ? ([track.genre] as ProductGenre[])
+        : []
+  editForm.useCases =
+    track.useCases && track.useCases.length > 0
+      ? (track.useCases as ProductUseCase[])
+      : track.useCase
+        ? ([track.useCase] as ProductUseCase[])
+        : []
   editForm.description = track.description ?? ''
   editForm.duration = track.duration === null ? '' : String(track.duration)
   editOriginalFile.value = null
+  editSheetMusicFile.value = null
   revokeObjectUrl(editThumbnailUrl.value)
   editThumbnailFile.value = null
   editThumbnailUrl.value = null
@@ -721,6 +850,13 @@ const ensureAudioFile = (file: File, label: string) => {
 
   if (isAudioMime || isMp3Name) return
   throw new Error(`${label} phải là file audio/mp3 hợp lệ`)
+}
+
+const ensurePdfFile = (file: File, label: string) => {
+  const isPdfMime = file.type === 'application/pdf'
+  const isPdfName = file.name.toLowerCase().endsWith('.pdf')
+  if (isPdfMime || isPdfName) return
+  throw new Error(`${label} phải là file PDF hợp lệ`)
 }
 
 const getFileExtension = (file: File): string | null => {
@@ -880,6 +1016,32 @@ const handleEditAudioFileChange = async (event: Event) => {
   }
 }
 
+const handleCreateSheetMusicFileChange = (event: Event) => {
+  clearCreateDialogError()
+  const file = extractEventFile(event)
+  createSheetMusicFile.value = file
+  if (!file) return
+  try {
+    ensurePdfFile(file, 'Khuông nhạc')
+  } catch (error) {
+    createSheetMusicFile.value = null
+    setCreateDialogError(error)
+  }
+}
+
+const handleEditSheetMusicFileChange = (event: Event) => {
+  clearEditDialogError()
+  const file = extractEventFile(event)
+  editSheetMusicFile.value = file
+  if (!file) return
+  try {
+    ensurePdfFile(file, 'Khuông nhạc')
+  } catch (error) {
+    editSheetMusicFile.value = null
+    setEditDialogError(error)
+  }
+}
+
 const fetchTracks = async () => {
   clearMessages()
   isLoading.value = true
@@ -929,6 +1091,7 @@ const refreshTrackDashboard = async () => {
 }
 
 const openCreateDialog = () => {
+  clearMessages()
   selectedTrack.value = null
   editDialogVisible.value = false
   uploadDialogVisible.value = false
@@ -942,6 +1105,7 @@ const openCreateDialog = () => {
 }
 
 const openEditDialog = (track: Product) => {
+  clearMessages()
   selectedTrack.value = track
   createDialogVisible.value = false
   uploadDialogVisible.value = false
@@ -956,11 +1120,13 @@ const openEditDialog = (track: Product) => {
 }
 
 const openDetailDialog = (track: Product) => {
+  clearMessages()
   selectedTrack.value = track
   createDialogVisible.value = false
   editDialogVisible.value = false
   uploadDialogVisible.value = false
   detailDialogVisible.value = true
+  detailActiveTab.value = 'info'
   const nextOriginalUrls = { ...originalAudioUrls.value }
   delete nextOriginalUrls[track.id]
   originalAudioUrls.value = nextOriginalUrls
@@ -977,6 +1143,7 @@ const uploadToSignedUrl = async (url: string, file: File) => {
     method: 'PUT',
     headers: {
       'Content-Type': file.type || 'application/octet-stream',
+      'x-upsert': 'true',
     },
     body: file,
   })
@@ -1023,6 +1190,20 @@ const uploadTrackThumbnailFile = async (trackId: string, file: File) => {
   return data
 }
 
+const uploadTrackSheetMusicFile = async (trackId: string, file: File) => {
+  ensurePdfFile(file, 'Khuông nhạc')
+  const { data } = await getSheetMusicUploadUrl(trackId)
+
+  await uploadToSignedUrl(data.uploadUrl, file)
+  const confirmed = await confirmAdminProductSheetMusicUpload(trackId, { fileKey: data.fileKey })
+  rows.value = rows.value.map((item) => (item.id === trackId ? confirmed.data : item))
+  if (selectedTrack.value?.id === trackId) {
+    selectedTrack.value = confirmed.data
+  }
+
+  return data
+}
+
 const submitCreate = async () => {
   clearCreateDialogError()
   successMessage.value = null
@@ -1045,9 +1226,8 @@ const submitCreate = async () => {
     const { data } = await createAdminProduct({
       title: createForm.title.trim(),
       artistId: createForm.artistId.trim(),
-      authorName: createForm.authorName.trim().length > 0 ? createForm.authorName.trim() : undefined,
-      genre: createForm.genre.trim().length > 0 ? createForm.genre.trim() : undefined,
-      useCase: createForm.useCase.trim().length > 0 ? createForm.useCase.trim() : undefined,
+      genres: createForm.genres,
+      useCases: createForm.useCases,
       description: createForm.description.trim().length > 0 ? createForm.description.trim() : undefined,
       duration: parseDuration(createForm.duration),
     })
@@ -1055,6 +1235,9 @@ const submitCreate = async () => {
     createdProduct = data
     await uploadTrackThumbnailFile(data.id, createThumbnailFile.value as File)
     await uploadTrackAudioFile(data.id, createOriginalFile.value as File)
+    if (createSheetMusicFile.value) {
+      await uploadTrackSheetMusicFile(data.id, createSheetMusicFile.value)
+    }
 
     createDialogVisible.value = false
     resetCreateForm()
@@ -1100,8 +1283,8 @@ const submitEdit = async () => {
     await updateAdminProduct(selectedTrack.value.id, {
       title: editForm.title.trim(),
       authorName: editForm.authorName.trim().length > 0 ? editForm.authorName.trim() : undefined,
-      genre: editForm.genre.trim().length > 0 ? editForm.genre.trim() : undefined,
-      useCase: editForm.useCase.trim().length > 0 ? editForm.useCase.trim() : undefined,
+      genres: editForm.genres,
+      useCases: editForm.useCases,
       description: editForm.description.trim().length > 0 ? editForm.description.trim() : undefined,
       duration: parseDuration(editForm.duration),
     })
@@ -1114,6 +1297,10 @@ const submitEdit = async () => {
       await uploadTrackAudioFile(selectedTrack.value.id, editOriginalFile.value)
     }
 
+    if (editSheetMusicFile.value) {
+      await uploadTrackSheetMusicFile(selectedTrack.value.id, editSheetMusicFile.value)
+    }
+
     editDialogVisible.value = false
     successMessage.value = 'Đã cập nhật track'
     await refreshTrackDashboard()
@@ -1122,6 +1309,18 @@ const submitEdit = async () => {
   } finally {
     isLoading.value = false
   }
+}
+
+const confirmSubmitEdit = () => {
+  if (!selectedTrack.value) return
+  confirm.require({
+    header: 'Xác nhận lưu thay đổi',
+    message: `Lưu các thay đổi cho track "${selectedTrack.value.title}"?`,
+    icon: 'pi pi-exclamation-triangle',
+    acceptLabel: 'Lưu thay đổi',
+    rejectLabel: 'Huỷ',
+    accept: () => void submitEdit(),
+  })
 }
 
 const togglePublishConfirmed = async (track: Product) => {
@@ -1154,8 +1353,8 @@ const togglePublishConfirmed = async (track: Product) => {
 const confirmTogglePublish = (track: Product) => {
   const isPublished = track.status === 'PUBLISHED'
   if (!isPublished && !track.thumbnailKey) {
-    errorMessage.value = 'Cần upload thumbnail trước khi phát hành track'
     openEditDialog(track)
+    editDialogErrorMessage.value = 'Cần upload thumbnail trước khi phát hành track'
     return
   }
   confirm.require({
@@ -1171,6 +1370,7 @@ const confirmTogglePublish = (track: Product) => {
 }
 
 const openUploadDialog = (track: Product) => {
+  clearMessages()
   selectedTrack.value = track
   createDialogVisible.value = false
   editDialogVisible.value = false
@@ -1210,11 +1410,39 @@ const submitUpload = async () => {
     uploadStatus.value = 'uploading'
     uploadResult.value = await uploadTrackAudioFile(selectedTrack.value.id, uploadFile.value)
     uploadStatus.value = 'done'
-    successMessage.value = 'Đã tải file lên'
     await refreshTrackDashboard()
   } catch (error) {
     uploadStatus.value = 'error'
     uploadError.value = error instanceof Error ? error.message : 'Lỗi tải file'
+  }
+}
+
+const applyDemoAudioKey = async () => {
+  if (!selectedTrack.value) return
+
+  clearMessages()
+  uploadStatus.value = 'uploading'
+  uploadError.value = null
+  uploadResult.value = null
+
+  try {
+    const confirmed = await confirmAdminProductAudioUpload(selectedTrack.value.id, {
+      mode: 'original',
+      fileKey: '1.mp3',
+    })
+    rows.value = rows.value.map((item) =>
+      item.id === selectedTrack.value?.id ? confirmed.data : item,
+    )
+    selectedTrack.value = confirmed.data
+    const nextOriginalUrls = { ...originalAudioUrls.value }
+    delete nextOriginalUrls[confirmed.data.id]
+    originalAudioUrls.value = nextOriginalUrls
+    uploadResult.value = { uploadUrl: '', fileKey: '1.mp3' }
+    uploadStatus.value = 'done'
+    await refreshTrackDashboard()
+  } catch (error) {
+    uploadStatus.value = 'error'
+    uploadError.value = error instanceof Error ? error.message : 'Lỗi cập nhật audio'
   }
 }
 
@@ -1336,7 +1564,7 @@ onBeforeUnmount(() => {
         </div>
       </div>
 
-      <div class="mt-4 space-y-3">
+      <div v-if="!isAnyDialogVisible" class="mt-4 space-y-3">
         <Message v-if="errorMessage" severity="error">{{ errorMessage }}</Message>
         <Message v-if="successMessage" severity="success">{{ successMessage }}</Message>
       </div>
@@ -1381,7 +1609,7 @@ onBeforeUnmount(() => {
                       {{ track.title }}
                     </div>
                     <div class="mt-1 line-clamp-1 text-xs text-slate-500 dark:text-slate-400">
-                      {{ track.authorName || 'Chưa có tác giả' }} · {{ track.genre || 'Chưa có thể loại' }} · {{ formatDuration(track.duration) }} ·
+                      {{ track.authorName || 'Chưa có tác giả' }} · {{ formatTrackGenresDisplay(track) }} · {{ formatDuration(track.duration) }} ·
                       {{ formatDateTime(track.updatedAt) }}
                     </div>
                   </div>
@@ -1397,9 +1625,6 @@ onBeforeUnmount(() => {
                       <i class="pi pi-book text-xs" />
                       {{ track.allowedPermissions?.length ?? track.allowedPermissionIds?.length ?? 0 }} quyền
                     </button>
-                    <div class="text-[11px] text-slate-500 dark:text-slate-400">
-                      {{ formatTrackEligibilitySummary(track) }}
-                    </div>
                   </div>
                 </td>
                 <td class="px-3 py-4">
@@ -1591,27 +1816,46 @@ onBeforeUnmount(() => {
                 }}
               </span>
             </label>
-            <label class="space-y-2">
-              <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Tên tác giả hiển thị</span>
-              <input v-model="createForm.authorName" :class="fieldClass" placeholder="Có thể bỏ trống" />
-            </label>
-            <label class="space-y-2">
+            <div class="space-y-2 sm:col-span-2">
               <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Thể loại</span>
-              <input v-model="createForm.genre" :class="fieldClass" placeholder="Có thể bỏ trống" />
-            </label>
-            <label class="space-y-2 sm:col-span-2">
+              <div class="flex flex-wrap gap-2">
+                <button
+                  v-for="option in PRODUCT_GENRE_OPTIONS"
+                  :key="`create-genre-${option.value}`"
+                  type="button"
+                  class="rounded-full border px-3 py-1 text-xs font-semibold transition"
+                  :class="createForm.genres.includes(option.value)
+                    ? 'border-violet-300 bg-violet-100 text-violet-700 dark:border-violet-500/40 dark:bg-violet-500/20 dark:text-violet-200'
+                    : 'border-slate-200 bg-white text-slate-600 hover:border-violet-200 hover:text-violet-700 dark:border-slate-700 dark:bg-slate-950/40 dark:text-slate-300 dark:hover:border-violet-500/30 dark:hover:text-violet-200'"
+                  @click="createForm.genres = toggleSelection(createForm.genres, option.value)"
+                >
+                  {{ option.label }}
+                </button>
+              </div>
+            </div>
+            <div class="space-y-2 sm:col-span-2">
               <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Use-case</span>
-              <input v-model="createForm.useCase" :class="fieldClass" placeholder="Ví dụ: quảng cáo, vlog, social content" />
-            </label>
+              <div class="flex flex-wrap gap-2">
+                <button
+                  v-for="option in PRODUCT_USE_CASE_OPTIONS"
+                  :key="`create-usecase-${option.value}`"
+                  type="button"
+                  class="rounded-full border px-3 py-1 text-xs font-semibold transition"
+                  :class="createForm.useCases.includes(option.value)
+                    ? 'border-violet-300 bg-violet-100 text-violet-700 dark:border-violet-500/40 dark:bg-violet-500/20 dark:text-violet-200'
+                    : 'border-slate-200 bg-white text-slate-600 hover:border-violet-200 hover:text-violet-700 dark:border-slate-700 dark:bg-slate-950/40 dark:text-slate-300 dark:hover:border-violet-500/30 dark:hover:text-violet-200'"
+                  @click="createForm.useCases = toggleSelection(createForm.useCases, option.value)"
+                >
+                  {{ option.label }}
+                </button>
+              </div>
+            </div>
             <label class="space-y-2 sm:col-span-2">
               <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Mô tả sản phẩm</span>
               <textarea v-model="createForm.description" class="min-h-[120px] w-full rounded-2xl border border-slate-200/80 bg-white/90 px-4 py-3 text-sm text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-violet-400 focus:ring-4 focus:ring-violet-100 dark:border-slate-800 dark:bg-slate-950/70 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-violet-500 dark:focus:ring-violet-500/20" placeholder="Nhập mô tả chi tiết cho sản phẩm" />
             </label>
           </div>
 
-          <div class="rounded-[24px] border border-dashed border-amber-200 bg-amber-50/80 p-4 text-sm text-amber-800 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-200">
-            Quyền bán không được chọn khi tạo mới sản phẩm. Sau khi hồ sơ Pháp lý của sản phẩm được duyệt và cấp `Approved permissions`, bạn mới có thể quay lại Product để chọn subset quyền bán.
-          </div>
         </section>
 
         <section class="space-y-4 rounded-[28px] border border-slate-200/80 bg-slate-50/80 p-5 dark:border-slate-800 dark:bg-slate-900/50">
@@ -1641,21 +1885,45 @@ onBeforeUnmount(() => {
             Audio gốc
           </div>
 
-          <article class="rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/70">
+          <article class="mt-4 rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/70">
             <div class="flex items-center justify-between gap-3">
-              <div class="text-sm font-semibold text-slate-900 dark:text-white">MP3 gốc</div>
-              <div class="flex flex-wrap gap-2">
-                <span v-if="createOriginalFile" class="rounded-full bg-violet-100 px-3 py-1 text-xs font-medium text-violet-700 dark:bg-violet-500/20 dark:text-violet-200">{{ createOriginalFile.name }}</span>
-                <span v-if="createDurationDisplay" class="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300">{{ createDurationDisplay }}</span>
-              </div>
+              <div class="text-sm font-semibold text-slate-900 dark:text-white">File MP3 gốc</div>
+              <span v-if="createOriginalFile" class="rounded-full bg-violet-100 px-3 py-1 text-xs font-medium text-violet-700 dark:bg-violet-500/20 dark:text-violet-200">
+                {{ createOriginalFile.name }}
+              </span>
             </div>
             <div class="mt-4">
-              <input type="file" accept=".mp3,audio/*" :class="fileInputClass" @change="(event) => void handleCreateAudioFileChange(event)" />
+              <input type="file" accept=".mp3,audio/*" :class="fileInputClass" @change="handleCreateAudioFileChange" />
             </div>
-            <div class="mt-4 rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 p-4 dark:border-slate-700 dark:bg-slate-900/60">
-              <ProductWavePreview :audio-url="createOriginalAudioUrl" :disabled="!createOriginalAudioUrl" :right-label="createDurationDisplay" />
+            <div class="mt-4">
+              <ProductWavePreview :audio-url="createOriginalAudioUrl" :disabled="!createOriginalAudioUrl" />
             </div>
           </article>
+
+          <div class="flex items-center gap-3 pt-2 text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+            <i class="pi pi-file-pdf text-violet-500" />
+            Khuông nhạc (PDF)
+          </div>
+
+          <article class="rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/70">
+            <div class="flex items-center justify-between gap-3">
+              <div class="text-sm font-semibold text-slate-900 dark:text-white">File PDF</div>
+              <span v-if="createSheetMusicFile" class="rounded-full bg-violet-100 px-3 py-1 text-xs font-medium text-violet-700 dark:bg-violet-500/20 dark:text-violet-200">
+                {{ createSheetMusicFile.name }}
+              </span>
+            </div>
+            <div class="mt-4">
+              <input type="file" accept=".pdf,application/pdf" :class="fileInputClass" @change="handleCreateSheetMusicFileChange" />
+            </div>
+          </article>
+
+          <label class="mt-4 block space-y-2">
+            <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Thời lượng (giây)</span>
+            <input v-model="createForm.duration" :class="fieldClass" readonly />
+            <span class="text-xs text-slate-500 dark:text-slate-400">
+              {{ createDurationDisplay ? `≈ ${createDurationDisplay}` : 'Chọn file audio để tự đọc thời lượng.' }}
+            </span>
+          </label>
         </section>
       </div>
 
@@ -1667,88 +1935,164 @@ onBeforeUnmount(() => {
       </template>
     </Dialog>
 
-    <Dialog v-model:visible="editDialogVisible" modal class="w-[min(900px,94vw)]" header="Chỉnh sửa track">
+    <Dialog v-model:visible="editDialogVisible" modal class="w-[min(1040px,96vw)]">
+      <template #header>
+        <div class="flex w-full items-center justify-between gap-4">
+          <div>
+            <div class="text-lg font-semibold text-slate-950 dark:text-white">Chỉnh sửa track</div>
+          </div>
+          <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-200">
+            <i class="pi pi-pencil" />
+          </div>
+        </div>
+      </template>
+
       <Message v-if="editDialogErrorMessage" severity="error" class="mb-4">{{ editDialogErrorMessage }}</Message>
 
-      <div class="space-y-4">
-        <div class="grid gap-4 sm:grid-cols-2">
-          <label class="space-y-2">
-            <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Tên track</span>
-            <input v-model="editForm.title" :class="fieldClass" />
-          </label>
-          <label class="space-y-2">
-            <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Nghệ sĩ</span>
-            <div class="rounded-2xl border border-slate-200/80 bg-slate-50/80 px-4 py-3 text-sm font-medium text-slate-700 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-200">
-              {{ selectedEditArtistOption?.label || editForm.artistId }}
+      <div v-if="selectedTrack" class="grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
+        <section class="space-y-4 rounded-[28px] border border-slate-200/80 bg-slate-50/80 p-5 dark:border-slate-800 dark:bg-slate-900/50">
+          <div class="flex items-center gap-3 text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+            <i class="pi pi-align-left text-violet-500" />
+            Thông tin chung
+          </div>
+          <div class="grid gap-4 sm:grid-cols-2">
+            <label class="space-y-2">
+              <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Tên track</span>
+              <input v-model="editForm.title" :class="fieldClass" placeholder="Nhập tên track" />
+            </label>
+            <label class="space-y-2">
+              <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Nghệ sĩ</span>
+              <div class="relative">
+                <select v-model="editForm.artistId" :class="selectFieldClass" disabled>
+                  <option :value="editForm.artistId">{{ selectedEditArtistOption?.label ?? editForm.artistId }}</option>
+                </select>
+                <i class="pi pi-chevron-down pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs text-slate-400 dark:text-slate-500" />
+              </div>
+              <span class="text-xs text-slate-500 dark:text-slate-400">
+                Nghệ sĩ của sản phẩm hiện tại (không thay đổi trong màn này).
+              </span>
+            </label>
+            <label class="space-y-2">
+              <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Tên tác giả hiển thị</span>
+              <input v-model="editForm.authorName" :class="fieldClass" placeholder="Có thể bỏ trống" />
+            </label>
+            <div class="space-y-2 sm:col-span-2">
+              <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Thể loại</span>
+              <div class="flex flex-wrap gap-2">
+                <button
+                  v-for="option in PRODUCT_GENRE_OPTIONS"
+                  :key="`edit-genre-${option.value}`"
+                  type="button"
+                  class="rounded-full border px-3 py-1 text-xs font-semibold transition"
+                  :class="editForm.genres.includes(option.value)
+                    ? 'border-violet-300 bg-violet-100 text-violet-700 dark:border-violet-500/40 dark:bg-violet-500/20 dark:text-violet-200'
+                    : 'border-slate-200 bg-white text-slate-600 hover:border-violet-200 hover:text-violet-700 dark:border-slate-700 dark:bg-slate-950/40 dark:text-slate-300 dark:hover:border-violet-500/30 dark:hover:text-violet-200'"
+                  @click="editForm.genres = toggleSelection(editForm.genres, option.value)"
+                >
+                  {{ option.label }}
+                </button>
+              </div>
             </div>
-            <span class="text-xs text-slate-500 dark:text-slate-400">
-              {{ selectedEditArtistOption?.email || 'ID nội bộ được giữ nguyên khi chỉnh sửa sản phẩm' }}
-            </span>
-          </label>
-          <label class="space-y-2">
-            <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Tên tác giả hiển thị</span>
-            <input v-model="editForm.authorName" :class="fieldClass" />
-          </label>
-          <label class="space-y-2">
-            <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Thể loại</span>
-            <input v-model="editForm.genre" :class="fieldClass" />
-          </label>
-          <label class="space-y-2 sm:col-span-2">
-            <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Use-case</span>
-            <input v-model="editForm.useCase" :class="fieldClass" />
-          </label>
-          <label class="space-y-2 sm:col-span-2">
-            <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Mô tả sản phẩm</span>
-            <textarea v-model="editForm.description" class="min-h-[120px] w-full rounded-2xl border border-slate-200/80 bg-white/90 px-4 py-3 text-sm text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-violet-400 focus:ring-4 focus:ring-violet-100 dark:border-slate-800 dark:bg-slate-950/70 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-violet-500 dark:focus:ring-violet-500/20" />
-          </label>
-        </div>
-
-        <label class="block space-y-2">
-          <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Thumbnail</span>
-          <input type="file" accept="image/*,.png,.jpg,.jpeg,.webp" :class="fileInputClass" @change="handleEditThumbnailFileChange" />
-          <div class="flex flex-wrap items-center gap-2">
-            <span v-if="selectedTrack?.thumbnailKey" class="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-              Đang có thumbnail
-            </span>
-            <span v-else class="rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-700 dark:bg-amber-500/20 dark:text-amber-200">
-              Thiếu thumbnail
-            </span>
-            <span v-if="editThumbnailFile" class="rounded-full bg-violet-100 px-3 py-1 text-xs font-medium text-violet-700 dark:bg-violet-500/20 dark:text-violet-200">
-              {{ editThumbnailFile.name }}
-            </span>
+            <div class="space-y-2 sm:col-span-2">
+              <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Use-case</span>
+              <div class="flex flex-wrap gap-2">
+                <button
+                  v-for="option in PRODUCT_USE_CASE_OPTIONS"
+                  :key="`edit-usecase-${option.value}`"
+                  type="button"
+                  class="rounded-full border px-3 py-1 text-xs font-semibold transition"
+                  :class="editForm.useCases.includes(option.value)
+                    ? 'border-violet-300 bg-violet-100 text-violet-700 dark:border-violet-500/40 dark:bg-violet-500/20 dark:text-violet-200'
+                    : 'border-slate-200 bg-white text-slate-600 hover:border-violet-200 hover:text-violet-700 dark:border-slate-700 dark:bg-slate-950/40 dark:text-slate-300 dark:hover:border-violet-500/30 dark:hover:text-violet-200'"
+                  @click="editForm.useCases = toggleSelection(editForm.useCases, option.value)"
+                >
+                  {{ option.label }}
+                </button>
+              </div>
+            </div>
+            <label class="space-y-2 sm:col-span-2">
+              <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Mô tả sản phẩm</span>
+              <textarea v-model="editForm.description" class="min-h-[120px] w-full rounded-2xl border border-slate-200/80 bg-white/90 px-4 py-3 text-sm text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-violet-400 focus:ring-4 focus:ring-violet-100 dark:border-slate-800 dark:bg-slate-950/70 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-violet-500 dark:focus:ring-violet-500/20" placeholder="Nhập mô tả chi tiết cho sản phẩm" />
+            </label>
           </div>
-          <div class="overflow-hidden rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 p-4 dark:border-slate-700 dark:bg-slate-900/60">
-            <img
-              v-if="editThumbnailUrl || (selectedTrack && thumbnailUrls[selectedTrack.id])"
-              :src="editThumbnailUrl || (selectedTrack ? thumbnailUrls[selectedTrack.id] : '')"
-              alt=""
-              class="h-40 w-full rounded-2xl object-cover"
-            />
-            <div v-else class="flex h-40 items-center justify-center text-sm text-slate-500 dark:text-slate-400">Chưa có thumbnail</div>
+        </section>
+
+        <section class="space-y-4 rounded-[28px] border border-slate-200/80 bg-slate-50/80 p-5 dark:border-slate-800 dark:bg-slate-900/50">
+          <div class="flex items-center gap-3 text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+            <i class="pi pi-image text-violet-500" />
+            Thumbnail
           </div>
-        </label>
 
-        <label class="block space-y-2">
-          <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Thay MP3 gốc</span>
-          <input type="file" accept=".mp3,audio/*" :class="fileInputClass" @change="(event) => void handleEditAudioFileChange(event)" />
-          <span class="text-sm text-slate-500 dark:text-slate-400">Nếu chọn file mới, duration sẽ cập nhật theo audio này.</span>
-          <span v-if="editOriginalFile" class="inline-flex rounded-full bg-violet-100 px-3 py-1 text-xs font-medium text-violet-700 dark:bg-violet-500/20 dark:text-violet-200">{{ editOriginalFile.name }}</span>
-        </label>
+          <article class="rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/70">
+            <div class="flex items-center justify-between gap-3">
+              <div class="text-sm font-semibold text-slate-900 dark:text-white">Ảnh đại diện</div>
+              <span v-if="editThumbnailFile" class="rounded-full bg-violet-100 px-3 py-1 text-xs font-medium text-violet-700 dark:bg-violet-500/20 dark:text-violet-200">
+                {{ editThumbnailFile.name }}
+              </span>
+            </div>
+            <div class="mt-4">
+              <input type="file" accept="image/*,.png,.jpg,.jpeg,.webp" :class="fileInputClass" @change="handleEditThumbnailFileChange" />
+            </div>
+            <div class="mt-4 overflow-hidden rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 p-4 dark:border-slate-700 dark:bg-slate-900/60">
+              <img v-if="editThumbnailUrl || thumbnailUrls[selectedTrack.id]" :src="editThumbnailUrl || thumbnailUrls[selectedTrack.id]" alt="" class="h-40 w-full rounded-2xl object-cover" />
+              <div v-else class="flex h-40 items-center justify-center text-sm text-slate-500 dark:text-slate-400">Chưa có thumbnail</div>
+            </div>
+          </article>
 
-        <label class="block space-y-2">
-          <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Thời lượng (giây)</span>
-          <input v-model="editForm.duration" :class="fieldClass" readonly />
-        </label>
+          <div class="flex items-center gap-3 pt-2 text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+            <i class="pi pi-volume-up text-violet-500" />
+            Audio gốc
+          </div>
 
-        <div class="rounded-[24px] border border-dashed border-amber-200 bg-amber-50/80 p-4 text-sm text-amber-800 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-200">
-          Quyền bán không chỉnh trực tiếp tại form sửa sản phẩm. Khi hồ sơ Pháp lý đã `SUFFICIENT` và `APPROVED`, hãy mở phần quyền bán để chọn trong đúng tập `Approved permissions` mà Pháp lý đã cấp cho sản phẩm này.
-        </div>
+          <article class="rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/70">
+            <div class="flex items-center justify-between gap-3">
+              <div class="text-sm font-semibold text-slate-900 dark:text-white">Thay file MP3</div>
+              <span v-if="editOriginalFile" class="rounded-full bg-violet-100 px-3 py-1 text-xs font-medium text-violet-700 dark:bg-violet-500/20 dark:text-violet-200">
+                {{ editOriginalFile.name }}
+              </span>
+            </div>
+            <div class="mt-4">
+              <input type="file" accept=".mp3,audio/*" :class="fileInputClass" @change="handleEditAudioFileChange" />
+            </div>
+            <div class="mt-4">
+              <label class="block space-y-2">
+                <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Thời lượng (giây)</span>
+                <input v-model="editForm.duration" :class="fieldClass" readonly />
+              </label>
+            </div>
+          </article>
+
+          <div class="flex items-center gap-3 pt-2 text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+            <i class="pi pi-file-pdf text-violet-500" />
+            Khuông nhạc (PDF)
+          </div>
+
+          <article class="rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/70">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div class="text-sm font-semibold text-slate-900 dark:text-white">
+                {{ selectedTrack.sheetMusicPdfKey ? 'Đã có PDF' : 'Chưa có PDF' }}
+              </div>
+              <button type="button" :class="secondaryButtonClass" :disabled="!selectedTrack.sheetMusicPdfKey" @click="openSheetMusicPdf(selectedTrack)">
+                Mở PDF
+              </button>
+            </div>
+            <div class="mt-4 flex items-center justify-between gap-3">
+              <div class="text-sm font-semibold text-slate-900 dark:text-white">Thay file PDF</div>
+              <span v-if="editSheetMusicFile" class="rounded-full bg-violet-100 px-3 py-1 text-xs font-medium text-violet-700 dark:bg-violet-500/20 dark:text-violet-200">
+                {{ editSheetMusicFile.name }}
+              </span>
+            </div>
+            <div class="mt-4">
+              <input type="file" accept=".pdf,application/pdf" :class="fileInputClass" @change="handleEditSheetMusicFileChange" />
+            </div>
+          </article>
+        </section>
       </div>
 
       <template #footer>
         <div class="flex w-full justify-end gap-3">
           <button type="button" :class="secondaryButtonClass" @click="editDialogVisible = false">Huỷ</button>
-          <button type="button" :class="primaryButtonClass" :disabled="isLoading" @click="submitEdit">Lưu thay đổi</button>
+          <button type="button" :class="primaryButtonClass" :disabled="isLoading" @click="confirmSubmitEdit">Lưu thay đổi</button>
         </div>
       </template>
     </Dialog>
@@ -1769,7 +2113,7 @@ onBeforeUnmount(() => {
             <div>
               <div class="text-xl font-semibold text-slate-950 dark:text-white">{{ selectedTrack.title }}</div>
               <div class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                {{ selectedTrack.authorName || 'Chưa có tác giả' }} · {{ selectedTrack.genre || 'Chưa có thể loại' }}
+                {{ selectedTrack.authorName || 'Chưa có tác giả' }} · {{ formatTrackGenresDisplay(selectedTrack) }}
               </div>
             </div>
           </div>
@@ -1795,173 +2139,270 @@ onBeforeUnmount(() => {
           <Message v-if="successMessage" severity="success">{{ successMessage }}</Message>
         </div>
 
-        <section class="rounded-[28px] border border-slate-200/80 bg-slate-50/80 p-5 dark:border-slate-800 dark:bg-slate-900/50">
-          <ProductWavePreview
-            :audio-url="originalAudioUrls[selectedTrack.id] ?? null"
-            :disabled="!selectedTrack.originalAudioKey"
-          />
-          <div class="mt-3 flex flex-wrap gap-2 text-sm text-slate-500 dark:text-slate-400">
-            <span>{{ formatDuration(selectedTrack.duration) }}</span>
-            <span>·</span>
-            <span>{{ selectedTrack.genre || 'Chưa có thể loại' }}</span>
+        <nav class="flex flex-wrap gap-2 border-b border-slate-200 pb-2 dark:border-slate-800">
+          <button
+            v-for="tab in detailTabs"
+            :key="tab.key"
+            type="button"
+            class="inline-flex items-center gap-2 rounded-2xl px-4 py-2 text-sm font-semibold transition"
+            :class="detailActiveTab === tab.key
+              ? 'bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-200'
+              : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-900/60 dark:hover:text-white'"
+            @click="detailActiveTab = tab.key"
+          >
+            <i :class="tab.icon" />
+            {{ tab.label }}
+          </button>
+        </nav>
+
+        <div class="max-h-[70vh] overflow-y-auto pr-1 no-scrollbar">
+          <div v-if="detailActiveTab === 'info'" class="space-y-4">
+            <section class="rounded-[28px] border border-slate-200/80 bg-slate-50/80 p-5 dark:border-slate-800 dark:bg-slate-900/50">
+              <ProductWavePreview
+                :audio-url="originalAudioUrls[selectedTrack.id] ?? null"
+                :disabled="!selectedTrack.originalAudioKey"
+              />
+              <div class="mt-3 flex flex-wrap gap-2 text-sm text-slate-500 dark:text-slate-400">
+                <span>{{ formatDuration(selectedTrack.duration) }}</span>
+                <span>·</span>
+                <span>{{ formatTrackGenresDisplay(selectedTrack) }}</span>
+              </div>
+            </section>
+
+            <section class="grid gap-4 lg:grid-cols-2">
+              <article class="rounded-[28px] border border-slate-200/80 bg-white/80 p-5 dark:border-slate-800 dark:bg-slate-950/60 lg:col-span-2">
+                <div class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Thông tin chung</div>
+                <div class="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                  <div
+                    v-for="item in selectedTrackAttributeItems"
+                    :key="`${selectedTrack.id}-${item.label}`"
+                    class="rounded-2xl border border-slate-200/80 bg-slate-50/80 px-4 py-3 dark:border-slate-800 dark:bg-slate-900/60"
+                  >
+                    <div class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                      {{ item.label }}
+                    </div>
+                    <div
+                      class="mt-2 break-words text-sm font-medium text-slate-700 dark:text-slate-200"
+                      :class="item.mono ? 'font-mono text-xs sm:text-sm' : ''"
+                    >
+                      {{ item.value }}
+                    </div>
+                  </div>
+                </div>
+              </article>
+
+              <article class="rounded-[28px] border border-slate-200/80 bg-white/80 p-5 dark:border-slate-800 dark:bg-slate-950/60">
+                <div class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Khuông nhạc (PDF)</div>
+                <div class="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-slate-600 dark:text-slate-300">
+                  <div>
+                    {{ selectedTrack.sheetMusicPdfKey ? 'Đã có file PDF.' : 'Chưa upload file PDF.' }}
+                  </div>
+                  <button type="button" :class="secondaryButtonClass" :disabled="!selectedTrack.sheetMusicPdfKey" @click="openSheetMusicPdf(selectedTrack)">
+                    Mở PDF
+                  </button>
+                </div>
+              </article>
+
+              <article class="rounded-[28px] border border-slate-200/80 bg-white/80 p-5 dark:border-slate-800 dark:bg-slate-950/60">
+                <div class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Mô tả sản phẩm</div>
+                <p class="mt-4 text-sm leading-7 text-slate-600 dark:text-slate-300">
+                  {{ selectedTrack.description || 'Chưa có mô tả riêng cho sản phẩm.' }}
+                </p>
+              </article>
+            </section>
           </div>
-        </section>
 
-        <section class="grid gap-4 lg:grid-cols-2">
-          <article class="rounded-[28px] border border-slate-200/80 bg-white/80 p-5 dark:border-slate-800 dark:bg-slate-950/60 lg:col-span-2">
-            <div class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Mô tả track hiện tại</div>
-            <p class="mt-4 text-sm leading-7 text-slate-600 dark:text-slate-300">
-              {{ selectedTrackDescription }}
-            </p>
-
-            <div class="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              <div
-                v-for="item in selectedTrackAttributeItems"
-                :key="`${selectedTrack.id}-${item.label}`"
-                class="rounded-2xl border border-slate-200/80 bg-slate-50/80 px-4 py-3 dark:border-slate-800 dark:bg-slate-900/60"
-              >
-                <div class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
-                  {{ item.label }}
-                </div>
-                <div
-                  class="mt-2 break-words text-sm font-medium text-slate-700 dark:text-slate-200"
-                  :class="item.mono ? 'font-mono text-xs sm:text-sm' : ''"
+          <div v-else-if="detailActiveTab === 'licensing'" class="space-y-4">
+            <article class="rounded-[28px] border border-slate-200/80 bg-white/80 p-5 dark:border-slate-800 dark:bg-slate-950/60">
+              <div class="flex items-center justify-between gap-3">
+                <div class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Quyền bán đã chọn</div>
+                <button type="button" :class="secondaryButtonClass" @click="openApprovedPermissionsDialog(selectedTrack)">Chọn quyền bán</button>
+              </div>
+              <div class="mt-4 flex flex-wrap gap-2">
+                <span
+                  v-for="permission in selectedTrack.allowedPermissions"
+                  :key="`${selectedTrack.id}-detail-allowed-${permission.name}-${permission.lawReference}`"
+                  class="rounded-full bg-violet-100 px-3 py-1 text-xs font-medium text-violet-700 dark:bg-violet-500/20 dark:text-violet-200"
                 >
-                  {{ item.value }}
+                  {{ permission.name }}
+                </span>
+                <span v-if="selectedTrack.allowedPermissions.length === 0" class="text-sm text-slate-500 dark:text-slate-400">Chưa chọn quyền bán cho sản phẩm.</span>
+              </div>
+            </article>
+
+            <article class="rounded-[28px] border border-slate-200/80 bg-white/80 p-5 dark:border-slate-800 dark:bg-slate-950/60">
+              <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <div class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Matching Digital / Physical Rights</div>
                 </div>
               </div>
-            </div>
-          </article>
 
-          <article class="rounded-[28px] border border-slate-200/80 bg-white/80 p-5 dark:border-slate-800 dark:bg-slate-950/60">
-            <div class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Thông tin chung</div>
-            <div class="mt-4 space-y-3 text-sm text-slate-600 dark:text-slate-300">
-              <div><span class="font-semibold text-slate-900 dark:text-white">Tên tác giả:</span> {{ selectedTrack.authorName || 'Chưa có' }}</div>
-              <div><span class="font-semibold text-slate-900 dark:text-white">Thể loại:</span> {{ selectedTrack.genre || 'Chưa có thể loại' }}</div>
-              <div><span class="font-semibold text-slate-900 dark:text-white">Use-case:</span> {{ selectedTrack.useCase || 'Chưa có' }}</div>
-              <div><span class="font-semibold text-slate-900 dark:text-white">Thời lượng:</span> {{ formatDuration(selectedTrack.duration) }}</div>
-              <div><span class="font-semibold text-slate-900 dark:text-white">Cập nhật lúc:</span> {{ formatDateTime(selectedTrack.updatedAt) }}</div>
-            </div>
-          </article>
+              <div v-if="!hasSelectedTrackEligibility" class="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-400">
+                Chưa có cấu hình digital hoặc physical nào đang `ACTIVE` để hệ thống đối chiếu.
+              </div>
 
-          <article class="rounded-[28px] border border-slate-200/80 bg-white/80 p-5 dark:border-slate-800 dark:bg-slate-950/60">
-            <div class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Mô tả sản phẩm</div>
-            <p class="mt-4 text-sm leading-7 text-slate-600 dark:text-slate-300">
-              {{ selectedTrack.description || 'Chưa có mô tả riêng cho sản phẩm.' }}
-            </p>
-          </article>
+              <div v-else class="mt-4 grid gap-4 lg:grid-cols-2">
+                <section class="rounded-[24px] border border-slate-200/80 bg-slate-50/80 p-4 dark:border-slate-800 dark:bg-slate-900/50">
+                  <div class="flex items-center justify-between gap-3">
+                    <div class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Digital Platform Rights</div>
+                    <div class="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-950 dark:text-slate-300">
+                      {{ selectedTrack.licensingEligibility.summary.eligibleDigitalCount }}/{{ getEligibilityTotal(selectedTrack, 'digital') }} đủ điều kiện
+                    </div>
+                  </div>
 
-          <article class="rounded-[28px] border border-slate-200/80 bg-white/80 p-5 dark:border-slate-800 dark:bg-slate-950/60 lg:col-span-2">
-            <div class="flex items-center justify-between gap-3">
-              <div class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Quyền bán đã chọn</div>
-              <button type="button" :class="secondaryButtonClass" @click="openApprovedPermissionsDialog(selectedTrack)">Chọn quyền bán</button>
-            </div>
-            <div class="mt-4 flex flex-wrap gap-2">
-              <span
-                v-for="permission in selectedTrack.allowedPermissions"
-                :key="`${selectedTrack.id}-detail-allowed-${permission.name}-${permission.lawReference}`"
-                class="rounded-full bg-violet-100 px-3 py-1 text-xs font-medium text-violet-700 dark:bg-violet-500/20 dark:text-violet-200"
+                  <div v-if="selectedTrack.licensingEligibility.digitalConfigs.length === 0" class="mt-3 text-sm text-slate-500 dark:text-slate-400">
+                    Chưa có gói quyền số nào đang `ACTIVE`.
+                  </div>
+
+                  <div v-else class="mt-3 space-y-3">
+                    <article
+                      v-for="config in selectedTrack.licensingEligibility.digitalConfigs"
+                      :key="`${selectedTrack.id}-digital-${config.configId}`"
+                      class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-950"
+                    >
+                      <div class="flex items-start justify-between gap-3">
+                        <div class="min-w-0">
+                          <div class="font-semibold text-slate-900 dark:text-white">{{ config.title }}</div>
+                          <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                            {{ config.referencedPermissions.length }} quyền tham chiếu
+                          </div>
+                        </div>
+                        <div class="flex flex-wrap justify-end gap-2">
+                          <span class="inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold" :class="getEligibilityStatusClass(config.status)">
+                            {{ formatEligibilityStatusLabel(config.status) }}
+                          </span>
+                          <span class="inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold" :class="getRegistrationStatusClass(config)">
+                            {{ getRegistrationStatusLabel(config) }}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div v-if="config.status === 'INELIGIBLE' && config.missingPermissions.length > 0" class="mt-3 text-xs text-rose-700 dark:text-rose-300">
+                        Thiếu quyền: {{ getEligibilityMissingSummary(config) }}
+                      </div>
+
+                      <div class="mt-3 flex justify-end">
+                        <button
+                          type="button"
+                          :class="config.status === 'ELIGIBLE' ? primaryButtonClass : secondaryButtonClass"
+                          :disabled="config.status !== 'ELIGIBLE' || isPackageActionLoading(selectedTrack!.id, config.configId)"
+                          @click="submitPackageRegistration(selectedTrack!, config)"
+                        >
+                          {{ isConfigJoined(config) ? 'Gỡ khỏi gói' : 'Đăng ký tham gia' }}
+                        </button>
+                      </div>
+                    </article>
+                  </div>
+                </section>
+
+                <section class="rounded-[24px] border border-slate-200/80 bg-slate-50/80 p-4 dark:border-slate-800 dark:bg-slate-900/50">
+                  <div class="flex items-center justify-between gap-3">
+                    <div class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Physical Usage Rights</div>
+                    <div class="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-950 dark:text-slate-300">
+                      {{ selectedTrack.licensingEligibility.summary.eligiblePhysicalCount }}/{{ getEligibilityTotal(selectedTrack, 'physical') }} đủ điều kiện
+                    </div>
+                  </div>
+
+                  <div v-if="selectedTrack.licensingEligibility.physicalConfigs.length === 0" class="mt-3 text-sm text-slate-500 dark:text-slate-400">
+                    Chưa có cấu hình quyền vật lý nào đang `ACTIVE`.
+                  </div>
+
+                  <div v-else class="mt-3 space-y-3">
+                    <article
+                      v-for="config in selectedTrack.licensingEligibility.physicalConfigs"
+                      :key="`${selectedTrack.id}-physical-${config.configId}`"
+                      class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-950"
+                    >
+                      <div class="flex items-start justify-between gap-3">
+                        <div class="min-w-0">
+                          <div class="font-semibold text-slate-900 dark:text-white">{{ config.title }}</div>
+                          <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                            {{ config.referencedPermissions.length }} quyền tham chiếu
+                          </div>
+                        </div>
+                        <div class="flex flex-wrap justify-end gap-2">
+                          <span class="inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold" :class="getEligibilityStatusClass(config.status)">
+                            {{ formatEligibilityStatusLabel(config.status) }}
+                          </span>
+                          <span class="inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold" :class="getRegistrationStatusClass(config)">
+                            {{ getRegistrationStatusLabel(config) }}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div v-if="config.status === 'INELIGIBLE' && config.missingPermissions.length > 0" class="mt-3 text-xs text-rose-700 dark:text-rose-300">
+                        Thiếu quyền: {{ getEligibilityMissingSummary(config) }}
+                      </div>
+
+                      <div class="mt-3 flex justify-end">
+                        <button
+                          type="button"
+                          :class="config.status === 'ELIGIBLE' ? primaryButtonClass : secondaryButtonClass"
+                          :disabled="config.status !== 'ELIGIBLE' || isPackageActionLoading(selectedTrack!.id, config.configId)"
+                          @click="submitPackageRegistration(selectedTrack!, config)"
+                        >
+                          {{ isConfigJoined(config) ? 'Gỡ khỏi gói' : 'Đăng ký tham gia' }}
+                        </button>
+                      </div>
+                    </article>
+                  </div>
+                </section>
+              </div>
+
+              <article
+                v-if="selectedTrack && (selectedTrack.digitalPackageRegistrations.length > 0 || selectedTrack.physicalPackageRegistrations.length > 0)"
+                class="mt-4 rounded-[24px] border border-slate-200/80 bg-slate-50/80 p-4 dark:border-slate-800 dark:bg-slate-900/50"
               >
-                {{ permission.name }}
-              </span>
-              <span v-if="selectedTrack.allowedPermissions.length === 0" class="text-sm text-slate-500 dark:text-slate-400">Chưa chọn quyền bán cho sản phẩm.</span>
-            </div>
-          </article>
-
-          <article class="rounded-[28px] border border-slate-200/80 bg-white/80 p-5 dark:border-slate-800 dark:bg-slate-950/60 lg:col-span-2">
-            <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <div class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Matching Digital / Physical Rights</div>
-                <div class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                  Đối chiếu các gói đang `ACTIVE` với tập `Allowed Core Permissions` hiện tại của product.
-                </div>
-              </div>
-              <div class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-900 dark:text-slate-300">
-                {{ formatTrackEligibilitySummary(selectedTrack) }}
-              </div>
-            </div>
-
-            <div v-if="!hasSelectedTrackEligibility" class="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-400">
-              Chưa có cấu hình digital hoặc physical nào đang `ACTIVE` để hệ thống đối chiếu.
-            </div>
-
-            <div v-else class="mt-4 grid gap-4 lg:grid-cols-2">
-              <section class="rounded-[24px] border border-slate-200/80 bg-slate-50/80 p-4 dark:border-slate-800 dark:bg-slate-900/50">
-                <div class="flex items-center justify-between gap-3">
-                  <div class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Digital Platform Rights</div>
-                  <div class="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-950 dark:text-slate-300">
-                    {{ selectedTrack.licensingEligibility.summary.eligibleDigitalCount }}/{{ getEligibilityTotal(selectedTrack, 'digital') }} đủ điều kiện
-                  </div>
-                </div>
-
-                <div v-if="selectedTrack.licensingEligibility.digitalConfigs.length === 0" class="mt-3 text-sm text-slate-500 dark:text-slate-400">
-                  Chưa có gói quyền số nào đang `ACTIVE`.
-                </div>
-
-                <div v-else class="mt-3 space-y-3">
+                <div class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Lịch sử đăng ký gói</div>
+                <div class="mt-3 space-y-3">
                   <article
-                    v-for="config in selectedTrack.licensingEligibility.digitalConfigs"
-                    :key="`${selectedTrack.id}-digital-${config.configId}`"
+                    v-for="registration in [...selectedTrack.digitalPackageRegistrations, ...selectedTrack.physicalPackageRegistrations]"
+                    :key="registration.registrationId"
                     class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-950"
                   >
-                    <div class="flex items-start justify-between gap-3">
-                      <div class="min-w-0">
-                        <div class="font-semibold text-slate-900 dark:text-white">{{ config.title }}</div>
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <div class="font-semibold text-slate-900 dark:text-white">{{ registration.title }}</div>
                         <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                          {{ config.referencedPermissions.length }} quyền tham chiếu
+                          {{ registration.configType === 'DIGITAL' ? 'Digital package' : 'Physical package' }} · {{ registration.configStatus === 'ACTIVE' ? 'Đang hoạt động' : 'Tạm ngừng' }}
                         </div>
                       </div>
-                      <span class="inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold" :class="getEligibilityStatusClass(config.status)">
-                        {{ formatEligibilityStatusLabel(config.status) }}
+                      <span class="inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold" :class="registration.registrationStatus === 'JOINED' ? 'border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-violet-300' : 'border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300'">
+                        {{ registration.registrationStatus === 'JOINED' ? 'Đã đăng ký' : 'Đã gỡ' }}
                       </span>
-                    </div>
-
-                    <div v-if="config.status === 'INELIGIBLE' && config.missingPermissions.length > 0" class="mt-3 text-xs text-rose-700 dark:text-rose-300">
-                      Thiếu quyền: {{ getEligibilityMissingSummary(config) }}
                     </div>
                   </article>
                 </div>
-              </section>
+              </article>
+            </article>
+          </div>
 
-              <section class="rounded-[24px] border border-slate-200/80 bg-slate-50/80 p-4 dark:border-slate-800 dark:bg-slate-900/50">
-                <div class="flex items-center justify-between gap-3">
-                  <div class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Physical Usage Rights</div>
-                  <div class="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-950 dark:text-slate-300">
-                    {{ selectedTrack.licensingEligibility.summary.eligiblePhysicalCount }}/{{ getEligibilityTotal(selectedTrack, 'physical') }} đủ điều kiện
-                  </div>
-                </div>
-
-                <div v-if="selectedTrack.licensingEligibility.physicalConfigs.length === 0" class="mt-3 text-sm text-slate-500 dark:text-slate-400">
-                  Chưa có cấu hình quyền vật lý nào đang `ACTIVE`.
-                </div>
-
-                <div v-else class="mt-3 space-y-3">
-                  <article
-                    v-for="config in selectedTrack.licensingEligibility.physicalConfigs"
-                    :key="`${selectedTrack.id}-physical-${config.configId}`"
-                    class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-950"
-                  >
-                    <div class="flex items-start justify-between gap-3">
-                      <div class="min-w-0">
-                        <div class="font-semibold text-slate-900 dark:text-white">{{ config.title }}</div>
-                        <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                          {{ config.referencedPermissions.length }} quyền tham chiếu
-                        </div>
-                      </div>
-                      <span class="inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold" :class="getEligibilityStatusClass(config.status)">
-                        {{ formatEligibilityStatusLabel(config.status) }}
-                      </span>
-                    </div>
-
-                    <div v-if="config.status === 'INELIGIBLE' && config.missingPermissions.length > 0" class="mt-3 text-xs text-rose-700 dark:text-rose-300">
-                      Thiếu quyền: {{ getEligibilityMissingSummary(config) }}
-                    </div>
-                  </article>
-                </div>
-              </section>
-            </div>
-          </article>
-        </section>
+          <div v-else class="space-y-4">
+            <article class="rounded-[28px] border border-slate-200/80 bg-white/80 p-5 dark:border-slate-800 dark:bg-slate-950/60">
+              <div class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Trạng thái pháp lý</div>
+              <div class="mt-4 flex flex-wrap gap-2">
+                <span
+                  class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold"
+                  :class="getProductComplianceLegalStatusClassSafe(selectedTrack.complianceLegalStatus)"
+                >
+                  Legal: {{ formatComplianceLegalStatusLabel(selectedTrack.complianceLegalStatus) }}
+                </span>
+                <span
+                  class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold"
+                  :class="getProductComplianceReviewStatusClassSafe(selectedTrack.complianceReviewStatus)"
+                >
+                  Review: {{ formatProductComplianceReviewStatusLabelSafe(selectedTrack.complianceReviewStatus) }}
+                </span>
+              </div>
+              <div class="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-300">
+                Mở dashboard Compliance để xem hồ sơ, tài liệu và thực hiện duyệt theo workflow chuẩn của nền tảng.
+              </div>
+              <div class="mt-4 flex justify-end">
+                <button type="button" :class="primaryButtonClass" @click="openComplianceDashboard(selectedTrack)">Mở Compliance</button>
+              </div>
+            </article>
+          </div>
+        </div>
       </div>
 
       <template #footer>
@@ -2083,7 +2524,7 @@ onBeforeUnmount(() => {
       <template #footer>
         <div class="flex w-full justify-end gap-3">
           <button type="button" :class="secondaryButtonClass" @click="approvedPermissionsDialogVisible = false">Đóng</button>
-          <button type="button" :class="primaryButtonClass" :disabled="!canSaveAllowedPermissions" @click="submitAllowedPermissions">
+          <button type="button" :class="primaryButtonClass" :disabled="!canSaveAllowedPermissions" @click="confirmSaveAllowedPermissions">
             Lưu quyền bán
           </button>
         </div>
@@ -2124,6 +2565,9 @@ onBeforeUnmount(() => {
       <template #footer>
         <div class="flex w-full justify-end gap-3">
           <button type="button" :class="secondaryButtonClass" @click="uploadDialogVisible = false">Đóng</button>
+          <button type="button" :class="secondaryButtonClass" :disabled="uploadStatus === 'requesting' || uploadStatus === 'uploading'" @click="applyDemoAudioKey">
+            Dùng 1.mp3
+          </button>
           <button type="button" :class="primaryButtonClass" :disabled="!uploadFile || uploadStatus === 'requesting' || uploadStatus === 'uploading'" @click="submitUpload">
             Tải lên
           </button>
@@ -2132,3 +2576,14 @@ onBeforeUnmount(() => {
     </Dialog>
   </div>
 </template>
+
+<style scoped>
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+</style>

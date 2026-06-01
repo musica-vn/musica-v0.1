@@ -98,7 +98,7 @@ const client = createClient(supabaseUrl, supabaseServiceRoleKey, {
 })
 
 const seedPassword = 'Password123!'
-const seedTag = ' (Seed)'
+const seedTag = ''
 
 const seedPermissionIds = {
   reproduction: '3c6c1819-73b5-4d50-8a62-2c84c6152c11',
@@ -305,7 +305,7 @@ const buildComplianceSeedEntries = () =>
         trackTitle: trackSeed.title,
         legal_status: 'INSUFFICIENT',
         review_status: 'REJECTED',
-        reject_reason: 'Ho so phap ly seed chua dat yeu cau doi voi tac pham nay.',
+        reject_reason: 'Ho so phap ly chua dat yeu cau doi voi tac pham nay.',
         permissionIds: [],
         fileCount: 1,
       }
@@ -424,16 +424,7 @@ const main = async () => {
 
     if (createdByTrackIdsError) throw new Error(createdByTrackIdsError.message)
 
-    const { data: titleTrackIds, error: titleTrackIdsError } = await client
-      .from('products')
-      .select('id')
-      .ilike('title', `%${seedTag}%`)
-
-    if (titleTrackIdsError) throw new Error(titleTrackIdsError.message)
-
-    const trackIds = Array.from(
-      new Set([...(createdByTrackIds ?? []), ...(titleTrackIds ?? [])].map((x) => x.id)),
-    )
+    const trackIds = Array.from(new Set([...(createdByTrackIds ?? [])].map((x) => x.id)))
 
     if (trackIds.length > 0) {
       const { error: delTracksError } = await client.from('products').delete().in('id', trackIds)
@@ -554,6 +545,7 @@ const main = async () => {
       genre: t.genre,
       duration: t.duration,
       status: t.status,
+      original_audio_key: '1.mp3',
       created_by: admin01.id,
     }
   })

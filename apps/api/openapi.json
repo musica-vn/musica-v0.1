@@ -3075,6 +3075,583 @@
           "Admin - Modification Configs"
         ]
       }
+    },
+    "/admin/products/{productId}/digital-right-registrations": {
+      "post": {
+        "operationId": "AdminProductPackageRegistrationsController_createDigitalRegistration",
+        "parameters": [
+          {
+            "name": "productId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateProductPackageRegistrationRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductPackageRegistrationResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Join digital package for product (admin)",
+        "tags": [
+          "Admin - Product Package Registrations"
+        ]
+      }
+    },
+    "/admin/products/{productId}/digital-right-registrations/{registrationId}": {
+      "delete": {
+        "operationId": "AdminProductPackageRegistrationsController_removeDigitalRegistration",
+        "parameters": [
+          {
+            "name": "productId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "registrationId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductPackageRegistrationResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove digital package registration from product (admin)",
+        "tags": [
+          "Admin - Product Package Registrations"
+        ]
+      }
+    },
+    "/admin/products/{productId}/physical-right-registrations": {
+      "post": {
+        "operationId": "AdminProductPackageRegistrationsController_createPhysicalRegistration",
+        "parameters": [
+          {
+            "name": "productId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateProductPackageRegistrationRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductPackageRegistrationResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Join physical package for product (admin)",
+        "tags": [
+          "Admin - Product Package Registrations"
+        ]
+      }
+    },
+    "/admin/products/{productId}/physical-right-registrations/{registrationId}": {
+      "delete": {
+        "operationId": "AdminProductPackageRegistrationsController_removePhysicalRegistration",
+        "parameters": [
+          {
+            "name": "productId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "registrationId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductPackageRegistrationResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove physical package registration from product (admin)",
+        "tags": [
+          "Admin - Product Package Registrations"
+        ]
+      }
+    },
+    "/admin/digital-right-configs/{configId}/products": {
+      "get": {
+        "operationId": "AdminProductPackageRegistrationsController_listProductsForDigitalConfig",
+        "parameters": [
+          {
+            "name": "configId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "keyword",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "JOINED",
+                "REMOVED"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductPackageRegistrationListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List products registered to digital package (admin)",
+        "tags": [
+          "Admin - Product Package Registrations"
+        ]
+      }
+    },
+    "/admin/physical-right-configs/{configId}/products": {
+      "get": {
+        "operationId": "AdminProductPackageRegistrationsController_listProductsForPhysicalConfig",
+        "parameters": [
+          {
+            "name": "configId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "keyword",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "JOINED",
+                "REMOVED"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductPackageRegistrationListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List products registered to physical package (admin)",
+        "tags": [
+          "Admin - Product Package Registrations"
+        ]
+      }
+    },
+    "/creator/products": {
+      "get": {
+        "operationId": "CreatorProductPackageRegistrationsController_listMyProducts",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminProductsListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List creator products",
+        "tags": [
+          "Creator - Product Package Registrations"
+        ]
+      }
+    },
+    "/creator/products/{productId}": {
+      "get": {
+        "operationId": "CreatorProductPackageRegistrationsController_getMyProductDetail",
+        "parameters": [
+          {
+            "name": "productId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminProductResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get creator product detail",
+        "tags": [
+          "Creator - Product Package Registrations"
+        ]
+      }
+    },
+    "/creator/products/{productId}/digital-right-registrations": {
+      "post": {
+        "operationId": "CreatorProductPackageRegistrationsController_createDigitalRegistration",
+        "parameters": [
+          {
+            "name": "productId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateProductPackageRegistrationRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductPackageRegistrationResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Join digital package for own product (creator)",
+        "tags": [
+          "Creator - Product Package Registrations"
+        ]
+      }
+    },
+    "/creator/products/{productId}/digital-right-registrations/{registrationId}": {
+      "delete": {
+        "operationId": "CreatorProductPackageRegistrationsController_removeDigitalRegistration",
+        "parameters": [
+          {
+            "name": "productId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "registrationId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductPackageRegistrationResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove digital package registration from own product (creator)",
+        "tags": [
+          "Creator - Product Package Registrations"
+        ]
+      }
+    },
+    "/creator/products/{productId}/physical-right-registrations": {
+      "post": {
+        "operationId": "CreatorProductPackageRegistrationsController_createPhysicalRegistration",
+        "parameters": [
+          {
+            "name": "productId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateProductPackageRegistrationRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductPackageRegistrationResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Join physical package for own product (creator)",
+        "tags": [
+          "Creator - Product Package Registrations"
+        ]
+      }
+    },
+    "/creator/products/{productId}/physical-right-registrations/{registrationId}": {
+      "delete": {
+        "operationId": "CreatorProductPackageRegistrationsController_removePhysicalRegistration",
+        "parameters": [
+          {
+            "name": "productId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "registrationId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductPackageRegistrationResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove physical package registration from own product (creator)",
+        "tags": [
+          "Creator - Product Package Registrations"
+        ]
+      }
     }
   },
   "info": {
@@ -3364,6 +3941,25 @@
             "items": {
               "$ref": "#/components/schemas/ProductAllowedPermissionDto"
             }
+          },
+          "registrationStatus": {
+            "type": "string",
+            "enum": [
+              "NOT_JOINED",
+              "JOINED"
+            ]
+          },
+          "registrationId": {
+            "type": "object",
+            "nullable": true
+          },
+          "joinedAt": {
+            "type": "object",
+            "nullable": true
+          },
+          "joinedBy": {
+            "type": "object",
+            "nullable": true
           }
         },
         "required": [
@@ -3372,7 +3968,8 @@
           "title",
           "status",
           "referencedPermissions",
-          "missingPermissions"
+          "missingPermissions",
+          "registrationStatus"
         ]
       },
       "ProductLicensingEligibilitySummaryDto": {
@@ -3389,13 +3986,21 @@
           },
           "ineligiblePhysicalCount": {
             "type": "number"
+          },
+          "joinedDigitalCount": {
+            "type": "number"
+          },
+          "joinedPhysicalCount": {
+            "type": "number"
           }
         },
         "required": [
           "eligibleDigitalCount",
           "ineligibleDigitalCount",
           "eligiblePhysicalCount",
-          "ineligiblePhysicalCount"
+          "ineligiblePhysicalCount",
+          "joinedDigitalCount",
+          "joinedPhysicalCount"
         ]
       },
       "ProductLicensingEligibilityDto": {
@@ -3421,6 +4026,79 @@
           "digitalConfigs",
           "physicalConfigs",
           "summary"
+        ]
+      },
+      "ProductPackageRegistrationDto": {
+        "type": "object",
+        "properties": {
+          "registrationId": {
+            "type": "string"
+          },
+          "configId": {
+            "type": "string"
+          },
+          "configType": {
+            "type": "string",
+            "enum": [
+              "DIGITAL",
+              "PHYSICAL"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "configStatus": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "INACTIVE"
+            ]
+          },
+          "registrationStatus": {
+            "type": "string",
+            "enum": [
+              "JOINED",
+              "REMOVED"
+            ]
+          },
+          "referencedPermissions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductAllowedPermissionDto"
+            }
+          },
+          "missingPermissions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductAllowedPermissionDto"
+            }
+          },
+          "joinedAt": {
+            "type": "object",
+            "nullable": true
+          },
+          "joinedBy": {
+            "type": "object",
+            "nullable": true
+          },
+          "removedAt": {
+            "type": "object",
+            "nullable": true
+          },
+          "removedBy": {
+            "type": "object",
+            "nullable": true
+          }
+        },
+        "required": [
+          "registrationId",
+          "configId",
+          "configType",
+          "title",
+          "configStatus",
+          "registrationStatus",
+          "referencedPermissions",
+          "missingPermissions"
         ]
       },
       "ProductDto": {
@@ -3477,6 +4155,18 @@
           "licensingEligibility": {
             "$ref": "#/components/schemas/ProductLicensingEligibilityDto"
           },
+          "digitalPackageRegistrations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductPackageRegistrationDto"
+            }
+          },
+          "physicalPackageRegistrations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductPackageRegistrationDto"
+            }
+          },
           "complianceLegalStatus": {
             "type": "string",
             "enum": [
@@ -3521,6 +4211,8 @@
           "allowedPermissionIds",
           "allowedPermissions",
           "licensingEligibility",
+          "digitalPackageRegistrations",
+          "physicalPackageRegistrations",
           "createdBy",
           "createdAt",
           "updatedAt"
@@ -5857,6 +6549,197 @@
             "minimum": 1
           }
         }
+      },
+      "CreateProductPackageRegistrationRequestDto": {
+        "type": "object",
+        "properties": {
+          "configId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "configId"
+        ]
+      },
+      "ProductPackageRegistrationPermissionDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "lawReference": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "lawReference"
+        ]
+      },
+      "ProductPackageRegistrationItemDto": {
+        "type": "object",
+        "properties": {
+          "registrationId": {
+            "type": "string"
+          },
+          "productId": {
+            "type": "string"
+          },
+          "configId": {
+            "type": "string"
+          },
+          "packageType": {
+            "type": "string",
+            "enum": [
+              "DIGITAL",
+              "PHYSICAL"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "configStatus": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "INACTIVE"
+            ]
+          },
+          "eligibilityStatus": {
+            "type": "string",
+            "enum": [
+              "ELIGIBLE",
+              "INELIGIBLE"
+            ]
+          },
+          "registrationStatus": {
+            "type": "string",
+            "enum": [
+              "JOINED",
+              "REMOVED"
+            ]
+          },
+          "referencedPermissions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductPackageRegistrationPermissionDto"
+            }
+          },
+          "missingPermissions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductPackageRegistrationPermissionDto"
+            }
+          },
+          "joinedAt": {
+            "type": "string"
+          },
+          "joinedBy": {
+            "type": "object",
+            "nullable": true
+          },
+          "removedAt": {
+            "type": "object",
+            "nullable": true
+          },
+          "removedBy": {
+            "type": "object",
+            "nullable": true
+          }
+        },
+        "required": [
+          "registrationId",
+          "productId",
+          "configId",
+          "packageType",
+          "title",
+          "configStatus",
+          "eligibilityStatus",
+          "registrationStatus",
+          "referencedPermissions",
+          "missingPermissions",
+          "joinedAt"
+        ]
+      },
+      "ProductPackageRegistrationResponseDto": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "statusCode": {
+            "type": "number",
+            "example": 200
+          },
+          "data": {
+            "$ref": "#/components/schemas/ProductPackageRegistrationItemDto"
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "success",
+          "statusCode",
+          "data",
+          "requestId",
+          "timestamp"
+        ]
+      },
+      "ProductPackageRegistrationListDataDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductPackageRegistrationItemDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "ProductPackageRegistrationListResponseDto": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "statusCode": {
+            "type": "number",
+            "example": 200
+          },
+          "data": {
+            "$ref": "#/components/schemas/ProductPackageRegistrationListDataDto"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PaginationMetaDto"
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "success",
+          "statusCode",
+          "data",
+          "meta",
+          "requestId",
+          "timestamp"
+        ]
       }
     }
   }

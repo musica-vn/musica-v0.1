@@ -8,5 +8,6 @@ import { ProductsService } from './products.service';
   imports: [SupabaseModule, AuthModule],
   controllers: [AdminProductsController],
   providers: [ProductsService],
+  exports: [ProductsService],
 })
 export class ProductsModule {}

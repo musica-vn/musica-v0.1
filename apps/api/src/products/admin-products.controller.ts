@@ -26,6 +26,7 @@ import {
   AdminCreateProductRequestDto,
   AdminConfirmProductAudioUploadRequestDto,
   AdminConfirmProductThumbnailUploadRequestDto,
+  AdminConfirmProductSheetMusicUploadRequestDto,
   AdminCreateProductThumbnailUploadUrlRequestDto,
   AdminReplaceProductAllowedPermissionsRequestDto,
   AdminProductsListQueryDto,
@@ -36,6 +37,7 @@ import { ProductsService } from './products.service';
 import {
   AdminProductResponseDto,
   AdminProductPlaybackUrlResponseDto,
+  AdminProductSheetMusicUrlResponseDto,
   AdminProductThumbnailUrlResponseDto,
   AdminProductsListResponseDto,
   AdminProductsSummaryResponseDto,
@@ -119,6 +121,13 @@ export class AdminProductsController {
     return this.productsService.createThumbnailUploadUrl(productId, body.extension);
   }
 
+  @Post(':productId/sheet-music-upload-url')
+  @ApiOperation({ summary: 'Get signed upload URL for sheet music PDF (admin)' })
+  @ApiOkResponse({ type: AdminProductUploadUrlResponseDto })
+  async sheetMusicUploadUrl(@Param('productId', ParseUUIDPipe) productId: string) {
+    return this.productsService.createSheetMusicUploadUrl(productId);
+  }
+
   @Post(':productId/confirm-audio-upload')
   @ApiOperation({ summary: 'Confirm uploaded audio key (admin)' })
   @ApiOkResponse({ type: AdminProductResponseDto })
@@ -139,6 +148,16 @@ export class AdminProductsController {
     return this.productsService.confirmProductThumbnailUpload(productId, body);
   }
 
+  @Post(':productId/confirm-sheet-music-upload')
+  @ApiOperation({ summary: 'Confirm uploaded sheet music key (admin)' })
+  @ApiOkResponse({ type: AdminProductResponseDto })
+  async confirmSheetMusicUpload(
+    @Param('productId', ParseUUIDPipe) productId: string,
+    @Body() body: AdminConfirmProductSheetMusicUploadRequestDto,
+  ) {
+    return this.productsService.confirmProductSheetMusicUpload(productId, body);
+  }
+
   @Get(':productId/thumbnail-url')
   @ApiOperation({ summary: 'Get signed URL for product thumbnail (admin)' })
   @ApiOkResponse({ type: AdminProductThumbnailUrlResponseDto })
@@ -153,6 +172,13 @@ export class AdminProductsController {
   @ApiOkResponse({ type: AdminProductPlaybackUrlResponseDto })
   async originalPlaybackUrl(@Param('productId', ParseUUIDPipe) productId: string) {
     return this.productsService.createOriginalPlaybackUrl(productId);
+  }
+
+  @Get(':productId/sheet-music-url')
+  @ApiOperation({ summary: 'Get signed URL for sheet music PDF (admin)' })
+  @ApiOkResponse({ type: AdminProductSheetMusicUrlResponseDto })
+  async sheetMusicUrl(@Param('productId', ParseUUIDPipe) productId: string) {
+    return this.productsService.createSheetMusicUrl(productId);
   }
 
   @Patch(':productId/publish')

@@ -1,5 +1,5 @@
 import type { PaginationMeta } from '@musica/contracts'
-import { apiGet, apiPatch, apiPost, apiPut } from '../../shared/api/http'
+import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from '../../shared/api/http'
 import type {
   AdminCreateProductBody,
   AdminProductsListData,
@@ -8,11 +8,16 @@ import type {
   AdminProductsSummaryQuery,
   AdminUpdateProductBody,
   ConfirmProductAudioUploadBody,
+  ConfirmProductSheetMusicUploadBody,
   ConfirmProductThumbnailUploadBody,
+  CreateProductPackageRegistrationBody,
+  CreatorProductsListData,
   CreateThumbnailUploadUrlBody,
   Product,
+  ProductPackageRegistration,
   ReplaceProductAllowedPermissionsBody,
   SignedPlaybackUrlData,
+  SignedSheetMusicUrlData,
   SignedThumbnailUrlData,
   SignedUploadUrlData,
 } from './products.types'
@@ -91,4 +96,106 @@ export const getProductThumbnailUrl = async (productId: string) => {
 
 export const getOriginalPlaybackUrl = async (productId: string) => {
   return apiGet<SignedPlaybackUrlData>(`/admin/products/${productId}/original-playback-url`)
+}
+
+export const getSheetMusicUploadUrl = async (productId: string) => {
+  return apiPost<SignedUploadUrlData>(`/admin/products/${productId}/sheet-music-upload-url`)
+}
+
+export const confirmAdminProductSheetMusicUpload = async (
+  productId: string,
+  body: ConfirmProductSheetMusicUploadBody,
+) => {
+  return apiPost<Product, ConfirmProductSheetMusicUploadBody>(
+    `/admin/products/${productId}/confirm-sheet-music-upload`,
+    body,
+  )
+}
+
+export const getSheetMusicUrl = async (productId: string) => {
+  return apiGet<SignedSheetMusicUrlData>(`/admin/products/${productId}/sheet-music-url`)
+}
+
+export const createAdminDigitalRightRegistration = async (
+  productId: string,
+  body: CreateProductPackageRegistrationBody,
+) => {
+  return apiPost<ProductPackageRegistration, CreateProductPackageRegistrationBody>(
+    `/admin/products/${productId}/digital-right-registrations`,
+    body,
+  )
+}
+
+export const removeAdminDigitalRightRegistration = async (
+  productId: string,
+  registrationId: string,
+) => {
+  return apiDelete<ProductPackageRegistration>(
+    `/admin/products/${productId}/digital-right-registrations/${registrationId}`,
+  )
+}
+
+export const createAdminPhysicalRightRegistration = async (
+  productId: string,
+  body: CreateProductPackageRegistrationBody,
+) => {
+  return apiPost<ProductPackageRegistration, CreateProductPackageRegistrationBody>(
+    `/admin/products/${productId}/physical-right-registrations`,
+    body,
+  )
+}
+
+export const removeAdminPhysicalRightRegistration = async (
+  productId: string,
+  registrationId: string,
+) => {
+  return apiDelete<ProductPackageRegistration>(
+    `/admin/products/${productId}/physical-right-registrations/${registrationId}`,
+  )
+}
+
+export const listCreatorProducts = async () => {
+  return apiGet<CreatorProductsListData>('/creator/products')
+}
+
+export const getCreatorProduct = async (productId: string) => {
+  return apiGet<Product>(`/creator/products/${productId}`)
+}
+
+export const createCreatorDigitalRightRegistration = async (
+  productId: string,
+  body: CreateProductPackageRegistrationBody,
+) => {
+  return apiPost<ProductPackageRegistration, CreateProductPackageRegistrationBody>(
+    `/creator/products/${productId}/digital-right-registrations`,
+    body,
+  )
+}
+
+export const removeCreatorDigitalRightRegistration = async (
+  productId: string,
+  registrationId: string,
+) => {
+  return apiDelete<ProductPackageRegistration>(
+    `/creator/products/${productId}/digital-right-registrations/${registrationId}`,
+  )
+}
+
+export const createCreatorPhysicalRightRegistration = async (
+  productId: string,
+  body: CreateProductPackageRegistrationBody,
+) => {
+  return apiPost<ProductPackageRegistration, CreateProductPackageRegistrationBody>(
+    `/creator/products/${productId}/physical-right-registrations`,
+    body,
+  )
+}
+
+export const removeCreatorPhysicalRightRegistration = async (
+  productId: string,
+  registrationId: string,
+) => {
+  return apiDelete<ProductPackageRegistration>(
+    `/creator/products/${productId}/physical-right-registrations/${registrationId}`,
+  )
 }

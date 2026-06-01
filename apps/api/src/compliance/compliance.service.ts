@@ -104,10 +104,57 @@ const slugifyFileName = (value: string): string => {
 const isAllowedMimeType = (mimeType: string): boolean =>
   [
     'application/pdf',
+    'application/x-pdf',
+    'application/acrobat',
+    'applications/vnd.pdf',
+    'text/pdf',
+    'application/msword',
+    'application/vnd.ms-word',
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     'image/png',
     'image/jpeg',
+    'image/jpg',
+    'image/webp',
   ].includes(mimeType)
+
+const normalizeMimeType = (mimeType: string): string =>
+  mimeType.split(';')[0]?.trim().toLowerCase() ?? ''
+
+const getFileExtension = (fileName: string): string | null => {
+  const dotIndex = fileName.lastIndexOf('.')
+  if (dotIndex <= 0) return null
+  const extension = fileName.slice(dotIndex + 1).trim().toLowerCase()
+  return extension.length > 0 ? extension : null
+}
+
+const inferMimeTypeFromExtension = (extension: string | null): string | null => {
+  if (!extension) return null
+  if (extension === 'pdf') return 'application/pdf'
+  if (extension === 'docx') return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  if (extension === 'doc') return 'application/msword'
+  if (extension === 'png') return 'image/png'
+  if (extension === 'jpg' || extension === 'jpeg') return 'image/jpeg'
+  if (extension === 'webp') return 'image/webp'
+  return null
+}
+
+const resolveLegalFileMimeType = (params: {
+  mimeType: string
+  fileName: string
+}): { resolvedMimeType: string; extension: string | null } | null => {
+  const normalizedMimeType = normalizeMimeType(params.mimeType)
+  const extension = getFileExtension(params.fileName)
+
+  if (isAllowedMimeType(normalizedMimeType)) {
+    return { resolvedMimeType: normalizedMimeType, extension }
+  }
+
+  if (normalizedMimeType !== 'application/octet-stream') return null
+
+  const inferred = inferMimeTypeFromExtension(extension)
+  if (!inferred) return null
+  return { resolvedMimeType: inferred, extension }
+}
 
 const mapComplianceLegalFiles = (
   fileRows: DbComplianceLegalFileRow[] | null | undefined,
@@ -423,9 +470,20 @@ export class ComplianceService {
           HttpStatus.BAD_REQUEST,
         )
       }
-      if (!isAllowedMimeType(file.mimetype)) {
+      const resolvedMime = resolveLegalFileMimeType({
+        mimeType: file.mimetype,
+        fileName: file.originalname,
+      })
+      if (!resolvedMime) {
         throw new HttpException(
-          { message: 'LEGAL_FILE_TYPE_NOT_ALLOWED', details: { fileName: file.originalname, mimeType: file.mimetype } },
+          {
+            message: 'LEGAL_FILE_TYPE_NOT_ALLOWED',
+            details: {
+              fileName: file.originalname,
+              mimeType: file.mimetype,
+              extension: getFileExtension(file.originalname),
+            },
+          },
           HttpStatus.BAD_REQUEST,
         )
       }
@@ -437,10 +495,13 @@ export class ComplianceService {
     for (const file of safeFiles) {
       const safeName = slugifyFileName(file.originalname)
       const fileKey = `compliance/${trackId}/${randomUUID()}-${safeName}`
+      const resolvedMimeType =
+        resolveLegalFileMimeType({ mimeType: file.mimetype, fileName: file.originalname })
+          ?.resolvedMimeType ?? normalizeMimeType(file.mimetype) ?? 'application/octet-stream'
 
       const { error } = await this.supabaseService.client.storage
         .from(bucket)
-        .upload(fileKey, file.buffer, { contentType: file.mimetype, upsert: false })
+        .upload(fileKey, file.buffer, { contentType: resolvedMimeType, upsert: false })
 
       if (error) {
         throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
@@ -450,7 +511,7 @@ export class ComplianceService {
         fileName: file.originalname,
         fileKey,
         uploadedAt,
-        mimeType: file.mimetype,
+        mimeType: resolvedMimeType,
         size: file.size,
       })
     }

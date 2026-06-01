@@ -19,6 +19,8 @@ export type ProductAllowedPermission = {
 }
 
 export type ProductLicensingEligibilityStatus = 'ELIGIBLE' | 'INELIGIBLE'
+export type ProductPackageJoinStatus = 'NOT_JOINED' | 'JOINED'
+export type ProductPackageRegistrationStatus = 'JOINED' | 'REMOVED'
 
 export type ProductLicensingEligibilityConfig = {
   configId: string
@@ -27,6 +29,10 @@ export type ProductLicensingEligibilityConfig = {
   status: ProductLicensingEligibilityStatus
   referencedPermissions: ProductAllowedPermission[]
   missingPermissions: ProductAllowedPermission[]
+  registrationStatus: ProductPackageJoinStatus
+  registrationId: string | null
+  joinedAt: string | null
+  joinedBy: string | null
 }
 
 export type ProductLicensingEligibilitySummary = {
@@ -34,6 +40,8 @@ export type ProductLicensingEligibilitySummary = {
   ineligibleDigitalCount: number
   eligiblePhysicalCount: number
   ineligiblePhysicalCount: number
+  joinedDigitalCount: number
+  joinedPhysicalCount: number
 }
 
 export type ProductLicensingEligibility = {
@@ -42,23 +50,45 @@ export type ProductLicensingEligibility = {
   summary: ProductLicensingEligibilitySummary
 }
 
+export type ProductPackageRegistration = {
+  registrationId: string
+  configId: string
+  productId: string
+  productTitle: string
+  configType: 'DIGITAL' | 'PHYSICAL'
+  title: string
+  configStatus: 'ACTIVE' | 'INACTIVE'
+  registrationStatus: ProductPackageRegistrationStatus
+  referencedPermissions: ProductAllowedPermission[]
+  missingPermissions: ProductAllowedPermission[]
+  joinedAt: string | null
+  joinedBy: string | null
+  removedAt: string | null
+  removedBy: string | null
+}
+
 export type Product = {
   id: string
   title: string
   artistId: string
   authorName: string | null
   genre: string | null
+  genres: string[]
   duration: number | null
   status: ProductStatus
   useCase: string | null
+  useCases: string[]
   description: string | null
   allowedPermissionIds: string[]
   allowedPermissions: ProductAllowedPermission[]
   licensingEligibility: ProductLicensingEligibility
+  digitalPackageRegistrations: ProductPackageRegistration[]
+  physicalPackageRegistrations: ProductPackageRegistration[]
   complianceLegalStatus: 'PENDING' | 'SUFFICIENT' | 'INSUFFICIENT' | null
   complianceReviewStatus: 'PENDING' | 'APPROVED' | 'REJECTED' | null
   originalAudioKey: string | null
   thumbnailKey: string | null
+  sheetMusicPdfKey: string | null
   createdBy: string
   createdAt: string
   updatedAt: string
@@ -96,7 +126,9 @@ export type AdminCreateProductBody = {
   artistId: string
   authorName?: string
   genre?: string
+  genres?: string[]
   useCase?: string
+  useCases?: string[]
   description?: string
   duration?: number
 }
@@ -105,6 +137,14 @@ export type AdminUpdateProductBody = Partial<Omit<AdminCreateProductBody, 'artis
 
 export type ReplaceProductAllowedPermissionsBody = {
   permissionIds: string[]
+}
+
+export type CreateProductPackageRegistrationBody = {
+  configId: string
+}
+
+export type CreatorProductsListData = {
+  items: Product[]
 }
 
 export type SignedUploadUrlData = {
@@ -133,4 +173,12 @@ export type ConfirmProductThumbnailUploadBody = {
 
 export type SignedThumbnailUrlData = {
   thumbnailUrl: string
+}
+
+export type SignedSheetMusicUrlData = {
+  sheetMusicUrl: string
+}
+
+export type ConfirmProductSheetMusicUploadBody = {
+  fileKey: string
 }

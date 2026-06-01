@@ -13,6 +13,7 @@ import {
 import { Transform } from 'class-transformer';
 import { PaginationQueryDto } from '../common/pagination.dto';
 import { ProductDto } from './product.dto';
+import { PRODUCT_GENRES, PRODUCT_USE_CASES } from './products.enums';
 
 export class AdminProductsListQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({ type: Number, default: 10, minimum: 1, maximum: 10 })
@@ -123,10 +124,22 @@ export class AdminCreateProductRequestDto {
   @IsString()
   genre?: string;
 
+  @ApiPropertyOptional({ type: [String], enum: PRODUCT_GENRES })
+  @IsOptional()
+  @IsArray()
+  @IsIn(PRODUCT_GENRES, { each: true })
+  genres?: string[];
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
   useCase?: string;
+
+  @ApiPropertyOptional({ type: [String], enum: PRODUCT_USE_CASES })
+  @IsOptional()
+  @IsArray()
+  @IsIn(PRODUCT_USE_CASES, { each: true })
+  useCases?: string[];
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -159,10 +172,22 @@ export class AdminUpdateProductRequestDto {
   @IsString()
   genre?: string;
 
+  @ApiPropertyOptional({ type: [String], enum: PRODUCT_GENRES })
+  @IsOptional()
+  @IsArray()
+  @IsIn(PRODUCT_GENRES, { each: true })
+  genres?: string[];
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
   useCase?: string;
+
+  @ApiPropertyOptional({ type: [String], enum: PRODUCT_USE_CASES })
+  @IsOptional()
+  @IsArray()
+  @IsIn(PRODUCT_USE_CASES, { each: true })
+  useCases?: string[];
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -199,7 +224,7 @@ export class AdminConfirmProductAudioUploadRequestDto {
   @IsIn(['original'])
   mode: 'original';
 
-  @ApiProperty({ example: '123.mp3' })
+  @ApiProperty({ example: '1.mp3' })
   @IsString()
   @Matches(/^\d+\.mp3$/)
   fileKey: string;
@@ -226,6 +251,18 @@ export class AdminProductThumbnailUrlResponseDataDto {
 export class AdminProductPlaybackUrlResponseDataDto {
   @ApiProperty()
   playbackUrl: string;
+}
+
+export class AdminConfirmProductSheetMusicUploadRequestDto {
+  @ApiProperty({ example: '1.pdf' })
+  @IsString()
+  @Matches(/\.pdf$/i)
+  fileKey: string;
+}
+
+export class AdminProductSheetMusicUrlResponseDataDto {
+  @ApiProperty()
+  sheetMusicUrl: string;
 }
 
 export class AdminProductsListDataDto {

@@ -1,5 +1,6 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { randomUUID } from 'crypto';
 import { SupabaseService } from '../supabase/supabase.service';
 import { buildPaginationMeta } from '../common/pagination-meta';
 import type { PaginationMeta } from '@musica/contracts';
@@ -8,6 +9,7 @@ import {
   AdminCreateProductRequestDto,
   AdminConfirmProductAudioUploadRequestDto,
   AdminConfirmProductThumbnailUploadRequestDto,
+  AdminConfirmProductSheetMusicUploadRequestDto,
   AdminProductsListQueryDto,
   AdminProductsSummaryQueryDto,
   AdminUpdateProductRequestDto,
@@ -20,12 +22,15 @@ type DbProductRow = {
   artist_id: string;
   author_name: string | null;
   genre: string | null;
+  genres: string[] | null;
   duration: number | null;
   status: 'PENDING' | 'HIDDEN' | 'PUBLISHED';
   use_case: string | null;
+  use_cases: string[] | null;
   description: string | null;
   original_audio_key: string | null;
   thumbnail_key: string | null;
+  sheet_music_pdf_key: string | null;
   created_by: string;
   created_at: string;
   updated_at: string;
@@ -59,6 +64,7 @@ type DbLicensingConfigPermissionRow = {
 
 type DbDigitalEligibilityConfigRow = {
   id: string;
+  status: 'ACTIVE' | 'INACTIVE';
   target_platform: 'YOUTUBE' | 'TIKTOK' | 'FACEBOOK';
   duration_type: 'ONE_YEAR' | 'PERPETUAL';
   digital_right_config_permissions?: DbLicensingConfigPermissionRow[] | null;
@@ -66,8 +72,31 @@ type DbDigitalEligibilityConfigRow = {
 
 type DbPhysicalEligibilityConfigRow = {
   id: string;
+  status: 'ACTIVE' | 'INACTIVE';
   venue_usage_type: string;
   physical_right_config_permissions?: DbLicensingConfigPermissionRow[] | null;
+};
+
+type DbDigitalRegistrationJoinRow = {
+  id: string;
+  right_config_id: string;
+  status: 'JOINED' | 'REMOVED';
+  joined_at: string;
+  joined_by: string | null;
+  removed_at: string | null;
+  removed_by: string | null;
+  digital_right_configs?: DbDigitalEligibilityConfigRow | null;
+};
+
+type DbPhysicalRegistrationJoinRow = {
+  id: string;
+  right_config_id: string;
+  status: 'JOINED' | 'REMOVED';
+  joined_at: string;
+  joined_by: string | null;
+  removed_at: string | null;
+  removed_by: string | null;
+  physical_right_configs?: DbPhysicalEligibilityConfigRow | null;
 };
 
 type ProductLicensingConfigDefinition = {
@@ -89,6 +118,8 @@ const createEmptyLicensingEligibility = (): ProductDto['licensingEligibility'] =
     ineligibleDigitalCount: 0,
     eligiblePhysicalCount: 0,
     ineligiblePhysicalCount: 0,
+    joinedDigitalCount: 0,
+    joinedPhysicalCount: 0,
   },
 });
 
@@ -133,17 +164,22 @@ const mapProductRowToDto = (row: DbProductJoinRow): ProductDto => {
     artistId: row.artist_id,
     authorName: row.author_name,
     genre: row.genre,
+    genres: row.genres ?? (row.genre ? [row.genre] : []),
     duration: row.duration,
     status: row.status,
     useCase: row.use_case,
+    useCases: row.use_cases ?? (row.use_case ? [row.use_case] : []),
     description: row.description,
     allowedPermissionIds,
     allowedPermissions,
     licensingEligibility: createEmptyLicensingEligibility(),
+    digitalPackageRegistrations: [],
+    physicalPackageRegistrations: [],
     complianceLegalStatus: compliance ? compliance.legal_status : null,
     complianceReviewStatus: compliance ? compliance.review_status : null,
     originalAudioKey: row.original_audio_key,
     thumbnailKey: row.thumbnail_key,
+    sheetMusicPdfKey: row.sheet_music_pdf_key,
     createdBy: row.created_by,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -286,9 +322,116 @@ export class ProductsService {
     return { digitalConfigs, physicalConfigs };
   }
 
+  private async loadDigitalPackageRegistrations(
+    productId: string,
+    allowedPermissionIds: string[],
+  ): Promise<ProductDto['digitalPackageRegistrations']> {
+    const { data, error } = await this.supabaseService.client
+      .from('product_digital_right_registrations')
+      .select(
+        'id,right_config_id,status,joined_at,joined_by,removed_at,removed_by,digital_right_configs(id,status,target_platform,duration_type,digital_right_config_permissions(core_permission_id, core_permissions(id,name,law_reference)))',
+      )
+      .eq('product_id', productId)
+      .order('joined_at', { ascending: false })
+      .returns<DbDigitalRegistrationJoinRow[]>();
+
+    if (error) {
+      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    return (data ?? [])
+      .filter((registration) => registration.digital_right_configs)
+      .map((registration) => {
+        const config = registration.digital_right_configs!;
+        const referencedPermissions = (config.digital_right_config_permissions ?? []).map(
+          (permissionRow) =>
+            mapReferencedPermissionSummary(
+              permissionRow.core_permission_id,
+              permissionRow.core_permissions,
+            ),
+        );
+        const allowedPermissionSet = new Set(allowedPermissionIds);
+        const missingPermissions = referencedPermissions.filter(
+          (permission) => !allowedPermissionSet.has(permission.id),
+        );
+
+        return {
+          registrationId: registration.id,
+          configId: registration.right_config_id,
+          configType: 'DIGITAL' as const,
+          title: formatDigitalEligibilityTitle(
+            config.target_platform,
+            config.duration_type,
+          ),
+          configStatus: config.status,
+          registrationStatus: registration.status,
+          referencedPermissions,
+          missingPermissions,
+          joinedAt: registration.joined_at,
+          joinedBy: registration.joined_by,
+          removedAt: registration.removed_at,
+          removedBy: registration.removed_by,
+        };
+      });
+  }
+
+  private async loadPhysicalPackageRegistrations(
+    productId: string,
+    allowedPermissionIds: string[],
+  ): Promise<ProductDto['physicalPackageRegistrations']> {
+    const { data, error } = await this.supabaseService.client
+      .from('product_physical_right_registrations')
+      .select(
+        'id,right_config_id,status,joined_at,joined_by,removed_at,removed_by,physical_right_configs(id,status,venue_usage_type,physical_right_config_permissions(core_permission_id, core_permissions(id,name,law_reference)))',
+      )
+      .eq('product_id', productId)
+      .order('joined_at', { ascending: false })
+      .returns<DbPhysicalRegistrationJoinRow[]>();
+
+    if (error) {
+      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    return (data ?? [])
+      .filter((registration) => registration.physical_right_configs)
+      .map((registration) => {
+        const config = registration.physical_right_configs!;
+        const referencedPermissions = (config.physical_right_config_permissions ?? []).map(
+          (permissionRow) =>
+            mapReferencedPermissionSummary(
+              permissionRow.core_permission_id,
+              permissionRow.core_permissions,
+            ),
+        );
+        const allowedPermissionSet = new Set(allowedPermissionIds);
+        const missingPermissions = referencedPermissions.filter(
+          (permission) => !allowedPermissionSet.has(permission.id),
+        );
+
+        return {
+          registrationId: registration.id,
+          configId: registration.right_config_id,
+          configType: 'PHYSICAL' as const,
+          title: config.venue_usage_type,
+          configStatus: config.status,
+          registrationStatus: registration.status,
+          referencedPermissions,
+          missingPermissions,
+          joinedAt: registration.joined_at,
+          joinedBy: registration.joined_by,
+          removedAt: registration.removed_at,
+          removedBy: registration.removed_by,
+        };
+      });
+  }
+
   private mapConfigEligibility(
     config: ProductLicensingConfigDefinition,
     allowedPermissionIds: string[],
+    joinedRegistration:
+      | ProductDto['digitalPackageRegistrations'][number]
+      | ProductDto['physicalPackageRegistrations'][number]
+      | undefined,
   ): ProductDto['licensingEligibility']['digitalConfigs'][number] {
     const allowedPermissionSet = new Set(allowedPermissionIds);
     const missingPermissions = config.referencedPermissions.filter(
@@ -302,25 +445,65 @@ export class ProductsService {
       status: missingPermissions.length === 0 ? 'ELIGIBLE' : 'INELIGIBLE',
       referencedPermissions: config.referencedPermissions,
       missingPermissions,
+      registrationStatus:
+        joinedRegistration?.registrationStatus === 'JOINED'
+          ? 'JOINED'
+          : 'NOT_JOINED',
+      registrationId:
+        joinedRegistration?.registrationStatus === 'JOINED'
+          ? joinedRegistration.registrationId
+          : null,
+      joinedAt:
+        joinedRegistration?.registrationStatus === 'JOINED'
+          ? joinedRegistration.joinedAt
+          : null,
+      joinedBy:
+        joinedRegistration?.registrationStatus === 'JOINED'
+          ? joinedRegistration.joinedBy
+          : null,
     };
   }
 
-  private enrichProductWithLicensingEligibility(
+  private async enrichProductWithLicensingEligibility(
     product: ProductDto,
     definitions: {
       digitalConfigs: ProductLicensingConfigDefinition[];
       physicalConfigs: ProductLicensingConfigDefinition[];
     },
-  ): ProductDto {
+  ): Promise<ProductDto> {
+    const [digitalPackageRegistrations, physicalPackageRegistrations] =
+      await Promise.all([
+        this.loadDigitalPackageRegistrations(product.id, product.allowedPermissionIds),
+        this.loadPhysicalPackageRegistrations(product.id, product.allowedPermissionIds),
+      ]);
+
     const digitalConfigs = definitions.digitalConfigs.map((config) =>
-      this.mapConfigEligibility(config, product.allowedPermissionIds),
+      this.mapConfigEligibility(
+        config,
+        product.allowedPermissionIds,
+        digitalPackageRegistrations.find(
+          (registration) =>
+            registration.configId === config.configId &&
+            registration.registrationStatus === 'JOINED',
+        ),
+      ),
     );
     const physicalConfigs = definitions.physicalConfigs.map((config) =>
-      this.mapConfigEligibility(config, product.allowedPermissionIds),
+      this.mapConfigEligibility(
+        config,
+        product.allowedPermissionIds,
+        physicalPackageRegistrations.find(
+          (registration) =>
+            registration.configId === config.configId &&
+            registration.registrationStatus === 'JOINED',
+        ),
+      ),
     );
 
     return {
       ...product,
+      digitalPackageRegistrations,
+      physicalPackageRegistrations,
       licensingEligibility: {
         digitalConfigs,
         physicalConfigs,
@@ -336,6 +519,12 @@ export class ProductsService {
           ).length,
           ineligiblePhysicalCount: physicalConfigs.filter(
             (config) => config.status === 'INELIGIBLE',
+          ).length,
+          joinedDigitalCount: digitalPackageRegistrations.filter(
+            (registration) => registration.registrationStatus === 'JOINED',
+          ).length,
+          joinedPhysicalCount: physicalPackageRegistrations.filter(
+            (registration) => registration.registrationStatus === 'JOINED',
           ).length,
         },
       },
@@ -371,12 +560,12 @@ export class ProductsService {
 
     return {
       data: {
-        items: (data ?? []).map((row) =>
+        items: await Promise.all((data ?? []).map((row) =>
           this.enrichProductWithLicensingEligibility(
             mapProductRowToDto(row),
             definitions,
           ),
-        ),
+        )),
       },
       meta,
     };
@@ -410,7 +599,7 @@ export class ProductsService {
           : undefined;
 
     if (query.status) requestBuilder = requestBuilder.eq('status', query.status);
-    if (query.genre) requestBuilder = requestBuilder.eq('genre', query.genre);
+    if (query.genre) requestBuilder = requestBuilder.contains('genres', [query.genre]);
     if (query.artistId)
       requestBuilder = requestBuilder.eq('artist_id', query.artistId);
 
@@ -446,14 +635,19 @@ export class ProductsService {
     payload: AdminCreateProductRequestDto,
     createdBy: string,
   ): Promise<ProductDto> {
+    const genres = payload.genres ?? (payload.genre ? [payload.genre] : []);
+    const useCases = payload.useCases ?? (payload.useCase ? [payload.useCase] : []);
+
     const { data, error } = await this.supabaseService.client
       .from('products')
       .insert({
         title: payload.title,
         artist_id: payload.artistId,
         author_name: payload.authorName ?? null,
-        genre: payload.genre ?? null,
-        use_case: payload.useCase ?? null,
+        genre: genres[0] ?? null,
+        genres,
+        use_case: useCases[0] ?? null,
+        use_cases: useCases,
         description: payload.description ?? null,
         duration: payload.duration ?? null,
         status: 'PENDING',
@@ -499,10 +693,46 @@ export class ProductsService {
       throw new HttpException('PRODUCT_NOT_FOUND', HttpStatus.NOT_FOUND);
     }
 
-    return this.enrichProductWithLicensingEligibility(
+    return await this.enrichProductWithLicensingEligibility(
       mapProductRowToDto(data),
       await this.loadLicensingEligibilityDefinitions(),
     );
+  }
+
+  async listCreatorProducts(artistId: string): Promise<{ items: ProductDto[] }> {
+    const { data, error } = await this.supabaseService.client
+      .from('products')
+      .select(
+        '*, track_allowed_permissions(permission_id, core_permissions(name,law_reference)), compliance_reviews(legal_status,review_status)',
+      )
+      .eq('artist_id', artistId)
+      .order('created_at', { ascending: false })
+      .returns<DbProductJoinRow[]>();
+
+    if (error) {
+      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    const definitions = await this.loadLicensingEligibilityDefinitions();
+
+    return {
+      items: await Promise.all(
+        (data ?? []).map((row) =>
+          this.enrichProductWithLicensingEligibility(
+            mapProductRowToDto(row),
+            definitions,
+          ),
+        ),
+      ),
+    };
+  }
+
+  async getCreatorProductById(productId: string, artistId: string): Promise<ProductDto> {
+    const product = await this.getProductById(productId);
+    if (product.artistId !== artistId) {
+      throw new HttpException('FORBIDDEN_PRODUCT_ACCESS', HttpStatus.FORBIDDEN);
+    }
+    return product;
   }
 
   async updateProduct(
@@ -513,8 +743,20 @@ export class ProductsService {
     if (payload.title !== undefined) updatePayload.title = payload.title;
     if (payload.authorName !== undefined)
       updatePayload.author_name = payload.authorName;
-    if (payload.genre !== undefined) updatePayload.genre = payload.genre;
-    if (payload.useCase !== undefined) updatePayload.use_case = payload.useCase;
+    if (payload.genres !== undefined) {
+      updatePayload.genres = payload.genres;
+      updatePayload.genre = payload.genres[0] ?? null;
+    } else if (payload.genre !== undefined) {
+      updatePayload.genres = payload.genre ? [payload.genre] : [];
+      updatePayload.genre = payload.genre;
+    }
+    if (payload.useCases !== undefined) {
+      updatePayload.use_cases = payload.useCases;
+      updatePayload.use_case = payload.useCases[0] ?? null;
+    } else if (payload.useCase !== undefined) {
+      updatePayload.use_cases = payload.useCase ? [payload.useCase] : [];
+      updatePayload.use_case = payload.useCase;
+    }
     if (payload.description !== undefined)
       updatePayload.description = payload.description;
     if (payload.duration !== undefined)
@@ -732,18 +974,6 @@ export class ProductsService {
       );
     }
 
-    const { error: updateError } = await this.supabaseService.client
-      .from('products')
-      .update({ original_audio_key: fileKey })
-      .eq('id', productId);
-
-    if (updateError) {
-      throw new HttpException(
-        updateError.message,
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-
     return { uploadUrl: data.signedUrl, fileKey };
   }
 
@@ -771,18 +1001,6 @@ export class ProductsService {
     if (error || !data) {
       throw new HttpException(
         error?.message ?? 'Failed to create signed upload URL',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-
-    const { error: updateError } = await this.supabaseService.client
-      .from('products')
-      .update({ thumbnail_key: fileKey })
-      .eq('id', productId);
-
-    if (updateError) {
-      throw new HttpException(
-        updateError.message,
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
@@ -835,7 +1053,31 @@ export class ProductsService {
       throw new HttpException('PRODUCT_NOT_FOUND', HttpStatus.NOT_FOUND);
     }
 
-    return mapProductRowToDto(data);
+    return this.getProductById(productId);
+  }
+
+  async confirmProductSheetMusicUpload(
+    productId: string,
+    payload: AdminConfirmProductSheetMusicUploadRequestDto,
+  ): Promise<ProductDto> {
+    await this.getProductById(productId);
+
+    const { data, error } = await this.supabaseService.client
+      .from('products')
+      .update({ sheet_music_pdf_key: payload.fileKey })
+      .eq('id', productId)
+      .select('*')
+      .maybeSingle<DbProductRow>();
+
+    if (error) {
+      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    if (!data) {
+      throw new HttpException('PRODUCT_NOT_FOUND', HttpStatus.NOT_FOUND);
+    }
+
+    return this.getProductById(productId);
   }
 
   async createThumbnailUrl(productId: string): Promise<{ thumbnailUrl: string }> {
@@ -899,6 +1141,68 @@ export class ProductsService {
     const errorMessage = error?.message ?? 'Failed to create signed playback URL';
     if (errorMessage === 'Object not found') {
       throw new HttpException('Audio object not found', HttpStatus.NOT_FOUND);
+    }
+
+    throw new HttpException(errorMessage, HttpStatus.INTERNAL_SERVER_ERROR);
+  }
+
+  async createSheetMusicUploadUrl(
+    productId: string,
+  ): Promise<{ uploadUrl: string; fileKey: string }> {
+    await this.getProductById(productId);
+
+    const bucket = this.configService.get<string>('STORAGE_BUCKET_SHEET_MUSIC');
+    if (!bucket) {
+      throw new HttpException(
+        'Missing STORAGE_BUCKET_SHEET_MUSIC',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+
+    const fileKey = `products/${productId}/sheet-music/${randomUUID()}.pdf`;
+    const { data, error } = await this.supabaseService.client.storage
+      .from(bucket)
+      .createSignedUploadUrl(fileKey);
+
+    if (error || !data) {
+      throw new HttpException(
+        error?.message ?? 'Failed to create signed upload URL',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+
+    return { uploadUrl: data.signedUrl, fileKey };
+  }
+
+  async createSheetMusicUrl(
+    productId: string,
+  ): Promise<{ sheetMusicUrl: string }> {
+    const product = await this.getProductById(productId);
+    const fileKey = product.sheetMusicPdfKey;
+    if (!fileKey) {
+      throw new HttpException('Sheet music is not available', HttpStatus.NOT_FOUND);
+    }
+
+    const bucket = this.configService.get<string>('STORAGE_BUCKET_SHEET_MUSIC');
+    if (!bucket) {
+      throw new HttpException(
+        'Missing STORAGE_BUCKET_SHEET_MUSIC',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+
+    const { data, error } = await this.supabaseService.client.storage
+      .from(bucket)
+      .createSignedUrl(fileKey, SIGNED_URL_EXPIRES_IN_SECONDS);
+
+    if (data?.signedUrl) {
+      return { sheetMusicUrl: data.signedUrl };
+    }
+
+    const errorMessage =
+      error?.message ?? 'Failed to create signed sheet music URL';
+    if (errorMessage === 'Object not found') {
+      throw new HttpException('Sheet music object not found', HttpStatus.NOT_FOUND);
     }
 
     throw new HttpException(errorMessage, HttpStatus.INTERNAL_SERVER_ERROR);

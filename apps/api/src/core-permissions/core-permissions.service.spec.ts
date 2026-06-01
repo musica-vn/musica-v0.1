@@ -13,11 +13,10 @@ type DependencyCounts = {
 
 const permissionRow = {
   id: '00000000-0000-0000-0000-000000000001',
-  code: 'PERM-SEED-TEST',
-  name: 'Seed Permission',
+  name: 'Permission',
   law_reference: 'Khoan 1 Dieu 20 Luat SHTT',
   status: 'INACTIVE' as const,
-  description: 'Seed description',
+  description: 'Description',
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
 }
@@ -164,7 +163,6 @@ describe('CorePermissionsService', () => {
     expect(corePermissionsTable.updateEq).toHaveBeenCalledWith('id', permissionRow.id)
     expect(result).toMatchObject({
       id: permissionRow.id,
-      code: permissionRow.code,
       status: 'INACTIVE',
     })
   })
