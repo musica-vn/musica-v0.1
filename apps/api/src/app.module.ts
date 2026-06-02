@@ -17,6 +17,7 @@ import { CorePermissionsModule } from './core-permissions/core-permissions.modul
 import { ComplianceModule } from './compliance/compliance.module';
 import { LicensingConfigsModule } from './licensing-configs/licensing-configs.module';
 import { ProductPackageRegistrationsModule } from './product-package-registrations/product-package-registrations.module';
+import { VariantPricingModule } from './pricing/variant-pricing.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { ProductPackageRegistrationsModule } from './product-package-registratio
     ComplianceModule,
     LicensingConfigsModule,
     ProductPackageRegistrationsModule,
+    VariantPricingModule,
   ],
   controllers: [AppController],
   providers: [

@@ -39,13 +39,13 @@ export const router = createRouter({
           path: 'settings/digital-rights',
           component: LicensingConfigManagementPage,
           props: { resource: 'digital' },
-          meta: { title: 'Quyền nền tảng số' },
+          meta: { title: 'Quản lý kênh nền tảng số' },
         },
         {
           path: 'settings/physical-rights',
           component: LicensingConfigManagementPage,
           props: { resource: 'physical' },
-          meta: { title: 'Quyền sử dụng vật lý' },
+          meta: { title: 'Quản lý kênh vật lý' },
         },
         {
           path: 'settings/expression-configs',

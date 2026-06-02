@@ -1,384 +1,326 @@
-# REST API MVP
+# REST API Current Reference
 
-## 1. Nguyên tắc API
+## Tài liệu
+- Phiên bản: `v0.2-current`
+- Cập nhật: `2026-06-02`
+- Phạm vi: toàn bộ endpoint hiện có trong `apps/api`
+- Source of truth:
+  - `apps/api/openapi.json`
+  - `apps/api/src/**/*.controller.ts`
 
-Tất cả APIs trong MVP cần tuân theo các nguyên tắc sau:
+## Mục tiêu
+- Ghi lại **các API hiện tại** đang tồn tại trong hệ thống.
+- Tách rõ nhóm `public`, `auth`, `admin`, `creator`.
+- Chuẩn hóa cách đọc request/response theo envelope của `@musica/contracts`.
+- Thay thế nội dung MVP cũ vốn đã không còn phản ánh đúng codebase hiện tại.
 
-- Thiết kế RESTful
-- Swagger/OpenAPI là source of truth
-- Response phải theo envelope của `@musica/contracts`
-- List endpoints phải có `meta.pagination`
-- Có `requestId` trong response
-- Phân quyền theo role ở tầng guard
+## Tổng quan
+```mermaid
+flowchart TD
+  A[Musica API] --> B[Public]
+  A --> C[Auth]
+  A --> D[Admin]
+  A --> E[Creator]
 
-## 2. Response envelope chuẩn
+  B --> B1[GET /health]
+  B --> B2[POST /public/variant-pricing/calculate]
 
-## 2.1 Success
+  C --> C1[POST /auth/login]
 
-```ts
-{
-  success: true,
-  statusCode: number,
-  data: TData,
-  meta?: TMeta,
-  requestId: string,
-  timestamp: string
-}
+  D --> D1[Products]
+  D --> D2[Certificates]
+  D --> D3[Admin Users]
+  D --> D4[Managed Users]
+  D --> D5[Core Permissions]
+  D --> D6[Compliance]
+  D --> D7[Licensing Configs]
+  D --> D8[Package Registrations]
+
+  E --> E1[Creator Products]
+  E --> E2[Creator Package Registrations]
 ```
 
-## 2.2 Error
+## Chuẩn chung
+
+### Response Envelope
+Mọi response phải theo envelope chuẩn:
 
 ```ts
-{
-  success: false,
-  statusCode: number,
+type ApiSuccessResponse<TData, TMeta = undefined> = {
+  success: true
+  statusCode: number
+  data: TData
+  meta?: TMeta
+  requestId: string
+  timestamp: string
+}
+
+type ApiErrorResponse = {
+  success: false
+  statusCode: number
   error: {
-    code: string,
-    message: string,
+    code: string
+    message: string
     details?: unknown
-  },
-  requestId: string,
+  }
+  requestId: string
   timestamp: string
 }
 ```
 
-## 3. Nhóm Auth & Profile
+### Pagination
+- List endpoints trả `meta.pagination`.
+- FE chỉ unwrap theo envelope, không đổi format response.
 
-## 3.1 `POST /auth/login`
+### Auth Matrix
+- `Public`: không cần JWT
+- `Authenticated`: cần Bearer token
+- `ADMIN/SUPER_ADMIN`: route admin chuẩn
+- `SUPER_ADMIN`: route quản trị admin accounts
+- `ARTIST`: route creator
 
-- Actor: `SUPER_ADMIN`, `ADMIN`, `BUYER`
-- Mục tiêu: đăng nhập bằng email/password
+### Status Codes
+- `200` đọc/cập nhật thành công
+- `201` tạo mới thành công
+- `400` validation hoặc business rule error
+- `401` thiếu / sai JWT
+- `403` sai role
+- `404` không tìm thấy resource
+- `409` conflict
+
+## Public & Auth APIs
+
+### Public
+| Method | Path | Auth | Mục đích |
+|---|---|---|---|
+| `GET` | `/health` | Public | Health check cho deploy/runtime |
+| `POST` | `/public/variant-pricing/calculate` | Public | Tính giá biến thể sản phẩm theo cấu hình gói và các thuộc tính đầu vào |
+
+### Auth
+| Method | Path | Auth | Mục đích |
+|---|---|---|---|
+| `POST` | `/auth/login` | Public | Đăng nhập và trả Bearer token |
+
+### `POST /auth/login`
 - Request body:
   - `email`
   - `password`
 - Response data:
   - `accessToken`
+  - `tokenType`
+  - `expiresInSeconds`
   - `user`
-  - `roles`
-- Errors:
-  - `INVALID_CREDENTIALS`
-  - `USER_LOCKED`
 
-## 3.2 `GET /auth/me`
-
-- Actor: authenticated user
-- Mục tiêu: lấy hồ sơ hiện tại và roles
-- Response data:
-  - `id`
-  - `email`
-  - `fullName`
-  - `status`
-  - `roles`
-
-## 4. Nhóm Super Admin - Admin Management
-
-## 4.1 `GET /admin/users/admins`
-
-- Actor: `SUPER_ADMIN`
-- Mục tiêu: list Admin
-- Query:
-  - `page`
-  - `pageSize`
-  - `keyword`
-  - `status`
-
-## 4.2 `POST /admin/users/admins`
-
-- Actor: `SUPER_ADMIN`
-- Mục tiêu: tạo Admin
+### `POST /public/variant-pricing/calculate`
 - Request body:
-  - `email`
-  - `password`
-  - `fullName`
-
-## 4.3 `PATCH /admin/users/admins/:adminId/status`
-
-- Actor: `SUPER_ADMIN`
-- Mục tiêu: khóa/mở Admin
-- Request body:
-  - `status`
-
-## 5. Nhóm Admin - User Management
-
-## 5.1 `GET /admin/users`
-
-- Actor: `ADMIN`
-- Mục tiêu: list Artist và Buyer
-- Query:
-  - `role`
-  - `status`
-  - `keyword`
-  - `page`
-  - `pageSize`
-
-## 5.2 `POST /admin/users`
-
-- Actor: `ADMIN`
-- Mục tiêu: tạo user role `ARTIST` hoặc `BUYER`
-- Request body:
-  - `email`
-  - `password`
-  - `fullName`
-  - `role`
-
-## 5.3 `GET /admin/users/:userId`
-
-- Actor: `ADMIN`
-- Mục tiêu: xem chi tiết user
-
-## 5.4 `PATCH /admin/users/:userId`
-
-- Actor: `ADMIN`
-- Mục tiêu: cập nhật thông tin user
-- Request body:
-  - `fullName`
-  - `status`
-
-## 6. Nhóm Track Ingestion
-
-## 6.1 `GET /admin/products`
-
-- Actor: `ADMIN`
-- Mục tiêu: list tracks để quản trị
-- Query:
-  - `status`
-  - `genre`
-  - `artistId`
-  - `keyword`
-  - `page`
-  - `pageSize`
-
-## 6.2 `POST /admin/products`
-
-- Actor: `ADMIN`
-- Mục tiêu: tạo track metadata
-- Request body:
-  - `title`
-  - `artistId`
-  - `authorName`
-  - `genre`
-  - `duration`
-  - `usageRights`
-
-## 6.3 `GET /admin/products/:trackId`
-
-- Actor: `ADMIN`
-- Mục tiêu: xem chi tiết track
-
-## 6.4 `PATCH /admin/products/:trackId`
-
-- Actor: `ADMIN`
-- Mục tiêu: cập nhật metadata track
-
-## 6.5 `POST /admin/products/:trackId/original-upload-url`
-
-- Actor: `ADMIN`
-- Mục tiêu: lấy signed upload URL cho original audio
+  - `platformType`: `DIGITAL | PHYSICAL`
+  - `digitalRightConfigId?`
+  - `physicalRightConfigId?`
+  - `subject`: `INDIVIDUAL | ORGANIZATION`
+  - `duration`: `ONE_YEAR | PERPETUAL`
+  - `scope`: `SINGLE_CHANNEL | MULTI_CHANNEL`
+  - `expressionConfigId?`
+  - `modificationConfigId?`
 - Response data:
-  - `uploadUrl`
-  - `fileKey`
+  - `totalPrice`
+  - `currency`
+  - `breakdown[]`
 
-## 6.6 `POST /admin/products/:trackId/preview-upload-url`
+## Admin APIs
 
-- Actor: `ADMIN`
-- Mục tiêu: lấy signed upload URL cho preview audio
-- Response data:
-  - `uploadUrl`
-  - `fileKey`
+### 1. Products
+| Method | Path | Auth | Mục đích |
+|---|---|---|---|
+| `GET` | `/admin/products` | `ADMIN/SUPER_ADMIN` | List sản phẩm admin |
+| `GET` | `/admin/products/summary` | `ADMIN/SUPER_ADMIN` | Summary counts cho dashboard quản lý sản phẩm |
+| `POST` | `/admin/products` | `ADMIN/SUPER_ADMIN` | Tạo sản phẩm |
+| `GET` | `/admin/products/{productId}` | `ADMIN/SUPER_ADMIN` | Lấy chi tiết sản phẩm |
+| `PATCH` | `/admin/products/{productId}` | `ADMIN/SUPER_ADMIN` | Cập nhật metadata sản phẩm |
+| `PATCH` | `/admin/products/{productId}/allowed-permissions` | `ADMIN/SUPER_ADMIN` | Cập nhật allowed core permissions |
+| `POST` | `/admin/products/{productId}/original-upload-url` | `ADMIN/SUPER_ADMIN` | Lấy signed URL upload audio gốc |
+| `POST` | `/admin/products/{productId}/thumbnail-upload-url` | `ADMIN/SUPER_ADMIN` | Lấy signed URL upload thumbnail |
+| `POST` | `/admin/products/{productId}/sheet-music-upload-url` | `ADMIN/SUPER_ADMIN` | Lấy signed URL upload PDF khuông nhạc |
+| `POST` | `/admin/products/{productId}/confirm-audio-upload` | `ADMIN/SUPER_ADMIN` | Confirm audio upload thành công |
+| `POST` | `/admin/products/{productId}/confirm-thumbnail-upload` | `ADMIN/SUPER_ADMIN` | Confirm thumbnail upload thành công |
+| `POST` | `/admin/products/{productId}/confirm-sheet-music-upload` | `ADMIN/SUPER_ADMIN` | Confirm PDF upload thành công |
+| `GET` | `/admin/products/{productId}/thumbnail-url` | `ADMIN/SUPER_ADMIN` | Lấy signed URL xem thumbnail |
+| `GET` | `/admin/products/{productId}/original-playback-url` | `ADMIN/SUPER_ADMIN` | Lấy signed playback URL cho audio |
+| `GET` | `/admin/products/{productId}/sheet-music-url` | `ADMIN/SUPER_ADMIN` | Lấy signed URL mở PDF khuông nhạc |
+| `PATCH` | `/admin/products/{productId}/publish` | `ADMIN/SUPER_ADMIN` | Publish sản phẩm |
+| `PATCH` | `/admin/products/{productId}/hide` | `ADMIN/SUPER_ADMIN` | Hide sản phẩm |
 
-## 6.7 `PATCH /admin/products/:trackId/publish`
+### 2. Certificates
+| Method | Path | Auth | Mục đích |
+|---|---|---|---|
+| `GET` | `/admin/certificates` | `ADMIN/SUPER_ADMIN` | List certificates |
+| `GET` | `/admin/certificates/template` | `ADMIN/SUPER_ADMIN` | Lấy template certificate hiện tại |
+| `GET` | `/admin/certificates/{certificateId}` | `ADMIN/SUPER_ADMIN` | Xem chi tiết certificate |
+| `GET` | `/admin/certificates/{certificateId}/download` | `ADMIN/SUPER_ADMIN` | Lấy signed download URL PDF |
+| `GET` | `/admin/certificates/{certificateId}/render-html` | `ADMIN/SUPER_ADMIN` | Render HTML preview certificate |
 
-- Actor: `ADMIN`
-- Mục tiêu: chuyển trạng thái `PUBLISHED`
+### 3. Admin Users
+| Method | Path | Auth | Mục đích |
+|---|---|---|---|
+| `GET` | `/admin/users/admins` | `SUPER_ADMIN` | List tài khoản admin |
+| `POST` | `/admin/users/admins` | `SUPER_ADMIN` | Tạo admin |
+| `PATCH` | `/admin/users/admins/{adminId}` | `SUPER_ADMIN` | Cập nhật admin |
+| `PATCH` | `/admin/users/admins/{adminId}/status` | `SUPER_ADMIN` | Đổi trạng thái admin |
+| `DELETE` | `/admin/users/admins/{adminId}` | `SUPER_ADMIN` | Xóa admin |
 
-## 6.8 `PATCH /admin/products/:trackId/hide`
+### 4. Managed Users
+| Method | Path | Auth | Mục đích |
+|---|---|---|---|
+| `GET` | `/admin/users` | `ADMIN/SUPER_ADMIN` | List managed users |
+| `POST` | `/admin/users` | `ADMIN/SUPER_ADMIN` | Tạo user |
+| `PATCH` | `/admin/users/{userId}` | `ADMIN/SUPER_ADMIN` | Cập nhật user |
+| `PATCH` | `/admin/users/{userId}/status` | `ADMIN/SUPER_ADMIN` | Đổi trạng thái user |
+| `DELETE` | `/admin/users/{userId}` | `ADMIN/SUPER_ADMIN` | Xóa user |
 
-- Actor: `ADMIN`
-- Mục tiêu: chuyển trạng thái `HIDDEN`
+### 5. Core Permissions
+| Method | Path | Auth | Mục đích |
+|---|---|---|---|
+| `GET` | `/admin/core-permissions` | `ADMIN/SUPER_ADMIN` | List core permissions |
+| `POST` | `/admin/core-permissions` | `ADMIN/SUPER_ADMIN` | Tạo core permission |
+| `PATCH` | `/admin/core-permissions/{permissionId}` | `ADMIN/SUPER_ADMIN` | Cập nhật core permission |
+| `PATCH` | `/admin/core-permissions/{permissionId}/status` | `ADMIN/SUPER_ADMIN` | Đổi trạng thái core permission |
+| `DELETE` | `/admin/core-permissions/{permissionId}` | `ADMIN/SUPER_ADMIN` | Xóa core permission |
 
-## 7. Nhóm Buyer Catalog
+### 6. Compliance
+| Method | Path | Auth | Mục đích |
+|---|---|---|---|
+| `GET` | `/admin/compliance` | `ADMIN/SUPER_ADMIN` | List compliance records |
+| `GET` | `/admin/compliance/{trackId}` | `ADMIN/SUPER_ADMIN` | Xem chi tiết compliance của product |
+| `POST` | `/admin/compliance/{trackId}/files` | `ADMIN/SUPER_ADMIN` | Tạo signed upload URL cho legal/compliance files |
+| `POST` | `/admin/compliance/files/download-url` | `ADMIN/SUPER_ADMIN` | Lấy signed download URL cho compliance file |
+| `PUT` | `/admin/compliance/{trackId}/decision` | `ADMIN/SUPER_ADMIN` | Duyệt / từ chối compliance |
 
-## 7.1 `GET /catalog/tracks`
+### 7. Licensing Configs
 
-- Actor: public hoặc authenticated buyer
-- Mục tiêu: list catalog published
-- Query:
-  - `keyword`
-  - `genre`
-  - `usageRight`
-  - `page`
-  - `pageSize`
-- Response:
-  - chỉ trả track `PUBLISHED`
-  - có `meta.pagination`
+#### 7.1 Digital Right Configs
+| Method | Path | Auth | Mục đích |
+|---|---|---|---|
+| `GET` | `/admin/digital-right-configs` | `ADMIN/SUPER_ADMIN` | List digital right configs |
+| `GET` | `/admin/digital-right-configs/{configId}` | `ADMIN/SUPER_ADMIN` | Xem chi tiết 1 config |
+| `POST` | `/admin/digital-right-configs` | `ADMIN/SUPER_ADMIN` | Tạo config |
+| `PATCH` | `/admin/digital-right-configs/{configId}` | `ADMIN/SUPER_ADMIN` | Cập nhật config |
+| `PATCH` | `/admin/digital-right-configs/{configId}/status` | `ADMIN/SUPER_ADMIN` | Publish / chuyển draft |
+| `DELETE` | `/admin/digital-right-configs/{configId}` | `ADMIN/SUPER_ADMIN` | Xóa config |
 
-## 7.2 `GET /catalog/tracks/:trackId`
+#### 7.2 Physical Right Configs
+| Method | Path | Auth | Mục đích |
+|---|---|---|---|
+| `GET` | `/admin/physical-right-configs` | `ADMIN/SUPER_ADMIN` | List physical right configs |
+| `GET` | `/admin/physical-right-configs/{configId}` | `ADMIN/SUPER_ADMIN` | Xem chi tiết 1 config |
+| `POST` | `/admin/physical-right-configs` | `ADMIN/SUPER_ADMIN` | Tạo config |
+| `PATCH` | `/admin/physical-right-configs/{configId}` | `ADMIN/SUPER_ADMIN` | Cập nhật config |
+| `PATCH` | `/admin/physical-right-configs/{configId}/status` | `ADMIN/SUPER_ADMIN` | Activate / draft |
+| `DELETE` | `/admin/physical-right-configs/{configId}` | `ADMIN/SUPER_ADMIN` | Xóa config |
 
-- Actor: public hoặc authenticated buyer
-- Mục tiêu: xem chi tiết track published
-- Response data:
-  - metadata cơ bản
-  - preview audio URL
-  - usage rights khả dụng
+#### 7.3 Expression Configs
+| Method | Path | Auth | Mục đích |
+|---|---|---|---|
+| `GET` | `/admin/expression-configs` | `ADMIN/SUPER_ADMIN` | List expression configs |
+| `GET` | `/admin/expression-configs/{configId}` | `ADMIN/SUPER_ADMIN` | Xem chi tiết 1 config |
+| `POST` | `/admin/expression-configs` | `ADMIN/SUPER_ADMIN` | Tạo config |
+| `PATCH` | `/admin/expression-configs/{configId}` | `ADMIN/SUPER_ADMIN` | Cập nhật config |
+| `PATCH` | `/admin/expression-configs/{configId}/status` | `ADMIN/SUPER_ADMIN` | Đổi trạng thái |
+| `DELETE` | `/admin/expression-configs/{configId}` | `ADMIN/SUPER_ADMIN` | Xóa config |
 
-## 8. Nhóm Mock Checkout & Purchase
+#### 7.4 Modification Configs
+| Method | Path | Auth | Mục đích |
+|---|---|---|---|
+| `GET` | `/admin/modification-configs` | `ADMIN/SUPER_ADMIN` | List modification configs |
+| `GET` | `/admin/modification-configs/{configId}` | `ADMIN/SUPER_ADMIN` | Xem chi tiết 1 config |
+| `POST` | `/admin/modification-configs` | `ADMIN/SUPER_ADMIN` | Tạo config |
+| `PATCH` | `/admin/modification-configs/{configId}` | `ADMIN/SUPER_ADMIN` | Cập nhật config |
+| `PATCH` | `/admin/modification-configs/{configId}/status` | `ADMIN/SUPER_ADMIN` | Đổi trạng thái |
+| `DELETE` | `/admin/modification-configs/{configId}` | `ADMIN/SUPER_ADMIN` | Xóa config |
 
-## 8.1 `POST /buyer/checkout`
+### 8. Package Registrations (Admin)
+| Method | Path | Auth | Mục đích |
+|---|---|---|---|
+| `POST` | `/admin/products/{productId}/digital-right-registrations` | `ADMIN/SUPER_ADMIN` | Join product vào digital config |
+| `DELETE` | `/admin/products/{productId}/digital-right-registrations/{registrationId}` | `ADMIN/SUPER_ADMIN` | Remove join digital |
+| `POST` | `/admin/products/{productId}/physical-right-registrations` | `ADMIN/SUPER_ADMIN` | Join product vào physical config |
+| `DELETE` | `/admin/products/{productId}/physical-right-registrations/{registrationId}` | `ADMIN/SUPER_ADMIN` | Remove join physical |
+| `GET` | `/admin/digital-right-configs/{configId}/products` | `ADMIN/SUPER_ADMIN` | List products đã join digital config |
+| `GET` | `/admin/physical-right-configs/{configId}/products` | `ADMIN/SUPER_ADMIN` | List products đã join physical config |
 
-- Actor: `BUYER`
-- Mục tiêu: xác nhận mua quyền cho 1 track
-- Request body:
-  - `trackId`
-  - `selectedUsageRights`
-- Luồng xử lý:
-  - validate track tồn tại
-  - validate track là `PUBLISHED`
-  - validate buyer hợp lệ
-  - snapshot dữ liệu
-  - tạo certificate record
-  - sinh PDF
-- Response data:
-  - `certificateId`
-  - `status`
-  - `downloadAvailable`
-- Errors:
-  - `TRACK_NOT_FOUND`
-  - `TRACK_NOT_PUBLISHED`
-  - `INVALID_USAGE_RIGHTS`
+## Creator APIs
+| Method | Path | Auth | Mục đích |
+|---|---|---|---|
+| `GET` | `/creator/products` | `ARTIST` | List products của creator |
+| `GET` | `/creator/products/{productId}` | `ARTIST` | Xem chi tiết product của creator |
+| `POST` | `/creator/products/{productId}/digital-right-registrations` | `ARTIST` | Join product vào digital config |
+| `DELETE` | `/creator/products/{productId}/digital-right-registrations/{registrationId}` | `ARTIST` | Remove join digital |
+| `POST` | `/creator/products/{productId}/physical-right-registrations` | `ARTIST` | Join product vào physical config |
+| `DELETE` | `/creator/products/{productId}/physical-right-registrations/{registrationId}` | `ARTIST` | Remove join physical |
 
-## 9. Nhóm Buyer Certificates
+## Ghi chú nghiệp vụ quan trọng
 
-## 9.1 `GET /buyer/certificates`
+### 1. Product Upload Flow
+- Audio gốc:
+  1. `POST /admin/products/{productId}/original-upload-url`
+  2. Upload file trực tiếp lên signed URL
+  3. `POST /admin/products/{productId}/confirm-audio-upload`
+- Thumbnail:
+  1. `POST /admin/products/{productId}/thumbnail-upload-url`
+  2. Upload file
+  3. `POST /admin/products/{productId}/confirm-thumbnail-upload`
+- Sheet music PDF:
+  1. `POST /admin/products/{productId}/sheet-music-upload-url`
+  2. Upload file
+  3. `POST /admin/products/{productId}/confirm-sheet-music-upload`
 
-- Actor: `BUYER`
-- Mục tiêu: list certificates của chính buyer
-- Query:
-  - `page`
-  - `pageSize`
-  - `keyword`
-  - `fromDate`
-  - `toDate`
+### 2. Licensing Config Pricing
+- `digital_right_configs` và `physical_right_configs` có:
+  - `basePriceMultiplier`
+  - `priceModifiers[]`
+- `expression_configs` và `modification_configs` quản lý hệ số riêng.
+- Public pricing API có thể dùng đồng thời:
+  - config nền tảng
+  - subject/duration/scope
+  - expression/modification config ids
 
-## 9.2 `GET /buyer/certificates/:certificateId`
+### 3. Naming Note
+- Một số endpoint compliance vẫn dùng placeholder `{trackId}` trong path OpenAPI, nhưng dữ liệu nghiệp vụ hiện tại là `product`.
+- Trong docs này giữ nguyên path **đúng theo endpoint hiện có** để tránh lệch contract.
 
-- Actor: `BUYER`
-- Mục tiêu: xem chi tiết certificate của chính mình
+## Ví dụ Response Envelope
 
-## 9.3 `GET /buyer/certificates/:certificateId/download`
+### Success
+```json
+{
+  "success": true,
+  "statusCode": 200,
+  "data": {},
+  "requestId": "9f1b7c4f-6eaa-4d5f-9eb9-1f5f8ec0a001",
+  "timestamp": "2026-06-02T08:00:00.000Z"
+}
+```
 
-- Actor: `BUYER`
-- Mục tiêu: lấy signed download URL cho PDF certificate
-- Response data:
-  - `downloadUrl`
-  - `fileName`
+### Error
+```json
+{
+  "success": false,
+  "statusCode": 404,
+  "error": {
+    "code": "PRODUCT_NOT_FOUND",
+    "message": "PRODUCT_NOT_FOUND"
+  },
+  "requestId": "9f1b7c4f-6eaa-4d5f-9eb9-1f5f8ec0a001",
+  "timestamp": "2026-06-02T08:00:00.000Z"
+}
+```
 
-## 10. Nhóm Admin Certificates
+## Quy trình cập nhật tài liệu
+- Sau mỗi thay đổi API:
+  1. `pnpm.cmd -C apps/api build`
+  2. `pnpm.cmd -C apps/api gen:openapi`
+  3. cập nhật file này nếu có thay đổi nhóm endpoint hoặc business note
+- Khi cần chi tiết schema:
+  - xem trực tiếp `apps/api/openapi.json`
+  - hoặc Swagger runtime của backend nếu đang bật local
 
-## 10.1 `GET /admin/certificates`
-
-- Actor: `ADMIN`
-- Mục tiêu: tra cứu certificates toàn hệ thống
-- Query:
-  - `buyerKeyword`
-  - `trackKeyword`
-  - `artistId`
-  - `status`
-  - `fromDate`
-  - `toDate`
-  - `page`
-  - `pageSize`
-
-## 10.2 `GET /admin/certificates/:certificateId`
-
-- Actor: `ADMIN`
-- Mục tiêu: xem chi tiết certificate
-
-## 10.3 `GET /admin/certificates/:certificateId/download`
-
-- Actor: `ADMIN`
-- Mục tiêu: lấy signed download URL cho PDF
-
-## 11. Nhóm Dashboard
-
-## 11.1 `GET /admin/dashboard/summary`
-
-- Actor: `ADMIN`, `SUPER_ADMIN`
-- Mục tiêu: lấy số liệu tóm tắt
-- Response data:
-  - `totalTracks`
-  - `publishedTracks`
-  - `totalBuyers`
-  - `totalArtists`
-  - `totalCertificates`
-
-## 11.2 `GET /admin/dashboard/certificate-trends`
-
-- Actor: `ADMIN`, `SUPER_ADMIN`
-- Mục tiêu: biểu đồ số certificate theo thời gian
-- Query:
-  - `fromDate`
-  - `toDate`
-  - `groupBy`
-
-## 11.3 `GET /admin/dashboard/top-genres`
-
-- Actor: `ADMIN`, `SUPER_ADMIN`
-- Mục tiêu: top genres theo số lượng tracks hoặc số lượng certificates
-
-## 12. Health & System
-
-## 12.1 `GET /health`
-
-- Actor: public
-- Mục tiêu: health check cho Render
-
-## 13. Gợi ý status codes
-
-- `200` success read/update
-- `201` success create
-- `400` validation/business rule error
-- `401` unauthenticated
-- `403` forbidden
-- `404` resource not found
-- `409` conflict
-
-## 14. API coverage theo nghiệp vụ
-
-### Ingestion
-
-- `GET /admin/products`
-- `POST /admin/products`
-- `PATCH /admin/products/:trackId`
-- `POST /admin/products/:trackId/original-upload-url`
-- `POST /admin/products/:trackId/preview-upload-url`
-- `PATCH /admin/products/:trackId/publish`
-- `PATCH /admin/products/:trackId/hide`
-
-### Discovery & Purchase
-
-- `GET /catalog/tracks`
-- `GET /catalog/tracks/:trackId`
-- `POST /buyer/checkout`
-- `GET /buyer/certificates`
-- `GET /buyer/certificates/:certificateId/download`
-
-### Operations
-
-- `GET /admin/users`
-- `POST /admin/users`
-- `GET /admin/certificates`
-- `GET /admin/dashboard/summary`
-- `GET /admin/users/admins`
-- `POST /admin/users/admins`
-
-## 15. Gợi ý module mapping trong NestJS
-
-- `auth`
-- `users`
-- `tracks`
-- `catalog`
-- `checkout`
-- `certificates`
-- `dashboard`
-
-Đây là cấu trúc phù hợp với modular monolith và thuận tiện cho Swagger grouping.
+## Change Log
+- `2026-06-02`: Viết lại tài liệu theo **API thực tế hiện tại**, bổ sung `public variant pricing`, `sheet music`, `licensing configs`, `package registrations`, `price modifiers`, `creator APIs`.

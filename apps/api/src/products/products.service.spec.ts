@@ -71,9 +71,7 @@ describe('ProductsService - upload URLs', () => {
     const service = createService();
     const productId = '00000000-0000-0000-0000-000000000001';
 
-    jest
-      .spyOn(service, 'getProductById')
-      .mockResolvedValue(createMockProductDto({ id: productId }));
+    jest.spyOn(service as any, 'ensureProductExists').mockResolvedValue(undefined);
 
     (mockConfigService.get as jest.Mock).mockImplementation((key: string) => {
       if (key === 'STORAGE_BUCKET_ORIGINAL_AUDIO') return 'original-audio';
@@ -101,7 +99,7 @@ describe('ProductsService - upload URLs', () => {
     const service = createService();
     const productId = '00000000-0000-0000-0000-000000000001';
 
-    jest.spyOn(service, 'getProductById').mockResolvedValue({} as any);
+    jest.spyOn(service as any, 'ensureProductExists').mockResolvedValue(undefined);
 
     (mockConfigService.get as jest.Mock).mockImplementation((key: string) => {
       if (key === 'STORAGE_BUCKET_ORIGINAL_AUDIO') return 'original-audio';
@@ -122,9 +120,7 @@ describe('ProductsService - upload URLs', () => {
     const service = createService();
     const productId = '00000000-0000-0000-0000-000000000001';
 
-    jest
-      .spyOn(service, 'getProductById')
-      .mockResolvedValue(createMockProductDto({ id: productId }));
+    jest.spyOn(service as any, 'ensureProductExists').mockResolvedValue(undefined);
 
     (mockConfigService.get as jest.Mock).mockImplementation((key: string) => {
       if (key === 'STORAGE_BUCKET_TRACK_THUMBNAILS') return 'track-thumbnails';

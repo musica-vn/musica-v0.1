@@ -6,6 +6,7 @@ import { SupabaseService } from '../supabase/supabase.service'
 import type {
   ConfigPermissionSummaryDto,
   ConfigStatus,
+  ConfigPriceModifierDto,
   CreateDigitalRightConfigRequestDto,
   CreateExpressionConfigRequestDto,
   CreateModificationConfigRequestDto,
@@ -43,6 +44,7 @@ type DbDigitalRightConfigRow = {
   created_at: string
   updated_at: string
   digital_right_config_permissions?: DbConfigPermissionRelationRow[]
+  digital_right_config_price_modifiers?: DbPriceModifierRow[]
 }
 
 type DbPhysicalRightConfigRow = {
@@ -53,6 +55,14 @@ type DbPhysicalRightConfigRow = {
   created_at: string
   updated_at: string
   physical_right_config_permissions?: DbConfigPermissionRelationRow[]
+  physical_right_config_price_modifiers?: DbPriceModifierRow[]
+}
+
+type DbPriceModifierRow = {
+  id: string
+  modifier_key: string
+  multiplier: number | string
+  created_at: string
 }
 
 type DbExpressionConfigRow = {
@@ -81,6 +91,11 @@ type ConfigResourceDefinition = {
   mappingForeignKey: string
 }
 
+type PriceModifierResourceDefinition = {
+  tableName: string
+  mappingForeignKey: string
+}
+
 const digitalRightConfigResource: ConfigResourceDefinition = {
   tableName: 'digital_right_configs',
   mappingTableName: 'digital_right_config_permissions',
@@ -90,6 +105,16 @@ const digitalRightConfigResource: ConfigResourceDefinition = {
 const physicalRightConfigResource: ConfigResourceDefinition = {
   tableName: 'physical_right_configs',
   mappingTableName: 'physical_right_config_permissions',
+  mappingForeignKey: 'physical_right_config_id',
+}
+
+const digitalRightConfigPriceModifierResource: PriceModifierResourceDefinition = {
+  tableName: 'digital_right_config_price_modifiers',
+  mappingForeignKey: 'digital_right_config_id',
+}
+
+const physicalRightConfigPriceModifierResource: PriceModifierResourceDefinition = {
+  tableName: 'physical_right_config_price_modifiers',
   mappingForeignKey: 'physical_right_config_id',
 }
 
@@ -140,6 +165,9 @@ const mapReferencedPermissions = (
 
 const mapDigitalRightConfig = (row: DbDigitalRightConfigRow): DigitalRightConfigDto => {
   const permissionData = mapReferencedPermissions(row.digital_right_config_permissions)
+  const modifiers = Array.isArray(row.digital_right_config_price_modifiers)
+    ? row.digital_right_config_price_modifiers
+    : []
 
   return {
     id: row.id,
@@ -147,6 +175,10 @@ const mapDigitalRightConfig = (row: DbDigitalRightConfigRow): DigitalRightConfig
     durationType: row.duration_type,
     basePriceMultiplier: toNumber(row.base_price_multiplier),
     status: row.status,
+    priceModifiers: modifiers.map((item) => ({
+      key: item.modifier_key as ConfigPriceModifierDto['key'],
+      multiplier: toNumber(item.multiplier),
+    })),
     referencedPermissionIds: permissionData.referencedPermissionIds,
     referencedPermissions: permissionData.referencedPermissions,
     createdAt: row.created_at,
@@ -156,12 +188,19 @@ const mapDigitalRightConfig = (row: DbDigitalRightConfigRow): DigitalRightConfig
 
 const mapPhysicalRightConfig = (row: DbPhysicalRightConfigRow): PhysicalRightConfigDto => {
   const permissionData = mapReferencedPermissions(row.physical_right_config_permissions)
+  const modifiers = Array.isArray(row.physical_right_config_price_modifiers)
+    ? row.physical_right_config_price_modifiers
+    : []
 
   return {
     id: row.id,
     venueUsageType: row.venue_usage_type,
     basePriceMultiplier: toNumber(row.base_price_multiplier),
     status: row.status,
+    priceModifiers: modifiers.map((item) => ({
+      key: item.modifier_key as ConfigPriceModifierDto['key'],
+      multiplier: toNumber(item.multiplier),
+    })),
     referencedPermissionIds: permissionData.referencedPermissionIds,
     referencedPermissions: permissionData.referencedPermissions,
     createdAt: row.created_at,
@@ -255,11 +294,50 @@ export class LicensingConfigsService {
     }
   }
 
+  private async syncConfigPriceModifiers(
+    resource: PriceModifierResourceDefinition,
+    configId: string,
+    modifiers: ConfigPriceModifierDto[],
+  ): Promise<void> {
+    const normalizedModifiers = Array.from(
+      new Map(
+        (modifiers ?? [])
+          .filter((item) => !!item && typeof item === 'object')
+          .map((item) => [item.key, { key: item.key, multiplier: item.multiplier }]),
+      ).values(),
+    )
+
+    const { error: deleteError } = await this.supabaseService.client
+      .from(resource.tableName)
+      .delete()
+      .eq(resource.mappingForeignKey, configId)
+
+    if (deleteError) {
+      throw new HttpException(deleteError.message, HttpStatus.INTERNAL_SERVER_ERROR)
+    }
+
+    if (normalizedModifiers.length === 0) return
+
+    const insertRows = normalizedModifiers.map((item) => ({
+      [resource.mappingForeignKey]: configId,
+      modifier_key: item.key,
+      multiplier: item.multiplier,
+    }))
+
+    const { error: insertError } = await this.supabaseService.client
+      .from(resource.tableName)
+      .insert(insertRows)
+
+    if (insertError) {
+      throw new HttpException(insertError.message, HttpStatus.INTERNAL_SERVER_ERROR)
+    }
+  }
+
   private async getDigitalRightConfigById(configId: string): Promise<DigitalRightConfigDto> {
     const { data, error } = await this.supabaseService.client
       .from(digitalRightConfigResource.tableName)
       .select(
-        '*, digital_right_config_permissions(core_permission_id, core_permissions(id, name, law_reference))',
+        '*, digital_right_config_permissions(core_permission_id, core_permissions(id, name, law_reference)), digital_right_config_price_modifiers(id,modifier_key,multiplier,created_at)',
       )
       .eq('id', configId)
       .maybeSingle<DbDigitalRightConfigRow>()
@@ -279,7 +357,7 @@ export class LicensingConfigsService {
     const { data, error } = await this.supabaseService.client
       .from(physicalRightConfigResource.tableName)
       .select(
-        '*, physical_right_config_permissions(core_permission_id, core_permissions(id, name, law_reference))',
+        '*, physical_right_config_permissions(core_permission_id, core_permissions(id, name, law_reference)), physical_right_config_price_modifiers(id,modifier_key,multiplier,created_at)',
       )
       .eq('id', configId)
       .maybeSingle<DbPhysicalRightConfigRow>()
@@ -343,7 +421,7 @@ export class LicensingConfigsService {
     let sb = this.supabaseService.client
       .from(digitalRightConfigResource.tableName)
       .select(
-        '*, digital_right_config_permissions(core_permission_id, core_permissions(id, name, law_reference))',
+        '*, digital_right_config_permissions(core_permission_id, core_permissions(id, name, law_reference)), digital_right_config_price_modifiers(id,modifier_key,multiplier,created_at)',
         { count: 'exact' },
       )
 
@@ -400,6 +478,12 @@ export class LicensingConfigsService {
       payload.referencedPermissionIds ?? [],
     )
 
+    await this.syncConfigPriceModifiers(
+      digitalRightConfigPriceModifierResource,
+      data.id,
+      payload.priceModifiers ?? [],
+    )
+
     return this.getDigitalRightConfigById(data.id)
   }
 
@@ -425,6 +509,14 @@ export class LicensingConfigsService {
 
     if (payload.referencedPermissionIds !== undefined) {
       await this.syncConfigPermissions(digitalRightConfigResource, configId, payload.referencedPermissionIds)
+    }
+
+    if (payload.priceModifiers !== undefined) {
+      await this.syncConfigPriceModifiers(
+        digitalRightConfigPriceModifierResource,
+        configId,
+        payload.priceModifiers,
+      )
     }
 
     return this.getDigitalRightConfigById(configId)
@@ -466,7 +558,7 @@ export class LicensingConfigsService {
     let sb = this.supabaseService.client
       .from(physicalRightConfigResource.tableName)
       .select(
-        '*, physical_right_config_permissions(core_permission_id, core_permissions(id, name, law_reference))',
+        '*, physical_right_config_permissions(core_permission_id, core_permissions(id, name, law_reference)), physical_right_config_price_modifiers(id,modifier_key,multiplier,created_at)',
         { count: 'exact' },
       )
 
@@ -520,6 +612,12 @@ export class LicensingConfigsService {
       payload.referencedPermissionIds ?? [],
     )
 
+    await this.syncConfigPriceModifiers(
+      physicalRightConfigPriceModifierResource,
+      data.id,
+      payload.priceModifiers ?? [],
+    )
+
     return this.getPhysicalRightConfigById(data.id)
   }
 
@@ -544,6 +642,14 @@ export class LicensingConfigsService {
 
     if (payload.referencedPermissionIds !== undefined) {
       await this.syncConfigPermissions(physicalRightConfigResource, configId, payload.referencedPermissionIds)
+    }
+
+    if (payload.priceModifiers !== undefined) {
+      await this.syncConfigPriceModifiers(
+        physicalRightConfigPriceModifierResource,
+        configId,
+        payload.priceModifiers,
+      )
     }
 
     return this.getPhysicalRightConfigById(configId)

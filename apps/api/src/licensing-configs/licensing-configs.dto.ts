@@ -10,8 +10,13 @@ import {
   IsString,
   IsUUID,
   Min,
+  ValidateNested,
 } from 'class-validator'
 import { PaginationQueryDto } from '../common/pagination.dto'
+import {
+  VARIANT_PRICING_MODIFIER_KEYS,
+  type VariantPricingModifierKey,
+} from '../pricing/variant-pricing.enums'
 
 export type ConfigStatus = 'ACTIVE' | 'INACTIVE'
 export type DigitalPlatform = 'YOUTUBE' | 'TIKTOK' | 'FACEBOOK'
@@ -66,6 +71,12 @@ export class DigitalRightConfigDto extends ConfigBaseDto {
 
   @ApiProperty()
   basePriceMultiplier: number
+
+  @ApiProperty({
+    type: [Object],
+    example: [{ key: 'SUBJECT_INDIVIDUAL', multiplier: 1.2 }],
+  })
+  priceModifiers: Array<{ key: VariantPricingModifierKey; multiplier: number }>
 }
 
 export class PhysicalRightConfigDto extends ConfigBaseDto {
@@ -74,6 +85,12 @@ export class PhysicalRightConfigDto extends ConfigBaseDto {
 
   @ApiProperty()
   basePriceMultiplier: number
+
+  @ApiProperty({
+    type: [Object],
+    example: [{ key: 'SCOPE_MULTI_CHANNEL', multiplier: 1.2 }],
+  })
+  priceModifiers: Array<{ key: VariantPricingModifierKey; multiplier: number }>
 }
 
 export class ExpressionConfigDto extends ConfigBaseDto {
@@ -163,6 +180,19 @@ class ConfigStatusFieldDto {
   status?: ConfigStatus
 }
 
+export class ConfigPriceModifierDto {
+  @ApiProperty({ enum: VARIANT_PRICING_MODIFIER_KEYS })
+  @Transform(normalizeString)
+  @IsIn(VARIANT_PRICING_MODIFIER_KEYS)
+  key: VariantPricingModifierKey
+
+  @ApiProperty({ minimum: 1 })
+  @Type(() => Number)
+  @IsNumber()
+  @Min(1)
+  multiplier: number
+}
+
 export class CreateDigitalRightConfigRequestDto {
   @ApiProperty({ enum: ['YOUTUBE', 'TIKTOK', 'FACEBOOK'] })
   @IsIn(['YOUTUBE', 'TIKTOK', 'FACEBOOK'])
@@ -185,6 +215,14 @@ export class CreateDigitalRightConfigRequestDto {
   @ArrayUnique()
   @IsUUID('4', { each: true })
   referencedPermissionIds?: string[]
+
+  @ApiPropertyOptional({ type: [ConfigPriceModifierDto], default: [] })
+  @IsOptional()
+  @IsArray()
+  @ArrayUnique((item: ConfigPriceModifierDto) => item.key)
+  @ValidateNested({ each: true })
+  @Type(() => ConfigPriceModifierDto)
+  priceModifiers?: ConfigPriceModifierDto[]
 
   @ApiPropertyOptional({
     enum: ['ACTIVE', 'INACTIVE'],
@@ -213,6 +251,14 @@ export class UpdateDigitalRightConfigRequestDto extends ConfigPermissionIdsField
   @IsNumber()
   @Min(1)
   basePriceMultiplier?: number
+
+  @ApiPropertyOptional({ type: [ConfigPriceModifierDto], default: [] })
+  @IsOptional()
+  @IsArray()
+  @ArrayUnique((item: ConfigPriceModifierDto) => item.key)
+  @ValidateNested({ each: true })
+  @Type(() => ConfigPriceModifierDto)
+  priceModifiers?: ConfigPriceModifierDto[]
 }
 
 export class CreatePhysicalRightConfigRequestDto {
@@ -234,6 +280,14 @@ export class CreatePhysicalRightConfigRequestDto {
   @ArrayUnique()
   @IsUUID('4', { each: true })
   referencedPermissionIds?: string[]
+
+  @ApiPropertyOptional({ type: [ConfigPriceModifierDto], default: [] })
+  @IsOptional()
+  @IsArray()
+  @ArrayUnique((item: ConfigPriceModifierDto) => item.key)
+  @ValidateNested({ each: true })
+  @Type(() => ConfigPriceModifierDto)
+  priceModifiers?: ConfigPriceModifierDto[]
 
   @ApiPropertyOptional({
     enum: ['ACTIVE', 'INACTIVE'],
@@ -258,6 +312,14 @@ export class UpdatePhysicalRightConfigRequestDto extends ConfigPermissionIdsFiel
   @IsNumber()
   @Min(1)
   basePriceMultiplier?: number
+
+  @ApiPropertyOptional({ type: [ConfigPriceModifierDto], default: [] })
+  @IsOptional()
+  @IsArray()
+  @ArrayUnique((item: ConfigPriceModifierDto) => item.key)
+  @ValidateNested({ each: true })
+  @Type(() => ConfigPriceModifierDto)
+  priceModifiers?: ConfigPriceModifierDto[]
 }
 
 export class CreateExpressionConfigRequestDto {

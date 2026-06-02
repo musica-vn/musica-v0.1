@@ -53,7 +53,6 @@ import ProductWavePreview from '../../products/components/ProductWavePreview.vue
 type ProductForm = {
   title: string
   artistId: string
-  authorName: string
   genres: ProductGenre[]
   useCases: ProductUseCase[]
   description: string
@@ -166,7 +165,6 @@ type ArtistOption = {
 const createForm = reactive<ProductForm>({
   title: '',
   artistId: '',
-  authorName: '',
   genres: [],
   useCases: [],
   description: '',
@@ -175,7 +173,6 @@ const createForm = reactive<ProductForm>({
 const editForm = reactive<ProductForm>({
   title: '',
   artistId: '',
-  authorName: '',
   genres: [],
   useCases: [],
   description: '',
@@ -345,10 +342,6 @@ const selectedTrackAttributeItems = computed<TrackAttributeItem[]>(() => {
       value: resolveArtistDisplay(track.artistId),
     },
     {
-      label: 'Tên tác giả',
-      value: track.authorName || 'Chưa có',
-    },
-    {
       label: 'Thể loại',
       value: formatTrackGenresDisplay(track),
     },
@@ -460,8 +453,7 @@ const exportCurrentTracksCsv = () => {
   const headers = [
     'title',
     'id',
-    'authorName',
-    'genre',
+    'genres',
     'duration',
     'status',
     'originalAudioKey',
@@ -480,8 +472,7 @@ const exportCurrentTracksCsv = () => {
       [
         track.title,
         track.id,
-        track.authorName ?? '',
-        track.genre ?? '',
+        formatTrackGenresDisplay(track),
         track.duration ?? '',
         track.status,
         track.originalAudioKey ?? '',
@@ -800,7 +791,6 @@ const submitAllowedPermissions = async () => {
 const resetCreateForm = () => {
   createForm.title = ''
   createForm.artistId = ''
-  createForm.authorName = ''
   createForm.genres = []
   createForm.useCases = []
   createForm.description = ''
@@ -814,22 +804,23 @@ const resetCreateForm = () => {
   createThumbnailUrl.value = null
 }
 
+const isAllowedGenreValue = (value: string): value is ProductGenre =>
+  PRODUCT_GENRE_OPTIONS.some((option) => option.value === value)
+
+const isAllowedUseCaseValue = (value: string): value is ProductUseCase =>
+  PRODUCT_USE_CASE_OPTIONS.some((option) => option.value === value)
+
+const normalizeGenreValues = (values: Array<string | null | undefined>): ProductGenre[] =>
+  values.filter((value): value is string => typeof value === 'string' && value.trim().length > 0).filter(isAllowedGenreValue)
+
+const normalizeUseCaseValues = (values: Array<string | null | undefined>): ProductUseCase[] =>
+  values.filter((value): value is string => typeof value === 'string' && value.trim().length > 0).filter(isAllowedUseCaseValue)
+
 const resetEditForm = (track: Product) => {
   editForm.title = track.title
   editForm.artistId = track.artistId
-  editForm.authorName = track.authorName ?? ''
-  editForm.genres =
-    track.genres && track.genres.length > 0
-      ? (track.genres as ProductGenre[])
-      : track.genre
-        ? ([track.genre] as ProductGenre[])
-        : []
-  editForm.useCases =
-    track.useCases && track.useCases.length > 0
-      ? (track.useCases as ProductUseCase[])
-      : track.useCase
-        ? ([track.useCase] as ProductUseCase[])
-        : []
+  editForm.genres = normalizeGenreValues(track.genres && track.genres.length > 0 ? track.genres : track.genre ? [track.genre] : [])
+  editForm.useCases = normalizeUseCaseValues(track.useCases && track.useCases.length > 0 ? track.useCases : track.useCase ? [track.useCase] : [])
   editForm.description = track.description ?? ''
   editForm.duration = track.duration === null ? '' : String(track.duration)
   editOriginalFile.value = null
@@ -1090,6 +1081,29 @@ const refreshTrackDashboard = async () => {
   await Promise.all([fetchTracks(), fetchSummaryCounts()])
 }
 
+const applyClientSort = () => {
+  const [field, direction] = filters.sort.split(':') as [string, 'asc' | 'desc']
+  const sign = direction === 'asc' ? 1 : -1
+
+  const sorted = [...rows.value].sort((left, right) => {
+    if (field === 'updatedAt' || field === 'createdAt') {
+      const leftTime = new Date((left as any)[field] as string).getTime()
+      const rightTime = new Date((right as any)[field] as string).getTime()
+      if (Number.isNaN(leftTime) || Number.isNaN(rightTime)) return 0
+      return (leftTime - rightTime) * sign
+    }
+    if (field === 'title') {
+      return left.title.localeCompare(right.title, undefined, { sensitivity: 'base' }) * sign
+    }
+    if (field === 'status') {
+      return left.status.localeCompare(right.status) * sign
+    }
+    return 0
+  })
+
+  rows.value = sorted
+}
+
 const openCreateDialog = () => {
   clearMessages()
   selectedTrack.value = null
@@ -1233,11 +1247,20 @@ const submitCreate = async () => {
     })
 
     createdProduct = data
-    await uploadTrackThumbnailFile(data.id, createThumbnailFile.value as File)
-    await uploadTrackAudioFile(data.id, createOriginalFile.value as File)
+    const jobs: Array<() => Promise<unknown>> = [
+      () => uploadTrackThumbnailFile(data.id, createThumbnailFile.value as File),
+      () => uploadTrackAudioFile(data.id, createOriginalFile.value as File),
+    ]
     if (createSheetMusicFile.value) {
-      await uploadTrackSheetMusicFile(data.id, createSheetMusicFile.value)
+      const sheetMusicFile = createSheetMusicFile.value
+      jobs.push(() => uploadTrackSheetMusicFile(data.id, sheetMusicFile))
     }
+
+    const results = await Promise.allSettled(jobs.map((job) => job()))
+    const rejected = results.find(
+      (result): result is PromiseRejectedResult => result.status === 'rejected',
+    )
+    if (rejected) throw rejected.reason
 
     createDialogVisible.value = false
     resetCreateForm()
@@ -1280,30 +1303,55 @@ const submitEdit = async () => {
   isLoading.value = true
 
   try {
-    await updateAdminProduct(selectedTrack.value.id, {
+    const trackId = selectedTrack.value.id
+    const { data } = await updateAdminProduct(trackId, {
       title: editForm.title.trim(),
-      authorName: editForm.authorName.trim().length > 0 ? editForm.authorName.trim() : undefined,
       genres: editForm.genres,
       useCases: editForm.useCases,
       description: editForm.description.trim().length > 0 ? editForm.description.trim() : undefined,
       duration: parseDuration(editForm.duration),
     })
+    rows.value = rows.value.map((item) => (item.id === data.id ? data : item))
+    if (selectedTrack.value?.id === data.id) selectedTrack.value = data
+    applyClientSort()
+
+    const uploadJobs: Array<{
+      type: 'thumbnail' | 'audio' | 'sheetMusic'
+      run: () => Promise<unknown>
+    }> = []
 
     if (editThumbnailFile.value) {
-      await uploadTrackThumbnailFile(selectedTrack.value.id, editThumbnailFile.value)
+      const file = editThumbnailFile.value
+      uploadJobs.push({ type: 'thumbnail', run: () => uploadTrackThumbnailFile(trackId, file) })
     }
 
     if (editOriginalFile.value) {
-      await uploadTrackAudioFile(selectedTrack.value.id, editOriginalFile.value)
+      const file = editOriginalFile.value
+      uploadJobs.push({ type: 'audio', run: () => uploadTrackAudioFile(trackId, file) })
     }
 
     if (editSheetMusicFile.value) {
-      await uploadTrackSheetMusicFile(selectedTrack.value.id, editSheetMusicFile.value)
+      const file = editSheetMusicFile.value
+      uploadJobs.push({ type: 'sheetMusic', run: () => uploadTrackSheetMusicFile(trackId, file) })
+    }
+
+    if (uploadJobs.length > 0) {
+      const results = await Promise.allSettled(uploadJobs.map((job) => job.run()))
+      results.forEach((result, index) => {
+        if (result.status !== 'fulfilled') return
+        const type = uploadJobs[index]?.type
+        if (type === 'thumbnail') editThumbnailFile.value = null
+        if (type === 'audio') editOriginalFile.value = null
+        if (type === 'sheetMusic') editSheetMusicFile.value = null
+      })
+      const rejected = results.find(
+        (result): result is PromiseRejectedResult => result.status === 'rejected',
+      )
+      if (rejected) throw rejected.reason
     }
 
     editDialogVisible.value = false
     successMessage.value = 'Đã cập nhật track'
-    await refreshTrackDashboard()
   } catch (error) {
     setEditDialogError(error)
   } finally {
@@ -1327,12 +1375,22 @@ const togglePublishConfirmed = async (track: Product) => {
   clearMessages()
   isLoading.value = true
   try {
+    const previousStatus = track.status
     if (track.status === 'PUBLISHED') {
       const { data } = await hideAdminProduct(track.id)
       rows.value = rows.value.map((item) => (item.id === track.id ? data : item))
       if (selectedTrack.value?.id === track.id) {
         selectedTrack.value = data
       }
+      if (previousStatus !== data.status) {
+        if (previousStatus === 'PUBLISHED') summaryCounts.published = Math.max(0, summaryCounts.published - 1)
+        if (previousStatus === 'HIDDEN') summaryCounts.hidden = Math.max(0, summaryCounts.hidden - 1)
+        if (previousStatus === 'PENDING') summaryCounts.pending = Math.max(0, summaryCounts.pending - 1)
+        if (data.status === 'PUBLISHED') summaryCounts.published += 1
+        if (data.status === 'HIDDEN') summaryCounts.hidden += 1
+        if (data.status === 'PENDING') summaryCounts.pending += 1
+      }
+      applyClientSort()
       successMessage.value = 'Đã ẩn track'
     } else {
       const { data } = await publishAdminProduct(track.id)
@@ -1340,9 +1398,17 @@ const togglePublishConfirmed = async (track: Product) => {
       if (selectedTrack.value?.id === track.id) {
         selectedTrack.value = data
       }
+      if (previousStatus !== data.status) {
+        if (previousStatus === 'PUBLISHED') summaryCounts.published = Math.max(0, summaryCounts.published - 1)
+        if (previousStatus === 'HIDDEN') summaryCounts.hidden = Math.max(0, summaryCounts.hidden - 1)
+        if (previousStatus === 'PENDING') summaryCounts.pending = Math.max(0, summaryCounts.pending - 1)
+        if (data.status === 'PUBLISHED') summaryCounts.published += 1
+        if (data.status === 'HIDDEN') summaryCounts.hidden += 1
+        if (data.status === 'PENDING') summaryCounts.pending += 1
+      }
+      applyClientSort()
       successMessage.value = 'Đã phát hành track'
     }
-    await refreshTrackDashboard()
   } catch (error) {
     setError(error)
   } finally {
@@ -1609,7 +1675,7 @@ onBeforeUnmount(() => {
                       {{ track.title }}
                     </div>
                     <div class="mt-1 line-clamp-1 text-xs text-slate-500 dark:text-slate-400">
-                      {{ track.authorName || 'Chưa có tác giả' }} · {{ formatTrackGenresDisplay(track) }} · {{ formatDuration(track.duration) }} ·
+                      {{ resolveArtistDisplay(track.artistId) }} · {{ formatTrackGenresDisplay(track) }} · {{ formatDuration(track.duration) }} ·
                       {{ formatDateTime(track.updatedAt) }}
                     </div>
                   </div>
@@ -1968,13 +2034,6 @@ onBeforeUnmount(() => {
                 </select>
                 <i class="pi pi-chevron-down pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs text-slate-400 dark:text-slate-500" />
               </div>
-              <span class="text-xs text-slate-500 dark:text-slate-400">
-                Nghệ sĩ của sản phẩm hiện tại (không thay đổi trong màn này).
-              </span>
-            </label>
-            <label class="space-y-2">
-              <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Tên tác giả hiển thị</span>
-              <input v-model="editForm.authorName" :class="fieldClass" placeholder="Có thể bỏ trống" />
             </label>
             <div class="space-y-2 sm:col-span-2">
               <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Thể loại</span>
@@ -2113,7 +2172,7 @@ onBeforeUnmount(() => {
             <div>
               <div class="text-xl font-semibold text-slate-950 dark:text-white">{{ selectedTrack.title }}</div>
               <div class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                {{ selectedTrack.authorName || 'Chưa có tác giả' }} · {{ formatTrackGenresDisplay(selectedTrack) }}
+                {{ resolveArtistDisplay(selectedTrack.artistId) }} · {{ formatTrackGenresDisplay(selectedTrack) }}
               </div>
             </div>
           </div>

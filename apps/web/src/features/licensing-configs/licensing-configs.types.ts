@@ -6,6 +6,21 @@ export type DigitalPlatform = 'YOUTUBE' | 'TIKTOK' | 'FACEBOOK'
 export type DigitalDurationType = 'ONE_YEAR' | 'PERPETUAL'
 export type LicensingConfigResource = 'digital' | 'physical' | 'expression' | 'modification'
 
+export type VariantPricingModifierKey =
+  | 'SUBJECT_INDIVIDUAL'
+  | 'SUBJECT_ORGANIZATION'
+  | 'DURATION_ONE_YEAR'
+  | 'DURATION_PERPETUAL'
+  | 'SCOPE_SINGLE_CHANNEL'
+  | 'SCOPE_MULTI_CHANNEL'
+  | 'EXPRESSION'
+  | 'MODIFICATION'
+
+export type PriceModifier = {
+  key: VariantPricingModifierKey
+  multiplier: number
+}
+
 export type ReferencedPermissionSummary = {
   id: string
   name: string
@@ -25,11 +40,13 @@ export type DigitalRightConfig = LicensingConfigBase & {
   targetPlatform: DigitalPlatform
   durationType: DigitalDurationType
   basePriceMultiplier: number
+  priceModifiers: PriceModifier[]
 }
 
 export type PhysicalRightConfig = LicensingConfigBase & {
   venueUsageType: string
   basePriceMultiplier: number
+  priceModifiers: PriceModifier[]
 }
 
 export type ExpressionConfig = LicensingConfigBase & {
@@ -99,6 +116,7 @@ export type CreateDigitalRightConfigPayload = {
   durationType: DigitalDurationType
   basePriceMultiplier: number
   referencedPermissionIds?: string[]
+  priceModifiers?: PriceModifier[]
 }
 
 export type UpdateDigitalRightConfigPayload = Partial<
@@ -109,6 +127,7 @@ export type CreatePhysicalRightConfigPayload = {
   venueUsageType: string
   basePriceMultiplier: number
   referencedPermissionIds?: string[]
+  priceModifiers?: PriceModifier[]
 }
 
 export type UpdatePhysicalRightConfigPayload = Partial<

@@ -27,6 +27,7 @@ import type {
   LicensingConfigResource,
   LicensingConfigStatus,
   PackageRegistrationsListQuery,
+  PriceModifier,
   ModificationConfig,
   PhysicalRightConfig,
   ReferencedPermissionSummary,
@@ -34,6 +35,7 @@ import type {
   UpdateExpressionConfigPayload,
   UpdateModificationConfigPayload,
   UpdatePhysicalRightConfigPayload,
+  VariantPricingModifierKey,
 } from '../../licensing-configs/licensing-configs.types'
 import type { ProductPackageRegistration } from '../../products/products.types'
 
@@ -211,6 +213,7 @@ const form = reactive<{
   name: string
   priceMultiplier: number
   referencedPermissionIds: string[]
+  priceModifiers: PriceModifier[]
 }>({
   targetPlatform: 'YOUTUBE',
   durationType: 'ONE_YEAR',
@@ -219,12 +222,170 @@ const form = reactive<{
   name: '',
   priceMultiplier: 1,
   referencedPermissionIds: [],
+  priceModifiers: [],
 })
 
 const currentResource = computed(() => resourceConfigMap[props.resource])
 const isExpressionOrModification = computed(
   () => props.resource === 'expression' || props.resource === 'modification',
 )
+const isDigitalOrPhysical = computed(() => props.resource === 'digital' || props.resource === 'physical')
+
+type PricingModifierGroupId = 'SUBJECT' | 'DURATION' | 'SCOPE' | 'EXPRESSION' | 'MODIFICATION'
+
+const pricingModifierGroups: Array<
+  | {
+      id: PricingModifierGroupId
+      label: string
+      kind: 'enum'
+      items: Array<{ key: VariantPricingModifierKey; label: string }>
+    }
+  | {
+      id: PricingModifierGroupId
+      label: string
+      kind: 'flag'
+      flagKey: VariantPricingModifierKey
+    }
+> = [
+  {
+    id: 'SUBJECT',
+    label: 'Đối tượng',
+    kind: 'enum',
+    items: [
+      { key: 'SUBJECT_INDIVIDUAL', label: 'Cá nhân' },
+      { key: 'SUBJECT_ORGANIZATION', label: 'Tổ chức' },
+    ],
+  },
+  {
+    id: 'DURATION',
+    label: 'Thời hạn',
+    kind: 'enum',
+    items: [
+      { key: 'DURATION_ONE_YEAR', label: '1 năm' },
+      { key: 'DURATION_PERPETUAL', label: 'Vĩnh viễn' },
+    ],
+  },
+  {
+    id: 'SCOPE',
+    label: 'Phạm vi',
+    kind: 'enum',
+    items: [
+      { key: 'SCOPE_SINGLE_CHANNEL', label: '1 kênh' },
+      { key: 'SCOPE_MULTI_CHANNEL', label: 'Đa kênh' },
+    ],
+  },
+  {
+    id: 'EXPRESSION',
+    label: 'Hình thức biểu hiện',
+    kind: 'flag',
+    flagKey: 'EXPRESSION',
+  },
+  {
+    id: 'MODIFICATION',
+    label: 'Mức độ biến đổi',
+    kind: 'flag',
+    flagKey: 'MODIFICATION',
+  },
+]
+
+const getPriceModifierMultiplier = (key: VariantPricingModifierKey) =>
+  form.priceModifiers.find((item) => item.key === key)?.multiplier ?? 1
+
+const setPriceModifierMultiplier = (key: VariantPricingModifierKey, multiplier: number) => {
+  const target = form.priceModifiers.find((item) => item.key === key)
+  if (target) {
+    target.multiplier = multiplier
+    return
+  }
+  form.priceModifiers.push({ key, multiplier })
+}
+
+const hasPriceModifierGroup = (groupId: PricingModifierGroupId) => {
+  const group = pricingModifierGroups.find((item) => item.id === groupId)
+  if (!group) return false
+
+  if (group.kind === 'flag') {
+    return form.priceModifiers.some((modifier) => modifier.key === group.flagKey)
+  }
+
+  return group.items.some((item) => form.priceModifiers.some((modifier) => modifier.key === item.key))
+}
+
+const addPriceModifierGroup = (groupId: PricingModifierGroupId) => {
+  if (!isDigitalOrPhysical.value) return
+  const group = pricingModifierGroups.find((item) => item.id === groupId)
+  if (!group) return
+
+  const existingKeys = new Set(form.priceModifiers.map((item) => item.key))
+  if (group.kind === 'flag') {
+    if (!existingKeys.has(group.flagKey)) {
+      form.priceModifiers.push({ key: group.flagKey, multiplier: 1 })
+    }
+    return
+  }
+
+  group.items
+    .filter((item) => !existingKeys.has(item.key))
+    .forEach((item) => form.priceModifiers.push({ key: item.key, multiplier: 1 }))
+}
+
+const removePriceModifierGroup = (groupId: PricingModifierGroupId) => {
+  if (!isDigitalOrPhysical.value) return
+  const group = pricingModifierGroups.find((item) => item.id === groupId)
+  if (!group) return
+
+  const removeKeys = new Set(
+    group.kind === 'flag' ? [group.flagKey] : group.items.map((item) => item.key),
+  )
+  const remaining = form.priceModifiers.filter((item) => !removeKeys.has(item.key))
+  form.priceModifiers.splice(0, form.priceModifiers.length, ...remaining)
+}
+
+const activePricingModifierGroups = computed(() =>
+  pricingModifierGroups.filter((group) => hasPriceModifierGroup(group.id)),
+)
+
+const availablePricingModifierGroups = computed(() =>
+  pricingModifierGroups.filter((group) => !hasPriceModifierGroup(group.id)),
+)
+
+const getPricingModifierGroupDescription = (
+  group: (typeof pricingModifierGroups)[number],
+) => {
+  if (group.kind === 'flag') {
+    return 'Bật thuộc tính để công thức sử dụng hệ số từ màn hình quản lý riêng.'
+  }
+
+  return `Thêm toàn bộ ${group.items.length} giá trị của thuộc tính này để chỉnh hệ số trực tiếp tại đây.`
+}
+
+const getPricingModifierGroupBadgeLabel = (
+  group: (typeof pricingModifierGroups)[number],
+) => (group.kind === 'flag' ? 'Lấy hệ số riêng' : 'Chỉnh tại đây')
+
+const getPricingModifierGroupIcon = (
+  group: (typeof pricingModifierGroups)[number],
+) => {
+  switch (group.id) {
+    case 'SUBJECT':
+      return 'pi-users'
+    case 'DURATION':
+      return 'pi-clock'
+    case 'SCOPE':
+      return 'pi-globe'
+    case 'EXPRESSION':
+      return 'pi-volume-up'
+    case 'MODIFICATION':
+      return 'pi-pencil'
+  }
+}
+
+const getPricingModifierGroupIconClass = (
+  group: (typeof pricingModifierGroups)[number],
+) =>
+  group.kind === 'flag'
+    ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300'
+    : 'bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300'
 const isNameValid = computed(() => {
   if (!isExpressionOrModification.value) return true
   return form.name.trim().length > 0
@@ -420,6 +581,7 @@ const resetForm = () => {
   form.name = ''
   form.priceMultiplier = 1
   form.referencedPermissionIds = []
+  form.priceModifiers = []
 }
 
 const fillFormFromItem = (item: AnyLicensingConfig) => {
@@ -432,12 +594,14 @@ const fillFormFromItem = (item: AnyLicensingConfig) => {
       form.targetPlatform = digitalItem.targetPlatform
       form.durationType = digitalItem.durationType
       form.basePriceMultiplier = digitalItem.basePriceMultiplier
+      form.priceModifiers = [...(digitalItem.priceModifiers ?? [])]
       break
     }
     case 'physical': {
       const physicalItem = item as PhysicalRightConfig
       form.venueUsageType = physicalItem.venueUsageType
       form.basePriceMultiplier = physicalItem.basePriceMultiplier
+      form.priceModifiers = [...(physicalItem.priceModifiers ?? [])]
       break
     }
     case 'expression': {
@@ -508,6 +672,15 @@ const openEdit = (item: AnyLicensingConfig) => {
 
 const buildCreatePayload = () => {
   const referencedPermissionIds = [...form.referencedPermissionIds]
+  const priceModifiers = isDigitalOrPhysical.value
+    ? Array.from(
+        new Map(
+          form.priceModifiers
+            .filter((item) => !!item && typeof item === 'object')
+            .map((item) => [item.key, { key: item.key, multiplier: Number(item.multiplier) }]),
+        ).values(),
+      )
+    : []
 
   switch (props.resource) {
     case 'digital':
@@ -516,12 +689,14 @@ const buildCreatePayload = () => {
         durationType: form.durationType,
         basePriceMultiplier: Number(form.basePriceMultiplier),
         referencedPermissionIds,
+        priceModifiers,
       } satisfies CreateDigitalRightConfigPayload
     case 'physical':
       return {
         venueUsageType: form.venueUsageType.trim(),
         basePriceMultiplier: Number(form.basePriceMultiplier),
         referencedPermissionIds,
+        priceModifiers,
       } satisfies CreatePhysicalRightConfigPayload
     case 'expression':
       return {
@@ -540,6 +715,15 @@ const buildCreatePayload = () => {
 
 const buildUpdatePayload = () => {
   const referencedPermissionIds = [...form.referencedPermissionIds]
+  const priceModifiers = isDigitalOrPhysical.value
+    ? Array.from(
+        new Map(
+          form.priceModifiers
+            .filter((item) => !!item && typeof item === 'object')
+            .map((item) => [item.key, { key: item.key, multiplier: Number(item.multiplier) }]),
+        ).values(),
+      )
+    : []
 
   switch (props.resource) {
     case 'digital':
@@ -548,12 +732,14 @@ const buildUpdatePayload = () => {
         durationType: form.durationType,
         basePriceMultiplier: Number(form.basePriceMultiplier),
         referencedPermissionIds,
+        priceModifiers,
       } satisfies UpdateDigitalRightConfigPayload
     case 'physical':
       return {
         venueUsageType: form.venueUsageType.trim(),
         basePriceMultiplier: Number(form.basePriceMultiplier),
         referencedPermissionIds,
+        priceModifiers,
       } satisfies UpdatePhysicalRightConfigPayload
     case 'expression':
       return {
@@ -1029,6 +1215,113 @@ onMounted(() => {
             <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Hệ số giá cơ sở</span>
             <input v-model.number="form.basePriceMultiplier" type="number" min="1" step="0.01" :class="fieldClass" :disabled="isSubmitting" />
           </label>
+          <div class="space-y-4 sm:col-span-2">
+            <div class="space-y-1">
+              <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                Yếu tố phụ thuộc
+              </span>
+              <p class="text-sm text-slate-500 dark:text-slate-400">
+                Chọn thuộc tính cần áp dụng cho gói. Với Đối tượng, Thời hạn, Phạm vi bạn chỉnh hệ số trực tiếp; với Hình thức biểu hiện và Mức độ biến đổi hệ số lấy từ màn hình quản lý riêng.
+              </p>
+            </div>
+            <div class="grid gap-3 lg:grid-cols-2">
+              <button
+                v-for="group in availablePricingModifierGroups"
+                :key="`create-digital-available-group-${group.id}`"
+                type="button"
+                class="rounded-2xl border border-slate-200/80 bg-white/80 p-4 text-left transition hover:border-violet-300 hover:bg-violet-50/60 dark:border-slate-800 dark:bg-slate-950/40 dark:hover:border-violet-500/50 dark:hover:bg-violet-500/10"
+                :disabled="isSubmitting"
+                @click="addPriceModifierGroup(group.id)"
+              >
+                <div class="flex items-start justify-between gap-3">
+                  <div class="flex min-w-0 items-start gap-3">
+                    <span
+                      class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl"
+                      :class="getPricingModifierGroupIconClass(group)"
+                    >
+                      <i class="pi text-sm" :class="getPricingModifierGroupIcon(group)" />
+                    </span>
+                    <div>
+                      <div class="text-sm font-semibold text-slate-800 dark:text-slate-100">{{ group.label }}</div>
+                      <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                        {{ getPricingModifierGroupDescription(group) }}
+                      </div>
+                    </div>
+                  </div>
+                  <span
+                    class="inline-flex shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold"
+                    :class="group.kind === 'flag'
+                      ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300'
+                      : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300'"
+                  >
+                    {{ getPricingModifierGroupBadgeLabel(group) }}
+                  </span>
+                </div>
+                <div class="mt-4">
+                  <span class="inline-flex items-center gap-2 text-sm font-semibold text-violet-600 dark:text-violet-300">
+                    <i class="pi pi-plus-circle text-xs" />
+                    Thêm thuộc tính
+                  </span>
+                </div>
+              </button>
+            </div>
+            <div v-if="availablePricingModifierGroups.length === 0" class="rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 px-4 py-3 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-400">
+              Tất cả thuộc tính hiện có đã được thêm vào gói này.
+            </div>
+            <div v-if="activePricingModifierGroups.length === 0" class="text-sm text-slate-500 dark:text-slate-400">
+              Chưa cấu hình yếu tố phụ thuộc.
+            </div>
+            <div v-else class="space-y-3">
+              <div
+                v-for="group in activePricingModifierGroups"
+                :key="`create-digital-active-group-${group.id}`"
+                class="rounded-2xl border border-slate-200/80 bg-white/70 px-4 py-3 dark:border-slate-800 dark:bg-slate-950/40"
+              >
+                <div class="flex items-center justify-between gap-3">
+                  <div class="flex min-w-0 items-start gap-3">
+                    <span
+                      class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl"
+                      :class="getPricingModifierGroupIconClass(group)"
+                    >
+                      <i class="pi text-sm" :class="getPricingModifierGroupIcon(group)" />
+                    </span>
+                    <div>
+                      <div class="text-sm font-semibold text-slate-700 dark:text-slate-200">{{ group.label }}</div>
+                      <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                        {{ getPricingModifierGroupDescription(group) }}
+                      </div>
+                    </div>
+                  </div>
+                  <button type="button" :class="iconButtonClass" :disabled="isSubmitting" @click="removePriceModifierGroup(group.id)">
+                    <i class="pi pi-times" />
+                  </button>
+                </div>
+                <div class="mt-3 space-y-2">
+                  <div v-if="group.kind === 'flag'" class="text-sm text-slate-500 dark:text-slate-400">
+                    Hệ số được quản lý ở màn hình riêng. Chỉ cần bật thuộc tính này để áp dụng vào công thức tính giá.
+                  </div>
+                  <div v-else>
+                    <div
+                      v-for="item in group.items"
+                      :key="`create-digital-modifier-${item.key}`"
+                      class="grid gap-2 rounded-2xl border border-slate-200/70 bg-slate-50/80 p-3 dark:border-slate-800 dark:bg-slate-900/40 sm:grid-cols-[minmax(96px,max-content)_minmax(0,1fr)] sm:items-center sm:gap-3"
+                    >
+                      <div class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ item.label }}</div>
+                      <input
+                        type="number"
+                        min="1"
+                        step="0.01"
+                        :class="fieldClass"
+                        :disabled="isSubmitting"
+                        :value="getPriceModifierMultiplier(item.key)"
+                        @input="setPriceModifierMultiplier(item.key, Number(($event.target as HTMLInputElement).value))"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </template>
 
         <template v-if="props.resource === 'physical'">
@@ -1043,6 +1336,113 @@ onMounted(() => {
             <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Hệ số giá cơ sở</span>
             <input v-model.number="form.basePriceMultiplier" type="number" min="1" step="0.01" :class="fieldClass" :disabled="isSubmitting" />
           </label>
+          <div class="space-y-4 sm:col-span-2">
+            <div class="space-y-1">
+              <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                Yếu tố phụ thuộc
+              </span>
+              <p class="text-sm text-slate-500 dark:text-slate-400">
+                Chọn thuộc tính cần áp dụng cho gói. Với Đối tượng, Thời hạn, Phạm vi bạn chỉnh hệ số trực tiếp; với Hình thức biểu hiện và Mức độ biến đổi hệ số lấy từ màn hình quản lý riêng.
+              </p>
+            </div>
+            <div class="grid gap-3 lg:grid-cols-2">
+              <button
+                v-for="group in availablePricingModifierGroups"
+                :key="`create-physical-available-group-${group.id}`"
+                type="button"
+                class="rounded-2xl border border-slate-200/80 bg-white/80 p-4 text-left transition hover:border-violet-300 hover:bg-violet-50/60 dark:border-slate-800 dark:bg-slate-950/40 dark:hover:border-violet-500/50 dark:hover:bg-violet-500/10"
+                :disabled="isSubmitting"
+                @click="addPriceModifierGroup(group.id)"
+              >
+                <div class="flex items-start justify-between gap-3">
+                  <div class="flex min-w-0 items-start gap-3">
+                    <span
+                      class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl"
+                      :class="getPricingModifierGroupIconClass(group)"
+                    >
+                      <i class="pi text-sm" :class="getPricingModifierGroupIcon(group)" />
+                    </span>
+                    <div>
+                      <div class="text-sm font-semibold text-slate-800 dark:text-slate-100">{{ group.label }}</div>
+                      <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                        {{ getPricingModifierGroupDescription(group) }}
+                      </div>
+                    </div>
+                  </div>
+                  <span
+                    class="inline-flex shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold"
+                    :class="group.kind === 'flag'
+                      ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300'
+                      : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300'"
+                  >
+                    {{ getPricingModifierGroupBadgeLabel(group) }}
+                  </span>
+                </div>
+                <div class="mt-4">
+                  <span class="inline-flex items-center gap-2 text-sm font-semibold text-violet-600 dark:text-violet-300">
+                    <i class="pi pi-plus-circle text-xs" />
+                    Thêm thuộc tính
+                  </span>
+                </div>
+              </button>
+            </div>
+            <div v-if="availablePricingModifierGroups.length === 0" class="rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 px-4 py-3 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-400">
+              Tất cả thuộc tính hiện có đã được thêm vào gói này.
+            </div>
+            <div v-if="activePricingModifierGroups.length === 0" class="text-sm text-slate-500 dark:text-slate-400">
+              Chưa cấu hình yếu tố phụ thuộc.
+            </div>
+            <div v-else class="space-y-3">
+              <div
+                v-for="group in activePricingModifierGroups"
+                :key="`create-physical-active-group-${group.id}`"
+                class="rounded-2xl border border-slate-200/80 bg-white/70 px-4 py-3 dark:border-slate-800 dark:bg-slate-950/40"
+              >
+                <div class="flex items-center justify-between gap-3">
+                  <div class="flex min-w-0 items-start gap-3">
+                    <span
+                      class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl"
+                      :class="getPricingModifierGroupIconClass(group)"
+                    >
+                      <i class="pi text-sm" :class="getPricingModifierGroupIcon(group)" />
+                    </span>
+                    <div>
+                      <div class="text-sm font-semibold text-slate-700 dark:text-slate-200">{{ group.label }}</div>
+                      <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                        {{ getPricingModifierGroupDescription(group) }}
+                      </div>
+                    </div>
+                  </div>
+                  <button type="button" :class="iconButtonClass" :disabled="isSubmitting" @click="removePriceModifierGroup(group.id)">
+                    <i class="pi pi-times" />
+                  </button>
+                </div>
+                <div class="mt-3 space-y-2">
+                  <div v-if="group.kind === 'flag'" class="text-sm text-slate-500 dark:text-slate-400">
+                    Hệ số được quản lý ở màn hình riêng. Chỉ cần bật thuộc tính này để áp dụng vào công thức tính giá.
+                  </div>
+                  <div v-else>
+                    <div
+                      v-for="item in group.items"
+                      :key="`create-physical-modifier-${item.key}`"
+                      class="grid gap-2 rounded-2xl border border-slate-200/70 bg-slate-50/80 p-3 dark:border-slate-800 dark:bg-slate-900/40 sm:grid-cols-[minmax(96px,max-content)_minmax(0,1fr)] sm:items-center sm:gap-3"
+                    >
+                      <div class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ item.label }}</div>
+                      <input
+                        type="number"
+                        min="1"
+                        step="0.01"
+                        :class="fieldClass"
+                        :disabled="isSubmitting"
+                        :value="getPriceModifierMultiplier(item.key)"
+                        @input="setPriceModifierMultiplier(item.key, Number(($event.target as HTMLInputElement).value))"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </template>
 
         <template v-if="props.resource === 'expression' || props.resource === 'modification'">
@@ -1155,6 +1555,113 @@ onMounted(() => {
             <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Hệ số giá cơ sở</span>
             <input v-model.number="form.basePriceMultiplier" type="number" min="1" step="0.01" :class="fieldClass" :disabled="isSubmitting" />
           </label>
+          <div class="space-y-4 sm:col-span-2">
+            <div class="space-y-1">
+              <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                Yếu tố phụ thuộc
+              </span>
+              <p class="text-sm text-slate-500 dark:text-slate-400">
+                Chọn thuộc tính cần áp dụng cho gói. Với Đối tượng, Thời hạn, Phạm vi bạn chỉnh hệ số trực tiếp; với Hình thức biểu hiện và Mức độ biến đổi hệ số lấy từ màn hình quản lý riêng.
+              </p>
+            </div>
+            <div class="grid gap-3 lg:grid-cols-2">
+              <button
+                v-for="group in availablePricingModifierGroups"
+                :key="`edit-digital-available-group-${group.id}`"
+                type="button"
+                class="rounded-2xl border border-slate-200/80 bg-white/80 p-4 text-left transition hover:border-violet-300 hover:bg-violet-50/60 dark:border-slate-800 dark:bg-slate-950/40 dark:hover:border-violet-500/50 dark:hover:bg-violet-500/10"
+                :disabled="isSubmitting"
+                @click="addPriceModifierGroup(group.id)"
+              >
+                <div class="flex items-start justify-between gap-3">
+                  <div class="flex min-w-0 items-start gap-3">
+                    <span
+                      class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl"
+                      :class="getPricingModifierGroupIconClass(group)"
+                    >
+                      <i class="pi text-sm" :class="getPricingModifierGroupIcon(group)" />
+                    </span>
+                    <div>
+                      <div class="text-sm font-semibold text-slate-800 dark:text-slate-100">{{ group.label }}</div>
+                      <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                        {{ getPricingModifierGroupDescription(group) }}
+                      </div>
+                    </div>
+                  </div>
+                  <span
+                    class="inline-flex shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold"
+                    :class="group.kind === 'flag'
+                      ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300'
+                      : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300'"
+                  >
+                    {{ getPricingModifierGroupBadgeLabel(group) }}
+                  </span>
+                </div>
+                <div class="mt-4">
+                  <span class="inline-flex items-center gap-2 text-sm font-semibold text-violet-600 dark:text-violet-300">
+                    <i class="pi pi-plus-circle text-xs" />
+                    Thêm thuộc tính
+                  </span>
+                </div>
+              </button>
+            </div>
+            <div v-if="availablePricingModifierGroups.length === 0" class="rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 px-4 py-3 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-400">
+              Tất cả thuộc tính hiện có đã được thêm vào gói này.
+            </div>
+            <div v-if="activePricingModifierGroups.length === 0" class="text-sm text-slate-500 dark:text-slate-400">
+              Chưa cấu hình yếu tố phụ thuộc.
+            </div>
+            <div v-else class="space-y-3">
+              <div
+                v-for="group in activePricingModifierGroups"
+                :key="`edit-digital-active-group-${group.id}`"
+                class="rounded-2xl border border-slate-200/80 bg-white/70 px-4 py-3 dark:border-slate-800 dark:bg-slate-950/40"
+              >
+                <div class="flex items-center justify-between gap-3">
+                  <div class="flex min-w-0 items-start gap-3">
+                    <span
+                      class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl"
+                      :class="getPricingModifierGroupIconClass(group)"
+                    >
+                      <i class="pi text-sm" :class="getPricingModifierGroupIcon(group)" />
+                    </span>
+                    <div>
+                      <div class="text-sm font-semibold text-slate-700 dark:text-slate-200">{{ group.label }}</div>
+                      <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                        {{ getPricingModifierGroupDescription(group) }}
+                      </div>
+                    </div>
+                  </div>
+                  <button type="button" :class="iconButtonClass" :disabled="isSubmitting" @click="removePriceModifierGroup(group.id)">
+                    <i class="pi pi-times" />
+                  </button>
+                </div>
+                <div class="mt-3 space-y-2">
+                  <div v-if="group.kind === 'flag'" class="text-sm text-slate-500 dark:text-slate-400">
+                    Hệ số được quản lý ở màn hình riêng. Chỉ cần bật thuộc tính này để áp dụng vào công thức tính giá.
+                  </div>
+                  <div v-else>
+                    <div
+                      v-for="item in group.items"
+                      :key="`edit-digital-modifier-${item.key}`"
+                      class="grid gap-2 rounded-2xl border border-slate-200/70 bg-slate-50/80 p-3 dark:border-slate-800 dark:bg-slate-900/40 sm:grid-cols-[minmax(96px,max-content)_minmax(0,1fr)] sm:items-center sm:gap-3"
+                    >
+                      <div class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ item.label }}</div>
+                      <input
+                        type="number"
+                        min="1"
+                        step="0.01"
+                        :class="fieldClass"
+                        :disabled="isSubmitting"
+                        :value="getPriceModifierMultiplier(item.key)"
+                        @input="setPriceModifierMultiplier(item.key, Number(($event.target as HTMLInputElement).value))"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </template>
 
         <template v-if="props.resource === 'physical'">
@@ -1166,6 +1673,113 @@ onMounted(() => {
             <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Hệ số giá cơ sở</span>
             <input v-model.number="form.basePriceMultiplier" type="number" min="1" step="0.01" :class="fieldClass" :disabled="isSubmitting" />
           </label>
+          <div class="space-y-4 sm:col-span-2">
+            <div class="space-y-1">
+              <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                Yếu tố phụ thuộc
+              </span>
+              <p class="text-sm text-slate-500 dark:text-slate-400">
+                Chọn thuộc tính cần áp dụng cho gói. Với Đối tượng, Thời hạn, Phạm vi bạn chỉnh hệ số trực tiếp; với Hình thức biểu hiện và Mức độ biến đổi hệ số lấy từ màn hình quản lý riêng.
+              </p>
+            </div>
+            <div class="grid gap-3 lg:grid-cols-2">
+              <button
+                v-for="group in availablePricingModifierGroups"
+                :key="`edit-physical-available-group-${group.id}`"
+                type="button"
+                class="rounded-2xl border border-slate-200/80 bg-white/80 p-4 text-left transition hover:border-violet-300 hover:bg-violet-50/60 dark:border-slate-800 dark:bg-slate-950/40 dark:hover:border-violet-500/50 dark:hover:bg-violet-500/10"
+                :disabled="isSubmitting"
+                @click="addPriceModifierGroup(group.id)"
+              >
+                <div class="flex items-start justify-between gap-3">
+                  <div class="flex min-w-0 items-start gap-3">
+                    <span
+                      class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl"
+                      :class="getPricingModifierGroupIconClass(group)"
+                    >
+                      <i class="pi text-sm" :class="getPricingModifierGroupIcon(group)" />
+                    </span>
+                    <div>
+                      <div class="text-sm font-semibold text-slate-800 dark:text-slate-100">{{ group.label }}</div>
+                      <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                        {{ getPricingModifierGroupDescription(group) }}
+                      </div>
+                    </div>
+                  </div>
+                  <span
+                    class="inline-flex shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold"
+                    :class="group.kind === 'flag'
+                      ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300'
+                      : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300'"
+                  >
+                    {{ getPricingModifierGroupBadgeLabel(group) }}
+                  </span>
+                </div>
+                <div class="mt-4">
+                  <span class="inline-flex items-center gap-2 text-sm font-semibold text-violet-600 dark:text-violet-300">
+                    <i class="pi pi-plus-circle text-xs" />
+                    Thêm thuộc tính
+                  </span>
+                </div>
+              </button>
+            </div>
+            <div v-if="availablePricingModifierGroups.length === 0" class="rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 px-4 py-3 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-400">
+              Tất cả thuộc tính hiện có đã được thêm vào gói này.
+            </div>
+            <div v-if="activePricingModifierGroups.length === 0" class="text-sm text-slate-500 dark:text-slate-400">
+              Chưa cấu hình yếu tố phụ thuộc.
+            </div>
+            <div v-else class="space-y-3">
+              <div
+                v-for="group in activePricingModifierGroups"
+                :key="`edit-physical-active-group-${group.id}`"
+                class="rounded-2xl border border-slate-200/80 bg-white/70 px-4 py-3 dark:border-slate-800 dark:bg-slate-950/40"
+              >
+                <div class="flex items-center justify-between gap-3">
+                  <div class="flex min-w-0 items-start gap-3">
+                    <span
+                      class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl"
+                      :class="getPricingModifierGroupIconClass(group)"
+                    >
+                      <i class="pi text-sm" :class="getPricingModifierGroupIcon(group)" />
+                    </span>
+                    <div>
+                      <div class="text-sm font-semibold text-slate-700 dark:text-slate-200">{{ group.label }}</div>
+                      <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                        {{ getPricingModifierGroupDescription(group) }}
+                      </div>
+                    </div>
+                  </div>
+                  <button type="button" :class="iconButtonClass" :disabled="isSubmitting" @click="removePriceModifierGroup(group.id)">
+                    <i class="pi pi-times" />
+                  </button>
+                </div>
+                <div class="mt-3 space-y-2">
+                  <div v-if="group.kind === 'flag'" class="text-sm text-slate-500 dark:text-slate-400">
+                    Hệ số được quản lý ở màn hình riêng. Chỉ cần bật thuộc tính này để áp dụng vào công thức tính giá.
+                  </div>
+                  <div v-else>
+                    <div
+                      v-for="item in group.items"
+                      :key="`edit-physical-modifier-${item.key}`"
+                      class="grid gap-2 rounded-2xl border border-slate-200/70 bg-slate-50/80 p-3 dark:border-slate-800 dark:bg-slate-900/40 sm:grid-cols-[minmax(96px,max-content)_minmax(0,1fr)] sm:items-center sm:gap-3"
+                    >
+                      <div class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ item.label }}</div>
+                      <input
+                        type="number"
+                        min="1"
+                        step="0.01"
+                        :class="fieldClass"
+                        :disabled="isSubmitting"
+                        :value="getPriceModifierMultiplier(item.key)"
+                        @input="setPriceModifierMultiplier(item.key, Number(($event.target as HTMLInputElement).value))"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </template>
 
         <template v-if="props.resource === 'expression' || props.resource === 'modification'">
