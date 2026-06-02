@@ -36,11 +36,18 @@ export const SCOPE_MULTIPLIERS: Record<VariantScope, number> = {
 };
 
 export const resolveModifierKeyFromSelection = (selection: {
-  subject: VariantSubject;
-  duration: VariantDuration;
-  scope: VariantScope;
-}): VariantPricingModifierKey[] => [
-  `SUBJECT_${selection.subject}` as VariantPricingModifierKey,
-  `DURATION_${selection.duration}` as VariantPricingModifierKey,
-  `SCOPE_${selection.scope}` as VariantPricingModifierKey,
-];
+  subject?: VariantSubject;
+  duration?: VariantDuration;
+  scope?: VariantScope;
+}): VariantPricingModifierKey[] =>
+  [
+    selection.subject
+      ? (`SUBJECT_${selection.subject}` as VariantPricingModifierKey)
+      : null,
+    selection.duration
+      ? (`DURATION_${selection.duration}` as VariantPricingModifierKey)
+      : null,
+    selection.scope
+      ? (`SCOPE_${selection.scope}` as VariantPricingModifierKey)
+      : null,
+  ].filter((value): value is VariantPricingModifierKey => value !== null);

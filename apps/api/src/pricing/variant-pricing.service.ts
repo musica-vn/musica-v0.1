@@ -187,35 +187,41 @@ export class VariantPricingService {
       lineTotal: roundVnd(currentTotal),
     });
 
-    const subjectMultiplier = isSubjectEnabled ? SUBJECT_MULTIPLIERS[payload.subject] : 1;
-    currentTotal *= subjectMultiplier;
-    breakdown.push({
-      key: `SUBJECT_${payload.subject}`,
-      label: 'Đối tượng',
-      selected: payload.subject,
-      multiplier: subjectMultiplier,
-      lineTotal: roundVnd(currentTotal),
-    });
+    if (isSubjectEnabled && payload.subject) {
+      const subjectMultiplier = SUBJECT_MULTIPLIERS[payload.subject];
+      currentTotal *= subjectMultiplier;
+      breakdown.push({
+        key: `SUBJECT_${payload.subject}`,
+        label: 'Đối tượng',
+        selected: payload.subject,
+        multiplier: subjectMultiplier,
+        lineTotal: roundVnd(currentTotal),
+      });
+    }
 
-    const durationMultiplier = isDurationEnabled ? DURATION_MULTIPLIERS[payload.duration] : 1;
-    currentTotal *= durationMultiplier;
-    breakdown.push({
-      key: `DURATION_${payload.duration}`,
-      label: 'Thời hạn',
-      selected: payload.duration,
-      multiplier: durationMultiplier,
-      lineTotal: roundVnd(currentTotal),
-    });
+    if (isDurationEnabled && payload.duration) {
+      const durationMultiplier = DURATION_MULTIPLIERS[payload.duration];
+      currentTotal *= durationMultiplier;
+      breakdown.push({
+        key: `DURATION_${payload.duration}`,
+        label: 'Thời hạn',
+        selected: payload.duration,
+        multiplier: durationMultiplier,
+        lineTotal: roundVnd(currentTotal),
+      });
+    }
 
-    const scopeMultiplier = isScopeEnabled ? SCOPE_MULTIPLIERS[payload.scope] : 1;
-    currentTotal *= scopeMultiplier;
-    breakdown.push({
-      key: `SCOPE_${payload.scope}`,
-      label: 'Phạm vi',
-      selected: payload.scope,
-      multiplier: scopeMultiplier,
-      lineTotal: roundVnd(currentTotal),
-    });
+    if (isScopeEnabled && payload.scope) {
+      const scopeMultiplier = SCOPE_MULTIPLIERS[payload.scope];
+      currentTotal *= scopeMultiplier;
+      breakdown.push({
+        key: `SCOPE_${payload.scope}`,
+        label: 'Phạm vi',
+        selected: payload.scope,
+        multiplier: scopeMultiplier,
+        lineTotal: roundVnd(currentTotal),
+      });
+    }
 
     selectionKeys.forEach((key) => {
       const multiplier = modifierMap.get(key);

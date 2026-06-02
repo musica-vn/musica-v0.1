@@ -33,17 +33,20 @@ export class PublicVariantPricingCalculateRequestDto {
   @IsUUID('4')
   physicalRightConfigId?: string;
 
-  @ApiProperty({ enum: VARIANT_SUBJECT_OPTIONS })
+  @ApiPropertyOptional({ enum: VARIANT_SUBJECT_OPTIONS })
+  @IsOptional()
   @IsIn(VARIANT_SUBJECT_OPTIONS)
-  subject: VariantSubject;
+  subject?: VariantSubject;
 
-  @ApiProperty({ enum: VARIANT_DURATION_OPTIONS })
+  @ApiPropertyOptional({ enum: VARIANT_DURATION_OPTIONS })
+  @IsOptional()
   @IsIn(VARIANT_DURATION_OPTIONS)
-  duration: VariantDuration;
+  duration?: VariantDuration;
 
-  @ApiProperty({ enum: VARIANT_SCOPE_OPTIONS })
+  @ApiPropertyOptional({ enum: VARIANT_SCOPE_OPTIONS })
+  @IsOptional()
   @IsIn(VARIANT_SCOPE_OPTIONS)
-  scope: VariantScope;
+  scope?: VariantScope;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -85,4 +88,3 @@ export class PublicVariantPricingCalculateDataDto {
   @Type(() => VariantPricingBreakdownLineDto)
   breakdown: VariantPricingBreakdownLineDto[];
 }
-

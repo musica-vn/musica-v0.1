@@ -82,7 +82,54 @@ describe('VariantPricingService', () => {
 
     expect(result.currency).toBe('VND');
     expect(result.totalPrice).toBe(3_036_000);
-    expect(result.breakdown).toHaveLength(7);
+    expect(result.breakdown).toHaveLength(5);
+  });
+
+  it('allows omitting optional dependent attributes without applying their multipliers', async () => {
+    const mock = createMockSupabaseClient();
+
+    const configId = '00000000-0000-0000-0000-000000000011';
+
+    mock.from.mockImplementation((table: string) => {
+      if (table === 'digital_right_configs') {
+        return mock.buildConfigQuery({
+          data: { id: configId, base_price_multiplier: 2 },
+          error: null,
+        });
+      }
+      if (table === 'digital_right_config_price_modifiers') {
+        return mock.buildModifiersQuery({
+          data: [
+            { modifier_key: 'SUBJECT_INDIVIDUAL', multiplier: 3 },
+            { modifier_key: 'DURATION_ONE_YEAR', multiplier: 4 },
+            { modifier_key: 'SCOPE_SINGLE_CHANNEL', multiplier: 5 },
+          ],
+          error: null,
+        });
+      }
+      if (table === 'expression_configs') {
+        return mock.buildGenericMaybeSingleQuery({ data: null, error: null });
+      }
+      if (table === 'modification_configs') {
+        return mock.buildGenericMaybeSingleQuery({ data: null, error: null });
+      }
+      throw new Error(`Unexpected table: ${table}`);
+    });
+
+    const service = createService(mock as any);
+
+    const result = await service.calculate({
+      platformType: 'DIGITAL',
+      digitalRightConfigId: configId,
+    });
+
+    expect(result.currency).toBe('VND');
+    expect(result.totalPrice).toBe(506_000);
+    expect(result.breakdown.map((line) => line.key)).toEqual([
+      'BASE_PRICE',
+      'PLATFORM_BASE_MULTIPLIER',
+      'DIGITAL_TOTAL_RATE',
+    ]);
   });
 
   it('calculates PHYSICAL total without 10% rate and with expression multiplier', async () => {
@@ -121,9 +168,6 @@ describe('VariantPricingService', () => {
     const result = await service.calculate({
       platformType: 'PHYSICAL',
       physicalRightConfigId: configId,
-      subject: 'INDIVIDUAL',
-      duration: 'ONE_YEAR',
-      scope: 'SINGLE_CHANNEL',
       expressionConfigId: expressionId,
     });
 
