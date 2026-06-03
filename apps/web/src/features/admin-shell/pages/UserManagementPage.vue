@@ -388,83 +388,85 @@ const removeUser = (row: ManagedUser) => {
         <Message v-if="errorMessage" severity="error">{{ errorMessage }}</Message>
       </div>
 
-      <div class="mt-6">
-        <DataTable
-          :value="managedUsersStore.items"
-          paginator
-          lazy
-          size="small"
-          :rows="pageSize"
-          :first="first"
-          :totalRecords="managedUsersStore.totalItems"
-          :loading="managedUsersStore.isLoading || isActionLoading"
-          class="overflow-hidden rounded-[24px]"
-          @page="onPage"
-        >
-          <Column field="fullName" header="Tên user" />
-          <Column field="email" header="Email" />
-          <Column header="Vai trò">
-            <template #body="{ data }">
-              <div class="flex flex-wrap gap-2">
-                <span
-                  v-for="role in data.roles"
-                  :key="`${data.id}-${role.roleId}`"
-                  class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300"
-                >
-                  {{ role.roleName }}
+      <div class="mt-6 overflow-hidden rounded-[24px] border border-slate-200/80 bg-white dark:border-slate-800 dark:bg-slate-950/40">
+        <div class="overflow-x-auto">
+          <DataTable
+            :value="managedUsersStore.items"
+            paginator
+            lazy
+            size="small"
+            :rows="pageSize"
+            :first="first"
+            :totalRecords="managedUsersStore.totalItems"
+            :loading="managedUsersStore.isLoading || isActionLoading"
+            class="min-w-[960px]"
+            @page="onPage"
+          >
+            <Column field="fullName" header="Tên user" />
+            <Column field="email" header="Email" />
+            <Column header="Vai trò">
+              <template #body="{ data }">
+                <div class="flex flex-wrap gap-2">
+                  <span
+                    v-for="role in data.roles"
+                    :key="`${data.id}-${role.roleId}`"
+                    class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300"
+                  >
+                    {{ role.roleName }}
+                  </span>
+                </div>
+              </template>
+            </Column>
+            <Column header="Trạng thái">
+              <template #body="{ data }">
+                <Tag
+                  :value="data.status"
+                  :severity="
+                    data.status === 'ACTIVE'
+                      ? 'success'
+                      : data.status === 'LOCKED'
+                        ? 'warning'
+                        : 'danger'
+                  "
+                />
+              </template>
+            </Column>
+            <Column header="Ngày tạo">
+              <template #body="{ data }">
+                <span class="text-sm text-slate-600 dark:text-slate-300">
+                  {{ formatDateTime(data.createdAt) }}
                 </span>
-              </div>
-            </template>
-          </Column>
-          <Column header="Trạng thái">
-            <template #body="{ data }">
-              <Tag
-                :value="data.status"
-                :severity="
-                  data.status === 'ACTIVE'
-                    ? 'success'
-                    : data.status === 'LOCKED'
-                      ? 'warning'
-                      : 'danger'
-                "
-              />
-            </template>
-          </Column>
-          <Column header="Ngày tạo">
-            <template #body="{ data }">
-              <span class="text-sm text-slate-600 dark:text-slate-300">
-                {{ formatDateTime(data.createdAt) }}
-              </span>
-            </template>
-          </Column>
-          <Column header="Thao tác">
-            <template #body="{ data }">
-              <div class="flex flex-wrap gap-2">
-                <Button
-                  label="Sửa"
-                  size="small"
-                  severity="secondary"
-                  :disabled="isActionLoading"
-                  @click="openEdit(data)"
-                />
-                <Button
-                  :label="data.status === 'ACTIVE' ? 'Khoá' : 'Mở khoá'"
-                  size="small"
-                  severity="warning"
-                  :disabled="isActionLoading"
-                  @click="toggleLock(data)"
-                />
-                <Button
-                  label="Xoá"
-                  size="small"
-                  severity="danger"
-                  :disabled="isActionLoading"
-                  @click="removeUser(data)"
-                />
-              </div>
-            </template>
-          </Column>
-        </DataTable>
+              </template>
+            </Column>
+            <Column header="Thao tác">
+              <template #body="{ data }">
+                <div class="flex flex-wrap gap-2">
+                  <Button
+                    label="Sửa"
+                    size="small"
+                    severity="secondary"
+                    :disabled="isActionLoading"
+                    @click="openEdit(data)"
+                  />
+                  <Button
+                    :label="data.status === 'ACTIVE' ? 'Khoá' : 'Mở khoá'"
+                    size="small"
+                    severity="warning"
+                    :disabled="isActionLoading"
+                    @click="toggleLock(data)"
+                  />
+                  <Button
+                    label="Xoá"
+                    size="small"
+                    severity="danger"
+                    :disabled="isActionLoading"
+                    @click="removeUser(data)"
+                  />
+                </div>
+              </template>
+            </Column>
+          </DataTable>
+        </div>
       </div>
     </section>
 

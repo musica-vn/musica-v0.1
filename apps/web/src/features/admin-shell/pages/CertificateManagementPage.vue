@@ -352,7 +352,7 @@ onMounted(async () => {
       </article>
     </section>
 
-    <section class="grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(380px,0.8fr)]">
+    <section class="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(380px,0.8fr)]">
       <div class="space-y-6">
         <section class="rounded-[32px] border border-slate-200/80 bg-white/85 p-5 shadow-xl shadow-slate-200/40 backdrop-blur dark:border-slate-800 dark:bg-slate-950/70 dark:shadow-black/20">
           <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">

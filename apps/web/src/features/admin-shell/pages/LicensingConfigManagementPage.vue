@@ -1089,7 +1089,7 @@ onMounted(() => {
 
       <div class="mt-6 overflow-hidden rounded-[24px] border border-slate-200/80 bg-white dark:border-slate-800 dark:bg-slate-950/40">
         <div class="overflow-x-auto">
-          <table class="min-w-full border-separate border-spacing-0 text-left text-sm">
+          <table class="min-w-[980px] border-separate border-spacing-0 text-left text-sm">
             <thead class="bg-slate-50 text-xs uppercase tracking-[0.18em] text-slate-500 dark:bg-slate-950/60 dark:text-slate-300">
               <tr>
                 <th class="px-4 py-4 font-semibold">{{ currentResource.detailColumnLabel }}</th>
