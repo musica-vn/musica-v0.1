@@ -1605,24 +1605,24 @@ onBeforeUnmount(() => {
           </div>
         </div>
 
-        <div class="flex flex-col gap-3 xl:min-w-[980px]">
-          <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <div class="flex min-w-0 flex-col gap-3 xl:min-w-0 xl:max-w-[980px] xl:flex-1">
+          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <ProductFilterInput v-model="filters.keyword" icon-class="pi pi-search" placeholder="Tìm theo tên, tác giả hoặc thể loại" :disabled="isLoading" />
             <ProductFilterInput v-model="filters.genre" icon-class="pi pi-sliders-h" placeholder="Thể loại" :disabled="isLoading" />
             <ProductFilterSelect v-model="filters.status" icon-class="pi pi-tag" :options="statusOptions" :disabled="isLoading" />
             <ProductFilterSelect v-model="filters.sort" icon-class="pi pi-sort-alt" :options="sortOptions" :disabled="isLoading" />
           </div>
 
-          <div class="flex flex-wrap items-center justify-end gap-2">
-            <button type="button" :class="secondaryButtonClass" :disabled="isLoading" @click="refreshTrackDashboard">
+          <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
+            <button type="button" :class="[secondaryButtonClass, 'w-full sm:w-auto']" :disabled="isLoading" @click="refreshTrackDashboard">
               <i class="pi pi-filter mr-2" />
               Lọc
             </button>
-            <button type="button" :class="secondaryButtonClass" :disabled="rows.length === 0" @click="exportCurrentTracksCsv">
+            <button type="button" :class="[secondaryButtonClass, 'w-full sm:w-auto']" :disabled="rows.length === 0" @click="exportCurrentTracksCsv">
               <i class="pi pi-download mr-2" />
               Xuất dữ liệu
             </button>
-            <button type="button" :class="primaryButtonClass" :disabled="isLoading" @click="openCreateDialog">
+            <button type="button" :class="[primaryButtonClass, 'w-full sm:w-auto']" :disabled="isLoading" @click="openCreateDialog">
               <i class="pi pi-plus mr-2" />
               Thêm sản phẩm
             </button>

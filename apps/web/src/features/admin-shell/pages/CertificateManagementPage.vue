@@ -359,7 +359,7 @@ onMounted(async () => {
             <div>
               <div class="text-xl font-semibold text-slate-950 dark:text-white">Danh sách chứng chỉ</div>
             </div>
-            <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            <div class="grid w-full grid-cols-1 gap-3 sm:grid-cols-2 xl:max-w-[780px] xl:grid-cols-3">
               <ProductFilterInput v-model="filters.buyerKeyword" icon-class="pi pi-user" placeholder="Người mua" :disabled="isLoading" />
               <ProductFilterInput v-model="filters.trackKeyword" icon-class="pi pi-wave-pulse" placeholder="Track" :disabled="isLoading" />
               <ProductFilterSelect v-model="filters.status" icon-class="pi pi-tag" :options="statusOptions" :disabled="isLoading" />
@@ -377,16 +377,16 @@ onMounted(async () => {
             </div>
           </div>
 
-          <div class="mt-4 flex flex-wrap gap-3">
+          <div class="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
             <button
               type="button"
-              :class="secondaryButtonClass"
+              :class="[secondaryButtonClass, 'w-full sm:w-auto']"
               :disabled="isLoading"
               @click="() => { pagination.page = 1; void fetchCertificates() }"
             >
               Tìm kiếm
             </button>
-            <button type="button" :class="secondaryButtonClass" :disabled="isLoading" @click="() => void resetFilters()">
+            <button type="button" :class="[secondaryButtonClass, 'w-full sm:w-auto']" :disabled="isLoading" @click="() => void resetFilters()">
               Đặt lại
             </button>
           </div>

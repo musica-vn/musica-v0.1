@@ -375,15 +375,15 @@ const confirmDelete = async () => {
           </div>
         </div>
 
-        <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-[320px_190px_190px_auto_auto]">
-          <InputText v-model="keyword" placeholder="Tìm theo email hoặc họ tên" class="w-full" />
+        <div class="grid w-full grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(0,320px)_190px_190px_auto_auto] xl:items-end">
+          <InputText v-model="keyword" placeholder="Tìm theo email hoặc họ tên" class="w-full min-w-0" />
           <Dropdown
             v-model="statusFilter"
             :options="statusOptions"
             optionLabel="label"
             optionValue="value"
             placeholder="Trạng thái"
-            class="w-full"
+            class="w-full min-w-0"
           />
           <Dropdown
             v-model="sortValue"
@@ -391,10 +391,10 @@ const confirmDelete = async () => {
             optionLabel="label"
             optionValue="value"
             placeholder="Sắp xếp"
-            class="w-full"
+            class="w-full min-w-0"
           />
-          <Button label="Tìm kiếm" severity="secondary" :disabled="adminsStore.isLoading || isMutating" @click="loadAdmins" />
-          <Button label="Làm mới" severity="contrast" outlined :disabled="adminsStore.isLoading || isMutating" @click="loadAdmins" />
+          <Button label="Tìm kiếm" severity="secondary" class="w-full xl:w-auto" :disabled="adminsStore.isLoading || isMutating" @click="loadAdmins" />
+          <Button label="Làm mới" severity="contrast" outlined class="w-full xl:w-auto" :disabled="adminsStore.isLoading || isMutating" @click="loadAdmins" />
         </div>
       </div>
 

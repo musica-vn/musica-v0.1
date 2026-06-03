@@ -8,11 +8,11 @@ import { useCorePermissionsStore } from '../../core-permissions/core-permissions
 import type { CorePermission, CorePermissionStatus } from '../../core-permissions/core-permissions.types'
 
 const fieldClass =
-  'h-12 w-full rounded-2xl border border-slate-200/80 bg-white/90 px-4 text-sm text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-violet-400 focus:ring-4 focus:ring-violet-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-800 dark:bg-slate-950/70 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-violet-500 dark:focus:ring-violet-500/20'
+  'h-12 w-full min-w-0 rounded-2xl border border-slate-200/80 bg-white/90 px-4 text-sm text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-violet-400 focus:ring-4 focus:ring-violet-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-800 dark:bg-slate-950/70 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-violet-500 dark:focus:ring-violet-500/20'
 const textAreaClass =
   'min-h-[132px] w-full rounded-2xl border border-slate-200/80 bg-white/90 px-4 py-3 text-sm text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-violet-400 focus:ring-4 focus:ring-violet-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-800 dark:bg-slate-950/70 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-violet-500 dark:focus:ring-violet-500/20'
 const selectFieldClass =
-  'h-12 w-full appearance-none rounded-2xl border border-slate-200/80 bg-white/90 px-4 pr-11 text-sm text-slate-700 shadow-sm outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-800 dark:bg-slate-950/70 dark:text-slate-100 dark:focus:border-violet-500 dark:focus:ring-violet-500/20'
+  'h-12 w-full min-w-0 appearance-none rounded-2xl border border-slate-200/80 bg-white/90 px-4 pr-11 text-sm text-slate-700 shadow-sm outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-800 dark:bg-slate-950/70 dark:text-slate-100 dark:focus:border-violet-500 dark:focus:ring-violet-500/20'
 const primaryButtonClass =
   'inline-flex items-center justify-center rounded-2xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-600 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-violet-500 dark:hover:bg-violet-400'
 const secondaryButtonClass =
@@ -266,8 +266,8 @@ onBeforeUnmount(() => {
           </div>
         </div>
 
-        <div class="flex w-full flex-col gap-3 xl:max-w-[760px]">
-          <div class="grid gap-3 md:grid-cols-[1.7fr_1fr_auto]">
+        <div class="flex w-full min-w-0 flex-col gap-3 xl:max-w-[760px]">
+          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(0,1.7fr)_1fr_auto] xl:items-end">
             <label class="space-y-2">
               <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Keyword</span>
               <input
@@ -289,7 +289,7 @@ onBeforeUnmount(() => {
               </div>
             </label>
             <div class="flex items-end">
-              <button type="button" :class="primaryButtonClass" :disabled="store.isLoading" @click="openCreate">
+              <button type="button" :class="[primaryButtonClass, 'w-full xl:w-auto']" :disabled="store.isLoading" @click="openCreate">
                 <i class="pi pi-plus mr-2 text-xs" />
                 Thêm quyền
               </button>
