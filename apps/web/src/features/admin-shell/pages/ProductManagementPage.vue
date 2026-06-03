@@ -1838,7 +1838,12 @@ onBeforeUnmount(() => {
       </div>
     </section>
 
-    <Dialog v-model:visible="createDialogVisible" modal class="w-[min(1040px,96vw)]">
+    <Dialog
+      v-model:visible="createDialogVisible"
+      modal
+      class="w-[calc(100vw-1rem)] sm:w-[min(1040px,96vw)]"
+      :pt="{ content: { class: 'max-h-[calc(100svh-8rem)] overflow-y-auto' } }"
+    >
       <template #header>
         <div class="flex w-full items-center justify-between gap-4">
           <div>
@@ -1994,14 +1999,19 @@ onBeforeUnmount(() => {
       </div>
 
       <template #footer>
-        <div class="flex w-full justify-end gap-3">
+        <div class="flex w-full flex-col gap-3 sm:flex-row sm:justify-end">
           <button type="button" :class="secondaryButtonClass" @click="createDialogVisible = false">Huỷ</button>
           <button type="button" :class="primaryButtonClass" :disabled="isLoading" @click="submitCreate">Tạo track</button>
         </div>
       </template>
     </Dialog>
 
-    <Dialog v-model:visible="editDialogVisible" modal class="w-[min(1040px,96vw)]">
+    <Dialog
+      v-model:visible="editDialogVisible"
+      modal
+      class="w-[calc(100vw-1rem)] sm:w-[min(1040px,96vw)]"
+      :pt="{ content: { class: 'max-h-[calc(100svh-8rem)] overflow-y-auto' } }"
+    >
       <template #header>
         <div class="flex w-full items-center justify-between gap-4">
           <div>
@@ -2149,14 +2159,19 @@ onBeforeUnmount(() => {
       </div>
 
       <template #footer>
-        <div class="flex w-full justify-end gap-3">
+        <div class="flex w-full flex-col gap-3 sm:flex-row sm:justify-end">
           <button type="button" :class="secondaryButtonClass" @click="editDialogVisible = false">Huỷ</button>
           <button type="button" :class="primaryButtonClass" :disabled="isLoading" @click="confirmSubmitEdit">Lưu thay đổi</button>
         </div>
       </template>
     </Dialog>
 
-    <Dialog v-model:visible="detailDialogVisible" modal class="w-[min(1040px,96vw)]">
+    <Dialog
+      v-model:visible="detailDialogVisible"
+      modal
+      class="w-[calc(100vw-1rem)] sm:w-[min(1040px,96vw)]"
+      :pt="{ content: { class: 'max-h-[calc(100svh-8rem)] overflow-y-auto' } }"
+    >
       <template #header>
         <div v-if="selectedTrack" class="flex w-full flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div class="flex items-center gap-4">
@@ -2473,7 +2488,12 @@ onBeforeUnmount(() => {
       </template>
     </Dialog>
 
-    <Dialog v-model:visible="approvedPermissionsDialogVisible" modal class="w-[min(860px,96vw)]">
+    <Dialog
+      v-model:visible="approvedPermissionsDialogVisible"
+      modal
+      class="w-[calc(100vw-1rem)] sm:w-[min(860px,96vw)]"
+      :pt="{ content: { class: 'max-h-[calc(100svh-8rem)] overflow-y-auto' } }"
+    >
       <template #header>
         <div class="w-full" v-if="approvedPermissionsTrack">
           <div class="text-lg font-semibold text-slate-950 dark:text-white">Chọn quyền bán theo hồ sơ Pháp lý</div>
@@ -2590,7 +2610,13 @@ onBeforeUnmount(() => {
       </template>
     </Dialog>
 
-    <Dialog v-model:visible="uploadDialogVisible" modal class="w-[min(720px,92vw)]" header="Tải audio gốc">
+    <Dialog
+      v-model:visible="uploadDialogVisible"
+      modal
+      class="w-[calc(100vw-1rem)] sm:w-[min(720px,92vw)]"
+      header="Tải audio gốc"
+      :pt="{ content: { class: 'max-h-[calc(100svh-10rem)] overflow-y-auto' } }"
+    >
       <div class="space-y-4">
         <label class="block space-y-2">
           <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Tệp</span>

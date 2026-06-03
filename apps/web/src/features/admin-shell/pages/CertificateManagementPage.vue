@@ -501,7 +501,13 @@ onMounted(async () => {
       </section>
     </section>
 
-    <Dialog v-model:visible="detailDialogVisible" modal header="Chi tiết chứng chỉ" class="dialog">
+    <Dialog
+      v-model:visible="detailDialogVisible"
+      modal
+      header="Chi tiết chứng chỉ"
+      class="dialog"
+      :pt="{ content: { class: 'max-h-[calc(100svh-10rem)] overflow-y-auto' } }"
+    >
       <div v-if="detail" class="detail">
         <div class="detail-grid">
           <div><strong>Track:</strong> {{ detail.trackSnapshotName }}</div>
@@ -529,7 +535,9 @@ onMounted(async () => {
       </div>
 
       <template #footer>
-        <Button label="Đóng" severity="secondary" @click="detailDialogVisible = false" />
+        <div class="flex w-full flex-col gap-3 sm:flex-row sm:justify-end">
+          <Button label="Đóng" severity="secondary" class="w-full sm:w-auto" @click="detailDialogVisible = false" />
+        </div>
       </template>
     </Dialog>
   </div>
@@ -537,7 +545,7 @@ onMounted(async () => {
 
 <style scoped>
 .dialog {
-  width: min(1000px, 92vw);
+  width: min(1000px, calc(100vw - 1rem));
 }
 
 .detail {

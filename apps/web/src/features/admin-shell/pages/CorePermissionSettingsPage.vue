@@ -401,7 +401,12 @@ onBeforeUnmount(() => {
       </div>
     </section>
 
-    <Dialog v-model:visible="permissionDialogVisible" modal class="w-[min(920px,94vw)]">
+    <Dialog
+      v-model:visible="permissionDialogVisible"
+      modal
+      class="w-[calc(100vw-1rem)] sm:w-[min(920px,94vw)]"
+      :pt="{ content: { class: 'max-h-[calc(100svh-8rem)] overflow-y-auto' } }"
+    >
       <template #header>
         <div class="w-full">
           <div class="text-lg font-semibold text-slate-950 dark:text-white">{{ dialogTitle }}</div>
@@ -493,7 +498,7 @@ onBeforeUnmount(() => {
       </div>
 
       <template #footer>
-        <div class="flex w-full justify-end gap-3">
+        <div class="flex w-full flex-col gap-3 sm:flex-row sm:justify-end">
           <button type="button" :class="secondaryButtonClass" :disabled="isSubmitting" @click="permissionDialogVisible = false">Huỷ</button>
           <button type="button" :class="primaryButtonClass" :disabled="isSubmitting" @click="submitPermission">{{ dialogSubmitLabel }}</button>
         </div>

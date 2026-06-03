@@ -1184,7 +1184,13 @@ onMounted(() => {
       </div>
     </section>
 
-    <Dialog v-model:visible="createDialogVisible" modal class="w-[min(860px,96vw)]" :header="currentResource.createLabel">
+    <Dialog
+      v-model:visible="createDialogVisible"
+      modal
+      class="w-[calc(100vw-1rem)] sm:w-[min(860px,96vw)]"
+      :header="currentResource.createLabel"
+      :pt="{ content: { class: 'max-h-[calc(100svh-8rem)] overflow-y-auto' } }"
+    >
       <div class="grid gap-4 sm:grid-cols-2">
         <template v-if="props.resource === 'digital'">
           <div v-if="draftNotice" class="sm:col-span-2">
@@ -1520,14 +1526,20 @@ onMounted(() => {
         </div>
       </div>
       <template #footer>
-        <div class="flex w-full justify-end gap-3">
+        <div class="flex w-full flex-col gap-3 sm:flex-row sm:justify-end">
           <button type="button" :class="secondaryButtonClass" :disabled="isSubmitting" @click="createDialogVisible = false">Huỷ</button>
           <button type="button" :class="primaryButtonClass" :disabled="isPermissionSubmitDisabled" @click="submitCreate">{{ createActionLabel }}</button>
         </div>
       </template>
     </Dialog>
 
-    <Dialog v-model:visible="editDialogVisible" modal class="w-[min(860px,96vw)]" :header="editDialogTitle">
+    <Dialog
+      v-model:visible="editDialogVisible"
+      modal
+      class="w-[calc(100vw-1rem)] sm:w-[min(860px,96vw)]"
+      :header="editDialogTitle"
+      :pt="{ content: { class: 'max-h-[calc(100svh-8rem)] overflow-y-auto' } }"
+    >
       <div class="grid gap-4 sm:grid-cols-2">
         <template v-if="props.resource === 'digital'">
           <label class="space-y-2">
@@ -1857,14 +1869,20 @@ onMounted(() => {
         </div>
       </div>
       <template #footer>
-        <div class="flex w-full justify-end gap-3">
+        <div class="flex w-full flex-col gap-3 sm:flex-row sm:justify-end">
           <button type="button" :class="secondaryButtonClass" :disabled="isSubmitting" @click="editDialogVisible = false">Huỷ</button>
           <button type="button" :class="primaryButtonClass" :disabled="isPermissionSubmitDisabled" @click="submitEdit">Lưu</button>
         </div>
       </template>
     </Dialog>
 
-    <Dialog v-model:visible="permissionsDialogVisible" modal class="w-[min(720px,96vw)]" :header="permissionsDialogTitle">
+    <Dialog
+      v-model:visible="permissionsDialogVisible"
+      modal
+      class="w-[calc(100vw-1rem)] sm:w-[min(720px,96vw)]"
+      :header="permissionsDialogTitle"
+      :pt="{ content: { class: 'max-h-[calc(100svh-10rem)] overflow-y-auto' } }"
+    >
       <div v-if="permissionsDialogPermissions.length === 0" class="text-sm text-slate-500 dark:text-slate-400">
         {{ permissionsDialogEmptyState }}
       </div>
@@ -1879,13 +1897,19 @@ onMounted(() => {
         </div>
       </div>
       <template #footer>
-        <div class="flex w-full justify-end">
+        <div class="flex w-full flex-col gap-3 sm:flex-row sm:justify-end">
           <button type="button" :class="secondaryButtonClass" @click="permissionsDialogVisible = false">Đóng</button>
         </div>
       </template>
     </Dialog>
 
-    <Dialog v-model:visible="packageProductsDialogVisible" modal class="w-[min(860px,96vw)]" :header="packageProductsDialogTitle">
+    <Dialog
+      v-model:visible="packageProductsDialogVisible"
+      modal
+      class="w-[calc(100vw-1rem)] sm:w-[min(860px,96vw)]"
+      :header="packageProductsDialogTitle"
+      :pt="{ content: { class: 'max-h-[calc(100svh-10rem)] overflow-y-auto' } }"
+    >
       <div v-if="packageProductsLoading" class="space-y-3">
         <div v-for="index in 3" :key="`package-product-loading-${index}`" class="h-20 animate-pulse rounded-2xl border border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900/40" />
       </div>
@@ -1912,7 +1936,7 @@ onMounted(() => {
         </article>
       </div>
       <template #footer>
-        <div class="flex w-full justify-end">
+        <div class="flex w-full flex-col gap-3 sm:flex-row sm:justify-end">
           <button type="button" :class="secondaryButtonClass" @click="packageProductsDialogVisible = false">Đóng</button>
         </div>
       </template>

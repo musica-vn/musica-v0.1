@@ -561,7 +561,13 @@ const confirmDelete = async () => {
       </div>
     </section>
 
-    <Dialog v-model:visible="lockConfirmVisible" modal header="Cập nhật trạng thái admin" class="w-[min(540px,92vw)]">
+    <Dialog
+      v-model:visible="lockConfirmVisible"
+      modal
+      header="Cập nhật trạng thái admin"
+      class="w-[calc(100vw-1rem)] sm:w-[min(540px,92vw)]"
+      :pt="{ content: { class: 'max-h-[calc(100svh-12rem)] overflow-y-auto' } }"
+    >
       <div class="space-y-4">
         <Message v-if="lockError" severity="error">{{ lockError }}</Message>
         <div class="text-sm leading-6 text-slate-600 dark:text-slate-300">
@@ -576,14 +582,20 @@ const confirmDelete = async () => {
         </div>
       </div>
       <template #footer>
-        <div class="flex w-full justify-end gap-3">
+        <div class="flex w-full flex-col gap-3 sm:flex-row sm:justify-end">
           <Button label="Huỷ" severity="secondary" :disabled="isMutating" @click="lockConfirmVisible = false" />
           <Button label="Xác nhận" :loading="isMutating" @click="confirmLock" />
         </div>
       </template>
     </Dialog>
 
-    <Dialog v-model:visible="deleteConfirmVisible" modal header="Xoá admin" class="w-[min(540px,92vw)]">
+    <Dialog
+      v-model:visible="deleteConfirmVisible"
+      modal
+      header="Xoá admin"
+      class="w-[calc(100vw-1rem)] sm:w-[min(540px,92vw)]"
+      :pt="{ content: { class: 'max-h-[calc(100svh-12rem)] overflow-y-auto' } }"
+    >
       <div class="space-y-4">
         <Message v-if="deleteError" severity="error">{{ deleteError }}</Message>
         <div class="text-sm leading-6 text-slate-600 dark:text-slate-300">
@@ -594,14 +606,20 @@ const confirmDelete = async () => {
         </div>
       </div>
       <template #footer>
-        <div class="flex w-full justify-end gap-3">
+        <div class="flex w-full flex-col gap-3 sm:flex-row sm:justify-end">
           <Button label="Huỷ" severity="secondary" :disabled="isMutating" @click="deleteConfirmVisible = false" />
           <Button label="Xoá admin" severity="danger" :loading="isMutating" @click="confirmDelete" />
         </div>
       </template>
     </Dialog>
 
-    <Dialog v-model:visible="createDialogVisible" modal header="Tạo admin mới" class="w-[min(620px,94vw)]">
+    <Dialog
+      v-model:visible="createDialogVisible"
+      modal
+      header="Tạo admin mới"
+      class="w-[calc(100vw-1rem)] sm:w-[min(620px,94vw)]"
+      :pt="{ content: { class: 'max-h-[calc(100svh-12rem)] overflow-y-auto' } }"
+    >
       <div class="space-y-4">
         <Message v-if="createError" severity="error">{{ createError }}</Message>
         <div class="grid gap-4">
@@ -620,14 +638,20 @@ const confirmDelete = async () => {
         </div>
       </div>
       <template #footer>
-        <div class="flex w-full justify-end gap-3">
+        <div class="flex w-full flex-col gap-3 sm:flex-row sm:justify-end">
           <Button label="Huỷ" severity="secondary" @click="createDialogVisible = false" />
           <Button label="Tạo admin" :loading="isMutating" @click="submitCreate" />
         </div>
       </template>
     </Dialog>
 
-    <Dialog v-model:visible="editDialogVisible" modal header="Chỉnh sửa admin" class="w-[min(620px,94vw)]">
+    <Dialog
+      v-model:visible="editDialogVisible"
+      modal
+      header="Chỉnh sửa admin"
+      class="w-[calc(100vw-1rem)] sm:w-[min(620px,94vw)]"
+      :pt="{ content: { class: 'max-h-[calc(100svh-12rem)] overflow-y-auto' } }"
+    >
       <div class="space-y-4">
         <Message v-if="editError" severity="error">{{ editError }}</Message>
         <div class="grid gap-4">
@@ -646,7 +670,7 @@ const confirmDelete = async () => {
         </div>
       </div>
       <template #footer>
-        <div class="flex w-full justify-end gap-3">
+        <div class="flex w-full flex-col gap-3 sm:flex-row sm:justify-end">
           <Button label="Huỷ" severity="secondary" @click="editDialogVisible = false" />
           <Button label="Lưu thay đổi" :loading="isMutating" @click="submitEdit" />
         </div>

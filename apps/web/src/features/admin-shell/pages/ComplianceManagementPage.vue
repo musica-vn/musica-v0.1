@@ -551,10 +551,10 @@ watch(
     <Dialog
       v-model:visible="detailDialogVisible"
       modal
-      class="w-[min(1120px,96vw)]"
+      class="w-[calc(100vw-1rem)] sm:w-[min(1120px,96vw)]"
       :pt="{
         header: { class: '!pb-4 border-b border-slate-100 dark:border-slate-800' },
-        content: { class: 'compliance-detail-scroll !overflow-y-auto' },
+        content: { class: 'compliance-detail-scroll max-h-[calc(100svh-8rem)] !overflow-y-auto' },
       }"
     >
       <template #header>

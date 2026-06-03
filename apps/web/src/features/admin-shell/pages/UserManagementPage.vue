@@ -470,7 +470,13 @@ const removeUser = (row: ManagedUser) => {
       </div>
     </section>
 
-    <Dialog v-model:visible="createDialogVisible" modal :header="roleMeta.createLabel" class="w-[min(620px,94vw)]">
+    <Dialog
+      v-model:visible="createDialogVisible"
+      modal
+      :header="roleMeta.createLabel"
+      class="w-[calc(100vw-1rem)] sm:w-[min(620px,94vw)]"
+      :pt="{ content: { class: 'max-h-[calc(100svh-12rem)] overflow-y-auto' } }"
+    >
       <div class="space-y-4">
         <Message v-if="createError" severity="error">{{ createError }}</Message>
         <div class="grid gap-4">
@@ -489,14 +495,20 @@ const removeUser = (row: ManagedUser) => {
         </div>
       </div>
       <template #footer>
-        <div class="flex w-full justify-end gap-3">
+        <div class="flex w-full flex-col gap-3 sm:flex-row sm:justify-end">
           <Button label="Huỷ" severity="secondary" @click="createDialogVisible = false" />
           <Button :label="roleMeta.createLabel" :loading="isActionLoading" @click="submitCreate" />
         </div>
       </template>
     </Dialog>
 
-    <Dialog v-model:visible="editDialogVisible" modal header="Chỉnh sửa user" class="w-[min(620px,94vw)]">
+    <Dialog
+      v-model:visible="editDialogVisible"
+      modal
+      header="Chỉnh sửa user"
+      class="w-[calc(100vw-1rem)] sm:w-[min(620px,94vw)]"
+      :pt="{ content: { class: 'max-h-[calc(100svh-12rem)] overflow-y-auto' } }"
+    >
       <div class="space-y-4">
         <Message v-if="editError" severity="error">{{ editError }}</Message>
         <div class="grid gap-4">
@@ -515,21 +527,27 @@ const removeUser = (row: ManagedUser) => {
         </div>
       </div>
       <template #footer>
-        <div class="flex w-full justify-end gap-3">
+        <div class="flex w-full flex-col gap-3 sm:flex-row sm:justify-end">
           <Button label="Huỷ" severity="secondary" @click="editDialogVisible = false" />
           <Button label="Lưu thay đổi" :loading="isActionLoading" @click="submitEdit" />
         </div>
       </template>
     </Dialog>
 
-    <Dialog v-model:visible="confirmDialogVisible" modal :header="confirmTitle" class="w-[min(540px,92vw)]">
+    <Dialog
+      v-model:visible="confirmDialogVisible"
+      modal
+      :header="confirmTitle"
+      class="w-[calc(100vw-1rem)] sm:w-[min(540px,92vw)]"
+      :pt="{ content: { class: 'max-h-[calc(100svh-12rem)] overflow-y-auto' } }"
+    >
       <div class="space-y-4">
         <div class="text-sm leading-6 text-slate-600 dark:text-slate-300">
           {{ confirmMessage }}
         </div>
       </div>
       <template #footer>
-        <div class="flex w-full justify-end gap-3">
+        <div class="flex w-full flex-col gap-3 sm:flex-row sm:justify-end">
           <Button label="Huỷ" severity="secondary" @click="cancelConfirm" />
           <Button
             :label="confirmConfirmLabel"
