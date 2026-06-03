@@ -15,6 +15,8 @@ import {
   useModificationConfigsStore,
   usePhysicalRightConfigsStore,
 } from '../../licensing-configs/licensing-configs.store'
+import LicensingConfigActionMenu from '../components/LicensingConfigActionMenu.vue'
+import LicensingConfigMobileCardList from '../components/LicensingConfigMobileCardList.vue'
 import type {
   CreateDigitalRightConfigPayload,
   CreateExpressionConfigPayload,
@@ -195,6 +197,7 @@ const pagination = reactive({ page: 1, pageSize: 20 })
 const createDialogVisible = ref(false)
 const editDialogVisible = ref(false)
 const selectedItem = ref<AnyLicensingConfig | null>(null)
+const mobileActionItem = ref<AnyLicensingConfig | null>(null)
 const isSubmitting = ref(false)
 const hasLoadedPermissionOptions = ref(false)
 const permissionsDialogVisible = ref(false)
@@ -499,6 +502,7 @@ const toggleReferencedPermission = (permissionId: string) => {
 }
 
 const openPermissionsDialog = (item: AnyLicensingConfig) => {
+  closeMobileActionMenu()
   permissionsDialogTitle.value = `${getDetailText(item)} - ${currentResource.value.permissionLabel}`
   permissionsDialogPermissions.value = item.referencedPermissions
   permissionsDialogVisible.value = true
@@ -506,6 +510,7 @@ const openPermissionsDialog = (item: AnyLicensingConfig) => {
 
 const openPackageProductsDialog = async (item: AnyLicensingConfig) => {
   if (!isDigitalOrPhysicalResource.value) return
+  closeMobileActionMenu()
 
   packageProductsDialogTitle.value = `Sản phẩm đã tham gia - ${getDetailText(item)}`
   packageProducts.value = []
@@ -650,6 +655,7 @@ const fetchList = async () => {
 
 const openCreate = () => {
   clearMessages()
+  closeMobileActionMenu()
   selectedItem.value = null
   resetForm()
   if (supportsPermissionPicker.value && !hasLoadedPermissionOptions.value && !corePermissionsStore.isLoading) {
@@ -661,6 +667,7 @@ const openCreate = () => {
 
 const openEdit = (item: AnyLicensingConfig) => {
   clearMessages()
+  closeMobileActionMenu()
   selectedItem.value = item
   fillFormFromItem(item)
   if (supportsPermissionPicker.value && !hasLoadedPermissionOptions.value && !corePermissionsStore.isLoading) {
@@ -906,7 +913,31 @@ const getDetailText = (item: AnyLicensingConfig) => {
   }
 }
 
+const getStatusClass = (status: LicensingConfigStatus) =>
+  status === 'ACTIVE'
+    ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300'
+    : 'border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300'
+
+const resolveMobileStatusLabel = (item: AnyLicensingConfig) =>
+  isDigitalOrPhysicalResource.value ? formatStatusLabel(item.status) : item.status
+
+const resolveMobileStatusClass = (item: AnyLicensingConfig) => getStatusClass(item.status)
+
+const resolveMobilePriceValue = (item: AnyLicensingConfig) => String(getPriceValue(item))
+
+const resolveMobilePermissionCountLabel = (item: AnyLicensingConfig) =>
+  item.referencedPermissions.length === 0 ? emptyPermissionsText.value : `${item.referencedPermissions.length} quyền`
+
+const openMobileActionMenu = (item: AnyLicensingConfig) => {
+  mobileActionItem.value = item
+}
+
+const closeMobileActionMenu = () => {
+  mobileActionItem.value = null
+}
+
 const confirmToggleStatus = (item: AnyLicensingConfig) => {
+  closeMobileActionMenu()
   const nextStatus: LicensingConfigStatus = item.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE'
   const title = getDetailText(item)
 
@@ -944,6 +975,7 @@ const confirmToggleStatus = (item: AnyLicensingConfig) => {
 }
 
 const confirmRemoveOne = (item: AnyLicensingConfig) => {
+  closeMobileActionMenu()
   const title = getDetailText(item)
 
   confirm.require({
@@ -1087,7 +1119,26 @@ onMounted(() => {
         <Message v-if="successMessage" severity="success">{{ successMessage }}</Message>
       </div>
 
-      <div class="mt-6 overflow-hidden rounded-[24px] border border-slate-200/80 bg-white dark:border-slate-800 dark:bg-slate-950/40">
+      <LicensingConfigMobileCardList
+        class="mt-6"
+        :items="currentItems"
+        :resource="props.resource"
+        :is-loading="currentIsLoading"
+        :empty-message="currentResource.emptyState"
+        :resolve-detail-text="getDetailText"
+        :resolve-price-value="resolveMobilePriceValue"
+        :resolve-permission-count-label="resolveMobilePermissionCountLabel"
+        :resolve-status-label="resolveMobileStatusLabel"
+        :resolve-status-class="resolveMobileStatusClass"
+        :can-open-packages="isDigitalOrPhysicalResource"
+        @edit="openEdit"
+        @toggle="confirmToggleStatus"
+        @permissions="openPermissionsDialog"
+        @packages="openPackageProductsDialog"
+        @more="openMobileActionMenu"
+      />
+
+      <div class="mt-6 hidden overflow-hidden rounded-[24px] border border-slate-200/80 bg-white dark:border-slate-800 dark:bg-slate-950/40 sm:block">
         <div class="overflow-x-auto">
           <table class="min-w-[980px] border-separate border-spacing-0 text-left text-sm">
             <thead class="bg-slate-50 text-xs uppercase tracking-[0.18em] text-slate-500 dark:bg-slate-950/60 dark:text-slate-300">
@@ -1127,9 +1178,7 @@ onMounted(() => {
                 <td class="px-4 py-4">
                   <span
                     class="inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em]"
-                    :class="item.status === 'ACTIVE'
-                      ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300'
-                      : 'border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300'"
+                    :class="getStatusClass(item.status)"
                   >
                     {{ isDigitalOrPhysicalResource ? formatStatusLabel(item.status) : item.status }}
                   </span>
@@ -1187,9 +1236,9 @@ onMounted(() => {
     <Dialog
       v-model:visible="createDialogVisible"
       modal
-      class="w-[calc(100vw-1rem)] sm:w-[min(860px,96vw)]"
+      class="w-[calc(100vw-0.75rem)] sm:w-[min(860px,96vw)]"
       :header="currentResource.createLabel"
-      :pt="{ content: { class: 'max-h-[calc(100svh-8rem)] overflow-y-auto' } }"
+      :pt="{ content: { class: 'max-h-[calc(100svh-0.75rem)] overflow-y-auto sm:max-h-[calc(100svh-8rem)]' } }"
     >
       <div class="grid gap-4 sm:grid-cols-2">
         <template v-if="props.resource === 'digital'">
@@ -1527,8 +1576,8 @@ onMounted(() => {
       </div>
       <template #footer>
         <div class="flex w-full flex-col gap-3 sm:flex-row sm:justify-end">
-          <button type="button" :class="secondaryButtonClass" :disabled="isSubmitting" @click="createDialogVisible = false">Huỷ</button>
-          <button type="button" :class="primaryButtonClass" :disabled="isPermissionSubmitDisabled" @click="submitCreate">{{ createActionLabel }}</button>
+          <button type="button" :class="[secondaryButtonClass, 'w-full sm:w-auto']" :disabled="isSubmitting" @click="createDialogVisible = false">Huỷ</button>
+          <button type="button" :class="[primaryButtonClass, 'w-full sm:w-auto']" :disabled="isPermissionSubmitDisabled" @click="submitCreate">{{ createActionLabel }}</button>
         </div>
       </template>
     </Dialog>
@@ -1536,9 +1585,9 @@ onMounted(() => {
     <Dialog
       v-model:visible="editDialogVisible"
       modal
-      class="w-[calc(100vw-1rem)] sm:w-[min(860px,96vw)]"
+      class="w-[calc(100vw-0.75rem)] sm:w-[min(860px,96vw)]"
       :header="editDialogTitle"
-      :pt="{ content: { class: 'max-h-[calc(100svh-8rem)] overflow-y-auto' } }"
+      :pt="{ content: { class: 'max-h-[calc(100svh-0.75rem)] overflow-y-auto sm:max-h-[calc(100svh-8rem)]' } }"
     >
       <div class="grid gap-4 sm:grid-cols-2">
         <template v-if="props.resource === 'digital'">
@@ -1870,8 +1919,8 @@ onMounted(() => {
       </div>
       <template #footer>
         <div class="flex w-full flex-col gap-3 sm:flex-row sm:justify-end">
-          <button type="button" :class="secondaryButtonClass" :disabled="isSubmitting" @click="editDialogVisible = false">Huỷ</button>
-          <button type="button" :class="primaryButtonClass" :disabled="isPermissionSubmitDisabled" @click="submitEdit">Lưu</button>
+          <button type="button" :class="[secondaryButtonClass, 'w-full sm:w-auto']" :disabled="isSubmitting" @click="editDialogVisible = false">Huỷ</button>
+          <button type="button" :class="[primaryButtonClass, 'w-full sm:w-auto']" :disabled="isPermissionSubmitDisabled" @click="submitEdit">Lưu</button>
         </div>
       </template>
     </Dialog>
@@ -1879,9 +1928,9 @@ onMounted(() => {
     <Dialog
       v-model:visible="permissionsDialogVisible"
       modal
-      class="w-[calc(100vw-1rem)] sm:w-[min(720px,96vw)]"
+      class="w-[calc(100vw-0.75rem)] sm:w-[min(720px,96vw)]"
       :header="permissionsDialogTitle"
-      :pt="{ content: { class: 'max-h-[calc(100svh-10rem)] overflow-y-auto' } }"
+      :pt="{ content: { class: 'max-h-[calc(100svh-0.75rem)] overflow-y-auto sm:max-h-[calc(100svh-10rem)]' } }"
     >
       <div v-if="permissionsDialogPermissions.length === 0" class="text-sm text-slate-500 dark:text-slate-400">
         {{ permissionsDialogEmptyState }}
@@ -1898,7 +1947,7 @@ onMounted(() => {
       </div>
       <template #footer>
         <div class="flex w-full flex-col gap-3 sm:flex-row sm:justify-end">
-          <button type="button" :class="secondaryButtonClass" @click="permissionsDialogVisible = false">Đóng</button>
+          <button type="button" :class="[secondaryButtonClass, 'w-full sm:w-auto']" @click="permissionsDialogVisible = false">Đóng</button>
         </div>
       </template>
     </Dialog>
@@ -1906,9 +1955,9 @@ onMounted(() => {
     <Dialog
       v-model:visible="packageProductsDialogVisible"
       modal
-      class="w-[calc(100vw-1rem)] sm:w-[min(860px,96vw)]"
+      class="w-[calc(100vw-0.75rem)] sm:w-[min(860px,96vw)]"
       :header="packageProductsDialogTitle"
-      :pt="{ content: { class: 'max-h-[calc(100svh-10rem)] overflow-y-auto' } }"
+      :pt="{ content: { class: 'max-h-[calc(100svh-0.75rem)] overflow-y-auto sm:max-h-[calc(100svh-10rem)]' } }"
     >
       <div v-if="packageProductsLoading" class="space-y-3">
         <div v-for="index in 3" :key="`package-product-loading-${index}`" class="h-20 animate-pulse rounded-2xl border border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900/40" />
@@ -1937,9 +1986,25 @@ onMounted(() => {
       </div>
       <template #footer>
         <div class="flex w-full flex-col gap-3 sm:flex-row sm:justify-end">
-          <button type="button" :class="secondaryButtonClass" @click="packageProductsDialogVisible = false">Đóng</button>
+          <button type="button" :class="[secondaryButtonClass, 'w-full sm:w-auto']" @click="packageProductsDialogVisible = false">Đóng</button>
         </div>
       </template>
     </Dialog>
+
+    <LicensingConfigActionMenu
+      :visible="Boolean(mobileActionItem)"
+      :item="mobileActionItem"
+      :resource="props.resource"
+      :detail-text="mobileActionItem ? getDetailText(mobileActionItem) : ''"
+      :status-label="mobileActionItem ? resolveMobileStatusLabel(mobileActionItem) : ''"
+      :is-loading="currentIsLoading"
+      :can-open-packages="isDigitalOrPhysicalResource"
+      @close="closeMobileActionMenu"
+      @edit="openEdit"
+      @toggle="confirmToggleStatus"
+      @permissions="openPermissionsDialog"
+      @packages="openPackageProductsDialog"
+      @remove="confirmRemoveOne"
+    />
   </div>
 </template>
