@@ -1907,8 +1907,8 @@ onBeforeUnmount(() => {
     <Dialog
       v-model:visible="createDialogVisible"
       modal
-      class="w-[calc(100vw-1rem)] sm:w-[min(1040px,96vw)]"
-      :pt="{ content: { class: 'max-h-[calc(100svh-8rem)] overflow-y-auto' } }"
+      class="w-[calc(100vw-0.75rem)] sm:w-[min(1040px,96vw)]"
+      :pt="{ content: { class: 'max-h-[calc(100svh-0.75rem)] overflow-y-auto sm:max-h-[calc(100svh-8rem)]' } }"
     >
       <template #header>
         <div class="flex w-full items-center justify-between gap-4">
@@ -1923,13 +1923,13 @@ onBeforeUnmount(() => {
 
       <Message v-if="createDialogErrorMessage" severity="error" class="mb-4">{{ createDialogErrorMessage }}</Message>
 
-      <div class="grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
-        <section class="space-y-4 rounded-[28px] border border-slate-200/80 bg-slate-50/80 p-5 dark:border-slate-800 dark:bg-slate-900/50">
+      <div class="grid grid-cols-1 gap-4 lg:grid-cols-[0.95fr_1.05fr]">
+        <section class="space-y-4 rounded-[28px] border border-slate-200/80 bg-slate-50/80 p-4 sm:p-5 dark:border-slate-800 dark:bg-slate-900/50">
           <div class="flex items-center gap-3 text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
             <i class="pi pi-align-left text-violet-500" />
             Thông tin chung
           </div>
-          <div class="grid gap-4 sm:grid-cols-2">
+          <div class="grid gap-4 md:grid-cols-2">
             <label class="space-y-2">
               <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Tên track</span>
               <input v-model="createForm.title" :class="fieldClass" placeholder="Nhập tên track" />
@@ -1995,7 +1995,7 @@ onBeforeUnmount(() => {
 
         </section>
 
-        <section class="space-y-4 rounded-[28px] border border-slate-200/80 bg-slate-50/80 p-5 dark:border-slate-800 dark:bg-slate-900/50">
+        <section class="space-y-4 rounded-[28px] border border-slate-200/80 bg-slate-50/80 p-4 sm:p-5 dark:border-slate-800 dark:bg-slate-900/50">
           <div class="flex items-center gap-3 text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
             <i class="pi pi-image text-violet-500" />
             Thumbnail
@@ -2066,8 +2066,8 @@ onBeforeUnmount(() => {
 
       <template #footer>
         <div class="flex w-full flex-col gap-3 sm:flex-row sm:justify-end">
-          <button type="button" :class="secondaryButtonClass" @click="createDialogVisible = false">Huỷ</button>
-          <button type="button" :class="primaryButtonClass" :disabled="isLoading" @click="submitCreate">Tạo track</button>
+          <button type="button" :class="[secondaryButtonClass, 'w-full sm:w-auto']" @click="createDialogVisible = false">Huỷ</button>
+          <button type="button" :class="[primaryButtonClass, 'w-full sm:w-auto']" :disabled="isLoading" @click="submitCreate">Tạo track</button>
         </div>
       </template>
     </Dialog>
@@ -2075,8 +2075,8 @@ onBeforeUnmount(() => {
     <Dialog
       v-model:visible="editDialogVisible"
       modal
-      class="w-[calc(100vw-1rem)] sm:w-[min(1040px,96vw)]"
-      :pt="{ content: { class: 'max-h-[calc(100svh-8rem)] overflow-y-auto' } }"
+      class="w-[calc(100vw-0.75rem)] sm:w-[min(1040px,96vw)]"
+      :pt="{ content: { class: 'max-h-[calc(100svh-0.75rem)] overflow-y-auto sm:max-h-[calc(100svh-8rem)]' } }"
     >
       <template #header>
         <div class="flex w-full items-center justify-between gap-4">
@@ -2091,13 +2091,13 @@ onBeforeUnmount(() => {
 
       <Message v-if="editDialogErrorMessage" severity="error" class="mb-4">{{ editDialogErrorMessage }}</Message>
 
-      <div v-if="selectedTrack" class="grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
-        <section class="space-y-4 rounded-[28px] border border-slate-200/80 bg-slate-50/80 p-5 dark:border-slate-800 dark:bg-slate-900/50">
+      <div v-if="selectedTrack" class="grid grid-cols-1 gap-4 lg:grid-cols-[0.95fr_1.05fr]">
+        <section class="space-y-4 rounded-[28px] border border-slate-200/80 bg-slate-50/80 p-4 sm:p-5 dark:border-slate-800 dark:bg-slate-900/50">
           <div class="flex items-center gap-3 text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
             <i class="pi pi-align-left text-violet-500" />
             Thông tin chung
           </div>
-          <div class="grid gap-4 sm:grid-cols-2">
+          <div class="grid gap-4 md:grid-cols-2">
             <label class="space-y-2">
               <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Tên track</span>
               <input v-model="editForm.title" :class="fieldClass" placeholder="Nhập tên track" />
@@ -2152,7 +2152,7 @@ onBeforeUnmount(() => {
           </div>
         </section>
 
-        <section class="space-y-4 rounded-[28px] border border-slate-200/80 bg-slate-50/80 p-5 dark:border-slate-800 dark:bg-slate-900/50">
+        <section class="space-y-4 rounded-[28px] border border-slate-200/80 bg-slate-50/80 p-4 sm:p-5 dark:border-slate-800 dark:bg-slate-900/50">
           <div class="flex items-center gap-3 text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
             <i class="pi pi-image text-violet-500" />
             Thumbnail
@@ -2226,8 +2226,8 @@ onBeforeUnmount(() => {
 
       <template #footer>
         <div class="flex w-full flex-col gap-3 sm:flex-row sm:justify-end">
-          <button type="button" :class="secondaryButtonClass" @click="editDialogVisible = false">Huỷ</button>
-          <button type="button" :class="primaryButtonClass" :disabled="isLoading" @click="confirmSubmitEdit">Lưu thay đổi</button>
+          <button type="button" :class="[secondaryButtonClass, 'w-full sm:w-auto']" @click="editDialogVisible = false">Huỷ</button>
+          <button type="button" :class="[primaryButtonClass, 'w-full sm:w-auto']" :disabled="isLoading" @click="confirmSubmitEdit">Lưu thay đổi</button>
         </div>
       </template>
     </Dialog>
