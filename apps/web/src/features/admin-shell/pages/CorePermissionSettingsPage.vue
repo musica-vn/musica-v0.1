@@ -4,6 +4,7 @@ import Message from 'primevue/message'
 import { useConfirm } from 'primevue/useconfirm'
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { ApiClientError } from '../../../shared/api/http'
+import CorePermissionMobileCardList from '../components/CorePermissionMobileCardList.vue'
 import { useCorePermissionsStore } from '../../core-permissions/core-permissions.store'
 import type { CorePermission, CorePermissionStatus } from '../../core-permissions/core-permissions.types'
 
@@ -83,6 +84,29 @@ const formatStatusLabel = (status: CorePermissionStatus) => {
   if (status === 'ACTIVE') return 'Đang hoạt động'
   return 'Ngừng hoạt động'
 }
+
+const getStatusClass = (status: CorePermissionStatus) => {
+  if (status === 'ACTIVE') {
+    return 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300'
+  }
+
+  return 'border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300'
+}
+
+const formatUpdatedAt = (value: string) => {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  return date.toLocaleString()
+}
+
+const resolveIndexLabel = (_permission: CorePermission, index: number) =>
+  String((pagination.page - 1) * pagination.pageSize + index + 1)
+
+const resolveStatusLabel = (permission: CorePermission) => formatStatusLabel(permission.status)
+
+const resolveStatusClass = (permission: CorePermission) => getStatusClass(permission.status)
+
+const resolveUpdatedAtLabel = (permission: CorePermission) => formatUpdatedAt(permission.updatedAt)
 
 const fetchList = async () => {
   clearGlobalFeedback()
@@ -185,6 +209,36 @@ const confirmDelete = (permission: CorePermission) => {
     acceptLabel: 'Xoá',
     rejectLabel: 'Huỷ',
     accept: () => void removeOne(permission),
+  })
+}
+
+const toggleStatus = async (permission: CorePermission) => {
+  clearGlobalFeedback()
+
+  try {
+    const nextStatus: CorePermissionStatus = permission.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE'
+    await store.setStatus(permission.id, nextStatus)
+    successMessage.value = nextStatus === 'ACTIVE'
+      ? 'Đã kích hoạt quyền cốt lõi.'
+      : 'Đã tắt quyền cốt lõi.'
+    await fetchList()
+  } catch (error) {
+    setGlobalError(error)
+  }
+}
+
+const confirmToggleStatus = (permission: CorePermission) => {
+  const nextStatus: CorePermissionStatus = permission.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE'
+
+  confirm.require({
+    header: nextStatus === 'ACTIVE' ? 'Xác nhận kích hoạt quyền' : 'Xác nhận tắt quyền',
+    message: nextStatus === 'ACTIVE'
+      ? `Bạn có chắc muốn kích hoạt quyền "${permission.name}" không?`
+      : `Bạn có chắc muốn tắt quyền "${permission.name}" không?`,
+    icon: 'pi pi-exclamation-triangle',
+    acceptLabel: nextStatus === 'ACTIVE' ? 'Kích hoạt' : 'Tắt',
+    rejectLabel: 'Huỷ',
+    accept: () => void toggleStatus(permission),
   })
 }
 
@@ -303,7 +357,21 @@ onBeforeUnmount(() => {
         <Message v-if="successMessage" severity="success">{{ successMessage }}</Message>
       </div>
 
-      <div class="mt-6 overflow-hidden rounded-[28px] border border-slate-200/80 bg-white dark:border-slate-800 dark:bg-slate-950/40">
+      <CorePermissionMobileCardList
+        class="mt-6"
+        :permissions="store.items"
+        :is-loading="store.isLoading"
+        empty-message="Không có dữ liệu phù hợp với bộ lọc hiện tại."
+        :resolve-index-label="resolveIndexLabel"
+        :resolve-status-label="resolveStatusLabel"
+        :resolve-status-class="resolveStatusClass"
+        :resolve-updated-at-label="resolveUpdatedAtLabel"
+        @edit="openEdit"
+        @toggle="confirmToggleStatus"
+        @remove="confirmDelete"
+      />
+
+      <div class="mt-6 hidden overflow-hidden rounded-[28px] border border-slate-200/80 bg-white dark:border-slate-800 dark:bg-slate-950/40 sm:block">
         <div class="overflow-x-auto">
           <table class="min-w-[980px] border-separate border-spacing-0 text-left text-sm">
             <thead class="bg-slate-50 text-xs uppercase tracking-[0.18em] text-slate-500 dark:bg-slate-950/60 dark:text-slate-300">
@@ -339,17 +407,13 @@ onBeforeUnmount(() => {
                 <td class="px-4 py-4">
                   <span
                     class="inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em]"
-                    :class="
-                      permission.status === 'ACTIVE'
-                        ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300'
-                        : 'border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300'
-                    "
+                    :class="getStatusClass(permission.status)"
                   >
                     {{ formatStatusLabel(permission.status) }}
                   </span>
                 </td>
                 <td class="px-4 py-4 text-slate-500 dark:text-slate-400">
-                  {{ new Date(permission.updatedAt).toLocaleString() }}
+                  {{ formatUpdatedAt(permission.updatedAt) }}
                 </td>
                 <td class="px-4 py-4">
                   <div class="flex justify-end gap-2">
@@ -360,6 +424,14 @@ onBeforeUnmount(() => {
                       @click="openEdit(permission)"
                     >
                       <i class="pi pi-pencil" />
+                    </button>
+                    <button
+                      type="button"
+                      class="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 transition hover:border-slate-300 hover:text-slate-900 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:text-white"
+                      :disabled="store.isLoading"
+                      @click="confirmToggleStatus(permission)"
+                    >
+                      <i :class="permission.status === 'ACTIVE' ? 'pi pi-ban' : 'pi pi-check'" />
                     </button>
                     <button
                       type="button"
@@ -404,8 +476,8 @@ onBeforeUnmount(() => {
     <Dialog
       v-model:visible="permissionDialogVisible"
       modal
-      class="w-[calc(100vw-1rem)] sm:w-[min(920px,94vw)]"
-      :pt="{ content: { class: 'max-h-[calc(100svh-8rem)] overflow-y-auto' } }"
+      class="w-[calc(100vw-0.75rem)] sm:w-[min(920px,94vw)]"
+      :pt="{ content: { class: 'max-h-[calc(100svh-0.75rem)] overflow-y-auto sm:max-h-[calc(100svh-8rem)]' } }"
     >
       <template #header>
         <div class="w-full">
@@ -414,17 +486,17 @@ onBeforeUnmount(() => {
         </div>
       </template>
 
-      <div class="grid gap-8 lg:grid-cols-[1.08fr_0.92fr]">
-        <section class="space-y-8 rounded-[28px] border border-slate-200/80 bg-slate-50/80 p-6 dark:border-slate-800 dark:bg-slate-900/50">
+      <div class="grid grid-cols-1 gap-4 lg:grid-cols-[1.08fr_0.92fr]">
+        <section class="space-y-6 rounded-[28px] border border-slate-200/80 bg-slate-50/80 p-4 sm:p-6 dark:border-slate-800 dark:bg-slate-900/50">
           <div class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Thông tin chính</div>
 
           <label class="block">
-            <span class="mb-4 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Name</span>
+            <span class="mb-3 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Name</span>
             <input v-model="form.name" :class="fieldClass" :disabled="isSubmitting" />
           </label>
 
           <label class="block">
-            <span class="mb-4 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Law Reference</span>
+            <span class="mb-3 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Law Reference</span>
             <input
               v-model="form.lawReference"
               :class="fieldClass"
@@ -434,9 +506,9 @@ onBeforeUnmount(() => {
           </label>
         </section>
 
-        <section class="space-y-8 rounded-[28px] border border-slate-200/80 bg-slate-50/80 p-6 dark:border-slate-800 dark:bg-slate-900/50">
+        <section class="space-y-6 rounded-[28px] border border-slate-200/80 bg-slate-50/80 p-4 sm:p-6 dark:border-slate-800 dark:bg-slate-900/50">
           <label class="block">
-            <span class="mb-4 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Description</span>
+            <span class="mb-3 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Description</span>
             <textarea
               v-model="form.description"
               :class="textAreaClass"
@@ -499,8 +571,8 @@ onBeforeUnmount(() => {
 
       <template #footer>
         <div class="flex w-full flex-col gap-3 sm:flex-row sm:justify-end">
-          <button type="button" :class="secondaryButtonClass" :disabled="isSubmitting" @click="permissionDialogVisible = false">Huỷ</button>
-          <button type="button" :class="primaryButtonClass" :disabled="isSubmitting" @click="submitPermission">{{ dialogSubmitLabel }}</button>
+          <button type="button" :class="[secondaryButtonClass, 'w-full sm:w-auto']" :disabled="isSubmitting" @click="permissionDialogVisible = false">Huỷ</button>
+          <button type="button" :class="[primaryButtonClass, 'w-full sm:w-auto']" :disabled="isSubmitting" @click="submitPermission">{{ dialogSubmitLabel }}</button>
         </div>
       </template>
     </Dialog>
