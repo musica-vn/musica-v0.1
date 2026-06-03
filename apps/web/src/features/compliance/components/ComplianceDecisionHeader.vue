@@ -24,7 +24,7 @@ defineProps<{
       <div class="space-y-2">
         <div class="inline-flex items-center gap-2 rounded-full bg-violet-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-violet-700 dark:bg-violet-500/15 dark:text-violet-300">
           <i class="pi pi-shield text-[10px]" />
-          Compliance Review Studio
+          Khu Vực Đánh Giá Quyết Định
         </div>
         <div>
           <h2 class="m-0 text-xl font-bold tracking-tight text-slate-950 dark:text-white lg:text-2xl">

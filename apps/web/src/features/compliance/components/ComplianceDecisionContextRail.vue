@@ -18,7 +18,7 @@ defineProps<{
   <aside class="space-y-4">
     <section class="rounded-[28px] border border-slate-200/80 bg-white/85 p-5 shadow-lg shadow-slate-200/30 dark:border-slate-800 dark:bg-slate-950/60 dark:shadow-black/10">
       <div class="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400">
-        Current Snapshot
+        Tổng Quan Hiện Tại
       </div>
       <div class="mt-4 space-y-3">
         <div class="flex items-center justify-between gap-3 border-b border-slate-100 pb-3 dark:border-slate-800">
@@ -58,7 +58,7 @@ defineProps<{
         </span>
         <div>
           <div class="text-[11px] font-bold uppercase tracking-[0.16em] text-rose-500 dark:text-rose-300">
-            Ghi chú trước đó
+            Ghi Chú Trước Đó
           </div>
           <p class="mt-2 text-sm leading-6 text-rose-900 dark:text-rose-100">
             {{ detail.rejectReason }}
@@ -70,7 +70,7 @@ defineProps<{
     <section class="rounded-[28px] border border-slate-200/80 bg-white/85 p-5 shadow-lg shadow-slate-200/30 dark:border-slate-800 dark:bg-slate-950/60 dark:shadow-black/10">
       <div class="flex items-center justify-between gap-3">
         <div class="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400">
-          Quyền hiện tại
+          Quyền Hiện Tại
         </div>
         <span class="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-slate-600 dark:bg-slate-900 dark:text-slate-300">
           {{ detail.approvedPermissions.length }}
@@ -100,7 +100,7 @@ defineProps<{
         </span>
         <div>
           <div class="text-[11px] font-bold uppercase tracking-[0.16em] text-violet-600 dark:text-violet-300">
-            Gợi ý thao tác
+            Gợi Ý Thao Tác
           </div>
           <p class="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-200">
             {{ suggestedActionText }}
