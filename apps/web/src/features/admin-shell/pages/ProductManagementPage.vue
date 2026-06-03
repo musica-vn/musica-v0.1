@@ -72,6 +72,7 @@ const primaryButtonClass =
   'inline-flex items-center justify-center rounded-2xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-600 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-violet-500 dark:hover:bg-violet-400'
 const secondaryButtonClass =
   'inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-violet-300 hover:text-violet-600 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-violet-500 dark:hover:text-violet-300'
+const detailDialogClass = 'w-[calc(100vw-0.75rem)] sm:w-[min(1040px,96vw)]'
 const summaryToneClassMap = {
   primary: 'from-violet-500/15 to-fuchsia-500/10 border-violet-200/60 dark:border-violet-500/20',
   success: 'from-emerald-500/15 to-teal-500/10 border-emerald-200/60 dark:border-emerald-500/20',
@@ -2234,13 +2235,21 @@ onBeforeUnmount(() => {
     <Dialog
       v-model:visible="detailDialogVisible"
       modal
-      class="w-[calc(100vw-1rem)] sm:w-[min(1040px,96vw)]"
-      :pt="{ content: { class: 'max-h-[calc(100svh-8rem)] overflow-y-auto' } }"
+      :class="detailDialogClass"
+      :pt="{
+        header: { class: 'px-0 pb-0 pt-0' },
+        content: { class: 'max-h-[calc(100svh-0.75rem)] overflow-y-auto px-0 pb-0 sm:max-h-[calc(100svh-8rem)]' },
+        footer: { class: 'border-t border-slate-200/80 px-4 py-4 dark:border-slate-800 sm:px-6' },
+      }"
     >
       <template #header>
-        <div v-if="selectedTrack" class="flex w-full flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div class="flex items-center gap-4">
-            <div class="flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-violet-600 to-fuchsia-500 text-lg font-semibold text-white shadow-lg shadow-violet-500/20">
+        <div
+          v-if="selectedTrack"
+          class="sticky top-0 z-10 border-b border-slate-200/80 bg-white/95 px-4 pb-4 pt-4 backdrop-blur dark:border-slate-800 dark:bg-slate-950/95 sm:px-6 sm:pb-5 sm:pt-5"
+        >
+          <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div class="flex min-w-0 items-center gap-4">
+              <div class="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-violet-600 to-fuchsia-500 text-lg font-semibold text-white shadow-lg shadow-violet-500/20">
               <img
                 v-if="thumbnailUrls[selectedTrack.id]"
                 :src="thumbnailUrls[selectedTrack.id]"
@@ -2249,54 +2258,67 @@ onBeforeUnmount(() => {
               />
               <span v-else>{{ selectedTrack.title.slice(0, 1).toUpperCase() }}</span>
             </div>
-            <div>
-              <div class="text-xl font-semibold text-slate-950 dark:text-white">{{ selectedTrack.title }}</div>
-              <div class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                {{ resolveArtistDisplay(selectedTrack.artistId) }} · {{ formatTrackGenresDisplay(selectedTrack) }}
+              <div class="min-w-0">
+                <div class="text-lg font-semibold text-slate-950 dark:text-white sm:text-xl">{{ selectedTrack.title }}</div>
+                <div class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                  {{ resolveArtistDisplay(selectedTrack.artistId) }} · {{ formatTrackGenresDisplay(selectedTrack) }}
+                </div>
               </div>
             </div>
+
+            <div class="flex flex-wrap items-center gap-2">
+              <span
+                class="inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em]"
+                :class="getProductStatusClass(selectedTrack.status)"
+              >
+                {{ formatProductStatusLabel(selectedTrack.status) }}
+              </span>
+              <span
+                class="inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em]"
+                :class="getProductComplianceLegalStatusClassSafe(selectedTrack.complianceLegalStatus)"
+              >
+                {{ formatComplianceLegalStatusLabel(selectedTrack.complianceLegalStatus) }}
+              </span>
+            </div>
           </div>
-          <div class="flex flex-wrap items-center gap-2">
-            <span
-              class="inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em]"
-              :class="selectedTrack.status === 'PUBLISHED'
-                ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300'
-                : 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300'"
-            >
-              {{ formatProductStatusLabel(selectedTrack.status) }}
-            </span>
-            <button type="button" :class="secondaryButtonClass" :disabled="isLoading" @click="confirmTogglePublish(selectedTrack)">
+
+          <div class="mt-4 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
+            <button type="button" :class="[secondaryButtonClass, 'w-full sm:w-auto']" :disabled="isLoading" @click="confirmTogglePublish(selectedTrack)">
               {{ selectedTrack.status === 'PUBLISHED' ? 'Ẩn track' : 'Phát hành track' }}
             </button>
+            <button type="button" :class="[secondaryButtonClass, 'w-full sm:w-auto']" @click="openEditDialog(selectedTrack)">
+              Chỉnh sửa
+            </button>
+            <button type="button" :class="[primaryButtonClass, 'col-span-2 w-full sm:w-auto']" @click="openUploadDialog(selectedTrack)">
+              Tải audio gốc
+            </button>
           </div>
+
+          <nav class="mt-4 flex flex-nowrap gap-2 overflow-x-auto pb-1 no-scrollbar">
+            <button
+              v-for="tab in detailTabs"
+              :key="tab.key"
+              type="button"
+              class="inline-flex shrink-0 items-center gap-2 rounded-2xl px-4 py-2 text-sm font-semibold transition"
+              :class="detailActiveTab === tab.key
+                ? 'bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-200'
+                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-900/60 dark:hover:text-white'"
+              @click="detailActiveTab = tab.key"
+            >
+              <i :class="tab.icon" />
+              {{ tab.label }}
+            </button>
+          </nav>
         </div>
       </template>
 
-      <div v-if="selectedTrack" class="space-y-4">
+      <div v-if="selectedTrack" class="space-y-4 px-4 py-4 sm:px-6 sm:py-5">
         <div class="space-y-3">
           <Message v-if="errorMessage" severity="error">{{ errorMessage }}</Message>
           <Message v-if="successMessage" severity="success">{{ successMessage }}</Message>
         </div>
-
-        <nav class="flex flex-wrap gap-2 border-b border-slate-200 pb-2 dark:border-slate-800">
-          <button
-            v-for="tab in detailTabs"
-            :key="tab.key"
-            type="button"
-            class="inline-flex items-center gap-2 rounded-2xl px-4 py-2 text-sm font-semibold transition"
-            :class="detailActiveTab === tab.key
-              ? 'bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-200'
-              : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-900/60 dark:hover:text-white'"
-            @click="detailActiveTab = tab.key"
-          >
-            <i :class="tab.icon" />
-            {{ tab.label }}
-          </button>
-        </nav>
-
-        <div class="max-h-[70vh] overflow-y-auto pr-1 no-scrollbar">
           <div v-if="detailActiveTab === 'info'" class="space-y-4">
-            <section class="rounded-[28px] border border-slate-200/80 bg-slate-50/80 p-5 dark:border-slate-800 dark:bg-slate-900/50">
+            <section class="rounded-[28px] border border-slate-200/80 bg-slate-50/80 p-4 sm:p-5 dark:border-slate-800 dark:bg-slate-900/50">
               <ProductWavePreview
                 :audio-url="originalAudioUrls[selectedTrack.id] ?? null"
                 :disabled="!selectedTrack.originalAudioKey"
@@ -2305,13 +2327,15 @@ onBeforeUnmount(() => {
                 <span>{{ formatDuration(selectedTrack.duration) }}</span>
                 <span>·</span>
                 <span>{{ formatTrackGenresDisplay(selectedTrack) }}</span>
+                <span>·</span>
+                <span>{{ resolvePermissionCount(selectedTrack) }} quyền</span>
               </div>
             </section>
 
-            <section class="grid gap-4 lg:grid-cols-2">
-              <article class="rounded-[28px] border border-slate-200/80 bg-white/80 p-5 dark:border-slate-800 dark:bg-slate-950/60 lg:col-span-2">
+            <section class="grid grid-cols-1 gap-4 lg:grid-cols-[1.05fr_0.95fr]">
+              <article class="rounded-[28px] border border-slate-200/80 bg-white/80 p-4 sm:p-5 dark:border-slate-800 dark:bg-slate-950/60">
                 <div class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Thông tin chung</div>
-                <div class="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                <div class="mt-4 grid gap-3 sm:grid-cols-2">
                   <div
                     v-for="item in selectedTrackAttributeItems"
                     :key="`${selectedTrack.id}-${item.label}`"
@@ -2330,32 +2354,34 @@ onBeforeUnmount(() => {
                 </div>
               </article>
 
-              <article class="rounded-[28px] border border-slate-200/80 bg-white/80 p-5 dark:border-slate-800 dark:bg-slate-950/60">
-                <div class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Khuông nhạc (PDF)</div>
-                <div class="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-slate-600 dark:text-slate-300">
-                  <div>
-                    {{ selectedTrack.sheetMusicPdfKey ? 'Đã có file PDF.' : 'Chưa upload file PDF.' }}
+              <div class="space-y-4">
+                <article class="rounded-[28px] border border-slate-200/80 bg-white/80 p-4 sm:p-5 dark:border-slate-800 dark:bg-slate-950/60">
+                  <div class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Khuông nhạc (PDF)</div>
+                  <div class="mt-4 flex flex-col gap-3 text-sm text-slate-600 dark:text-slate-300 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      {{ selectedTrack.sheetMusicPdfKey ? 'Đã có file PDF.' : 'Chưa upload file PDF.' }}
+                    </div>
+                    <button type="button" :class="[secondaryButtonClass, 'w-full sm:w-auto']" :disabled="!selectedTrack.sheetMusicPdfKey" @click="openSheetMusicPdf(selectedTrack)">
+                      Mở PDF
+                    </button>
                   </div>
-                  <button type="button" :class="secondaryButtonClass" :disabled="!selectedTrack.sheetMusicPdfKey" @click="openSheetMusicPdf(selectedTrack)">
-                    Mở PDF
-                  </button>
-                </div>
-              </article>
+                </article>
 
-              <article class="rounded-[28px] border border-slate-200/80 bg-white/80 p-5 dark:border-slate-800 dark:bg-slate-950/60">
-                <div class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Mô tả sản phẩm</div>
-                <p class="mt-4 text-sm leading-7 text-slate-600 dark:text-slate-300">
-                  {{ selectedTrack.description || 'Chưa có mô tả riêng cho sản phẩm.' }}
-                </p>
-              </article>
+                <article class="rounded-[28px] border border-slate-200/80 bg-white/80 p-4 sm:p-5 dark:border-slate-800 dark:bg-slate-950/60">
+                  <div class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Mô tả sản phẩm</div>
+                  <p class="mt-4 text-sm leading-7 text-slate-600 dark:text-slate-300">
+                    {{ selectedTrack.description || 'Chưa có mô tả riêng cho sản phẩm.' }}
+                  </p>
+                </article>
+              </div>
             </section>
           </div>
 
           <div v-else-if="detailActiveTab === 'licensing'" class="space-y-4">
-            <article class="rounded-[28px] border border-slate-200/80 bg-white/80 p-5 dark:border-slate-800 dark:bg-slate-950/60">
-              <div class="flex items-center justify-between gap-3">
+            <article class="rounded-[28px] border border-slate-200/80 bg-white/80 p-4 sm:p-5 dark:border-slate-800 dark:bg-slate-950/60">
+              <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Quyền bán đã chọn</div>
-                <button type="button" :class="secondaryButtonClass" @click="openApprovedPermissionsDialog(selectedTrack)">Chọn quyền bán</button>
+                <button type="button" :class="[secondaryButtonClass, 'w-full sm:w-auto']" @click="openApprovedPermissionsDialog(selectedTrack)">Chọn quyền bán</button>
               </div>
               <div class="mt-4 flex flex-wrap gap-2">
                 <span
@@ -2369,7 +2395,7 @@ onBeforeUnmount(() => {
               </div>
             </article>
 
-            <article class="rounded-[28px] border border-slate-200/80 bg-white/80 p-5 dark:border-slate-800 dark:bg-slate-950/60">
+            <article class="rounded-[28px] border border-slate-200/80 bg-white/80 p-4 sm:p-5 dark:border-slate-800 dark:bg-slate-950/60">
               <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <div class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Matching Digital / Physical Rights</div>
@@ -2517,7 +2543,7 @@ onBeforeUnmount(() => {
           </div>
 
           <div v-else class="space-y-4">
-            <article class="rounded-[28px] border border-slate-200/80 bg-white/80 p-5 dark:border-slate-800 dark:bg-slate-950/60">
+            <article class="rounded-[28px] border border-slate-200/80 bg-white/80 p-4 sm:p-5 dark:border-slate-800 dark:bg-slate-950/60">
               <div class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Trạng thái pháp lý</div>
               <div class="mt-4 flex flex-wrap gap-2">
                 <span
@@ -2537,18 +2563,17 @@ onBeforeUnmount(() => {
                 Mở dashboard Compliance để xem hồ sơ, tài liệu và thực hiện duyệt theo workflow chuẩn của nền tảng.
               </div>
               <div class="mt-4 flex justify-end">
-                <button type="button" :class="primaryButtonClass" @click="openComplianceDashboard(selectedTrack)">Mở Compliance</button>
+                <button type="button" :class="[primaryButtonClass, 'w-full sm:w-auto']" @click="openComplianceDashboard(selectedTrack)">Mở Compliance</button>
               </div>
             </article>
           </div>
         </div>
-      </div>
 
       <template #footer>
-        <div class="flex w-full justify-end gap-3">
-          <button type="button" :class="secondaryButtonClass" @click="detailDialogVisible = false">Đóng</button>
-          <button v-if="selectedTrack" type="button" :class="secondaryButtonClass" @click="openEditDialog(selectedTrack)">Chỉnh sửa</button>
-          <button v-if="selectedTrack" type="button" :class="primaryButtonClass" @click="openUploadDialog(selectedTrack)">Tải audio gốc</button>
+        <div class="flex w-full flex-col gap-3 sm:flex-row sm:justify-end">
+          <button type="button" :class="[secondaryButtonClass, 'w-full sm:w-auto']" @click="detailDialogVisible = false">Đóng</button>
+          <button v-if="selectedTrack" type="button" :class="[secondaryButtonClass, 'w-full sm:w-auto']" @click="openEditDialog(selectedTrack)">Chỉnh sửa</button>
+          <button v-if="selectedTrack" type="button" :class="[primaryButtonClass, 'w-full sm:w-auto']" @click="openUploadDialog(selectedTrack)">Tải audio gốc</button>
         </div>
       </template>
     </Dialog>
