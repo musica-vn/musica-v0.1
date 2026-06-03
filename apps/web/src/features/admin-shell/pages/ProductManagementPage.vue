@@ -49,6 +49,7 @@ import {
 import ProductFilterInput from '../../products/components/ProductFilterInput.vue'
 import ProductFilterSelect from '../../products/components/ProductFilterSelect.vue'
 import ProductWavePreview from '../../products/components/ProductWavePreview.vue'
+import ProductManagementMobileCardList from '../components/ProductManagementMobileCardList.vue'
 
 type ProductForm = {
   title: string
@@ -151,6 +152,7 @@ const selectedTrack = ref<Product | null>(null)
 const approvedPermissionsTrack = ref<Product | null>(null)
 const approvedPermissionsDetail = ref<ComplianceDetail | null>(null)
 const selectedAllowedPermissionIds = ref<string[]>([])
+const mobileActionTrack = ref<Product | null>(null)
 
 type ApprovedPermissionOption = {
   id: string
@@ -371,6 +373,15 @@ const formatProductStatusLabel = (value: ProductStatus) => {
   if (value === 'PUBLISHED') return 'Đang phát hành'
   if (value === 'PENDING') return 'Chờ kiểm duyệt'
   return 'Đang ẩn'
+}
+const getProductStatusClass = (value: ProductStatus) => {
+  if (value === 'PUBLISHED') {
+    return 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300'
+  }
+  if (value === 'PENDING') {
+    return 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300'
+  }
+  return 'border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300'
 }
 const formatComplianceLegalStatusLabel = (value: Product['complianceLegalStatus']) => {
   if (value === 'SUFFICIENT') return 'Đã duyệt'
@@ -656,7 +667,35 @@ const preloadPageAssets = async (tracks: Product[]) => {
   ])
 }
 
+const resolvePermissionCount = (track: Product) =>
+  track.allowedPermissions?.length ?? track.allowedPermissionIds?.length ?? 0
+
+const resolveUpdatedAtLabel = (track: Product) => formatDateTime(track.updatedAt)
+
+const resolveArtistLabel = (track: Product) => resolveArtistDisplay(track.artistId)
+
+const resolveDurationLabel = (track: Product) => formatDuration(track.duration)
+
+const resolvePublishStatusLabel = (track: Product) => formatProductStatusLabel(track.status)
+
+const resolveComplianceLegalStatusLabel = (track: Product) =>
+  formatComplianceLegalStatusLabel(track.complianceLegalStatus)
+
+const resolvePublishStatusClass = (track: Product) => getProductStatusClass(track.status)
+
+const resolveComplianceLegalStatusClass = (track: Product) =>
+  getProductComplianceLegalStatusClassSafe(track.complianceLegalStatus)
+
+const openMobileActionMenu = (track: Product) => {
+  mobileActionTrack.value = track
+}
+
+const closeMobileActionMenu = () => {
+  mobileActionTrack.value = null
+}
+
 const openApprovedPermissionsDialog = (track: Product) => {
+  closeMobileActionMenu()
   approvedPermissionsTrack.value = track
   approvedPermissionsDialogVisible.value = true
   approvedPermissionsDetail.value = null
@@ -1106,6 +1145,7 @@ const applyClientSort = () => {
 
 const openCreateDialog = () => {
   clearMessages()
+  closeMobileActionMenu()
   selectedTrack.value = null
   editDialogVisible.value = false
   uploadDialogVisible.value = false
@@ -1120,6 +1160,7 @@ const openCreateDialog = () => {
 
 const openEditDialog = (track: Product) => {
   clearMessages()
+  closeMobileActionMenu()
   selectedTrack.value = track
   createDialogVisible.value = false
   uploadDialogVisible.value = false
@@ -1135,6 +1176,7 @@ const openEditDialog = (track: Product) => {
 
 const openDetailDialog = (track: Product) => {
   clearMessages()
+  closeMobileActionMenu()
   selectedTrack.value = track
   createDialogVisible.value = false
   editDialogVisible.value = false
@@ -1149,6 +1191,7 @@ const openDetailDialog = (track: Product) => {
 }
 
 const openComplianceDashboard = (track: Product) => {
+  closeMobileActionMenu()
   void router.push({ path: '/admin/compliance', query: { keyword: track.title } })
 }
 
@@ -1437,6 +1480,7 @@ const confirmTogglePublish = (track: Product) => {
 
 const openUploadDialog = (track: Product) => {
   clearMessages()
+  closeMobileActionMenu()
   selectedTrack.value = track
   createDialogVisible.value = false
   editDialogVisible.value = false
@@ -1635,7 +1679,27 @@ onBeforeUnmount(() => {
         <Message v-if="successMessage" severity="success">{{ successMessage }}</Message>
       </div>
 
-      <div class="mt-6 overflow-hidden rounded-[24px] border border-slate-200/80 bg-white dark:border-slate-800 dark:bg-slate-950/40">
+      <ProductManagementMobileCardList
+        class="mt-6"
+        :rows="rows"
+        :is-loading="isLoading"
+        empty-message="Không có sản phẩm phù hợp. Thử đổi keyword, status hoặc genre để mở rộng kết quả tìm kiếm."
+        :resolve-thumbnail-url="(track) => thumbnailUrls[track.id] ?? null"
+        :resolve-permission-count="resolvePermissionCount"
+        :resolve-artist-label="resolveArtistLabel"
+        :resolve-genres-label="formatTrackGenresDisplay"
+        :resolve-duration-label="resolveDurationLabel"
+        :resolve-updated-at-label="resolveUpdatedAtLabel"
+        :resolve-publish-status-label="resolvePublishStatusLabel"
+        :resolve-legal-status-label="resolveComplianceLegalStatusLabel"
+        :resolve-publish-status-class="resolvePublishStatusClass"
+        :resolve-legal-status-class="resolveComplianceLegalStatusClass"
+        @detail="openDetailDialog"
+        @toggle-publish="confirmTogglePublish"
+        @more="openMobileActionMenu"
+      />
+
+      <div class="mt-6 hidden overflow-hidden rounded-[24px] border border-slate-200/80 bg-white dark:border-slate-800 dark:bg-slate-950/40 sm:block">
         <div class="overflow-x-auto">
           <table class="min-w-[1180px] table-fixed border-separate border-spacing-0 text-left text-sm">
             <thead class="bg-slate-50 text-xs uppercase tracking-[0.18em] text-slate-500 dark:bg-slate-950/60 dark:text-slate-300">
