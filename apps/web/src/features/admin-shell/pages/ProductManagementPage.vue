@@ -2593,8 +2593,11 @@ onBeforeUnmount(() => {
     <Dialog
       v-model:visible="approvedPermissionsDialogVisible"
       modal
-      class="w-[calc(100vw-1rem)] sm:w-[min(860px,96vw)]"
-      :pt="{ content: { class: 'max-h-[calc(100svh-8rem)] overflow-y-auto' } }"
+      class="w-[calc(100vw-0.75rem)] sm:w-[min(860px,96vw)]"
+      :pt="{
+        content: { class: 'max-h-[calc(100svh-0.75rem)] overflow-y-auto sm:max-h-[calc(100svh-8rem)]' },
+        footer: { class: 'border-t border-slate-200/80 px-4 py-4 dark:border-slate-800 sm:px-6' },
+      }"
     >
       <template #header>
         <div class="w-full" v-if="approvedPermissionsTrack">
@@ -2666,7 +2669,39 @@ onBeforeUnmount(() => {
                 </div>
               </div>
 
-              <div class="grid gap-3 sm:grid-cols-2">
+              <div class="space-y-3 sm:hidden">
+                <button
+                  v-for="permission in approvedPermissionOptions"
+                  :key="`mobile-${approvedPermissionsTrack?.id ?? 'track'}-${permission.id}`"
+                  type="button"
+                  class="w-full rounded-[24px] border px-4 py-4 text-left text-sm transition"
+                  :class="selectedAllowedPermissionIds.includes(permission.id)
+                    ? 'border-violet-300 bg-violet-100 text-violet-700 shadow-sm dark:border-violet-500/40 dark:bg-violet-500/15 dark:text-violet-200'
+                    : 'border-slate-200 bg-white text-slate-700 hover:border-violet-200 hover:bg-violet-50/40 dark:border-slate-800 dark:bg-slate-950/40 dark:text-slate-200 dark:hover:border-violet-500/30 dark:hover:bg-slate-900/70'"
+                  :disabled="approvedPermissionsSaving"
+                  @click="toggleAllowedPermissionSelection(permission.id)"
+                >
+                  <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                      <div class="font-semibold">{{ permission.name }}</div>
+                      <div class="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">{{ permission.lawReference }}</div>
+                    </div>
+                    <div
+                      class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-xs"
+                      :class="selectedAllowedPermissionIds.includes(permission.id)
+                        ? 'border-violet-300 bg-white/80 text-violet-600 dark:border-violet-400/50 dark:bg-violet-500/10 dark:text-violet-200'
+                        : 'border-slate-200 bg-slate-50 text-slate-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-500'"
+                    >
+                      <i :class="selectedAllowedPermissionIds.includes(permission.id) ? 'pi pi-check' : 'pi pi-plus'" />
+                    </div>
+                  </div>
+                  <div class="mt-3 text-[11px] font-semibold uppercase tracking-[0.16em]" :class="selectedAllowedPermissionIds.includes(permission.id) ? 'text-violet-600 dark:text-violet-300' : 'text-slate-400 dark:text-slate-500'">
+                    {{ formatApprovedPermissionSelectionState(selectedAllowedPermissionIds.includes(permission.id)) }}
+                  </div>
+                </button>
+              </div>
+
+              <div class="hidden gap-3 sm:grid sm:grid-cols-2">
                 <button
                   v-for="permission in approvedPermissionOptions"
                   :key="`${approvedPermissionsTrack?.id ?? 'track'}-${permission.id}`"
@@ -2703,11 +2738,16 @@ onBeforeUnmount(() => {
       </div>
 
       <template #footer>
-        <div class="flex w-full justify-end gap-3">
-          <button type="button" :class="secondaryButtonClass" @click="approvedPermissionsDialogVisible = false">Đóng</button>
-          <button type="button" :class="primaryButtonClass" :disabled="!canSaveAllowedPermissions" @click="confirmSaveAllowedPermissions">
-            Lưu quyền bán
-          </button>
+        <div class="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div class="text-sm text-slate-500 dark:text-slate-400">
+            Đã chọn {{ selectedApprovedPermissionCount }} / {{ approvedPermissionOptions.length }} quyền
+          </div>
+          <div class="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
+            <button type="button" :class="[secondaryButtonClass, 'w-full sm:w-auto']" @click="approvedPermissionsDialogVisible = false">Đóng</button>
+            <button type="button" :class="[primaryButtonClass, 'w-full sm:w-auto']" :disabled="!canSaveAllowedPermissions" @click="confirmSaveAllowedPermissions">
+              Lưu quyền bán
+            </button>
+          </div>
         </div>
       </template>
     </Dialog>
@@ -2715,12 +2755,25 @@ onBeforeUnmount(() => {
     <Dialog
       v-model:visible="uploadDialogVisible"
       modal
-      class="w-[calc(100vw-1rem)] sm:w-[min(720px,92vw)]"
+      class="w-[calc(100vw-0.75rem)] sm:w-[min(720px,92vw)]"
       header="Tải audio gốc"
-      :pt="{ content: { class: 'max-h-[calc(100svh-10rem)] overflow-y-auto' } }"
+      :pt="{
+        content: { class: 'max-h-[calc(100svh-0.75rem)] overflow-y-auto sm:max-h-[calc(100svh-10rem)]' },
+        footer: { class: 'border-t border-slate-200/80 px-4 py-4 dark:border-slate-800 sm:px-6' },
+      }"
     >
       <div class="space-y-4">
-        <label class="block space-y-2">
+        <div
+          v-if="selectedTrack"
+          class="rounded-[24px] border border-slate-200/80 bg-[linear-gradient(135deg,rgba(255,255,255,0.95),rgba(245,243,255,0.92))] p-4 dark:border-slate-800 dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.92),rgba(30,27,75,0.88))]"
+        >
+          <div class="text-sm font-semibold text-slate-950 dark:text-white">{{ selectedTrack.title }}</div>
+          <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+            Upload file MP3 gốc mới hoặc gắn nhanh file demo để kiểm tra flow publish.
+          </div>
+        </div>
+
+        <label class="block space-y-2 rounded-[24px] border border-slate-200/80 bg-white/80 p-4 dark:border-slate-800 dark:bg-slate-950/60">
           <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Tệp</span>
           <input type="file" accept=".mp3,audio/*" :class="fileInputClass" :disabled="uploadStatus === 'requesting' || uploadStatus === 'uploading'" @change="onUploadFileChange" />
           <span class="text-sm text-slate-500 dark:text-slate-400">File key sẽ được cấp tự động dạng `N.mp3` sau khi bấm tải lên.</span>
@@ -2750,12 +2803,12 @@ onBeforeUnmount(() => {
       </div>
 
       <template #footer>
-        <div class="flex w-full justify-end gap-3">
-          <button type="button" :class="secondaryButtonClass" @click="uploadDialogVisible = false">Đóng</button>
-          <button type="button" :class="secondaryButtonClass" :disabled="uploadStatus === 'requesting' || uploadStatus === 'uploading'" @click="applyDemoAudioKey">
+        <div class="flex w-full flex-col gap-3 sm:flex-row sm:justify-end">
+          <button type="button" :class="[secondaryButtonClass, 'w-full sm:w-auto']" @click="uploadDialogVisible = false">Đóng</button>
+          <button type="button" :class="[secondaryButtonClass, 'w-full sm:w-auto']" :disabled="uploadStatus === 'requesting' || uploadStatus === 'uploading'" @click="applyDemoAudioKey">
             Dùng 1.mp3
           </button>
-          <button type="button" :class="primaryButtonClass" :disabled="!uploadFile || uploadStatus === 'requesting' || uploadStatus === 'uploading'" @click="submitUpload">
+          <button type="button" :class="[primaryButtonClass, 'w-full sm:w-auto']" :disabled="!uploadFile || uploadStatus === 'requesting' || uploadStatus === 'uploading'" @click="submitUpload">
             Tải lên
           </button>
         </div>
