@@ -1,12 +1,21 @@
 ---
 name: vue-router-best-practices
-description: "Vue Router 4 patterns, navigation guards, route params, and route-component lifecycle interactions."
+description: "Use when working with Vue Router 4 route definitions, guards, params, redirects, or route-driven component lifecycle behavior."
 version: 1.0.0
 license: MIT
 author: github.com/vuejs-ai
 ---
 
 Vue Router best practices, common gotchas, and navigation patterns.
+
+## Use When
+- editing route config or navigation guards
+- debugging param-based navigation behavior
+- fixing stale data when moving between routes that reuse the same component
+
+## Do First
+- decide whether the issue is guard flow, param updates, or route lifecycle reuse
+- read only the matching reference instead of treating Router as generic Vue work
 
 ### Navigation Guards
 - Navigating between same route with different params → See [router-beforeenter-no-param-trigger](reference/router-beforeenter-no-param-trigger.md)

@@ -14,9 +14,9 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { RolesGuard } from '../auth/roles.guard';
-import { Roles } from '../auth/roles.decorator';
+import { JwtAuthGuard } from '../common/auth/jwt-auth.guard';
+import { RequireRoles } from '../common/auth/require-roles.decorator';
+import { RolesGuard } from '../common/auth/roles.guard';
 import {
   AdminCertificatesListQueryDto,
   UpdateCertificateTemplateRequestDto,
@@ -33,7 +33,7 @@ import {
 @ApiTags('Admin - Certificates')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('ADMIN', 'SUPER_ADMIN')
+@RequireRoles('ADMIN', 'SUPER_ADMIN')
 @Controller('admin/certificates')
 export class AdminCertificatesController {
   constructor(private readonly certificatesService: CertificatesService) {}

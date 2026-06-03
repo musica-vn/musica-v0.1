@@ -1,12 +1,21 @@
 ---
 name: vue-options-api-best-practices
-description: "Vue 3 Options API style (data(), methods, this context). Each reference shows Options API solution only."
+description: "Use only when the codebase or task explicitly requires Vue 3 Options API patterns such as `data()`, `methods`, and `this` context."
 version: 2.0.0
 license: MIT
 author: github.com/vuejs-ai
 ---
 
 Vue.js Options API best practices, TypeScript integration, and common gotchas.
+
+## Use When
+- editing an existing Options API component
+- migrating legacy Options API code without fully converting to Composition API
+- fixing TypeScript issues tied to `this`, validators, or lifecycle methods
+
+## Do First
+- confirm the task should stay in Options API
+- do not load this skill for normal `script setup` work
 
 ### TypeScript
 - Need to enable TypeScript type inference for component properties → See [ts-options-api-use-definecomponent](reference/ts-options-api-use-definecomponent.md)

@@ -17,10 +17,10 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { RolesGuard } from '../auth/roles.guard';
-import { Roles } from '../auth/roles.decorator';
-import type { AuthenticatedRequest } from '../auth/auth.types';
+import type { AuthenticatedRequest } from '../common/auth/auth.types';
+import { JwtAuthGuard } from '../common/auth/jwt-auth.guard';
+import { RequireRoles } from '../common/auth/require-roles.decorator';
+import { RolesGuard } from '../common/auth/roles.guard';
 import {
   CreateProductPackageRegistrationRequestDto,
   ProductPackageRegistrationListQueryDto,
@@ -34,7 +34,7 @@ import { ProductPackageRegistrationsService } from './product-package-registrati
 @ApiTags('Admin - Product Package Registrations')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('ADMIN', 'SUPER_ADMIN')
+@RequireRoles('ADMIN', 'SUPER_ADMIN')
 @Controller('admin')
 export class AdminProductPackageRegistrationsController {
   constructor(
@@ -57,7 +57,9 @@ export class AdminProductPackageRegistrationsController {
   }
 
   @Delete('products/:productId/digital-right-registrations/:registrationId')
-  @ApiOperation({ summary: 'Remove digital package registration from product (admin)' })
+  @ApiOperation({
+    summary: 'Remove digital package registration from product (admin)',
+  })
   @ApiOkResponse({ type: ProductPackageRegistrationResponseDto })
   async removeDigitalRegistration(
     @Param('productId', ParseUUIDPipe) productId: string,
@@ -87,7 +89,9 @@ export class AdminProductPackageRegistrationsController {
   }
 
   @Delete('products/:productId/physical-right-registrations/:registrationId')
-  @ApiOperation({ summary: 'Remove physical package registration from product (admin)' })
+  @ApiOperation({
+    summary: 'Remove physical package registration from product (admin)',
+  })
   @ApiOkResponse({ type: ProductPackageRegistrationResponseDto })
   async removePhysicalRegistration(
     @Param('productId', ParseUUIDPipe) productId: string,
@@ -102,7 +106,9 @@ export class AdminProductPackageRegistrationsController {
   }
 
   @Get('digital-right-configs/:configId/products')
-  @ApiOperation({ summary: 'List products registered to digital package (admin)' })
+  @ApiOperation({
+    summary: 'List products registered to digital package (admin)',
+  })
   @ApiOkResponse({ type: ProductPackageRegistrationListResponseDto })
   async listProductsForDigitalConfig(
     @Param('configId', ParseUUIDPipe) configId: string,
@@ -115,7 +121,9 @@ export class AdminProductPackageRegistrationsController {
   }
 
   @Get('physical-right-configs/:configId/products')
-  @ApiOperation({ summary: 'List products registered to physical package (admin)' })
+  @ApiOperation({
+    summary: 'List products registered to physical package (admin)',
+  })
   @ApiOkResponse({ type: ProductPackageRegistrationListResponseDto })
   async listProductsForPhysicalConfig(
     @Param('configId', ParseUUIDPipe) configId: string,

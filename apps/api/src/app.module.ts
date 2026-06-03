@@ -5,7 +5,6 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ApiExceptionFilter } from './common/api-exception.filter';
 import { ApiResponseInterceptor } from './common/api-response.interceptor';
-import { ExamplesModule } from './examples/examples.module';
 import { HealthModule } from './health/health.module';
 import { RequestIdMiddleware } from './common/request-id.middleware';
 import { AuthModule } from './auth/auth.module';
@@ -26,7 +25,6 @@ import { VariantPricingModule } from './pricing/variant-pricing.module';
       envFilePath: [`.env.${process.env.NODE_ENV ?? 'development'}`, '.env'],
     }),
     HealthModule,
-    ExamplesModule,
     AuthModule,
     ProductsModule,
     CertificatesModule,

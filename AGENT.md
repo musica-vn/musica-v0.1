@@ -1,30 +1,30 @@
-# Musica AI Entry (Start Here)
+# Musica AI Entry
 
-## Bạn nên đọc theo thứ tự
-1) [AGENT.md](file:///c:/Users/LHP02/Desktop/musica-v0.1/AGENT.md)
-2) [global.md](file:///c:/Users/LHP02/Desktop/musica-v0.1/.trae/rules/global.md)
-3) [api-contracts.md](file:///c:/Users/LHP02/Desktop/musica-v0.1/.trae/rules/api-contracts.md)
-4) [README.md](file:///c:/Users/LHP02/Desktop/musica-v0.1/README.md)
-5) Theo scope:
-   - FE: [apps/web/AGENT.md](file:///c:/Users/LHP02/Desktop/musica-v0.1/apps/web/AGENT.md)
-   - BE: [apps/api/AGENT.md](file:///c:/Users/LHP02/Desktop/musica-v0.1/apps/api/AGENT.md)
+## Đọc theo thứ tự
+1) [.trae/rules/global.md](./.trae/rules/global.md)
+2) [.trae/rules/api-contracts.md](./.trae/rules/api-contracts.md)
+3) [README.md](./README.md)
+4) Theo scope:
+   - FE: [apps/web/AGENT.md](./apps/web/AGENT.md)
+   - BE: [apps/api/AGENT.md](./apps/api/AGENT.md)
 
 ## Project map
-- FE: `apps/web` (Vue 3 + Vite + Pinia + Vue Router + PrimeVue + VueUse + Axios)
-- BE: `apps/api` (NestJS + Swagger/OpenAPI)
-- Shared: `packages/contracts` (API response/pagination types dùng chung)
+- FE: `apps/web`
+- BE: `apps/api`
+- Shared contracts: `packages/contracts`
 
-## Global skills (Trae)
-- Global skills nằm ở: [.trae/ai/skills](file:///c:/Users/LHP02/Desktop/musica-v0.1/.trae/ai/skills)
-- `.trae/rules/*` và các file `AGENT.md` theo scope là instruction runtime chính.
-- `apps/web/skills` là thư viện tham khảo trong repo, không mặc định auto-load như tool skill registry. Khi làm FE, agent phải đọc thủ công skill/reference liên quan qua `apps/web/AGENT.md`.
+## Runtime notes
+- File `AGENT.md` là runtime entrypoint chính cho agent.
+- File `AGENTS.md` chỉ đóng vai trò handbook hoặc compatibility shim.
+- `apps/web/skills` là thư viện tham khảo local; chỉ đọc đúng skill/reference cần cho task hiện tại.
+- `.superpowers/` là shared setup của repo, phải được giữ trong version control khi chứa cấu hình dùng chung.
 
 ## Quy ước quan trọng
 - Không hardcode secrets, không log secrets.
-- API response phải theo `@musica/contracts` (bao gồm `statusCode`, `requestId`, `timestamp`).
-- List endpoints phải có `meta.pagination` (offset pagination).
+- API response phải theo `@musica/contracts`, bao gồm `statusCode`, `requestId`, `timestamp`.
+- List endpoints phải có `meta.pagination`.
 
 ## Commands thường dùng
 - Dev: `pnpm dev`
 - Generate OpenAPI + FE types: `pnpm gen:types`
-- Supabase (BE): `pnpm db:push`
+- Sync schema Supabase: `pnpm db:push`

@@ -17,7 +17,7 @@
   - Sidebar, header và theme toggle đồng bộ
 - Quản lý admin nội bộ cho `SUPER_ADMIN`
 - Quản lý `BUYER` và `ARTIST`
-- Quản lý `Track` với upload audio, publish/hide, preview waveform
+- Quản lý `Product` với upload audio, publish/hide, preview waveform
 - Quản lý `Certificate` với template HTML và render preview
 
 ## Bắt đầu nhanh
@@ -47,7 +47,7 @@ VITE_API_BASE_URL=http://localhost:3000
 
 ### 3. Seed dữ liệu dev
 ```bash
-pnpm.cmd -C apps/api seed:dev
+pnpm --filter api seed:dev
 ```
 
 - Seed hiện tạo sẵn:
@@ -65,14 +65,14 @@ pnpm.cmd -C apps/api seed:dev
 - Chạy cả monorepo:
 
 ```bash
-pnpm.cmd dev
+pnpm dev
 ```
 
 - Nếu cần chạy riêng từng app:
 
 ```bash
-pnpm.cmd -C apps/api dev
-pnpm.cmd -C apps/web dev
+pnpm --filter api dev
+pnpm --filter web dev
 ```
 
 ### 5. Truy cập local
@@ -87,11 +87,19 @@ pnpm.cmd -C apps/web dev
 - `packages/contracts`: shared contracts cho FE/BE
 - `docs`: tài liệu nghiệp vụ, kiến trúc, API
 - `.trae`: rules, plans, specs và AI docs
+- `.superpowers`: shared setup cho agent workflows trong repo
+
+## AI guidance files
+- `AGENT.md`: runtime entrypoint chính cho coding agent ở root repo
+- `apps/web/AGENT.md`: runtime guide ngắn cho FE
+- `apps/api/AGENT.md`: runtime guide ngắn cho BE
+- `apps/web/AGENTS.md`: handbook để bảo trì local skill library của FE
+- `apps/web/skills`: thư viện tham khảo local, chỉ đọc theo nhu cầu của task
 
 ### Frontend
 - `apps/web/src/features/admin-shell`
   - `layouts`: layout dùng chung cho admin
-  - `pages`: dashboard, admin list, user management, track, certificate
+  - `pages`: dashboard, admin list, user management, product, certificate
   - `components`: UI dùng chung riêng cho shell admin
 - `apps/web/src/features/auth`
   - `pages`: login page
@@ -102,8 +110,8 @@ pnpm.cmd -C apps/web dev
   - API, store, types cho admin accounts
 - `apps/web/src/features/managed-users`
   - API, store, types cho buyer/artist
-- `apps/web/src/features/tracks`
-  - API, types và các reusable component cho track
+- `apps/web/src/features/products`
+  - API, types và các reusable component cho product
 - `apps/web/src/features/certificates`
   - API, types và item component cho certificate
 - `apps/web/src/shared`
@@ -117,7 +125,7 @@ pnpm.cmd -C apps/web dev
 - `apps/api/src/auth`: login, JWT, guards, role handling
 - `apps/api/src/admin-users`: quản lý admin nội bộ
 - `apps/api/src/managed-users`: quản lý buyer/artist
-- `apps/api/src/tracks`: quản lý track và audio flow
+- `apps/api/src/products`: quản lý product và audio flow
 - `apps/api/src/certificates`: quản lý certificate và template
 - `apps/api/src/common`: interceptor, middleware, pagination, error handling
 - `apps/api/scripts`: seed dev, helper Supabase CLI
@@ -153,7 +161,7 @@ pnpm.cmd -C apps/web dev
 - `PATCH /admin/users/:userId/status`
 - `DELETE /admin/users/:userId`
 
-### Tracks
+### Products
 - `GET /admin/products`
 - `GET /admin/products/summary`
 - `POST /admin/products`
@@ -256,8 +264,8 @@ type PaginationMeta = {
 ## Supabase workflow
 ### One-time setup
 ```bash
-pnpm.cmd -C apps/api exec supabase login
-pnpm.cmd -C apps/api exec supabase link --project-ref <SUPABASE_PROJECT_REF>
+pnpm --filter api exec supabase login
+pnpm --filter api exec supabase link --project-ref <SUPABASE_PROJECT_REF>
 ```
 
 ### Nếu muốn dùng token thay vì interactive login
@@ -267,44 +275,44 @@ SUPABASE_ACCESS_TOKEN=<YOUR_TOKEN>
 
 ### Tạo migration mới
 ```bash
-pnpm.cmd -C apps/api exec node scripts/supabase.mjs migration new <migration_name>
+pnpm --filter api exec node scripts/supabase.mjs migration new <migration_name>
 ```
 
 ### Update DB remote theo repo
 ```bash
-pnpm.cmd -C apps/api db:push
+pnpm --filter api db:push
 ```
 
 ### Pull schema từ remote về repo khi cần diff
 ```bash
-pnpm.cmd -C apps/api db:pull
+pnpm --filter api db:pull
 ```
 
 ### Kiểm tra local Supabase nếu cần test migration trước
 ```bash
-pnpm.cmd -C apps/api db:start
-pnpm.cmd -C apps/api db:status
-pnpm.cmd -C apps/api db:stop
+pnpm --filter api db:start
+pnpm --filter api db:status
+pnpm --filter api db:stop
 ```
 
 ### Sau khi đổi API contract hoặc thêm endpoint mới
 ```bash
-pnpm.cmd -C apps/api build
-pnpm.cmd -C apps/api gen:openapi
-pnpm.cmd -C apps/web gen:types
+pnpm --filter api build
+pnpm --filter api gen:openapi
+pnpm --filter web gen:types
 ```
 
 ### Quy trình chuẩn để update DB an toàn
 1. Tạo migration mới trong `apps/api/supabase/migrations`.
 2. Test migration trên local Supabase nếu thay đổi lớn hoặc có backfill dữ liệu.
 3. Link đúng remote project bằng `supabase link`.
-4. Chạy `pnpm.cmd -C apps/api db:push`.
-5. Chạy `pnpm.cmd -C apps/api build`, `gen:openapi`, rồi `pnpm.cmd -C apps/web gen:types`.
+4. Chạy `pnpm --filter api db:push`.
+5. Chạy `pnpm --filter api build`, `gen:openapi`, rồi `pnpm --filter web gen:types`.
 6. Chạy typecheck trước khi commit:
 
 ```bash
-pnpm.cmd -C apps/api typecheck
-pnpm.cmd -C apps/web typecheck
+pnpm --filter api typecheck
+pnpm --filter web typecheck
 ```
 
 ## Deploy

@@ -1,10 +1,19 @@
 ---
 name: vue-debug-guides
-description: Vue 3 debugging and error handling for runtime errors, warnings, async failures, and SSR/hydration issues. Use when diagnosing or fixing Vue issues.
+description: Use when diagnosing Vue 3 runtime issues, warnings, async failures, reactivity bugs, or SSR/hydration mismatches in `apps/web/src`.
 ---
 
 Vue 3 debugging and error handling for runtime issues, warnings, async failures, and hydration bugs.
-For development best practices and common gotchas, use `vue-best-practices`.
+
+## Use When
+- a Vue warning or runtime error already exists
+- UI state behaves unexpectedly and you need root-cause debugging
+- async rendering, refs, watchers, teleport, or hydration are acting strangely
+
+## Do First
+- identify the symptom category before opening references
+- use `vue-best-practices` for general implementation guidance
+- open only the reference that matches the observed failure mode
 
 ### Reactivity
 - Tracing unexpected re-renders and state updates → See [reactivity-debugging-hooks](reference/reactivity-debugging-hooks.md)

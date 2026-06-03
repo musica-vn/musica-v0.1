@@ -31,6 +31,7 @@
 
 ## Runtime guide
 - Dùng `SupabaseService` làm entry point cho DB/storage, tránh rải config trực tiếp trong service.
+- Chỉ dùng auth utilities từ `src/common/auth/*`; không tạo lại guards/decorators trùng trong `src/auth/*`.
 - Business errors nên trả `HttpException` với message/code ổn định để FE map được.
 - Các flow có side effects nhiều bước cần ưu tiên idempotent và validate trước khi ghi dữ liệu.
 - Không để debug snippets hoặc file `.dbg` phụ thuộc vào runtime code sau khi fix xong.

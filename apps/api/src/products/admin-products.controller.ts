@@ -18,10 +18,10 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { RolesGuard } from '../auth/roles.guard';
-import { Roles } from '../auth/roles.decorator';
-import type { AuthenticatedRequest } from '../auth/auth.types';
+import type { AuthenticatedRequest } from '../common/auth/auth.types';
+import { JwtAuthGuard } from '../common/auth/jwt-auth.guard';
+import { RequireRoles } from '../common/auth/require-roles.decorator';
+import { RolesGuard } from '../common/auth/roles.guard';
 import {
   AdminCreateProductRequestDto,
   AdminConfirmProductAudioUploadRequestDto,
@@ -47,7 +47,7 @@ import {
 @ApiTags('Admin - Products')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('ADMIN', 'SUPER_ADMIN')
+@RequireRoles('ADMIN', 'SUPER_ADMIN')
 @Controller('admin/products')
 export class AdminProductsController {
   constructor(private readonly productsService: ProductsService) {}
@@ -101,30 +101,44 @@ export class AdminProductsController {
     @Param('productId', ParseUUIDPipe) productId: string,
     @Body() body: AdminReplaceProductAllowedPermissionsRequestDto,
   ) {
-    return this.productsService.replaceAllowedPermissions(productId, body.permissionIds);
+    return this.productsService.replaceAllowedPermissions(
+      productId,
+      body.permissionIds,
+    );
   }
 
   @Post(':productId/original-upload-url')
   @ApiOperation({ summary: 'Get signed upload URL for original audio (admin)' })
   @ApiOkResponse({ type: AdminProductUploadUrlResponseDto })
-  async originalUploadUrl(@Param('productId', ParseUUIDPipe) productId: string) {
+  async originalUploadUrl(
+    @Param('productId', ParseUUIDPipe) productId: string,
+  ) {
     return this.productsService.createOriginalUploadUrl(productId);
   }
 
   @Post(':productId/thumbnail-upload-url')
-  @ApiOperation({ summary: 'Get signed upload URL for product thumbnail (admin)' })
+  @ApiOperation({
+    summary: 'Get signed upload URL for product thumbnail (admin)',
+  })
   @ApiOkResponse({ type: AdminProductUploadUrlResponseDto })
   async thumbnailUploadUrl(
     @Param('productId', ParseUUIDPipe) productId: string,
     @Body() body: AdminCreateProductThumbnailUploadUrlRequestDto,
   ) {
-    return this.productsService.createThumbnailUploadUrl(productId, body.extension);
+    return this.productsService.createThumbnailUploadUrl(
+      productId,
+      body.extension,
+    );
   }
 
   @Post(':productId/sheet-music-upload-url')
-  @ApiOperation({ summary: 'Get signed upload URL for sheet music PDF (admin)' })
+  @ApiOperation({
+    summary: 'Get signed upload URL for sheet music PDF (admin)',
+  })
   @ApiOkResponse({ type: AdminProductUploadUrlResponseDto })
-  async sheetMusicUploadUrl(@Param('productId', ParseUUIDPipe) productId: string) {
+  async sheetMusicUploadUrl(
+    @Param('productId', ParseUUIDPipe) productId: string,
+  ) {
     return this.productsService.createSheetMusicUploadUrl(productId);
   }
 
@@ -170,7 +184,9 @@ export class AdminProductsController {
     summary: 'Get signed playback URL for original audio (admin)',
   })
   @ApiOkResponse({ type: AdminProductPlaybackUrlResponseDto })
-  async originalPlaybackUrl(@Param('productId', ParseUUIDPipe) productId: string) {
+  async originalPlaybackUrl(
+    @Param('productId', ParseUUIDPipe) productId: string,
+  ) {
     return this.productsService.createOriginalPlaybackUrl(productId);
   }
 

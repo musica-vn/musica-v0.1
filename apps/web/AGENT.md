@@ -5,10 +5,9 @@
 - Mục tiêu: Vue 3 + Vite + Pinia + Vue Router theo hướng component rõ ràng, typed API calls và UI admin ổn định.
 
 ## Đọc theo thứ tự
-1) [apps/web/AGENT.md](file:///c:/Users/LHP02/Desktop/musica-v0.1/apps/web/AGENT.md)
-2) [AGENT.md](file:///c:/Users/LHP02/Desktop/musica-v0.1/AGENT.md)
-3) [global.md](file:///c:/Users/LHP02/Desktop/musica-v0.1/.trae/rules/global.md)
-4) [api-contracts.md](file:///c:/Users/LHP02/Desktop/musica-v0.1/.trae/rules/api-contracts.md)
+1) [../../AGENT.md](../../AGENT.md)
+2) [../../.trae/rules/global.md](../../.trae/rules/global.md)
+3) [../../.trae/rules/api-contracts.md](../../.trae/rules/api-contracts.md)
 
 ## Runtime guide
 - Ưu tiên Composition API với `<script setup lang="ts">`.
@@ -18,7 +17,7 @@
 
 ## Skill library trong repo
 - `apps/web/skills` là thư viện tham khảo local, không mặc định auto-load bởi AI agent runtime.
-- Khi làm task Vue, agent phải tự đọc `SKILL.md` hoặc reference phù hợp trong `apps/web/skills`.
+- Khi làm task Vue, agent chỉ đọc đúng `SKILL.md` hoặc reference phù hợp với task hiện tại để tránh prompt bloat.
 - Ưu tiên đọc theo nhu cầu:
   - Vue chung: `apps/web/skills/vue-best-practices/SKILL.md`
   - Router: `apps/web/skills/vue-router-best-practices/SKILL.md`
