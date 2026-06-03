@@ -6,6 +6,9 @@ import { useRoute } from 'vue-router'
 import { ApiClientError } from '../../../shared/api/http'
 import { formatAdminDateTime } from '../../../shared/utils/date-time'
 import { createAdminComplianceFileDownloadUrl, getAdminComplianceDetail, listAdminCompliance, submitAdminComplianceDecision, uploadAdminComplianceFiles } from '../../compliance/compliance.api'
+import ComplianceDecisionContextRail from '../../compliance/components/ComplianceDecisionContextRail.vue'
+import ComplianceDecisionHeader from '../../compliance/components/ComplianceDecisionHeader.vue'
+import ComplianceDecisionWorkspace from '../../compliance/components/ComplianceDecisionWorkspace.vue'
 import type { ComplianceDetail, ComplianceLegalStatus, ComplianceListItem, ComplianceReviewStatus, ProductStatus } from '../../compliance/compliance.types'
 import { useCorePermissionsStore } from '../../core-permissions/core-permissions.store'
 
@@ -13,8 +16,6 @@ const fieldClass =
   'h-12 w-full rounded-2xl border border-slate-200/80 bg-white/90 px-4 text-sm text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-violet-400 focus:ring-4 focus:ring-violet-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-800 dark:bg-slate-950/70 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-violet-500 dark:focus:ring-violet-500/20'
 const selectFieldClass =
   'h-12 w-full appearance-none rounded-2xl border border-slate-200/80 bg-white/90 px-4 pr-11 text-sm text-slate-700 shadow-sm outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-800 dark:bg-slate-950/70 dark:text-slate-100 dark:focus:border-violet-500 dark:focus:ring-violet-500/20'
-const textAreaClass =
-  'min-h-[132px] w-full rounded-2xl border border-slate-200/80 bg-white/90 px-4 py-3 text-sm text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-violet-400 focus:ring-4 focus:ring-violet-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-800 dark:bg-slate-950/70 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-violet-500 dark:focus:ring-violet-500/20'
 const primaryButtonClass =
   'inline-flex items-center justify-center rounded-2xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-600 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-violet-500 dark:hover:bg-violet-400'
 const secondaryButtonClass =
@@ -76,6 +77,12 @@ const selectedPermissionItems = computed(() =>
     decisionForm.approvedPermissionIds.includes(permission.id),
   ),
 )
+const selectedPermissionChips = computed(() =>
+  selectedPermissionItems.value.map((permission) => ({
+    id: permission.id,
+    name: permission.name,
+  })),
+)
 const decisionSummaryText = computed(() => {
   if (decisionForm.reviewStatus === 'REJECTED') return 'Quyết định từ chối sẽ được lưu'
   if (selectedPermissionItems.value.length === 0) return 'Chưa chọn quyền nào'
@@ -87,9 +94,6 @@ const suggestedActionText = computed(() => {
   }
   return 'Hồ sơ đang chờ duyệt. Chọn trạng thái và quyền để hoàn tất.'
 })
-
-void decisionSummaryText.value
-void suggestedActionText.value
 
 const clearMessages = () => {
   errorMessage.value = null
@@ -300,6 +304,12 @@ const submitDecision = async () => {
   } finally {
     isSubmittingDecision.value = false
   }
+}
+
+const togglePermissionSelection = (permissionId: string) => {
+  decisionForm.approvedPermissionIds = decisionForm.approvedPermissionIds.includes(permissionId)
+    ? decisionForm.approvedPermissionIds.filter((id) => id !== permissionId)
+    : [...decisionForm.approvedPermissionIds, permissionId]
 }
 
 const goToPage = async (page: number) => {
@@ -548,30 +558,17 @@ watch(
       }"
     >
       <template #header>
-        <div v-if="selectedDetail" class="w-full flex flex-col md:flex-row md:items-center justify-between gap-4 pr-6">
-          <div>
-            <h2 class="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2 m-0">
-              <i class="pi pi-shield text-violet-500 text-lg" />
-              Chi tiết hồ sơ: {{ selectedDetail.product.title }}
-            </h2>
-            <p class="m-0 mt-1.5 text-xs text-slate-500 dark:text-slate-400 flex flex-wrap items-center gap-2">
-              <span>Nghệ sĩ: <strong class="text-slate-700 dark:text-slate-300">{{ selectedDetail.product.artistName || selectedDetail.product.artistId }}</strong></span>
-              <span class="h-1 w-1 rounded-full bg-slate-300 dark:bg-slate-600" />
-              <span>Hồ sơ: <strong class="text-slate-700 dark:text-slate-300">{{ formatReviewStatusLabel(selectedDetail.reviewStatus) }}</strong></span>
-            </p>
-          </div>
-          <div class="flex flex-wrap items-center gap-2">
-            <span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold" :class="getProductStatusClass(selectedDetail.product.status)">
-              {{ formatProductStatusLabel(selectedDetail.product.status) }}
-            </span>
-            <span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold" :class="getLegalStatusClass(selectedDetail.legalStatus)">
-              {{ formatLegalStatusLabel(selectedDetail.legalStatus) }}
-            </span>
-            <span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold" :class="getReviewStatusClass(selectedDetail.reviewStatus)">
-              {{ formatReviewStatusLabel(selectedDetail.reviewStatus) }}
-            </span>
-          </div>
-        </div>
+        <ComplianceDecisionHeader
+          v-if="selectedDetail"
+          :detail="selectedDetail"
+          :format-product-status-label="formatProductStatusLabel"
+          :format-legal-status-label="formatLegalStatusLabel"
+          :format-review-status-label="formatReviewStatusLabel"
+          :format-review-date-time="formatReviewDateTime"
+          :get-product-status-class="getProductStatusClass"
+          :get-legal-status-class="getLegalStatusClass"
+          :get-review-status-class="getReviewStatusClass"
+        />
       </template>
 
       <div v-if="selectedDetail" class="space-y-5 pt-4">
@@ -704,88 +701,33 @@ watch(
         </div>
 
         <!-- Tab 2: Decision & Permissions -->
-        <div v-else-if="activeTab === 'decision'" class="grid gap-6 lg:grid-cols-[1fr_1.5fr]">
-          <!-- Left: Decision options -->
-          <div class="space-y-4">
-            <div class="rounded-2xl border border-slate-100 bg-slate-50/50 p-5 dark:border-slate-800/80 dark:bg-slate-900/30 space-y-4">
-              <h3 class="text-xs font-bold uppercase tracking-[0.16em] text-slate-400 mb-2 mt-0">Trạng thái hồ sơ</h3>
-              
-              <label class="block space-y-1.5">
-                <span class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">Legal Status</span>
-                <div class="relative">
-                  <select v-model="decisionForm.legalStatus" :class="selectFieldClass" :disabled="isSubmittingDecision">
-                    <option value="PENDING">PENDING</option>
-                    <option value="SUFFICIENT">SUFFICIENT</option>
-                    <option value="INSUFFICIENT">INSUFFICIENT</option>
-                  </select>
-                  <i class="pi pi-chevron-down pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs text-slate-400 dark:text-slate-500" />
-                </div>
-              </label>
+        <div v-else-if="activeTab === 'decision'" class="grid gap-6 lg:grid-cols-[340px_minmax(0,1fr)]">
+          <ComplianceDecisionContextRail
+            :detail="selectedDetail"
+            :suggested-action-text="suggestedActionText"
+            :format-legal-status-label="formatLegalStatusLabel"
+            :format-review-status-label="formatReviewStatusLabel"
+            :format-review-date-time="formatReviewDateTime"
+          />
 
-              <label class="block space-y-1.5">
-                <span class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">Review Status</span>
-                <div class="relative">
-                  <select v-model="decisionForm.reviewStatus" :class="selectFieldClass" :disabled="isSubmittingDecision">
-                    <option value="PENDING">PENDING</option>
-                    <option value="APPROVED">APPROVED</option>
-                    <option value="REJECTED">REJECTED</option>
-                  </select>
-                  <i class="pi pi-chevron-down pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs text-slate-400 dark:text-slate-500" />
-                </div>
-              </label>
-            </div>
-
-            <!-- Reject Reason textarea -->
-            <div v-if="requiresRejectReason" class="rounded-2xl border border-rose-100 bg-rose-50/30 p-5 dark:border-rose-950/30 dark:bg-rose-950/10 space-y-2">
-              <div class="flex items-center gap-2 text-rose-700 dark:text-rose-450">
-                <i class="pi pi-exclamation-triangle text-xs" />
-                <span class="text-xs font-bold uppercase tracking-[0.12em]">Lý do từ chối (Bắt buộc)</span>
-              </div>
-              <textarea
-                v-model="decisionForm.rejectReason"
-                :class="textAreaClass"
-                class="!border-rose-200 focus:!border-rose-455 focus:!ring-rose-100/30 dark:!border-rose-950 dark:focus:!border-rose-800 dark:focus:!ring-rose-900/20"
-                :disabled="isSubmittingDecision"
-                placeholder="Nhập lý do từ chối kiểm duyệt hoặc thiếu tài liệu..."
-              />
-            </div>
-          </div>
-
-          <!-- Right: Permissions Assignment -->
-          <div class="space-y-4">
-            <div class="rounded-2xl border border-slate-100 bg-slate-50/50 p-5 dark:border-slate-800/80 dark:bg-slate-900/30">
-              <div class="flex items-center justify-between mb-3">
-                <h3 class="text-xs font-bold uppercase tracking-[0.16em] text-slate-400 m-0">Quyền cấp mới trong quyết định</h3>
-                <span class="text-[10px] font-semibold text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-950/40 px-2 py-0.5 rounded-full">
-                  Đã chọn: {{ decisionForm.approvedPermissionIds.length }}
-                </span>
-              </div>
-
-              <div class="grid gap-2 sm:grid-cols-2">
-                <label
-                  v-for="permission in corePermissionsStore.activeItems"
-                  :key="permission.id"
-                  class="flex cursor-pointer items-start gap-3 rounded-xl border p-3 text-xs transition"
-                  :class="decisionForm.approvedPermissionIds.includes(permission.id)
-                    ? 'border-violet-500 bg-violet-50/40 text-violet-750 dark:border-violet-500 dark:bg-violet-950/25 dark:text-violet-300 font-semibold'
-                    : 'border-slate-200/80 bg-white text-slate-700 dark:border-slate-800 dark:bg-slate-950/40 dark:text-slate-200 hover:border-slate-350 dark:hover:border-slate-700'"
-                >
-                  <input
-                    v-model="decisionForm.approvedPermissionIds"
-                    class="mt-0.5 h-3.5 w-3.5 rounded border-slate-300 text-violet-600 focus:ring-violet-500 dark:border-slate-700 dark:bg-slate-950"
-                    type="checkbox"
-                    :value="permission.id"
-                    :disabled="isSubmittingDecision"
-                  />
-                  <div class="min-w-0">
-                    <div class="truncate font-semibold">{{ permission.name }}</div>
-                    <div class="mt-0.5 truncate text-[10px] text-slate-455 dark:text-slate-500">{{ permission.lawReference }}</div>
-                  </div>
-                </label>
-              </div>
-            </div>
-
-          </div>
+          <ComplianceDecisionWorkspace
+            :legal-status="decisionForm.legalStatus"
+            :review-status="decisionForm.reviewStatus"
+            :reject-reason="decisionForm.rejectReason"
+            :requires-reject-reason="requiresRejectReason"
+            :approved-permission-ids="decisionForm.approvedPermissionIds"
+            :selected-count="selectedPermissionItems.length"
+            :decision-summary-text="decisionSummaryText"
+            :active-permissions="corePermissionsStore.activeItems"
+            :selected-permissions="selectedPermissionChips"
+            :is-submitting-decision="isSubmittingDecision"
+            @update:legal-status="decisionForm.legalStatus = $event"
+            @update:review-status="decisionForm.reviewStatus = $event"
+            @update:reject-reason="decisionForm.rejectReason = $event"
+            @toggle-permission="togglePermissionSelection"
+            @clear-permissions="decisionForm.approvedPermissionIds = []"
+            @submit="submitDecision"
+          />
         </div>
       </div>
 
@@ -797,11 +739,6 @@ watch(
       <template #footer>
         <div class="flex w-full justify-end gap-2 border-t border-slate-100 dark:border-slate-800 pt-3 mt-4">
           <button type="button" :class="secondaryButtonClass" class="!py-2 !px-4 cursor-pointer" @click="detailDialogVisible = false">Đóng</button>
-          <button type="button" :class="primaryButtonClass" class="!py-2 !px-4 cursor-pointer" :disabled="!selectedDetail || isSubmittingDecision" @click="submitDecision">
-            <i v-if="isSubmittingDecision" class="pi pi-spin pi-spinner mr-2 text-xs" />
-            <i v-else class="pi pi-check mr-2 text-xs" />
-            Lưu quyết định
-          </button>
         </div>
       </template>
     </Dialog>
