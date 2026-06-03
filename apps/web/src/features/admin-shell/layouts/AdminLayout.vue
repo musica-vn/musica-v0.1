@@ -347,7 +347,6 @@ onBeforeUnmount(() => {
                     {{ role }}
                   </span>
                 </div>
-                </div>
               </div>
 
               <div class="flex flex-wrap items-center gap-3 sm:justify-end">
