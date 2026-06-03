@@ -313,26 +313,26 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="space-y-6 pb-8">
+  <div class="flex min-w-0 flex-col gap-4 pb-8 sm:gap-5 lg:gap-6">
     <section
-      class="flex flex-col gap-4 rounded-[32px] border border-slate-200/80 bg-[radial-gradient(circle_at_top_left,rgba(109,74,255,0.22),transparent_38%),radial-gradient(circle_at_60%_120%,rgba(56,189,248,0.14),transparent_44%),linear-gradient(135deg,rgba(255,255,255,0.96),rgba(245,243,255,0.92))] p-6 shadow-2xl shadow-slate-200/40 dark:border-slate-800 dark:bg-[radial-gradient(circle_at_top_left,rgba(124,58,237,0.25),transparent_32%),radial-gradient(circle_at_60%_120%,rgba(14,165,233,0.16),transparent_44%),linear-gradient(135deg,rgba(15,23,42,0.92),rgba(2,6,23,0.96))] dark:shadow-black/20 lg:flex-row lg:items-start lg:justify-between"
+      class="flex flex-col gap-4 rounded-[32px] border border-slate-200/80 bg-[radial-gradient(circle_at_top_left,rgba(109,74,255,0.22),transparent_38%),radial-gradient(circle_at_60%_120%,rgba(56,189,248,0.14),transparent_44%),linear-gradient(135deg,rgba(255,255,255,0.96),rgba(245,243,255,0.92))] p-5 shadow-2xl shadow-slate-200/40 dark:border-slate-800 dark:bg-[radial-gradient(circle_at_top_left,rgba(124,58,237,0.25),transparent_32%),radial-gradient(circle_at_60%_120%,rgba(14,165,233,0.16),transparent_44%),linear-gradient(135deg,rgba(15,23,42,0.92),rgba(2,6,23,0.96))] dark:shadow-black/20 sm:p-6 lg:flex-row lg:items-start lg:justify-between"
     >
-      <div class="space-y-3">
+      <div class="min-w-0 space-y-3">
         <div class="inline-flex items-center rounded-full bg-violet-100 px-3 py-1 text-xs font-bold uppercase tracking-[0.24em] text-violet-700 dark:bg-violet-500/20 dark:text-violet-200">
           Quản trị viên
         </div>
         <div>
-          <h1 class="m-0 text-3xl font-semibold tracking-tight text-slate-950 dark:text-white">Quản lý chứng chỉ</h1>
+          <h1 class="m-0 text-2xl font-semibold tracking-tight text-slate-950 sm:text-3xl dark:text-white">Quản lý chứng chỉ</h1>
         </div>
       </div>
 
-      <button type="button" :class="secondaryButtonClass" :disabled="isLoading" @click="fetchCertificates">
+      <button type="button" :class="[secondaryButtonClass, 'w-full sm:w-auto']" :disabled="isLoading" @click="fetchCertificates">
         <i class="pi pi-refresh mr-2" />
         Làm mới
       </button>
     </section>
 
-    <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+    <section class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <article
         v-for="card in summaryCards"
         :key="card.title"

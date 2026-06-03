@@ -374,23 +374,23 @@ watch(
 </script>
 
 <template>
-  <div class="space-y-6">
+  <div class="flex min-w-0 flex-col gap-4 sm:gap-5 lg:gap-6">
     <section
-      class="flex flex-col gap-4 rounded-[32px] border border-slate-200/80 bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.18),transparent_38%),linear-gradient(135deg,rgba(255,255,255,0.96),rgba(240,249,255,0.92))] p-6 shadow-2xl shadow-slate-200/40 dark:border-slate-800 dark:bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.18),transparent_30%),linear-gradient(135deg,rgba(15,23,42,0.92),rgba(2,6,23,0.96))] dark:shadow-black/20 lg:flex-row lg:items-center lg:justify-between"
+      class="flex flex-col gap-4 rounded-[32px] border border-slate-200/80 bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.18),transparent_38%),linear-gradient(135deg,rgba(255,255,255,0.96),rgba(240,249,255,0.92))] p-5 shadow-2xl shadow-slate-200/40 dark:border-slate-800 dark:bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.18),transparent_30%),linear-gradient(135deg,rgba(15,23,42,0.92),rgba(2,6,23,0.96))] dark:shadow-black/20 sm:p-6 lg:flex-row lg:items-center lg:justify-between"
     >
-      <div class="space-y-3">
+      <div class="min-w-0 space-y-3">
         <div class="inline-flex items-center rounded-full bg-sky-100 px-3 py-1 text-xs font-bold uppercase tracking-[0.24em] text-sky-700 dark:bg-sky-500/20 dark:text-sky-200">
           Compliance
         </div>
         <div>
-          <h1 class="m-0 text-3xl font-semibold tracking-tight !text-slate-950 dark:!text-white">Pháp lý & Kiểm duyệt</h1>
+          <h1 class="m-0 text-2xl font-semibold tracking-tight !text-slate-950 sm:text-3xl dark:!text-white">Pháp lý & Kiểm duyệt</h1>
           <div class="mt-2 text-sm text-slate-500 dark:text-slate-400">
             Upload giấy tờ pháp lý, theo dõi trạng thái review và cấp `Approved permissions` làm nguồn để Product tự chọn quyền bán thủ công.
           </div>
         </div>
       </div>
 
-      <div class="grid gap-3 sm:grid-cols-3">
+      <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
         <article class="rounded-[24px] border border-white/70 bg-white/80 px-5 py-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/70">
           <div class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Tổng hồ sơ</div>
           <div class="mt-2 text-2xl font-semibold text-slate-950 dark:text-white">{{ totalItems }}</div>

@@ -283,16 +283,16 @@ const removeUser = (row: ManagedUser) => {
 </script>
 
 <template>
-  <div class="space-y-6 pb-8">
+  <div class="flex min-w-0 flex-col gap-4 pb-8 sm:gap-5 lg:gap-6">
     <section
-      class="flex flex-col gap-4 rounded-[32px] border border-slate-200/80 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.18),transparent_34%),radial-gradient(circle_at_75%_120%,rgba(124,58,237,0.14),transparent_42%),linear-gradient(135deg,rgba(255,255,255,0.96),rgba(244,248,255,0.92))] p-6 shadow-2xl shadow-slate-200/40 dark:border-slate-800 dark:bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.16),transparent_30%),radial-gradient(circle_at_75%_120%,rgba(124,58,237,0.2),transparent_42%),linear-gradient(135deg,rgba(15,23,42,0.92),rgba(2,6,23,0.96))] dark:shadow-black/20 xl:flex-row xl:items-center xl:justify-between"
+      class="flex flex-col gap-4 rounded-[32px] border border-slate-200/80 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.18),transparent_34%),radial-gradient(circle_at_75%_120%,rgba(124,58,237,0.14),transparent_42%),linear-gradient(135deg,rgba(255,255,255,0.96),rgba(244,248,255,0.92))] p-5 shadow-2xl shadow-slate-200/40 dark:border-slate-800 dark:bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.16),transparent_30%),radial-gradient(circle_at_75%_120%,rgba(124,58,237,0.2),transparent_42%),linear-gradient(135deg,rgba(15,23,42,0.92),rgba(2,6,23,0.96))] dark:shadow-black/20 sm:p-6 xl:flex-row xl:items-center xl:justify-between"
     >
-      <div class="space-y-3">
+      <div class="min-w-0 space-y-3">
         <div class="inline-flex items-center rounded-full bg-sky-100 px-3 py-1 text-xs font-bold uppercase tracking-[0.24em] text-sky-700 dark:bg-sky-500/20 dark:text-sky-200">
           {{ roleMeta.accentLabel }}
         </div>
         <div>
-          <h2 class="!m-0 text-3xl font-semibold tracking-tight !text-slate-950 dark:!text-white">
+          <h2 class="!m-0 text-2xl font-semibold tracking-tight !text-slate-950 sm:text-3xl dark:!text-white">
             {{ roleMeta.title }}
           </h2>
           <p class="mt-3 max-w-3xl text-sm leading-6 text-slate-600 dark:text-slate-300">
@@ -303,7 +303,7 @@ const removeUser = (row: ManagedUser) => {
 
       <button
         type="button"
-        class="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-violet-600 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-violet-500 dark:hover:bg-violet-400"
+        class="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-violet-600 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-violet-500 dark:hover:bg-violet-400 sm:w-auto"
         :disabled="managedUsersStore.isLoading || isActionLoading"
         @click="openCreate"
       >
@@ -312,7 +312,7 @@ const removeUser = (row: ManagedUser) => {
       </button>
     </section>
 
-    <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+    <section class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <AdminStatCard
         :title="props.initialRole === 'Buyer' ? 'Tổng buyer' : 'Tổng artist'"
         :value="managedUsersStore.totalItems"

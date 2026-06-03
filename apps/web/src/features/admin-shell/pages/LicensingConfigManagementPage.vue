@@ -1024,13 +1024,13 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="space-y-6">
-    <section class="flex flex-col gap-4 rounded-[32px] border border-slate-200/80 bg-white/85 p-5 shadow-xl shadow-slate-200/40 backdrop-blur dark:border-slate-800 dark:bg-slate-950/70 dark:shadow-black/20 md:flex-row md:items-center md:justify-between">
-      <div>
-        <div class="text-xl font-semibold text-slate-950 dark:text-white">{{ currentResource.title }}</div>
+  <div class="flex min-w-0 flex-col gap-4 sm:gap-5 lg:gap-6">
+    <section class="flex flex-col gap-4 rounded-[32px] border border-slate-200/80 bg-white/85 p-5 shadow-xl shadow-slate-200/40 backdrop-blur dark:border-slate-800 dark:bg-slate-950/70 dark:shadow-black/20 sm:p-6 md:flex-row md:items-center md:justify-between">
+      <div class="min-w-0">
+        <div class="text-xl font-semibold text-slate-950 sm:text-2xl dark:text-white">{{ currentResource.title }}</div>
         <div class="mt-2 text-sm text-slate-500 dark:text-slate-400">{{ currentResource.description }}</div>
       </div>
-      <button type="button" :class="primaryButtonClass" :disabled="currentIsLoading" @click="openCreate">
+      <button type="button" :class="[primaryButtonClass, 'w-full sm:w-auto']" :disabled="currentIsLoading" @click="openCreate">
         <i class="pi pi-plus mr-2" />
         {{ currentResource.createLabel }}
       </button>

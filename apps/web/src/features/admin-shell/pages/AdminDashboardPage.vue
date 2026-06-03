@@ -221,16 +221,16 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="space-y-6 pb-8">
+  <div class="flex min-w-0 flex-col gap-4 pb-8 sm:gap-5 lg:gap-6">
     <section
-      class="flex flex-col gap-5 rounded-[32px] border border-slate-200/80 bg-[radial-gradient(circle_at_top_left,rgba(109,74,255,0.22),transparent_38%),radial-gradient(circle_at_65%_120%,rgba(56,189,248,0.14),transparent_42%),linear-gradient(135deg,rgba(255,255,255,0.96),rgba(245,243,255,0.92))] p-6 shadow-2xl shadow-slate-200/40 dark:border-slate-800 dark:bg-[radial-gradient(circle_at_top_left,rgba(124,58,237,0.24),transparent_34%),radial-gradient(circle_at_65%_120%,rgba(14,165,233,0.18),transparent_42%),linear-gradient(135deg,rgba(15,23,42,0.92),rgba(2,6,23,0.96))] dark:shadow-black/20 xl:flex-row xl:items-center xl:justify-between"
+      class="flex flex-col gap-5 rounded-[32px] border border-slate-200/80 bg-[radial-gradient(circle_at_top_left,rgba(109,74,255,0.22),transparent_38%),radial-gradient(circle_at_65%_120%,rgba(56,189,248,0.14),transparent_42%),linear-gradient(135deg,rgba(255,255,255,0.96),rgba(245,243,255,0.92))] p-5 shadow-2xl shadow-slate-200/40 dark:border-slate-800 dark:bg-[radial-gradient(circle_at_top_left,rgba(124,58,237,0.24),transparent_34%),radial-gradient(circle_at_65%_120%,rgba(14,165,233,0.18),transparent_42%),linear-gradient(135deg,rgba(15,23,42,0.92),rgba(2,6,23,0.96))] dark:shadow-black/20 sm:p-6 xl:flex-row xl:items-center xl:justify-between"
     >
-      <div class="space-y-3">
+      <div class="min-w-0 space-y-3">
         <div class="inline-flex items-center rounded-full bg-violet-100 px-3 py-1 text-xs font-bold uppercase tracking-[0.24em] text-violet-700 dark:bg-violet-500/20 dark:text-violet-200">
           Dashboard
         </div>
         <div>
-          <h2 class="!m-0 text-3xl font-semibold tracking-tight !text-slate-950 dark:!text-white">
+          <h2 class="!m-0 text-2xl font-semibold tracking-tight !text-slate-950 sm:text-3xl dark:!text-white">
             Trung tâm điều hành Musica
           </h2>
           <p class="mt-3 max-w-3xl text-sm leading-6 text-slate-600 dark:text-slate-300">
@@ -242,7 +242,7 @@ onMounted(() => {
 
       <button
         type="button"
-        class="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-violet-300 hover:text-violet-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:border-violet-500 dark:hover:text-violet-300"
+        class="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-violet-300 hover:text-violet-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:border-violet-500 dark:hover:text-violet-300 sm:w-auto"
         :disabled="isLoading"
         @click="loadDashboard"
       >
@@ -253,7 +253,7 @@ onMounted(() => {
 
     <Message v-if="errorMessage" severity="error">{{ errorMessage }}</Message>
 
-    <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+    <section class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <AdminStatCard
         v-for="card in statCards"
         :key="card.title"
@@ -268,7 +268,7 @@ onMounted(() => {
     <section class="grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(360px,0.9fr)]">
       <div class="space-y-6">
         <section class="rounded-[32px] border border-slate-200/80 bg-white/92 p-6 shadow-xl shadow-slate-200/40 backdrop-blur dark:border-slate-800 dark:bg-slate-900/80 dark:shadow-black/20">
-          <div class="flex items-center justify-between gap-4">
+          <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <div class="text-lg font-semibold text-slate-950 dark:text-white">Quick actions</div>
               <div class="mt-2 text-sm text-slate-500 dark:text-slate-400">
@@ -277,7 +277,7 @@ onMounted(() => {
             </div>
           </div>
 
-          <div class="mt-5 grid gap-4 lg:grid-cols-2">
+          <div class="mt-5 grid grid-cols-1 gap-4 lg:grid-cols-2">
             <RouterLink
               v-for="item in quickActions"
               :key="item.to"
@@ -300,7 +300,7 @@ onMounted(() => {
         </section>
 
         <section class="rounded-[32px] border border-slate-200/80 bg-white/92 p-6 shadow-xl shadow-slate-200/40 backdrop-blur dark:border-slate-800 dark:bg-slate-900/80 dark:shadow-black/20">
-          <div class="flex items-center justify-between gap-4">
+          <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <div class="text-lg font-semibold text-slate-950 dark:text-white">Người dùng mới lên dashboard</div>
               <div class="mt-2 text-sm text-slate-500 dark:text-slate-400">
