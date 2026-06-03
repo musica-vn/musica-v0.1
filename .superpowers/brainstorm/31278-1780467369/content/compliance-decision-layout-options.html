@@ -1,0 +1,108 @@
+<h2>Phan Danh Gia & Duyet</h2>
+<p class="subtitle">Chon layout phu hop nhat cho man cap quyen su dung san pham. Uu tien: dep, cao cap, de quet thong tin va chon quyen nhanh.</p>
+
+<div class="cards">
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup">
+        <div class="mockup-header">A. Action-First Decision Panel</div>
+        <div class="mockup-body">
+          <div class="mock-nav">Status Summary | Risk | Last Review</div>
+          <div style="display:flex; gap:12px; margin-top:12px;">
+            <div class="mock-sidebar" style="width:34%;">
+              Decision Presets
+              <div class="placeholder" style="margin-top:8px;">Approve</div>
+              <div class="placeholder">Need more docs</div>
+              <div class="placeholder">Reject</div>
+              <div class="placeholder">Reason box</div>
+            </div>
+            <div class="mock-content">
+              Permission Picker
+              <div class="placeholder" style="margin-top:8px;">Search permissions</div>
+              <div class="placeholder">Recommended permissions</div>
+              <div class="placeholder">Permission grid with chips</div>
+              <button class="mock-button">Save decision</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>Action-First</h3>
+      <p>Phu hop khi reviewer muon ra quyet dinh nhanh. Tap trung vao action presets va vung chon quyen lon, ro rang.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup">
+        <div class="mockup-header">B. Premium Split Workspace</div>
+        <div class="mockup-body">
+          <div style="display:grid; grid-template-columns: 1.1fr 1.4fr; gap:12px;">
+            <div class="placeholder" style="min-height:200px;">
+              Review Context
+              <div class="placeholder" style="margin-top:8px;">Product card</div>
+              <div class="placeholder">Current statuses</div>
+              <div class="placeholder">Previous note</div>
+              <div class="placeholder">Suggested next action</div>
+            </div>
+            <div class="placeholder" style="min-height:200px;">
+              Decision Workspace
+              <div class="placeholder" style="margin-top:8px;">Segmented legal/review states</div>
+              <div class="placeholder">Permission selector with grouped cards</div>
+              <div class="placeholder">Selected permissions tray</div>
+              <div class="placeholder">Sticky footer actions</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>Premium Split</h3>
+      <p>Can bang giua dep va hieu qua. Ben trai la context tom tat, ben phai la workspace de chon quyen va luu quyet dinh.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup">
+        <div class="mockup-header">C. Step-by-Step Review Flow</div>
+        <div class="mockup-body">
+          <div class="mock-nav">1 Context | 2 Decision | 3 Permissions | 4 Confirm</div>
+          <div class="placeholder" style="margin-top:12px; min-height:56px;">Progress strip with required checks</div>
+          <div style="display:flex; gap:12px; margin-top:12px;">
+            <div class="mock-content">
+              <div class="placeholder">Current step content</div>
+              <div class="placeholder">Validation hints</div>
+              <button class="mock-button">Next step</button>
+            </div>
+            <div class="mock-sidebar">Summary rail</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>Checklist Flow</h3>
+      <p>Rat ro quy trinh, giam sai sot. Hop neu muon bien man nay thanh quy trinh kiem tra co thu tu.</p>
+    </div>
+  </div>
+</div>
+
+<div class="pros-cons" style="margin-top:20px;">
+  <div class="pros">
+    <h4>Khuyen nghi</h4>
+    <ul>
+      <li>Chon <strong>B</strong> neu muon giao dien dep, cao cap va thuc dung nhat.</li>
+      <li>Chon <strong>A</strong> neu uu tien toc do thao tac hon hinh anh thuong hieu.</li>
+      <li>Chon <strong>C</strong> neu sau nay muon mo rong thanh workflow co huong dan.</li>
+    </ul>
+  </div>
+  <div class="cons">
+    <h4>Dieu can de y</h4>
+    <ul>
+      <li>A de nhanh nhung de bi "tool-like" neu khong polish ky.</li>
+      <li>B can can doi spacing, card hierarchy va sticky action de that su premium.</li>
+      <li>C ro quy trinh nhung co the cham hon cho tac vu cap quyen hang ngay.</li>
+    </ul>
+  </div>
+</div>
