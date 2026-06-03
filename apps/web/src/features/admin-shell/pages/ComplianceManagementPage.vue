@@ -71,6 +71,25 @@ const pageEnd = computed(() => Math.min(pagination.page * pagination.pageSize, t
 const pendingReviewCount = computed(() => rows.value.filter((item) => item.reviewStatus === 'PENDING').length)
 const approvedCount = computed(() => rows.value.filter((item) => item.reviewStatus === 'APPROVED').length)
 const readyToSyncCount = computed(() => rows.value.filter((item) => item.legalStatus === 'SUFFICIENT' && item.reviewStatus === 'APPROVED').length)
+const selectedPermissionItems = computed(() =>
+  corePermissionsStore.activeItems.filter((permission) =>
+    decisionForm.approvedPermissionIds.includes(permission.id),
+  ),
+)
+const decisionSummaryText = computed(() => {
+  if (decisionForm.reviewStatus === 'REJECTED') return 'Quyết định từ chối sẽ được lưu'
+  if (selectedPermissionItems.value.length === 0) return 'Chưa chọn quyền nào'
+  return `${selectedPermissionItems.value.length} quyền sẽ được cấp`
+})
+const suggestedActionText = computed(() => {
+  if (selectedDetail.value?.reviewStatus === 'REJECTED') {
+    return 'Hồ sơ từng bị từ chối. Kiểm tra lại lý do trước khi cấp quyền.'
+  }
+  return 'Hồ sơ đang chờ duyệt. Chọn trạng thái và quyền để hoàn tất.'
+})
+
+void decisionSummaryText.value
+void suggestedActionText.value
 
 const clearMessages = () => {
   errorMessage.value = null
