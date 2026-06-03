@@ -49,6 +49,7 @@ import {
 import ProductFilterInput from '../../products/components/ProductFilterInput.vue'
 import ProductFilterSelect from '../../products/components/ProductFilterSelect.vue'
 import ProductWavePreview from '../../products/components/ProductWavePreview.vue'
+import ProductManagementActionMenu from '../components/ProductManagementActionMenu.vue'
 import ProductManagementMobileCardList from '../components/ProductManagementMobileCardList.vue'
 
 type ProductForm = {
@@ -2551,6 +2552,18 @@ onBeforeUnmount(() => {
         </div>
       </template>
     </Dialog>
+
+    <ProductManagementActionMenu
+      :visible="Boolean(mobileActionTrack)"
+      :track="mobileActionTrack"
+      :is-loading="isLoading"
+      @close="closeMobileActionMenu"
+      @detail="openDetailDialog"
+      @edit="openEditDialog"
+      @permissions="openApprovedPermissionsDialog"
+      @compliance="openComplianceDashboard"
+      @upload="openUploadDialog"
+    />
 
     <Dialog
       v-model:visible="approvedPermissionsDialogVisible"
