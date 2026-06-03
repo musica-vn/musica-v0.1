@@ -167,108 +167,60 @@ export class VariantPricingService {
     const isModificationEnabled = modifierMap.has('MODIFICATION');
 
     const breakdown: VariantPricingBreakdownLineDto[] = [];
+    const addBreakdownLine = (key: string, label: string) => {
+      breakdown.push({ key, label });
+    };
     let currentTotal = BASE_PRICE_VND;
 
-    breakdown.push({
-      key: 'BASE_PRICE',
-      label: 'Giá cơ bản bản quyền',
-      selected: 'VND',
-      multiplier: 1,
-      lineTotal: roundVnd(currentTotal),
-    });
+    addBreakdownLine('BASE_PRICE', 'Giá cơ bản bản quyền');
 
     const platformMultiplier = toNumber((config as any).base_price_multiplier);
     currentTotal *= platformMultiplier;
-    breakdown.push({
-      key: 'PLATFORM_BASE_MULTIPLIER',
-      label: platformType === 'DIGITAL' ? 'Nền tảng số' : 'Nền tảng vật lý',
-      selected: configId,
-      multiplier: platformMultiplier,
-      lineTotal: roundVnd(currentTotal),
-    });
+    addBreakdownLine(
+      'PLATFORM_BASE_MULTIPLIER',
+      platformType === 'DIGITAL' ? 'Nền tảng số' : 'Nền tảng vật lý',
+    );
 
     if (isSubjectEnabled && payload.subject) {
       const subjectMultiplier = SUBJECT_MULTIPLIERS[payload.subject];
       currentTotal *= subjectMultiplier;
-      breakdown.push({
-        key: `SUBJECT_${payload.subject}`,
-        label: 'Đối tượng',
-        selected: payload.subject,
-        multiplier: subjectMultiplier,
-        lineTotal: roundVnd(currentTotal),
-      });
+      addBreakdownLine(`SUBJECT_${payload.subject}`, 'Đối tượng');
     }
 
     if (isDurationEnabled && payload.duration) {
       const durationMultiplier = DURATION_MULTIPLIERS[payload.duration];
       currentTotal *= durationMultiplier;
-      breakdown.push({
-        key: `DURATION_${payload.duration}`,
-        label: 'Thời hạn',
-        selected: payload.duration,
-        multiplier: durationMultiplier,
-        lineTotal: roundVnd(currentTotal),
-      });
+      addBreakdownLine(`DURATION_${payload.duration}`, 'Thời hạn');
     }
 
     if (isScopeEnabled && payload.scope) {
       const scopeMultiplier = SCOPE_MULTIPLIERS[payload.scope];
       currentTotal *= scopeMultiplier;
-      breakdown.push({
-        key: `SCOPE_${payload.scope}`,
-        label: 'Phạm vi',
-        selected: payload.scope,
-        multiplier: scopeMultiplier,
-        lineTotal: roundVnd(currentTotal),
-      });
+      addBreakdownLine(`SCOPE_${payload.scope}`, 'Phạm vi');
     }
 
     selectionKeys.forEach((key) => {
       const multiplier = modifierMap.get(key);
       if (!multiplier) return;
       currentTotal *= multiplier;
-      breakdown.push({
-        key: `PLATFORM_MODIFIER_${key}`,
-        label: 'Yếu tố phụ thuộc (gói nền tảng)',
-        selected: key,
-        multiplier,
-        lineTotal: roundVnd(currentTotal),
-      });
+      addBreakdownLine(`PLATFORM_MODIFIER_${key}`, 'Yếu tố phụ thuộc (gói nền tảng)');
     });
 
     if (isExpressionEnabled && expressionResult.data) {
       const multiplier = toNumber(expressionResult.data.price_multiplier);
       currentTotal *= multiplier;
-      breakdown.push({
-        key: `EXPRESSION_${expressionResult.data.id}`,
-        label: 'Hình thức biểu hiện',
-        selected: expressionResult.data.id,
-        multiplier,
-        lineTotal: roundVnd(currentTotal),
-      });
+      addBreakdownLine(`EXPRESSION_${expressionResult.data.id}`, 'Hình thức biểu hiện');
     }
 
     if (isModificationEnabled && modificationResult.data) {
       const multiplier = toNumber(modificationResult.data.price_multiplier);
       currentTotal *= multiplier;
-      breakdown.push({
-        key: `MODIFICATION_${modificationResult.data.id}`,
-        label: 'Mức độ biến đổi',
-        selected: modificationResult.data.id,
-        multiplier,
-        lineTotal: roundVnd(currentTotal),
-      });
+      addBreakdownLine(`MODIFICATION_${modificationResult.data.id}`, 'Mức độ biến đổi');
     }
 
     if (platformType === 'DIGITAL') {
       currentTotal *= DIGITAL_TOTAL_RATE;
-      breakdown.push({
-        key: 'DIGITAL_TOTAL_RATE',
-        label: 'Điều chỉnh nền tảng số (10%)',
-        selected: '0.1',
-        multiplier: DIGITAL_TOTAL_RATE,
-        lineTotal: roundVnd(currentTotal),
-      });
+      addBreakdownLine('DIGITAL_TOTAL_RATE', 'Điều chỉnh nền tảng số (10%)');
     }
 
     return {

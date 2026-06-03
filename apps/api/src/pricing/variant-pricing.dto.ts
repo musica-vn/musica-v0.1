@@ -65,15 +65,6 @@ export class VariantPricingBreakdownLineDto {
 
   @ApiProperty()
   label: string;
-
-  @ApiProperty()
-  selected: string;
-
-  @ApiProperty()
-  multiplier: number;
-
-  @ApiProperty()
-  lineTotal: number;
 }
 
 export class PublicVariantPricingCalculateDataDto {

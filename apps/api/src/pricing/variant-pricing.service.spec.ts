@@ -82,7 +82,16 @@ describe('VariantPricingService', () => {
 
     expect(result.currency).toBe('VND');
     expect(result.totalPrice).toBe(3_036_000);
-    expect(result.breakdown).toHaveLength(5);
+    expect(result.breakdown).toEqual([
+      { key: 'BASE_PRICE', label: 'Giá cơ bản bản quyền' },
+      { key: 'PLATFORM_BASE_MULTIPLIER', label: 'Nền tảng số' },
+      { key: 'SUBJECT_INDIVIDUAL', label: 'Đối tượng' },
+      {
+        key: 'PLATFORM_MODIFIER_SUBJECT_INDIVIDUAL',
+        label: 'Yếu tố phụ thuộc (gói nền tảng)',
+      },
+      { key: 'DIGITAL_TOTAL_RATE', label: 'Điều chỉnh nền tảng số (10%)' },
+    ]);
   });
 
   it('allows omitting optional dependent attributes without applying their multipliers', async () => {
