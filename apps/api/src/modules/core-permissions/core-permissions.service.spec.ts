@@ -1,5 +1,5 @@
 import { HttpException } from '@nestjs/common'
-import { SupabaseService } from '../supabase/supabase.service'
+import { SupabaseService } from '../../database/supabase.service'
 import { CorePermissionsService } from './core-permissions.service'
 
 type DependencyCounts = {

@@ -15,6 +15,10 @@ import {
   AdminUpdateProductRequestDto,
 } from './admin-products.dto';
 import { ProductDto } from './product.dto';
+import {
+  applyProductPriorityOrdering,
+  PRODUCT_PRIORITY_SELECT,
+} from '../product-priorities/product-priority-ordering';
 
 type DbProductRow = {
   id: string;
@@ -52,9 +56,17 @@ type DbComplianceReviewJoinRow = {
   review_status: 'PENDING' | 'APPROVED' | 'REJECTED';
 };
 
+type DbProductPriorityJoinRow = {
+  priority_score: number;
+  is_trigger: boolean;
+  effective_start: string | null;
+  effective_end: string | null;
+};
+
 type DbProductJoinRow = DbProductRow & {
   track_allowed_permissions?: DbProductAllowedPermissionRow[] | null;
   compliance_reviews?: DbComplianceReviewJoinRow[] | DbComplianceReviewJoinRow | null;
+  product_priorities?: DbProductPriorityJoinRow[] | DbProductPriorityJoinRow | null;
 };
 
 type DbLicensingConfigPermissionRow = {
@@ -158,6 +170,14 @@ const mapProductRowToDto = (row: DbProductJoinRow): ProductDto => {
         ? complianceJoin
         : null;
 
+  const priorityJoin = row.product_priorities;
+  const priority =
+    Array.isArray(priorityJoin) && priorityJoin.length > 0
+      ? priorityJoin[0]
+      : !Array.isArray(priorityJoin) && priorityJoin
+        ? priorityJoin
+        : null;
+
   return {
     id: row.id,
     title: row.title,
@@ -180,6 +200,14 @@ const mapProductRowToDto = (row: DbProductJoinRow): ProductDto => {
     originalAudioKey: row.original_audio_key,
     thumbnailKey: row.thumbnail_key,
     sheetMusicPdfKey: row.sheet_music_pdf_key,
+    priority: priority
+      ? {
+          priorityScore: priority.priority_score,
+          isTrigger: priority.is_trigger,
+          effectiveStart: priority.effective_start,
+          effectiveEnd: priority.effective_end,
+        }
+      : null,
     createdBy: row.created_by,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -724,14 +752,16 @@ export class ProductsService {
     const to = from + query.pageSize - 1;
 
     const requestBuilder = this.applyProductAdminFilters(
-      this.supabaseService.client
-        .from('products')
-        .select(
-          '*, track_allowed_permissions(permission_id, core_permissions(name,law_reference)), compliance_reviews(legal_status,review_status)',
-          { count: 'exact' },
-        )
-        .order(column, { ascending })
-        .returns<DbProductJoinRow[]>(),
+      applyProductPriorityOrdering(
+        this.supabaseService.client
+          .from('products')
+          .select(
+            `*, track_allowed_permissions(permission_id, core_permissions(name,law_reference)), compliance_reviews(legal_status,review_status), ${PRODUCT_PRIORITY_SELECT}`,
+            { count: 'exact' },
+          )
+          .order(column, { ascending })
+          .returns<DbProductJoinRow[]>(),
+      ),
       query,
     );
 
@@ -925,14 +955,18 @@ export class ProductsService {
   }
 
   async listCreatorProducts(artistId: string): Promise<{ items: ProductDto[] }> {
-    const { data, error } = await this.supabaseService.client
-      .from('products')
-      .select(
-        '*, track_allowed_permissions(permission_id, core_permissions(name,law_reference)), compliance_reviews(legal_status,review_status)',
-      )
-      .eq('artist_id', artistId)
-      .order('created_at', { ascending: false })
-      .returns<DbProductJoinRow[]>();
+    const requestBuilder = applyProductPriorityOrdering(
+      this.supabaseService.client
+        .from('products')
+        .select(
+          `*, track_allowed_permissions(permission_id, core_permissions(name,law_reference)), compliance_reviews(legal_status,review_status), ${PRODUCT_PRIORITY_SELECT}`,
+        )
+        .eq('artist_id', artistId)
+        .order('created_at', { ascending: false })
+        .returns<DbProductJoinRow[]>(),
+    );
+
+    const { data, error } = await requestBuilder;
 
     if (error) {
       throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);

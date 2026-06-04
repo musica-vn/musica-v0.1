@@ -488,9 +488,72 @@ watch(
         <Message v-if="!detailDialogVisible && successMessage" severity="success">{{ successMessage }}</Message>
       </div>
 
-      <div class="mt-6 overflow-hidden rounded-[28px] border border-slate-200/80 bg-white dark:border-slate-800 dark:bg-slate-950/40">
+      <div class="mt-6 space-y-3 sm:hidden">
+        <article
+          v-for="(item, index) in rows"
+          :key="item.complianceId"
+          class="rounded-[28px] border border-slate-200/80 bg-white/92 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/60"
+        >
+          <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <div class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                Hồ sơ #{{ (pagination.page - 1) * pagination.pageSize + index + 1 }}
+              </div>
+              <div class="mt-2 line-clamp-2 font-semibold text-slate-950 dark:text-white">
+                {{ item.product.title }}
+              </div>
+              <div class="mt-1 truncate text-xs text-slate-500 dark:text-slate-400">
+                {{ item.product.artistName || item.product.artistId }}
+              </div>
+            </div>
+
+            <button
+              type="button"
+              class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 transition hover:border-slate-300 hover:text-slate-900 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:text-white"
+              :disabled="isLoading"
+              @click="openDetail(item)"
+            >
+              <i class="pi pi-eye" />
+            </button>
+          </div>
+
+          <div class="mt-3 flex flex-wrap gap-2">
+            <span class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold" :class="getProductStatusClass(item.product.status)">
+              {{ formatProductStatusLabel(item.product.status) }}
+            </span>
+            <span class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold" :class="getLegalStatusClass(item.legalStatus)">
+              {{ formatLegalStatusLabel(item.legalStatus) }}
+            </span>
+            <span class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold" :class="getReviewStatusClass(item.reviewStatus)">
+              {{ formatReviewStatusLabel(item.reviewStatus) }}
+            </span>
+          </div>
+
+          <div class="mt-3 grid grid-cols-2 gap-2">
+            <div class="rounded-2xl border border-slate-200/80 bg-slate-50/80 px-3 py-3 dark:border-slate-800 dark:bg-slate-900/50">
+              <div class="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Files</div>
+              <div class="mt-1 text-sm font-semibold text-slate-700 dark:text-slate-200">{{ item.filesCount }}</div>
+            </div>
+            <div class="rounded-2xl border border-slate-200/80 bg-slate-50/80 px-3 py-3 dark:border-slate-800 dark:bg-slate-900/50">
+              <div class="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Review time</div>
+              <div class="mt-1 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                {{ formatReviewDateTime(item.reviewedAt) }}
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <div
+          v-if="!isLoading && rows.length === 0"
+          class="rounded-[28px] border border-dashed border-slate-200/80 bg-white/70 px-4 py-10 text-center text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-400"
+        >
+          Không có hồ sơ phù hợp.
+        </div>
+      </div>
+
+      <div class="mt-6 hidden overflow-hidden rounded-[28px] border border-slate-200/80 bg-white dark:border-slate-800 dark:bg-slate-950/40 sm:block">
         <div class="overflow-x-auto">
-          <table class="min-w-[980px] border-separate border-spacing-0 text-left text-sm">
+          <table class="w-full min-w-[920px] lg:min-w-[980px] border-separate border-spacing-0 text-left text-sm">
             <thead class="bg-slate-50 text-xs uppercase tracking-[0.18em] text-slate-500 dark:bg-slate-950/60 dark:text-slate-300">
               <tr>
                 <th class="w-20 px-4 py-4 font-semibold">STT</th>
@@ -563,37 +626,42 @@ watch(
     <Dialog
       v-model:visible="detailDialogVisible"
       modal
-      class="w-[calc(100vw-1rem)] sm:w-[min(1120px,96vw)]"
+      class="w-[calc(100vw-1rem)] sm:w-[min(1240px,96vw)] lg:w-[min(1320px,96vw)]"
       :pt="{
-        header: { class: '!pb-4 border-b border-slate-100 dark:border-slate-800' },
-        content: { class: 'compliance-detail-scroll max-h-[calc(100svh-8rem)] !overflow-y-auto' },
+        header: { class: 'px-0 pb-0 pt-0' },
+        content: { class: 'compliance-detail-scroll max-h-[calc(100svh-4rem)] !overflow-y-auto px-0 pb-0' },
+        footer: { class: 'border-t border-slate-100 px-4 py-5 dark:border-slate-800 sm:px-6 sm:py-6' },
       }"
     >
       <template #header>
-        <ComplianceDecisionHeader
+        <div
           v-if="selectedDetail"
-          :detail="selectedDetail"
-          :format-product-status-label="formatProductStatusLabel"
-          :format-legal-status-label="formatLegalStatusLabel"
-          :format-review-status-label="formatReviewStatusLabel"
-          :format-review-date-time="formatReviewDateTime"
-          :get-product-status-class="getProductStatusClass"
-          :get-legal-status-class="getLegalStatusClass"
-          :get-review-status-class="getReviewStatusClass"
-        />
+          class="sticky top-0 z-10 border-b border-slate-100 bg-white/95 px-4 py-4 backdrop-blur dark:border-slate-800 dark:bg-slate-950/95 sm:px-6 sm:py-5"
+        >
+          <ComplianceDecisionHeader
+            :detail="selectedDetail"
+            :format-product-status-label="formatProductStatusLabel"
+            :format-legal-status-label="formatLegalStatusLabel"
+            :format-review-status-label="formatReviewStatusLabel"
+            :format-review-date-time="formatReviewDateTime"
+            :get-product-status-class="getProductStatusClass"
+            :get-legal-status-class="getLegalStatusClass"
+            :get-review-status-class="getReviewStatusClass"
+          />
+        </div>
       </template>
 
-      <div v-if="selectedDetail" class="space-y-5 pt-4">
+      <div v-if="selectedDetail" class="space-y-5 px-4 pb-6 pt-4 sm:px-6 sm:pb-8">
         <div class="space-y-3">
           <Message v-if="detailDialogVisible && errorMessage" severity="error">{{ errorMessage }}</Message>
           <Message v-if="detailDialogVisible && successMessage" severity="success">{{ successMessage }}</Message>
         </div>
 
         <!-- Custom tabs header -->
-        <div class="flex border-b border-slate-100 dark:border-slate-800 -mx-6 px-6 mb-5">
+        <div class="mb-5 flex flex-nowrap gap-6 overflow-x-auto border-b border-slate-100 pb-1 no-scrollbar dark:border-slate-800">
           <button
             type="button"
-            class="pb-3 text-sm font-semibold border-b-2 transition flex items-center gap-2 outline-none cursor-pointer bg-transparent"
+            class="inline-flex shrink-0 items-center gap-2 border-b-2 bg-transparent pb-3 text-sm font-semibold outline-none transition"
             :class="activeTab === 'info' ? 'border-violet-500 text-violet-600 dark:text-violet-400' : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'"
             @click="activeTab = 'info'"
           >
@@ -602,7 +670,7 @@ watch(
           </button>
           <button
             type="button"
-            class="ml-6 pb-3 text-sm font-semibold border-b-2 transition flex items-center gap-2 outline-none cursor-pointer bg-transparent"
+            class="inline-flex shrink-0 items-center gap-2 border-b-2 bg-transparent pb-3 text-sm font-semibold outline-none transition"
             :class="activeTab === 'decision' ? 'border-violet-500 text-violet-600 dark:text-violet-400' : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'"
             @click="activeTab = 'decision'"
           >
@@ -612,23 +680,29 @@ watch(
         </div>
 
         <!-- Tab 1: Info & Documents -->
-        <div v-if="activeTab === 'info'" class="grid gap-6 lg:grid-cols-[1fr_1.5fr]">
+        <div v-if="activeTab === 'info'" class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)]">
           <!-- Left: General Information -->
           <div class="space-y-4">
             <div class="rounded-2xl border border-slate-100 bg-slate-50/50 p-5 dark:border-slate-800/80 dark:bg-slate-900/30">
               <h3 class="text-xs font-bold uppercase tracking-[0.16em] text-slate-400 mb-4 mt-0">Thông tin chung</h3>
               <div class="space-y-3.5">
-                <div class="flex justify-between items-center py-1.5 border-b border-slate-100 dark:border-slate-800">
-                  <span class="text-xs text-slate-500 dark:text-slate-400">Nghệ sĩ</span>
-                  <span class="text-sm font-semibold text-slate-900 dark:text-white">{{ selectedDetail.product.artistName || selectedDetail.product.artistId }}</span>
+                <div class="flex items-center justify-between gap-4 border-b border-slate-100 py-1.5 dark:border-slate-800">
+                  <span class="shrink-0 text-xs text-slate-500 dark:text-slate-400">Nghệ sĩ</span>
+                  <span class="min-w-0 truncate text-right text-sm font-semibold text-slate-900 dark:text-white">
+                    {{ selectedDetail.product.artistName || selectedDetail.product.artistId }}
+                  </span>
                 </div>
-                <div class="flex justify-between items-center py-1.5 border-b border-slate-100 dark:border-slate-800">
-                  <span class="text-xs text-slate-500 dark:text-slate-400">Người kiểm duyệt</span>
-                  <span class="text-sm font-semibold text-slate-900 dark:text-white">{{ selectedDetail.reviewedByName || selectedDetail.reviewedBy || '—' }}</span>
+                <div class="flex items-center justify-between gap-4 border-b border-slate-100 py-1.5 dark:border-slate-800">
+                  <span class="shrink-0 text-xs text-slate-500 dark:text-slate-400">Người kiểm duyệt</span>
+                  <span class="min-w-0 truncate text-right text-sm font-semibold text-slate-900 dark:text-white">
+                    {{ selectedDetail.reviewedByName || selectedDetail.reviewedBy || '—' }}
+                  </span>
                 </div>
-                <div class="flex justify-between items-center py-1.5 border-b border-slate-100 dark:border-slate-800">
-                  <span class="text-xs text-slate-500 dark:text-slate-400">Thời gian duyệt</span>
-                  <span class="text-sm font-semibold text-slate-900 dark:text-white">{{ formatReviewDateTime(selectedDetail.reviewedAt) }}</span>
+                <div class="flex items-center justify-between gap-4 border-b border-slate-100 py-1.5 dark:border-slate-800">
+                  <span class="shrink-0 text-xs text-slate-500 dark:text-slate-400">Thời gian duyệt</span>
+                  <span class="min-w-0 truncate text-right text-sm font-semibold text-slate-900 dark:text-white">
+                    {{ formatReviewDateTime(selectedDetail.reviewedAt) }}
+                  </span>
                 </div>
               </div>
               
@@ -689,7 +763,7 @@ watch(
                 <div
                   v-for="file in selectedDetail.uploadedLegalFiles"
                   :key="file.fileKey"
-                  class="flex items-center justify-between gap-3 rounded-xl border border-slate-150 bg-white p-3 hover:border-slate-350 dark:border-slate-800 dark:bg-slate-950/40 transition"
+                  class="flex items-center justify-between gap-3 rounded-xl border border-slate-200/80 bg-white p-3 transition hover:border-slate-300 dark:border-slate-800 dark:bg-slate-950/40 dark:hover:border-slate-700"
                 >
                   <div class="min-w-0 flex items-center gap-3">
                     <div class="h-9 w-9 flex-shrink-0 flex items-center justify-center rounded-lg bg-slate-50 dark:bg-slate-900 text-slate-400">
@@ -749,8 +823,11 @@ watch(
       </div>
 
       <template #footer>
-        <div class="flex w-full justify-end gap-2 border-t border-slate-100 dark:border-slate-800 pt-3 mt-4">
-          <button type="button" :class="secondaryButtonClass" class="!py-2 !px-4 cursor-pointer" @click="detailDialogVisible = false">Đóng</button>
+        <div class="flex w-full justify-end gap-2">
+          <button type="button" :class="[secondaryButtonClass, 'gap-2']" @click="detailDialogVisible = false">
+            <i class="pi pi-times text-sm" />
+            Đóng
+          </button>
         </div>
       </template>
     </Dialog>

@@ -4,8 +4,8 @@ import jwt from 'jsonwebtoken'
 import request from 'supertest'
 import type { App } from 'supertest/types'
 import { AppModule } from './../src/app.module'
-import { AdminUsersService } from './../src/admin-users/admin-users.service'
-import { SupabaseService } from './../src/supabase/supabase.service'
+import { AdminUsersService } from './../src/modules/admin-users/admin-users.service'
+import { SupabaseService } from './../src/database/supabase.service'
 
 const signToken = (payload: { sub: string; roles: string[] }) =>
   jwt.sign(payload, process.env.JWT_SECRET ?? 'dev-secret', { expiresIn: 60 * 60 })

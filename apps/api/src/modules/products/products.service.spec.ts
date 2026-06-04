@@ -1,6 +1,6 @@
 import { HttpException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { SupabaseService } from '../supabase/supabase.service';
+import { SupabaseService } from '../../database/supabase.service';
 import { ProductDto } from './product.dto';
 import { ProductsService } from './products.service';
 
@@ -39,6 +39,7 @@ const createMockProductDto = (
   originalAudioKey: null,
   thumbnailKey: null,
   sheetMusicPdfKey: null,
+  priority: null,
   createdBy: '00000000-0000-0000-0000-000000000003',
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
@@ -257,6 +258,37 @@ describe('ProductsService - allowed permissions', () => {
   beforeEach(() => {
     jest.resetAllMocks();
   });
+
+  it('listCreatorProducts includes product_priorities select and ordering', async () => {
+    const service = createService();
+
+    const response = { data: [], error: null };
+    const builder: any = {
+      select: jest.fn(() => builder),
+      eq: jest.fn(() => builder),
+      order: jest.fn(() => builder),
+      returns: jest.fn(() => builder),
+      then: (resolve: any) => Promise.resolve(response).then(resolve),
+    };
+    mockSupabaseClient.from.mockReturnValue(builder);
+
+    await service.listCreatorProducts('00000000-0000-0000-0000-000000000002');
+
+    expect(builder.select).toHaveBeenCalledWith(
+      expect.stringContaining('product_priorities('),
+    );
+    expect(builder.order).toHaveBeenCalledWith(
+      'is_trigger',
+      { foreignTable: 'product_priorities', ascending: false },
+    );
+    expect(builder.order).toHaveBeenCalledWith(
+      'priority_score',
+      { foreignTable: 'product_priorities', ascending: false },
+    );
+    expect(builder.order).toHaveBeenCalledWith('created_at', { ascending: false });
+    expect(builder.returns).toHaveBeenCalled();
+  });
+
 
   it('rejects when compliance is not approved yet', async () => {
     const service = createService();

@@ -19,15 +19,15 @@ defineProps<{
 </script>
 
 <template>
-  <div class="flex w-full flex-col gap-4 pr-6">
+  <div class="flex w-full min-w-0 flex-col gap-4">
     <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-      <div class="space-y-2">
+      <div class="min-w-0 space-y-2">
         <div class="inline-flex items-center gap-2 rounded-full bg-violet-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-violet-700 dark:bg-violet-500/15 dark:text-violet-300">
           <i class="pi pi-shield text-[10px]" />
           Khu Vực Đánh Giá Quyết Định
         </div>
         <div>
-          <h2 class="m-0 text-xl font-bold tracking-tight text-slate-950 dark:text-white lg:text-2xl">
+          <h2 class="m-0 line-clamp-2 text-xl font-bold tracking-tight text-slate-950 dark:text-white lg:text-2xl">
             {{ detail.product.title }}
           </h2>
           <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">
@@ -39,7 +39,7 @@ defineProps<{
         </div>
       </div>
 
-      <div class="rounded-2xl border border-slate-200/80 bg-slate-50/80 px-4 py-3 text-right dark:border-slate-800 dark:bg-slate-900/60">
+      <div class="w-full rounded-2xl border border-slate-200/80 bg-slate-50/80 px-4 py-3 text-right dark:border-slate-800 dark:bg-slate-900/60 lg:w-auto">
         <div class="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
           Lần review gần nhất
         </div>

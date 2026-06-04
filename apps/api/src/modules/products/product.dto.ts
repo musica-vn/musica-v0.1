@@ -112,6 +112,20 @@ export class ProductPackageRegistrationDto {
   removedBy: string | null;
 }
 
+export class ProductPriorityDto {
+  @ApiProperty()
+  priorityScore: number;
+
+  @ApiProperty()
+  isTrigger: boolean;
+
+  @ApiProperty({ required: false, nullable: true })
+  effectiveStart: string | null;
+
+  @ApiProperty({ required: false, nullable: true })
+  effectiveEnd: string | null;
+}
+
 export class ProductDto {
   @ApiProperty()
   id: string;
@@ -175,6 +189,9 @@ export class ProductDto {
 
   @ApiProperty({ required: false, nullable: true })
   sheetMusicPdfKey: string | null;
+
+  @ApiProperty({ type: ProductPriorityDto, required: false, nullable: true })
+  priority: ProductPriorityDto | null;
 
   @ApiProperty()
   createdBy: string;

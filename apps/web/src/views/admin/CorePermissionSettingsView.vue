@@ -289,23 +289,23 @@ onBeforeUnmount(() => {
     >
       <div class="min-w-0 space-y-3">
         <div class="inline-flex items-center rounded-full bg-violet-100 px-3 py-1 text-xs font-bold uppercase tracking-[0.24em] text-violet-700 dark:bg-violet-500/20 dark:text-violet-200">
-          Master Data
+          Cấu hình
         </div>
         <div>
-          <h1 class="m-0 text-2xl font-semibold tracking-tight !text-slate-950 sm:text-3xl dark:!text-white">Core Permission Settings</h1>
+          <h1 class="m-0 text-2xl font-semibold tracking-tight !text-slate-950 sm:text-3xl dark:!text-white">Quyền cốt lõi</h1>
           <div class="mt-2 text-sm text-slate-500 dark:text-slate-400">
-            Quản lý quyền cốt lõi cho Product và Compliance, đồng bộ trạng thái ngay trong form chỉnh sửa.
+            Quản lý danh mục quyền cốt lõi, dùng làm nền cho các gói quyền và luồng Compliance.
           </div>
         </div>
       </div>
 
       <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <article class="rounded-[24px] border border-white/70 bg-white/80 px-5 py-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/70">
-          <div class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Active</div>
+          <div class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Đang hoạt động</div>
           <div class="mt-2 text-2xl font-semibold text-slate-950 dark:text-white">{{ totalActive }}</div>
         </article>
         <article class="rounded-[24px] border border-white/70 bg-white/80 px-5 py-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/70">
-          <div class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Inactive</div>
+          <div class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Tạm ngừng</div>
           <div class="mt-2 text-2xl font-semibold text-slate-950 dark:text-white">{{ totalInactive }}</div>
         </article>
       </div>
@@ -314,16 +314,16 @@ onBeforeUnmount(() => {
     <section class="rounded-[32px] border border-slate-200/80 bg-white/85 p-5 shadow-xl shadow-slate-200/40 backdrop-blur dark:border-slate-800 dark:bg-slate-950/70 dark:shadow-black/20">
       <div class="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
         <div>
-          <div class="text-xl font-semibold text-slate-950 dark:text-white">Danh sách core permission</div>
+          <div class="text-xl font-semibold text-slate-950 dark:text-white">Danh sách quyền cốt lõi</div>
           <div class="mt-2 text-sm text-slate-500 dark:text-slate-400">
-            Tìm kiếm tự động bằng debounce, lọc nhanh theo trạng thái và chỉnh sửa trực tiếp trong modal.
+            Tìm kiếm nhanh, lọc theo trạng thái và chỉnh sửa trực tiếp trong modal.
           </div>
         </div>
 
-        <div class="flex w-full min-w-0 flex-col gap-3 xl:max-w-[760px]">
+        <div class="flex w-full min-w-0 flex-col gap-3">
           <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(0,1.7fr)_1fr_auto] xl:items-end">
             <label class="space-y-2">
-              <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Keyword</span>
+              <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Từ khoá</span>
               <input
                 v-model="filters.keyword"
                 :class="fieldClass"
@@ -332,7 +332,7 @@ onBeforeUnmount(() => {
               />
             </label>
             <label class="space-y-2">
-              <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Status</span>
+              <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Trạng thái</span>
               <div class="relative">
                 <select v-model="filters.status" :class="selectFieldClass" :disabled="store.isLoading">
                   <option value="">Tất cả</option>
@@ -373,12 +373,12 @@ onBeforeUnmount(() => {
 
       <div class="mt-6 hidden overflow-hidden rounded-[28px] border border-slate-200/80 bg-white dark:border-slate-800 dark:bg-slate-950/40 sm:block">
         <div class="overflow-x-auto">
-          <table class="min-w-[980px] border-separate border-spacing-0 text-left text-sm">
+          <table class="w-full min-w-[980px] border-separate border-spacing-0 text-left text-sm">
             <thead class="bg-slate-50 text-xs uppercase tracking-[0.18em] text-slate-500 dark:bg-slate-950/60 dark:text-slate-300">
               <tr>
                 <th class="w-20 px-4 py-4 font-semibold">STT</th>
-                <th class="px-4 py-4 font-semibold">Core Permission</th>
-                <th class="px-4 py-4 font-semibold">Law Reference</th>
+                <th class="px-4 py-4 font-semibold">Quyền cốt lõi</th>
+                <th class="px-4 py-4 font-semibold">Căn cứ pháp lý</th>
                 <th class="w-36 px-4 py-4 font-semibold">Trạng thái</th>
                 <th class="w-44 px-4 py-4 font-semibold">Cập nhật</th>
                 <th class="w-32 px-4 py-4 text-right font-semibold">Thao tác</th>
@@ -396,13 +396,13 @@ onBeforeUnmount(() => {
                   </div>
                 </td>
                 <td class="px-4 py-4">
-                  <div class="font-semibold text-slate-900 dark:text-white">{{ permission.name }}</div>
-                  <div class="mt-1 line-clamp-2 text-xs leading-5 text-slate-500 dark:text-slate-400">
+                  <div class="break-words font-semibold text-slate-900 dark:text-white">{{ permission.name }}</div>
+                  <div class="mt-1 line-clamp-2 break-words text-xs leading-5 text-slate-500 dark:text-slate-400">
                     {{ permission.description || 'Chưa có mô tả cho core permission này.' }}
                   </div>
                 </td>
                 <td class="px-4 py-4 text-slate-600 dark:text-slate-300">
-                  <div class="line-clamp-2">{{ permission.lawReference }}</div>
+                  <div class="line-clamp-2 break-words">{{ permission.lawReference }}</div>
                 </td>
                 <td class="px-4 py-4">
                   <span

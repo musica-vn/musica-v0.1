@@ -3,6 +3,10 @@ import { buildPaginationMeta } from '../../common/base/pagination-meta';
 import type { PaginationMeta } from '@musica/contracts';
 import type { ApiEnvelopePayload } from '../../common/interceptors/api-response.interceptor';
 import { SupabaseService } from '../../database/supabase.service';
+import {
+  applyProductPriorityOrdering,
+  PRODUCT_PRIORITY_SELECT,
+} from '../product-priorities/product-priority-ordering';
 import type {
   ProductPackageRegistrationEligibilityStatus,
   ProductPackageRegistrationItemDto,
@@ -602,11 +606,12 @@ export class ProductPackageRegistrationsService {
   }
 
   async listCreatorProducts(actorUserId: string) {
-    const { data, error } = await this.supabaseService.client
-      .from('products')
-      .select('id')
-      .eq('artist_id', actorUserId)
-      .order('created_at', { ascending: false });
+    const { data, error } = await applyProductPriorityOrdering(
+      this.supabaseService.client
+        .from('products')
+        .select(`id, ${PRODUCT_PRIORITY_SELECT}`)
+        .eq('artist_id', actorUserId),
+    ).order('created_at', { ascending: false });
 
     if (error) {
       throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
