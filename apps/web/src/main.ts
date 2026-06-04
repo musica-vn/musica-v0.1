@@ -3,11 +3,11 @@ import PrimeVue from 'primevue/config'
 import ConfirmationService from 'primevue/confirmationservice'
 import Aura from '@primevue/themes/aura'
 import 'primeicons/primeicons.css'
-import './style.css'
+import './styles/main.css'
 import App from './App.vue'
 import { router } from './router'
-import { pinia } from './shared/pinia'
-import { initializeAppTheme } from './shared/theme/app-theme'
+import { pinia } from './plugins/pinia'
+import { initializeAppTheme } from './plugins/app-theme'
 
 const app = createApp(App)
 

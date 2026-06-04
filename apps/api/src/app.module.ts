@@ -3,20 +3,20 @@ import { ConfigModule } from '@nestjs/config';
 import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { ApiExceptionFilter } from './common/api-exception.filter';
-import { ApiResponseInterceptor } from './common/api-response.interceptor';
-import { HealthModule } from './health/health.module';
-import { RequestIdMiddleware } from './common/request-id.middleware';
-import { AuthModule } from './auth/auth.module';
-import { ProductsModule } from './products/products.module';
-import { CertificatesModule } from './certificates/certificates.module';
-import { AdminUsersModule } from './admin-users/admin-users.module';
-import { ManagedUsersModule } from './managed-users/managed-users.module';
-import { CorePermissionsModule } from './core-permissions/core-permissions.module';
-import { ComplianceModule } from './compliance/compliance.module';
-import { LicensingConfigsModule } from './licensing-configs/licensing-configs.module';
-import { ProductPackageRegistrationsModule } from './product-package-registrations/product-package-registrations.module';
-import { VariantPricingModule } from './pricing/variant-pricing.module';
+import { ApiExceptionFilter } from './common/filters/api-exception.filter';
+import { ApiResponseInterceptor } from './common/interceptors/api-response.interceptor';
+import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
+import { HealthModule } from './modules/health/health.module';
+import { AuthModule } from './modules/auth/auth.module';
+import { ProductsModule } from './modules/products/products.module';
+import { CertificatesModule } from './modules/certificates/certificates.module';
+import { AdminUsersModule } from './modules/admin-users/admin-users.module';
+import { ManagedUsersModule } from './modules/managed-users/managed-users.module';
+import { CorePermissionsModule } from './modules/core-permissions/core-permissions.module';
+import { ComplianceModule } from './modules/compliance/compliance.module';
+import { LicensingConfigsModule } from './modules/licensing-configs/licensing-configs.module';
+import { ProductPackageRegistrationsModule } from './modules/product-package-registrations/product-package-registrations.module';
+import { VariantPricingModule } from './modules/pricing/variant-pricing.module';
 
 @Module({
   imports: [

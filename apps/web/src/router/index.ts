@@ -1,79 +1,79 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import LoginPage from '../features/auth/pages/LoginPage.vue'
-import LandingPage from '../features/landing/pages/LandingPage.vue'
-import { useAuthStore } from '../features/auth/auth.store'
-import { pinia } from '../shared/pinia'
-import AdminLayout from '../features/admin-shell/layouts/AdminLayout.vue'
-import AdminDashboardPage from '../features/admin-shell/pages/AdminDashboardPage.vue'
-import AdminListPage from '../features/admin-shell/pages/AdminListPage.vue'
-import ProductManagementPage from '../features/admin-shell/pages/ProductManagementPage.vue'
-import UserManagementPage from '../features/admin-shell/pages/UserManagementPage.vue'
-import CertificateManagementPage from '../features/admin-shell/pages/CertificateManagementPage.vue'
-import ComplianceManagementPage from '../features/admin-shell/pages/ComplianceManagementPage.vue'
-import CorePermissionSettingsPage from '../features/admin-shell/pages/CorePermissionSettingsPage.vue'
-import LicensingConfigManagementPage from '../features/admin-shell/pages/LicensingConfigManagementPage.vue'
+import LoginView from '../views/auth/LoginView.vue'
+import DashboardView from '../views/dashboard/DashboardView.vue'
+import { useAuthStore } from '../stores/auth.store'
+import { pinia } from '../plugins/pinia'
+import MainLayout from '../layouts/MainLayout.vue'
+import AdminDashboardView from '../views/admin/AdminDashboardView.vue'
+import AdminListView from '../views/admin/AdminListView.vue'
+import ProductManagementView from '../views/admin/ProductManagementView.vue'
+import UserManagementView from '../views/admin/UserManagementView.vue'
+import CertificateManagementView from '../views/admin/CertificateManagementView.vue'
+import ComplianceManagementView from '../views/admin/ComplianceManagementView.vue'
+import CorePermissionSettingsView from '../views/admin/CorePermissionSettingsView.vue'
+import LicensingConfigManagementView from '../views/admin/LicensingConfigManagementView.vue'
 
 export const router = createRouter({
   history: createWebHistory(),
   routes: [
     { path: '/', redirect: '/login' },
-    { path: '/login', name: 'login', component: LoginPage },
-    { path: '/landing', name: 'landing', component: LandingPage },
+    { path: '/login', name: 'login', component: LoginView },
+    { path: '/landing', name: 'landing', component: DashboardView },
     {
       path: '/admin',
-      component: AdminLayout,
+      component: MainLayout,
       meta: { requiresAdmin: true },
       children: [
         { path: '', redirect: '/admin/dashboard' },
-        { path: 'dashboard', component: AdminDashboardPage, meta: { title: 'Bảng điều khiển' } },
+        { path: 'dashboard', component: AdminDashboardView, meta: { title: 'Bảng điều khiển' } },
         {
           path: 'admins',
-          component: AdminListPage,
+          component: AdminListView,
           meta: { title: 'Quản trị viên', requiresSuperAdmin: true },
         },
         { path: 'tracks', redirect: '/admin/products' },
-        { path: 'products', component: ProductManagementPage, meta: { title: 'Quản lý sản phẩm' } },
-        { path: 'compliance', component: ComplianceManagementPage, meta: { title: 'Pháp lý & kiểm duyệt' } },
-        { path: 'settings/permissions', component: CorePermissionSettingsPage, meta: { title: 'Quyền cốt lõi' } },
+        { path: 'products', component: ProductManagementView, meta: { title: 'Quản lý sản phẩm' } },
+        { path: 'compliance', component: ComplianceManagementView, meta: { title: 'Pháp lý & kiểm duyệt' } },
+        { path: 'settings/permissions', component: CorePermissionSettingsView, meta: { title: 'Quyền cốt lõi' } },
         {
           path: 'settings/digital-rights',
-          component: LicensingConfigManagementPage,
+          component: LicensingConfigManagementView,
           props: { resource: 'digital' },
           meta: { title: 'Quản lý kênh nền tảng số' },
         },
         {
           path: 'settings/physical-rights',
-          component: LicensingConfigManagementPage,
+          component: LicensingConfigManagementView,
           props: { resource: 'physical' },
           meta: { title: 'Quản lý kênh vật lý' },
         },
         {
           path: 'settings/expression-configs',
-          component: LicensingConfigManagementPage,
+          component: LicensingConfigManagementView,
           props: { resource: 'expression' },
           meta: { title: 'Hình thức biểu hiện' },
         },
         {
           path: 'settings/modification-configs',
-          component: LicensingConfigManagementPage,
+          component: LicensingConfigManagementView,
           props: { resource: 'modification' },
           meta: { title: 'Mức độ biến đổi' },
         },
         {
           path: 'users/buyers',
-          component: UserManagementPage,
+          component: UserManagementView,
           props: { initialRole: 'BUYER' },
           meta: { title: 'Quản lý người mua' },
         },
         {
           path: 'users/artists',
-          component: UserManagementPage,
+          component: UserManagementView,
           props: { initialRole: 'ARTIST' },
           meta: { title: 'Quản lý nghệ sĩ' },
         },
         {
           path: 'certificates',
-          component: CertificateManagementPage,
+          component: CertificateManagementView,
           meta: { title: 'Quản lý chứng chỉ' },
         },
       ],
