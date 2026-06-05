@@ -10,7 +10,7 @@ import {
   ManagedUserListQueryDto,
   UpdateManagedUserRequestDto,
   UpdateManagedUserStatusRequestDto,
-} from './managed-users.dto'
+} from './dto'
 import { ManagedUsersService } from './managed-users.service'
 import { ManagedUserListResponseDto } from './managed-users.swagger'
 

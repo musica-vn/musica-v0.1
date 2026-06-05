@@ -7,7 +7,7 @@ import { AppModule } from './../src/app.module'
 import { AdminUsersService } from './../src/modules/admin-users/admin-users.service'
 import { SupabaseService } from './../src/database/supabase.service'
 
-const signToken = (payload: { sub: string; roles: string[] }) =>
+const signToken = (payload: { sub: string; roleId: number; roleName: string }) =>
   jwt.sign(payload, process.env.JWT_SECRET ?? 'dev-secret', { expiresIn: 60 * 60 })
 
 describe('Admin users (e2e)', () => {
@@ -21,7 +21,7 @@ describe('Admin users (e2e)', () => {
           email: 'admin01@musica.local',
           fullName: 'Admin 01',
           status: 'ACTIVE',
-          roleCodes: ['ADMIN'],
+          roles: [{ roleId: 1, roleName: 'Admin' }],
           createdAt: new Date().toISOString(),
         },
       ],
@@ -32,7 +32,7 @@ describe('Admin users (e2e)', () => {
       email: payload.email,
       fullName: payload.fullName,
       status: 'ACTIVE',
-      roleCodes: ['ADMIN'],
+      roles: [{ roleId: 1, roleName: 'Admin' }],
       createdAt: new Date().toISOString(),
     }),
     updateAdmin: async (adminId: string, payload: any) => ({
@@ -40,7 +40,7 @@ describe('Admin users (e2e)', () => {
       email: payload.email ?? 'admin01@musica.local',
       fullName: payload.fullName ?? 'Admin 01',
       status: 'ACTIVE',
-      roleCodes: ['ADMIN'],
+      roles: [{ roleId: 1, roleName: 'Admin' }],
       createdAt: new Date().toISOString(),
     }),
     updateAdminStatus: async (adminId: string, status: any) => ({
@@ -48,7 +48,7 @@ describe('Admin users (e2e)', () => {
       email: 'admin01@musica.local',
       fullName: 'Admin 01',
       status,
-      roleCodes: ['ADMIN'],
+      roles: [{ roleId: 1, roleName: 'Admin' }],
       createdAt: new Date().toISOString(),
     }),
     softDeleteAdmin: async () => {},
@@ -81,7 +81,7 @@ describe('Admin users (e2e)', () => {
   })
 
   it('GET /admin/users/admins with ADMIN token -> 403', async () => {
-    const token = signToken({ sub: 'u_admin', roles: ['ADMIN'] })
+    const token = signToken({ sub: 'u_admin', roleId: 1, roleName: 'ADMIN' })
     const response = await request(app.getHttpServer())
       .get('/admin/users/admins')
       .set('Authorization', `Bearer ${token}`)
@@ -92,7 +92,7 @@ describe('Admin users (e2e)', () => {
   })
 
   it('GET /admin/users/admins with SUPER_ADMIN token -> 200 + pagination meta', async () => {
-    const token = signToken({ sub: 'u_superadmin', roles: ['SUPER_ADMIN'] })
+    const token = signToken({ sub: 'u_superadmin', roleId: 99, roleName: 'SUPER_ADMIN' })
     const response = await request(app.getHttpServer())
       .get('/admin/users/admins')
       .set('Authorization', `Bearer ${token}`)
@@ -108,7 +108,7 @@ describe('Admin users (e2e)', () => {
   })
 
   it('POST /admin/users/admins with SUPER_ADMIN token -> 200', async () => {
-    const token = signToken({ sub: 'u_superadmin', roles: ['SUPER_ADMIN'] })
+    const token = signToken({ sub: 'u_superadmin', roleId: 99, roleName: 'SUPER_ADMIN' })
     const response = await request(app.getHttpServer())
       .post('/admin/users/admins')
       .set('Authorization', `Bearer ${token}`)

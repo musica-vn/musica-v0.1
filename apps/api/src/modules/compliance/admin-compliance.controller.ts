@@ -2,8 +2,6 @@ import {
   Body,
   Controller,
   Get,
-  HttpException,
-  HttpStatus,
   Param,
   Post,
   Put,
@@ -15,10 +13,11 @@ import {
 } from '@nestjs/common'
 import { ApiBearerAuth, ApiConsumes, ApiOkResponse, ApiTags } from '@nestjs/swagger'
 import { FilesInterceptor } from '@nestjs/platform-express'
-import type { Request } from 'express'
 import { JwtAuthGuard } from '../../common/auth/jwt-auth.guard'
 import { RequireRoles } from '../../common/auth/require-roles.decorator'
 import { RolesGuard } from '../../common/auth/roles.guard'
+import { CurrentUser } from '../../common/auth/current-user.decorator'
+import type { AuthUserContext } from '../../common/auth/auth.types'
 import {
   AdminComplianceDecisionRequestDto,
   AdminComplianceListQueryDto,
@@ -30,6 +29,17 @@ import {
   AdminComplianceFileDownloadUrlResponseDto,
   AdminComplianceListResponseDto,
 } from './compliance.swagger'
+import {
+  COMPLIANCE_MAX_FILES,
+  COMPLIANCE_MAX_FILE_SIZE_BYTES,
+} from './compliance-upload.constants'
+
+type UploadedMulterFile = {
+  originalname: string
+  mimetype: string
+  size: number
+  buffer: Buffer
+}
 
 @ApiTags('Admin - Compliance')
 @ApiBearerAuth()
@@ -54,13 +64,13 @@ export class AdminComplianceController {
   @Post(':trackId/files')
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(
-    FilesInterceptor('files', 10, {
-      limits: { fileSize: 25 * 1024 * 1024 },
+    FilesInterceptor('files', COMPLIANCE_MAX_FILES, {
+      limits: { fileSize: COMPLIANCE_MAX_FILE_SIZE_BYTES },
     }),
   )
   async uploadFiles(
     @Param('trackId') trackId: string,
-    @UploadedFiles() files: any[],
+    @UploadedFiles() files: UploadedMulterFile[],
   ) {
     return this.complianceService.uploadAdminComplianceFiles(trackId, files)
   }
@@ -76,13 +86,13 @@ export class AdminComplianceController {
   async submitDecision(
     @Param('trackId') trackId: string,
     @Body() body: AdminComplianceDecisionRequestDto,
-    @Req() req: Request & { user?: { userId?: string } },
+    @CurrentUser() currentUser: AuthUserContext | null,
   ) {
-    const reviewerUserId = typeof req.user?.userId === 'string' ? req.user.userId : ''
-    if (!reviewerUserId) {
-      throw new HttpException('UNAUTHORIZED', HttpStatus.UNAUTHORIZED)
-    }
-
-    return this.complianceService.submitAdminComplianceDecision({ trackId, reviewerUserId, payload: body })
+    const reviewerUserId = typeof currentUser?.userId === 'string' ? currentUser.userId : ''
+    return this.complianceService.submitAdminComplianceDecision({
+      trackId,
+      reviewerUserId,
+      payload: body,
+    })
   }
 }

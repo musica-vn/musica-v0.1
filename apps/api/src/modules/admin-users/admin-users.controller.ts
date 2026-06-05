@@ -10,7 +10,7 @@ import {
   CreateAdminUserRequestDto,
   UpdateAdminUserRequestDto,
   UpdateAdminUserStatusRequestDto,
-} from './admin-users.dto'
+} from './dto'
 import { AdminUsersService } from './admin-users.service'
 import { AdminUserListResponseDto } from './admin-users.swagger'
 

@@ -1,5 +1,7 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable } from '@nestjs/common';
 import { SupabaseService } from '../../database/supabase.service';
+import { ApiHttpException } from '../../common/errors/api-http.exception';
+import { throwSupabaseError } from '../../common/database/supabase-errors';
 import {
   DURATION_MULTIPLIERS,
   SCOPE_MULTIPLIERS,
@@ -60,11 +62,8 @@ export class VariantPricingService {
         : payload.physicalRightConfigId;
 
     if (!configId) {
-      throw new HttpException(
-        {
-          message: 'MISSING_PLATFORM_CONFIG_ID',
-          details: { platformType },
-        },
+      throw new ApiHttpException(
+        { code: 'MISSING_PLATFORM_CONFIG_ID', details: { platformType } },
         HttpStatus.BAD_REQUEST,
       );
     }
@@ -121,31 +120,56 @@ export class VariantPricingService {
       await Promise.all([configPromise, modifiersPromise, expressionPromise, modificationPromise]);
 
     if (configError) {
-      throw new HttpException(configError.message, HttpStatus.INTERNAL_SERVER_ERROR);
+      throwSupabaseError(
+        'VARIANT_PRICING_PLATFORM_CONFIG_LOAD_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        configError,
+      );
     }
     if (!config) {
-      throw new HttpException('PLATFORM_CONFIG_NOT_FOUND', HttpStatus.NOT_FOUND);
+      throw new ApiHttpException(
+        { code: 'PLATFORM_CONFIG_NOT_FOUND' },
+        HttpStatus.NOT_FOUND,
+      );
     }
 
     if (expressionResult.error) {
-      throw new HttpException(expressionResult.error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+      throwSupabaseError(
+        'VARIANT_PRICING_EXPRESSION_CONFIG_LOAD_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        expressionResult.error,
+      );
     }
     if (payload.expressionConfigId && !expressionResult.data) {
-      throw new HttpException('EXPRESSION_CONFIG_NOT_FOUND', HttpStatus.NOT_FOUND);
+      throw new ApiHttpException(
+        { code: 'EXPRESSION_CONFIG_NOT_FOUND' },
+        HttpStatus.NOT_FOUND,
+      );
     }
 
     if (modificationResult.error) {
-      throw new HttpException(modificationResult.error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+      throwSupabaseError(
+        'VARIANT_PRICING_MODIFICATION_CONFIG_LOAD_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        modificationResult.error,
+      );
     }
     if (payload.modificationConfigId && !modificationResult.data) {
-      throw new HttpException('MODIFICATION_CONFIG_NOT_FOUND', HttpStatus.NOT_FOUND);
+      throw new ApiHttpException(
+        { code: 'MODIFICATION_CONFIG_NOT_FOUND' },
+        HttpStatus.NOT_FOUND,
+      );
     }
 
     const modifiersError = 'error' in modifiersResult ? modifiersResult.error : null;
     const modifiersData = 'data' in modifiersResult ? modifiersResult.data : null;
 
     if (modifiersError) {
-      throw new HttpException(modifiersError.message, HttpStatus.INTERNAL_SERVER_ERROR);
+      throwSupabaseError(
+        'VARIANT_PRICING_MODIFIERS_LOAD_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        modifiersError,
+      );
     }
 
     const modifierMap = new Map<VariantPricingModifierKey, number>(

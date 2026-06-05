@@ -1,13 +1,13 @@
 import {
   CanActivate,
   type ExecutionContext,
-  HttpException,
   HttpStatus,
   Injectable,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { REQUIRE_ROLES_KEY } from './require-roles.decorator';
 import type { AuthenticatedRequest } from './auth.types';
+import { ApiHttpException } from '../errors/api-http.exception';
 
 const normalizeRoleName = (roleName: string) =>
   roleName
@@ -19,6 +19,9 @@ const normalizeRoleName = (roleName: string) =>
 export class RolesGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
 
+  /**
+   * Guard phân quyền theo RequireRoles metadata, normalize roleName để tránh lệch format.
+   */
   canActivate(context: ExecutionContext): boolean {
     const requiredRoles = this.reflector.getAllAndOverride<string[]>(
       REQUIRE_ROLES_KEY,
@@ -30,7 +33,7 @@ export class RolesGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
     const user = request.user;
     if (!user) {
-      throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED);
+      throw new ApiHttpException({ code: 'UNAUTHORIZED' }, HttpStatus.UNAUTHORIZED);
     }
 
     const normalizedUserRole =
@@ -42,7 +45,10 @@ export class RolesGuard implements CanActivate {
       typeof normalizedUserRole === 'string' &&
       normalizedRequiredRoles.includes(normalizedUserRole);
     if (!hasRole) {
-      throw new HttpException('Forbidden', HttpStatus.FORBIDDEN);
+      throw new ApiHttpException(
+        { code: 'AUTH_INSUFFICIENT_ROLE' },
+        HttpStatus.FORBIDDEN,
+      );
     }
 
     return true;

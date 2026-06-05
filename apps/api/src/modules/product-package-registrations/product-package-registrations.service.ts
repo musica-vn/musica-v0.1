@@ -1,5 +1,7 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { buildPaginationMeta } from '../../common/base/pagination-meta';
+import { isUniqueViolation } from '../../common/database/postgres-errors';
+import { throwSupabaseError } from '../../common/database/supabase-errors';
 import type { PaginationMeta } from '@musica/contracts';
 import type { ApiEnvelopePayload } from '../../common/interceptors/api-response.interceptor';
 import { SupabaseService } from '../../database/supabase.service';
@@ -100,7 +102,11 @@ export class ProductPackageRegistrationsService {
       }>();
 
     if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+      throwSupabaseError(
+        'PRODUCT_ELIGIBILITY_CONTEXT_LOAD_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
     }
 
     if (!data) {
@@ -217,7 +223,11 @@ export class ProductPackageRegistrationsService {
       .maybeSingle<DbDigitalConfigRow>();
 
     if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+      throwSupabaseError(
+        'DIGITAL_RIGHT_CONFIG_LOAD_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
     }
 
     if (!data) {
@@ -237,7 +247,11 @@ export class ProductPackageRegistrationsService {
       .maybeSingle<DbPhysicalConfigRow>();
 
     if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+      throwSupabaseError(
+        'PHYSICAL_RIGHT_CONFIG_LOAD_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
     }
 
     if (!data) {
@@ -343,10 +357,14 @@ export class ProductPackageRegistrationsService {
       .maybeSingle<DbDigitalRegistrationRow>();
 
     if (error) {
-      if (error.code === '23505') {
+      if (isUniqueViolation(error)) {
         throw new HttpException('PACKAGE_ALREADY_JOINED', HttpStatus.CONFLICT);
       }
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+      throwSupabaseError(
+        'DIGITAL_PACKAGE_REGISTRATION_INSERT_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
     }
 
     if (!data) {
@@ -379,10 +397,14 @@ export class ProductPackageRegistrationsService {
       .maybeSingle<DbPhysicalRegistrationRow>();
 
     if (error) {
-      if (error.code === '23505') {
+      if (isUniqueViolation(error)) {
         throw new HttpException('PACKAGE_ALREADY_JOINED', HttpStatus.CONFLICT);
       }
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+      throwSupabaseError(
+        'PHYSICAL_PACKAGE_REGISTRATION_INSERT_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
     }
 
     if (!data) {
@@ -416,7 +438,11 @@ export class ProductPackageRegistrationsService {
       .maybeSingle<DbDigitalRegistrationRow>();
 
     if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+      throwSupabaseError(
+        'DIGITAL_PACKAGE_REGISTRATION_REMOVE_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
     }
 
     if (!data) {
@@ -448,7 +474,11 @@ export class ProductPackageRegistrationsService {
       .maybeSingle<DbPhysicalRegistrationRow>();
 
     if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+      throwSupabaseError(
+        'PHYSICAL_PACKAGE_REGISTRATION_REMOVE_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
     }
 
     if (!data) {
@@ -518,7 +548,11 @@ export class ProductPackageRegistrationsService {
 
     const { data, error, count } = await requestBuilder.range(from, to).returns<DbDigitalRegistrationRow[]>();
     if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+      throwSupabaseError(
+        'DIGITAL_PACKAGE_REGISTRATION_LIST_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
     }
 
     const items = await Promise.all(
@@ -571,7 +605,11 @@ export class ProductPackageRegistrationsService {
 
     const { data, error, count } = await requestBuilder.range(from, to).returns<DbPhysicalRegistrationRow[]>();
     if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+      throwSupabaseError(
+        'PHYSICAL_PACKAGE_REGISTRATION_LIST_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
     }
 
     const items = await Promise.all(
@@ -614,7 +652,11 @@ export class ProductPackageRegistrationsService {
     ).order('created_at', { ascending: false });
 
     if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+      throwSupabaseError(
+        'CREATOR_PRODUCTS_LIST_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
     }
 
     return {

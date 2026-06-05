@@ -1,8 +1,10 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common'
+import { HttpStatus, Injectable } from '@nestjs/common'
 import { randomUUID } from 'node:crypto'
 import { buildPaginationMeta } from '../../common/base/pagination-meta'
 import type { PaginationMeta } from '@musica/contracts'
 import type { ApiEnvelopePayload } from '../../common/interceptors/api-response.interceptor'
+import { ApiHttpException } from '../../common/errors/api-http.exception'
+import { throwSupabaseError } from '../../common/database/supabase-errors'
 import { SupabaseService } from '../../database/supabase.service'
 import type {
   AdminCorePermissionsListQueryDto,
@@ -10,7 +12,7 @@ import type {
   AdminUpdateCorePermissionRequestDto,
   AdminUpdateCorePermissionStatusRequestDto,
   CorePermissionDto,
-} from './core-permissions.dto'
+} from './dto'
 
 type DbCorePermissionRow = {
   id: string
@@ -36,6 +38,9 @@ const mapRowToDto = (row: DbCorePermissionRow): CorePermissionDto => ({
 export class CorePermissionsService {
   constructor(private readonly supabaseService: SupabaseService) {}
 
+  /**
+   * Assert core permission không bị tham chiếu bởi các bảng nghiệp vụ khác trước khi disable/delete.
+   */
   private async assertPermissionNotInUse(permissionId: string): Promise<void> {
     const [
       { count: trackAllowedCount, error: trackAllowedError },
@@ -72,27 +77,51 @@ export class CorePermissionsService {
     ])
 
     if (trackAllowedError) {
-      throw new HttpException(trackAllowedError.message, HttpStatus.INTERNAL_SERVER_ERROR)
+      throwSupabaseError(
+        'CORE_PERMISSION_USAGE_CHECK_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        trackAllowedError,
+      )
     }
 
     if (approvedError) {
-      throw new HttpException(approvedError.message, HttpStatus.INTERNAL_SERVER_ERROR)
+      throwSupabaseError(
+        'CORE_PERMISSION_USAGE_CHECK_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        approvedError,
+      )
     }
 
     if (digitalError) {
-      throw new HttpException(digitalError.message, HttpStatus.INTERNAL_SERVER_ERROR)
+      throwSupabaseError(
+        'CORE_PERMISSION_USAGE_CHECK_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        digitalError,
+      )
     }
 
     if (physicalError) {
-      throw new HttpException(physicalError.message, HttpStatus.INTERNAL_SERVER_ERROR)
+      throwSupabaseError(
+        'CORE_PERMISSION_USAGE_CHECK_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        physicalError,
+      )
     }
 
     if (expressionError) {
-      throw new HttpException(expressionError.message, HttpStatus.INTERNAL_SERVER_ERROR)
+      throwSupabaseError(
+        'CORE_PERMISSION_USAGE_CHECK_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        expressionError,
+      )
     }
 
     if (modificationError) {
-      throw new HttpException(modificationError.message, HttpStatus.INTERNAL_SERVER_ERROR)
+      throwSupabaseError(
+        'CORE_PERMISSION_USAGE_CHECK_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        modificationError,
+      )
     }
 
     const trackAllowed = typeof trackAllowedCount === 'number' ? trackAllowedCount : 0
@@ -110,9 +139,9 @@ export class CorePermissionsService {
       expressionConfigs > 0 ||
       modificationConfigs > 0
     ) {
-      throw new HttpException(
+      throw new ApiHttpException(
         {
-          message: 'CORE_PERMISSION_IN_USE',
+          code: 'CORE_PERMISSION_IN_USE',
           details: {
             trackAllowed,
             complianceApproved,
@@ -156,7 +185,11 @@ export class CorePermissionsService {
       .returns<DbCorePermissionRow[]>()
 
     if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
+      throwSupabaseError(
+        'CORE_PERMISSIONS_LIST_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      )
     }
 
     const totalItems = typeof count === 'number' ? count : 0
@@ -179,11 +212,18 @@ export class CorePermissionsService {
       .maybeSingle<DbCorePermissionRow>()
 
     if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
+      throwSupabaseError(
+        'CORE_PERMISSION_CREATE_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      )
     }
 
     if (!data) {
-      throw new HttpException('CORE_PERMISSION_CREATE_FAILED', HttpStatus.INTERNAL_SERVER_ERROR)
+      throw new ApiHttpException(
+        { code: 'CORE_PERMISSION_CREATE_FAILED' },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      )
     }
 
     return mapRowToDto(data)
@@ -211,11 +251,18 @@ export class CorePermissionsService {
       .maybeSingle<DbCorePermissionRow>()
 
     if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
+      throwSupabaseError(
+        'CORE_PERMISSION_UPDATE_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      )
     }
 
     if (!data) {
-      throw new HttpException('CORE_PERMISSION_NOT_FOUND', HttpStatus.NOT_FOUND)
+      throw new ApiHttpException(
+        { code: 'CORE_PERMISSION_NOT_FOUND' },
+        HttpStatus.NOT_FOUND,
+      )
     }
 
     return mapRowToDto(data)
@@ -237,11 +284,18 @@ export class CorePermissionsService {
       .maybeSingle<DbCorePermissionRow>()
 
     if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
+      throwSupabaseError(
+        'CORE_PERMISSION_UPDATE_STATUS_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      )
     }
 
     if (!data) {
-      throw new HttpException('CORE_PERMISSION_NOT_FOUND', HttpStatus.NOT_FOUND)
+      throw new ApiHttpException(
+        { code: 'CORE_PERMISSION_NOT_FOUND' },
+        HttpStatus.NOT_FOUND,
+      )
     }
 
     return mapRowToDto(data)
@@ -256,7 +310,11 @@ export class CorePermissionsService {
       .eq('id', permissionId)
 
     if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
+      throwSupabaseError(
+        'CORE_PERMISSION_DELETE_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      )
     }
 
     return { ok: true }

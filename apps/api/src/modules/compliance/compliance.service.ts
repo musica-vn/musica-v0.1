@@ -1,8 +1,9 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common'
+import { HttpStatus, Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import type { PaginationMeta } from '@musica/contracts'
 import { buildPaginationMeta } from '../../common/base/pagination-meta'
 import type { ApiEnvelopePayload } from '../../common/interceptors/api-response.interceptor'
+import { ApiHttpException } from '../../common/errors/api-http.exception'
 import { SupabaseService } from '../../database/supabase.service'
 import type {
   AdminComplianceDecisionRequestDto,
@@ -15,6 +16,12 @@ import type {
   UploadedLegalFileDto,
 } from './compliance.dto'
 import { randomUUID } from 'crypto'
+import { COMPLIANCE_MAX_FILE_SIZE_BYTES } from './compliance-upload.constants'
+import {
+  resolveLegalFileMimeType,
+  slugifyFileName,
+  type ResolvedLegalFileMimeType,
+} from './compliance-upload.utils'
 
 type DbTrackRow = {
   id: string
@@ -76,85 +83,14 @@ type UploadedFileInput = {
 
 const SIGNED_URL_EXPIRES_IN_SECONDS = 60 * 60 * 6
 
-const slugifyFileName = (value: string): string => {
-  const safeInput = value.trim().replaceAll('\\', '-').replaceAll('/', '-').replaceAll('..', '.')
-  const dotIndex = safeInput.lastIndexOf('.')
-  const base = dotIndex > 0 ? safeInput.slice(0, dotIndex) : safeInput
-  const extensionRaw = dotIndex > 0 ? safeInput.slice(dotIndex + 1) : ''
-
-  const baseSlug = base
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replaceAll(' ', '-')
-    .replaceAll(/[^a-zA-Z0-9._-]/g, '')
-    .replaceAll(/-+/g, '-')
-    .replaceAll(/^\.+|\.+$/g, '')
-    .replaceAll(/^-+|-+$/g, '')
-
-  const extensionSlug = extensionRaw
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replaceAll(/[^a-zA-Z0-9]/g, '')
-    .toLowerCase()
-
-  if (extensionSlug.length === 0) return baseSlug.length > 0 ? baseSlug : 'file'
-  return `${baseSlug.length > 0 ? baseSlug : 'file'}.${extensionSlug}`
+const readStringField = (value: unknown, key: string): string | null => {
+  if (typeof value !== 'object' || value === null) return null
+  const record = value as Record<string, unknown>
+  return typeof record[key] === 'string' ? record[key] : null
 }
-
-const isAllowedMimeType = (mimeType: string): boolean =>
-  [
-    'application/pdf',
-    'application/x-pdf',
-    'application/acrobat',
-    'applications/vnd.pdf',
-    'text/pdf',
-    'application/msword',
-    'application/vnd.ms-word',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    'image/png',
-    'image/jpeg',
-    'image/jpg',
-    'image/webp',
-  ].includes(mimeType)
 
 const normalizeMimeType = (mimeType: string): string =>
   mimeType.split(';')[0]?.trim().toLowerCase() ?? ''
-
-const getFileExtension = (fileName: string): string | null => {
-  const dotIndex = fileName.lastIndexOf('.')
-  if (dotIndex <= 0) return null
-  const extension = fileName.slice(dotIndex + 1).trim().toLowerCase()
-  return extension.length > 0 ? extension : null
-}
-
-const inferMimeTypeFromExtension = (extension: string | null): string | null => {
-  if (!extension) return null
-  if (extension === 'pdf') return 'application/pdf'
-  if (extension === 'docx') return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-  if (extension === 'doc') return 'application/msword'
-  if (extension === 'png') return 'image/png'
-  if (extension === 'jpg' || extension === 'jpeg') return 'image/jpeg'
-  if (extension === 'webp') return 'image/webp'
-  return null
-}
-
-const resolveLegalFileMimeType = (params: {
-  mimeType: string
-  fileName: string
-}): { resolvedMimeType: string; extension: string | null } | null => {
-  const normalizedMimeType = normalizeMimeType(params.mimeType)
-  const extension = getFileExtension(params.fileName)
-
-  if (isAllowedMimeType(normalizedMimeType)) {
-    return { resolvedMimeType: normalizedMimeType, extension }
-  }
-
-  if (normalizedMimeType !== 'application/octet-stream') return null
-
-  const inferred = inferMimeTypeFromExtension(extension)
-  if (!inferred) return null
-  return { resolvedMimeType: inferred, extension }
-}
 
 const mapComplianceLegalFiles = (
   fileRows: DbComplianceLegalFileRow[] | null | undefined,
@@ -184,7 +120,31 @@ export class ComplianceService {
     private readonly configService: ConfigService,
   ) {}
 
+  /**
+   * Chuẩn hoá lỗi Supabase để tránh leak `error.message` trực tiếp ra client.
+   */
+  private throwSupabaseError(code: string, error: unknown): never {
+    const supabaseCode = readStringField(error, 'code')
+    throw new ApiHttpException(
+      { code, details: supabaseCode ? { supabaseCode } : undefined },
+      HttpStatus.INTERNAL_SERVER_ERROR,
+    )
+  }
+
+  private getLegalFilesBucketOrThrow(): string {
+    const bucket = this.configService.get<string>('STORAGE_BUCKET_LEGAL_FILES')
+    if (typeof bucket === 'string' && bucket.length > 0) return bucket
+    throw new ApiHttpException(
+      { code: 'MISSING_STORAGE_BUCKET_LEGAL_FILES' },
+      HttpStatus.INTERNAL_SERVER_ERROR,
+    )
+  }
+
   private async ensureReviewerUserExists(userId: string) {
+    if (!userId) {
+      throw new ApiHttpException({ code: 'UNAUTHORIZED' }, HttpStatus.UNAUTHORIZED)
+    }
+
     const { data: reviewer, error } = await this.supabaseService.client
       .from('users')
       .select('id,status')
@@ -192,15 +152,21 @@ export class ComplianceService {
       .maybeSingle<DbUserRow>()
 
     if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
+      this.throwSupabaseError('REVIEWER_LOOKUP_FAILED', error)
     }
 
     if (!reviewer) {
-      throw new HttpException('REVIEWER_NOT_FOUND', HttpStatus.UNAUTHORIZED)
+      throw new ApiHttpException(
+        { code: 'REVIEWER_NOT_FOUND' },
+        HttpStatus.UNAUTHORIZED,
+      )
     }
 
     if (reviewer.status !== 'ACTIVE') {
-      throw new HttpException('REVIEWER_NOT_ACTIVE', HttpStatus.FORBIDDEN)
+      throw new ApiHttpException(
+        { code: 'REVIEWER_NOT_ACTIVE' },
+        HttpStatus.FORBIDDEN,
+      )
     }
   }
 
@@ -220,7 +186,7 @@ export class ComplianceService {
       .returns<DbUserRow[]>()
 
     if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
+      this.throwSupabaseError('USERS_LOOKUP_FAILED', error)
     }
 
     return new Map(
@@ -255,7 +221,7 @@ export class ComplianceService {
     }
 
     const { data, error } = await sb.returns<{ id: string }[]>()
-    if (error) throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
+    if (error) this.throwSupabaseError('PRODUCTS_LOOKUP_FAILED', error)
 
     return (data ?? []).map((x) => x.id)
   }
@@ -270,13 +236,13 @@ export class ComplianceService {
       .in('id', normalized)
       .returns<DbCorePermissionRow[]>()
 
-    if (error) throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
+    if (error) this.throwSupabaseError('CORE_PERMISSIONS_LOOKUP_FAILED', error)
 
     const activeSet = new Set((data ?? []).filter((x) => x.status === 'ACTIVE').map((x) => x.id))
     const invalid = normalized.filter((id) => !activeSet.has(id))
     if (invalid.length > 0) {
-      throw new HttpException(
-        { message: 'CORE_PERMISSION_NOT_ACTIVE', details: { invalid } },
+      throw new ApiHttpException(
+        { code: 'CORE_PERMISSION_NOT_ACTIVE', details: { invalid } },
         HttpStatus.BAD_REQUEST,
       )
     }
@@ -289,8 +255,8 @@ export class ComplianceService {
       .eq('track_id', trackId)
       .maybeSingle<DbComplianceRow>()
 
-    if (error) throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
-    if (!data) throw new HttpException('COMPLIANCE_NOT_FOUND', HttpStatus.NOT_FOUND)
+    if (error) this.throwSupabaseError('COMPLIANCE_LOOKUP_FAILED', error)
+    if (!data) throw new ApiHttpException({ code: 'COMPLIANCE_NOT_FOUND' }, HttpStatus.NOT_FOUND)
 
     return data
   }
@@ -307,7 +273,7 @@ export class ComplianceService {
       .returns<DbComplianceLegalFileRow[]>()
 
     if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
+      this.throwSupabaseError('COMPLIANCE_LEGAL_FILES_LIST_FAILED', error)
     }
 
     return mapComplianceLegalFiles(data, legacyFiles)
@@ -323,7 +289,7 @@ export class ComplianceService {
       .eq('id', complianceId)
 
     if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
+      this.throwSupabaseError('COMPLIANCE_LEGACY_FILES_SYNC_FAILED', error)
     }
   }
 
@@ -353,7 +319,7 @@ export class ComplianceService {
 
     const { data, error, count } = await sb.range(from, to).returns<DbComplianceJoinRow[]>()
     if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
+      this.throwSupabaseError('COMPLIANCE_LIST_FAILED', error)
     }
 
     const totalItems = typeof count === 'number' ? count : 0
@@ -398,9 +364,11 @@ export class ComplianceService {
       .maybeSingle<DbComplianceJoinRow>()
 
     if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
+      this.throwSupabaseError('COMPLIANCE_DETAIL_FAILED', error)
     }
-    if (!data || !data.products) throw new HttpException('COMPLIANCE_NOT_FOUND', HttpStatus.NOT_FOUND)
+    if (!data || !data.products) {
+      throw new ApiHttpException({ code: 'COMPLIANCE_NOT_FOUND' }, HttpStatus.NOT_FOUND)
+    }
 
     const approvedPermissionIds = (data.compliance_approved_permissions ?? [])
       .map((x) => x.permission_id)
@@ -446,10 +414,7 @@ export class ComplianceService {
     trackId: string,
     files: UploadedFileInput[],
   ): Promise<{ uploadedLegalFiles: UploadedLegalFileDto[] }> {
-    const bucket = this.configService.get<string>('STORAGE_BUCKET_LEGAL_FILES')
-    if (!bucket) {
-      throw new HttpException('Missing STORAGE_BUCKET_LEGAL_FILES', HttpStatus.INTERNAL_SERVER_ERROR)
-    }
+    const bucket = this.getLegalFilesBucketOrThrow()
 
     const compliance = await this.getComplianceByTrackId(trackId)
     const existing = await this.getComplianceUploadedFiles(
@@ -459,52 +424,61 @@ export class ComplianceService {
 
     const safeFiles = (files ?? []).filter((file) => file && typeof file.originalname === 'string')
     if (safeFiles.length === 0) {
-      throw new HttpException('NO_FILES_UPLOADED', HttpStatus.BAD_REQUEST)
+      throw new ApiHttpException(
+        { code: 'NO_FILES_UPLOADED' },
+        HttpStatus.BAD_REQUEST,
+      )
     }
 
-    const maxBytes = 25 * 1024 * 1024
-    for (const file of safeFiles) {
-      if (file.size > maxBytes) {
-        throw new HttpException(
-          { message: 'LEGAL_FILE_TOO_LARGE', details: { fileName: file.originalname, maxBytes } },
-          HttpStatus.BAD_REQUEST,
-        )
-      }
-      const resolvedMime = resolveLegalFileMimeType({
-        mimeType: file.mimetype,
-        fileName: file.originalname,
-      })
-      if (!resolvedMime) {
-        throw new HttpException(
+    type ValidatedFile = UploadedFileInput & ResolvedLegalFileMimeType
+    const validatedFiles: ValidatedFile[] = safeFiles.map((file) => {
+      if (file.size > COMPLIANCE_MAX_FILE_SIZE_BYTES) {
+        throw new ApiHttpException(
           {
-            message: 'LEGAL_FILE_TYPE_NOT_ALLOWED',
+            code: 'LEGAL_FILE_TOO_LARGE',
             details: {
               fileName: file.originalname,
-              mimeType: file.mimetype,
-              extension: getFileExtension(file.originalname),
+              maxBytes: COMPLIANCE_MAX_FILE_SIZE_BYTES,
             },
           },
           HttpStatus.BAD_REQUEST,
         )
       }
-    }
+
+      const resolved = resolveLegalFileMimeType({
+        mimeType: file.mimetype,
+        fileName: file.originalname,
+      })
+      if (!resolved) {
+        throw new ApiHttpException(
+          {
+            code: 'LEGAL_FILE_TYPE_NOT_ALLOWED',
+            details: {
+              fileName: file.originalname,
+              mimeType: normalizeMimeType(file.mimetype),
+            },
+          },
+          HttpStatus.BAD_REQUEST,
+        )
+      }
+
+      return { ...file, ...resolved }
+    })
 
     const uploadedAt = new Date().toISOString()
     const uploaded: UploadedLegalFileDto[] = []
 
-    for (const file of safeFiles) {
+    for (const file of validatedFiles) {
       const safeName = slugifyFileName(file.originalname)
       const fileKey = `compliance/${trackId}/${randomUUID()}-${safeName}`
-      const resolvedMimeType =
-        resolveLegalFileMimeType({ mimeType: file.mimetype, fileName: file.originalname })
-          ?.resolvedMimeType ?? normalizeMimeType(file.mimetype) ?? 'application/octet-stream'
+      const resolvedMimeType = file.resolvedMimeType
 
       const { error } = await this.supabaseService.client.storage
         .from(bucket)
         .upload(fileKey, file.buffer, { contentType: resolvedMimeType, upsert: false })
 
       if (error) {
-        throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
+        this.throwSupabaseError('LEGAL_FILE_UPLOAD_FAILED', error)
       }
 
       uploaded.push({
@@ -530,7 +504,7 @@ export class ComplianceService {
       )
 
     if (insertError) {
-      throw new HttpException(insertError.message, HttpStatus.INTERNAL_SERVER_ERROR)
+      this.throwSupabaseError('LEGAL_FILE_RECORD_INSERT_FAILED', insertError)
     }
 
     await this.syncLegacyUploadedFiles(compliance.id, nextFiles)
@@ -539,17 +513,14 @@ export class ComplianceService {
   }
 
   async createAdminComplianceFileDownloadUrl(fileKey: string): Promise<{ downloadUrl: string }> {
-    const bucket = this.configService.get<string>('STORAGE_BUCKET_LEGAL_FILES')
-    if (!bucket) {
-      throw new HttpException('Missing STORAGE_BUCKET_LEGAL_FILES', HttpStatus.INTERNAL_SERVER_ERROR)
-    }
+    const bucket = this.getLegalFilesBucketOrThrow()
 
     const { data, error } = await this.supabaseService.client.storage
       .from(bucket)
       .createSignedUrl(fileKey, SIGNED_URL_EXPIRES_IN_SECONDS)
 
     if (error || !data) {
-      throw new HttpException(error?.message ?? 'Failed to create signed url', HttpStatus.INTERNAL_SERVER_ERROR)
+      this.throwSupabaseError('LEGAL_FILE_SIGNED_URL_CREATE_FAILED', error)
     }
 
     return { downloadUrl: data.signedUrl }
@@ -566,7 +537,10 @@ export class ComplianceService {
       (params.payload.legalStatus === 'INSUFFICIENT' || params.payload.reviewStatus === 'REJECTED') &&
       (!params.payload.rejectReason || params.payload.rejectReason.trim().length === 0)
     ) {
-      throw new HttpException('REJECT_REASON_REQUIRED', HttpStatus.BAD_REQUEST)
+      throw new ApiHttpException(
+        { code: 'REJECT_REASON_REQUIRED' },
+        HttpStatus.BAD_REQUEST,
+      )
     }
 
     await this.ensureReviewerUserExists(params.reviewerUserId)
@@ -591,7 +565,7 @@ export class ComplianceService {
       .eq('id', compliance.id)
 
     if (updateError) {
-      throw new HttpException(updateError.message, HttpStatus.INTERNAL_SERVER_ERROR)
+      this.throwSupabaseError('COMPLIANCE_DECISION_UPDATE_FAILED', updateError)
     }
 
     const { error: deleteError } = await this.supabaseService.client
@@ -600,7 +574,7 @@ export class ComplianceService {
       .eq('compliance_id', compliance.id)
 
     if (deleteError) {
-      throw new HttpException(deleteError.message, HttpStatus.INTERNAL_SERVER_ERROR)
+      this.throwSupabaseError('COMPLIANCE_APPROVED_PERMISSIONS_DELETE_FAILED', deleteError)
     }
 
     const approvedPermissionIds = Array.from(
@@ -617,7 +591,7 @@ export class ComplianceService {
         .insert(approvedPermissionIds.map((permissionId) => ({ compliance_id: compliance.id, permission_id: permissionId })))
 
       if (insertError) {
-        throw new HttpException(insertError.message, HttpStatus.INTERNAL_SERVER_ERROR)
+        this.throwSupabaseError('COMPLIANCE_APPROVED_PERMISSIONS_INSERT_FAILED', insertError)
       }
     }
 
