@@ -16,6 +16,11 @@ import {
   AdminProductsSummaryQueryDto,
   AdminUpdateProductRequestDto,
 } from './admin-products.dto';
+import type {
+  MarketplaceProductDetailDto,
+  MarketplaceProductListItemDto,
+  MarketplaceProductsListQueryDto,
+} from './marketplace-products.dto';
 import { ProductDto } from './product.dto';
 import {
   applyProductPriorityOrdering,
@@ -317,6 +322,25 @@ export class ProductsService {
 
     throw new ApiHttpException(
       { code: failedCode, details: { message: errorMessage } },
+      HttpStatus.INTERNAL_SERVER_ERROR,
+    );
+  }
+
+  private async createSignedUrlOrNull(
+    bucket: string,
+    fileKey: string,
+  ): Promise<string | null> {
+    const { data, error } = await this.supabaseService.client.storage
+      .from(bucket)
+      .createSignedUrl(fileKey, SIGNED_URL_EXPIRES_IN_SECONDS);
+
+    if (data?.signedUrl) return data.signedUrl;
+
+    const errorMessage = error?.message ?? null;
+    if (errorMessage === 'Object not found') return null;
+
+    throw new ApiHttpException(
+      { code: 'SIGNED_URL_CREATE_FAILED', details: { bucket, fileKey, message: errorMessage } },
       HttpStatus.INTERNAL_SERVER_ERROR,
     );
   }
@@ -903,6 +927,122 @@ export class ProductsService {
       },
       meta,
     };
+  }
+
+  private mapProductDtoToMarketplaceListItem = async (
+    product: ProductDto,
+  ): Promise<MarketplaceProductListItemDto> => {
+    const thumbnailUrl = product.thumbnailKey
+      ? await this.createSignedUrlOrNull(
+          this.getRequiredBucket('STORAGE_BUCKET_TRACK_THUMBNAILS'),
+          product.thumbnailKey,
+        )
+      : null
+
+    const previewBucket = this.getRequiredBucket('STORAGE_BUCKET_PREVIEW_AUDIO')
+    const previewKey = `products/${product.id}/preview.mp3`
+    const previewAudioUrl = await this.createSignedUrlOrNull(previewBucket, previewKey)
+
+    return {
+      id: product.id,
+      title: product.title,
+      authorName: product.authorName,
+      genres: product.genres,
+      duration: product.duration,
+      artistId: product.artistId,
+      thumbnailUrl,
+      previewAudioUrl,
+      createdAt: product.createdAt,
+      updatedAt: product.updatedAt,
+    }
+  }
+
+  private mapProductDtoToMarketplaceDetail = async (
+    product: ProductDto,
+  ): Promise<MarketplaceProductDetailDto> => {
+    const listItem = await this.mapProductDtoToMarketplaceListItem(product)
+    return {
+      ...listItem,
+      description: product.description,
+      useCases: product.useCases,
+      allowedPermissions: product.allowedPermissions.map((permission) => ({
+        id: permission.id,
+        name: permission.name,
+        lawReference: permission.lawReference,
+      })),
+    }
+  }
+
+  async listMarketplaceProducts(
+    query: MarketplaceProductsListQueryDto,
+  ): Promise<ApiEnvelopePayload<{ items: MarketplaceProductListItemDto[] }, PaginationMeta>> {
+    const mergedQuery: AdminProductsListQueryDto = {
+      page: query.page,
+      pageSize: query.pageSize,
+      sort: query.sort,
+      status: 'PUBLISHED',
+      keyword: query.keyword,
+      genre: query.genre,
+      artistId: query.artistId,
+    }
+
+    const { column, ascending } = parseSort(mergedQuery.sort)
+    const from = (mergedQuery.page - 1) * mergedQuery.pageSize
+    const to = from + mergedQuery.pageSize - 1
+
+    const rawRequestBuilder = this.supabaseService.client
+      .from('products')
+      .select(
+        '*, track_allowed_permissions(permission_id, core_permissions(id,name,law_reference))',
+        { count: 'exact' },
+      )
+      .order(column, { ascending })
+      .returns<DbProductJoinRow[]>()
+
+    const requestBuilder = this.applyProductAdminFilters(rawRequestBuilder as unknown, mergedQuery) as unknown as {
+      range: (
+        from: number,
+        to: number,
+      ) => Promise<{
+        data: unknown
+        error: { message: string } | null
+        count: unknown
+      }>
+    }
+
+    const { data, error, count } = await requestBuilder.range(from, to)
+
+    if (error) {
+      throwSupabaseError('MARKETPLACE_PRODUCTS_QUERY_FAILED', HttpStatus.INTERNAL_SERVER_ERROR, error)
+    }
+
+    const rows = (data ?? []) as DbProductJoinRow[]
+    const totalItems = typeof count === 'number' ? count : 0
+    const meta = buildPaginationMeta(mergedQuery.page, mergedQuery.pageSize, totalItems)
+
+    const productDtos = rows.map(mapProductRowToDto)
+    const items = await Promise.all(productDtos.map((product) => this.mapProductDtoToMarketplaceListItem(product)))
+
+    return { data: { items }, meta }
+  }
+
+  async getMarketplaceProductById(productId: string): Promise<MarketplaceProductDetailDto> {
+    const { data, error } = await this.supabaseService.client
+      .from('products')
+      .select('*, track_allowed_permissions(permission_id, core_permissions(id,name,law_reference))')
+      .eq('id', productId)
+      .eq('status', 'PUBLISHED')
+      .maybeSingle<DbProductJoinRow>()
+
+    if (error) {
+      throwSupabaseError('MARKETPLACE_PRODUCT_GET_FAILED', HttpStatus.INTERNAL_SERVER_ERROR, error)
+    }
+
+    if (!data) {
+      throw new ApiHttpException({ code: 'MARKETPLACE_PRODUCT_NOT_FOUND' }, HttpStatus.NOT_FOUND)
+    }
+
+    return this.mapProductDtoToMarketplaceDetail(mapProductRowToDto(data))
   }
 
   async getAdminProductsSummary(
