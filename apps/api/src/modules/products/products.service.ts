@@ -16,6 +16,11 @@ import {
   AdminProductsSummaryQueryDto,
   AdminUpdateProductRequestDto,
 } from './admin-products.dto';
+import type {
+  MarketplaceProductDetailDto,
+  MarketplaceProductListItemDto,
+  MarketplaceProductsListQueryDto,
+} from './marketplace-products.dto';
 import { PublicProductsListQueryDto } from './public-products.dto';
 import { ProductDto } from './product.dto';
 import {
@@ -349,6 +354,61 @@ export class ProductsService {
     }
 
     return `${data}.${extension}`;
+  }
+
+  private getRequiredBucket(configKey: string): string {
+    const bucket = this.configService.get<string>(configKey);
+    if (!bucket) {
+      throw new HttpException(
+        `Missing ${configKey}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+
+    return bucket;
+  }
+
+  private async createSignedUploadUrlOrThrow(
+    bucket: string,
+    fileKey: string,
+    errorCode: string,
+  ): Promise<string> {
+    const { data, error } = await this.supabaseService.client.storage
+      .from(bucket)
+      .createSignedUploadUrl(fileKey);
+
+    if (data?.signedUrl) {
+      return data.signedUrl;
+    }
+
+    throw new HttpException(
+      error?.message ?? errorCode,
+      HttpStatus.INTERNAL_SERVER_ERROR,
+    );
+  }
+
+  private async createSignedUrlOrThrow(
+    bucket: string,
+    fileKey: string,
+    errorCode: string,
+    notFoundCode: string,
+  ): Promise<string> {
+    const { data, error } = await this.supabaseService.client.storage
+      .from(bucket)
+      .createSignedUrl(fileKey, SIGNED_URL_EXPIRES_IN_SECONDS);
+
+    if (data?.signedUrl) {
+      return data.signedUrl;
+    }
+
+    if (error?.message === 'Object not found') {
+      throw new HttpException(notFoundCode, HttpStatus.NOT_FOUND);
+    }
+
+    throw new HttpException(
+      error?.message ?? errorCode,
+      HttpStatus.INTERNAL_SERVER_ERROR,
+    );
   }
 
   private async loadActiveDigitalEligibilityConfigs(): Promise<
@@ -868,6 +928,124 @@ export class ProductsService {
     );
   }
 
+  private mapRowToMarketplaceListItem = async (
+    row: DbProductRow,
+  ): Promise<MarketplaceProductListItemDto> => ({
+    id: row.id,
+    title: row.title,
+    authorName: row.author_name,
+    genres: row.genres ?? (row.genre ? [row.genre] : []),
+    duration: row.duration,
+    artistId: row.artist_id,
+    thumbnailUrl: await this.createThumbnailUrlFromKey(row.thumbnail_key),
+    previewAudioUrl: null,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  });
+
+  async listMarketplaceProducts(
+    query: MarketplaceProductsListQueryDto,
+  ): Promise<
+    ApiEnvelopePayload<{ items: MarketplaceProductListItemDto[] }, PaginationMeta>
+  > {
+    const { column, ascending } = parseSort(query.sort);
+    const keyword =
+      typeof query.keyword === 'string' && query.keyword.trim().length > 0
+        ? normalizeKeyword(query.keyword).toLowerCase()
+        : undefined;
+
+    const { data, error } = await this.supabaseService.client
+      .from('products')
+      .select(
+        'id,title,artist_id,author_name,genre,genres,duration,thumbnail_key,created_at,updated_at,status',
+      )
+      .eq('status', 'PUBLISHED')
+      .returns<DbProductRow[]>();
+
+    if (error) {
+      throwSupabaseError(
+        'PRODUCTS_QUERY_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
+    }
+
+    const filteredRows = (data ?? []).filter((row) => {
+      const genres = row.genres ?? (row.genre ? [row.genre] : []);
+      const searchable = [row.title, row.author_name ?? '', row.genre ?? '', ...genres]
+        .join(' ')
+        .toLowerCase();
+
+      if (query.artistId && row.artist_id !== query.artistId) return false;
+      if (
+        query.genre &&
+        !genres.includes(query.genre) &&
+        row.genre !== query.genre
+      ) {
+        return false;
+      }
+      if (keyword && !searchable.includes(keyword)) return false;
+
+      return true;
+    });
+
+    filteredRows.sort((a, b) => {
+      const left = a[column];
+      const right = b[column];
+
+      if (left === right) return 0;
+      if (left === null || left === undefined) return ascending ? -1 : 1;
+      if (right === null || right === undefined) return ascending ? 1 : -1;
+      if (typeof left === 'number' && typeof right === 'number') {
+        return ascending ? left - right : right - left;
+      }
+
+      const leftValue = String(left).toLowerCase();
+      const rightValue = String(right).toLowerCase();
+      return ascending
+        ? leftValue.localeCompare(rightValue)
+        : rightValue.localeCompare(leftValue);
+    });
+
+    const from = (query.page - 1) * query.pageSize;
+    const pageRows = filteredRows.slice(from, from + query.pageSize);
+
+    return {
+      data: {
+        items: await Promise.all(
+          pageRows.map((row) => this.mapRowToMarketplaceListItem(row)),
+        ),
+      },
+      meta: buildPaginationMeta(query.page, query.pageSize, filteredRows.length),
+    };
+  }
+
+  async getMarketplaceProductById(
+    productId: string,
+  ): Promise<MarketplaceProductDetailDto> {
+    const product = await this.getProductById(productId);
+
+    if (product.status !== 'PUBLISHED') {
+      throw new HttpException('PRODUCT_NOT_FOUND', HttpStatus.NOT_FOUND);
+    }
+
+    return {
+      id: product.id,
+      title: product.title,
+      authorName: product.authorName,
+      genres: product.genres,
+      duration: product.duration,
+      artistId: product.artistId,
+      thumbnailUrl: await this.createThumbnailUrlFromKey(product.thumbnailKey),
+      previewAudioUrl: null,
+      createdAt: product.createdAt,
+      updatedAt: product.updatedAt,
+      description: product.description,
+      useCases: product.useCases,
+      allowedPermissions: product.allowedPermissions,
+    };
+  }
+
   async listPublicProducts(
     query: PublicProductsListQueryDto,
   ): Promise<
@@ -1084,9 +1262,13 @@ export class ProductsService {
     > & { status?: 'PENDING' | 'HIDDEN' | 'PUBLISHED' },
   ) {
     type FilterableBuilder = {
-      eq: (column: string, value: unknown) => unknown;
-      contains: (column: string, value: unknown) => unknown;
-      or: (filters: string) => unknown;
+      eq: (column: string, value: unknown) => FilterableBuilder;
+      contains: (column: string, value: unknown) => FilterableBuilder;
+      or: (filters: string) => FilterableBuilder;
+      limit: (count: number) => Promise<{
+        count: number | null;
+        error: { message?: string } | null;
+      }>;
     };
 
     let builder = requestBuilder as FilterableBuilder;
@@ -1097,18 +1279,15 @@ export class ProductsService {
           ? normalizeKeyword(query.q)
           : undefined;
 
-    if (query.status)
-      requestBuilder = requestBuilder.eq('status', query.status);
-    if (query.genre)
-      requestBuilder = requestBuilder.contains('genres', [query.genre]);
-    if (query.artistId)
-      requestBuilder = requestBuilder.eq('artist_id', query.artistId);
+    if (query.status) builder = builder.eq('status', query.status);
+    if (query.genre) builder = builder.contains('genres', [query.genre]);
+    if (query.artistId) builder = builder.eq('artist_id', query.artistId);
 
     if (keyword) {
       const escaped = escapePostgrestOrValue(keyword);
       builder = builder.or(
         `title.ilike.%${escaped}%,author_name.ilike.%${escaped}%,genre.ilike.%${escaped}%,use_case.ilike.%${escaped}%`,
-      ) as FilterableBuilder;
+      );
     }
 
     return builder;
@@ -1678,16 +1857,6 @@ export class ProductsService {
       throw new HttpException('Audio is not available', HttpStatus.NOT_FOUND);
     }
 
-    const bucket = this.configService.get<string>(
-      'STORAGE_BUCKET_ORIGINAL_AUDIO',
-    );
-    if (!bucket) {
-      throw new HttpException(
-        'Missing STORAGE_BUCKET_ORIGINAL_AUDIO',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-
     const bucket = this.getRequiredBucket('STORAGE_BUCKET_ORIGINAL_AUDIO');
     const playbackUrl = await this.createSignedUrlOrThrow(
       bucket,
@@ -1696,17 +1865,7 @@ export class ProductsService {
       'PRODUCT_AUDIO_OBJECT_NOT_FOUND',
     );
 
-    if (data?.signedUrl) {
-      return { playbackUrl: data.signedUrl };
-    }
-
-    const errorMessage =
-      error?.message ?? 'Failed to create signed playback URL';
-    if (errorMessage === 'Object not found') {
-      throw new HttpException('Audio object not found', HttpStatus.NOT_FOUND);
-    }
-
-    throw new HttpException(errorMessage, HttpStatus.INTERNAL_SERVER_ERROR);
+    return { playbackUrl };
   }
 
   async createSheetMusicUploadUrl(
@@ -1738,14 +1897,6 @@ export class ProductsService {
       );
     }
 
-    const bucket = this.configService.get<string>('STORAGE_BUCKET_SHEET_MUSIC');
-    if (!bucket) {
-      throw new HttpException(
-        'Missing STORAGE_BUCKET_SHEET_MUSIC',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-
     const bucket = this.getRequiredBucket('STORAGE_BUCKET_SHEET_MUSIC');
     const sheetMusicUrl = await this.createSignedUrlOrThrow(
       bucket,
@@ -1754,19 +1905,6 @@ export class ProductsService {
       'PRODUCT_SHEET_MUSIC_OBJECT_NOT_FOUND',
     );
 
-    if (data?.signedUrl) {
-      return { sheetMusicUrl: data.signedUrl };
-    }
-
-    const errorMessage =
-      error?.message ?? 'Failed to create signed sheet music URL';
-    if (errorMessage === 'Object not found') {
-      throw new HttpException(
-        'Sheet music object not found',
-        HttpStatus.NOT_FOUND,
-      );
-    }
-
-    throw new HttpException(errorMessage, HttpStatus.INTERNAL_SERVER_ERROR);
+    return { sheetMusicUrl };
   }
 }
