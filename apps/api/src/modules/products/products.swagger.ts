@@ -8,6 +8,7 @@ import {
   AdminProductUploadUrlResponseDataDto,
   AdminProductsListDataDto,
 } from './admin-products.dto';
+import { PublicProductsListDataDto } from './public-products.dto';
 import { ProductDto } from './product.dto';
 
 export class AdminProductResponseDto {
@@ -36,6 +37,26 @@ export class AdminProductsListResponseDto {
 
   @ApiProperty({ type: AdminProductsListDataDto })
   data: AdminProductsListDataDto;
+
+  @ApiProperty({ type: PaginationMetaDto })
+  meta: PaginationMetaDto;
+
+  @ApiProperty({ example: '2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a' })
+  requestId: string;
+
+  @ApiProperty({ example: '2026-05-20T00:00:00.000Z' })
+  timestamp: string;
+}
+
+export class PublicProductsListResponseDto {
+  @ApiProperty({ example: true })
+  success: true;
+
+  @ApiProperty({ example: 200 })
+  statusCode: number;
+
+  @ApiProperty({ type: PublicProductsListDataDto })
+  data: PublicProductsListDataDto;
 
   @ApiProperty({ type: PaginationMetaDto })
   meta: PaginationMetaDto;
