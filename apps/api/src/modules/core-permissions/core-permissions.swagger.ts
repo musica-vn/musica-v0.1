@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger'
 import { PaginationMetaDto } from '../../common/base/pagination.swagger'
-import { AdminCorePermissionsListDataDto, CorePermissionDto } from './core-permissions.dto'
+import { AdminCorePermissionsListDataDto, CorePermissionDto } from './dto'
 
 export class AdminCorePermissionResponseDto {
   @ApiProperty({ example: true })

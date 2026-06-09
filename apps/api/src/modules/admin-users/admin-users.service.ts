@@ -1,7 +1,11 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common'
+import { HttpStatus, Injectable } from '@nestjs/common'
 import { hash } from 'bcryptjs'
+import { ApiHttpException } from '../../common/errors/api-http.exception'
 import { SupabaseService } from '../../database/supabase.service'
-import type { AdminUserListQueryDto, CreateAdminUserRequestDto, UpdateAdminUserRequestDto } from './admin-users.dto'
+import { isUniqueViolation } from '../../common/database/postgres-errors'
+import { throwSupabaseError } from '../../common/database/supabase-errors'
+import { normalizeRoles } from '../../common/users/normalize-roles'
+import type { AdminUserListQueryDto, CreateAdminUserRequestDto, UpdateAdminUserRequestDto } from './dto'
 
 type UserStatus = 'ACTIVE' | 'LOCKED' | 'DELETED'
 
@@ -30,31 +34,9 @@ type AdminUserItem = {
   createdAt: string
 }
 
-const normalizeRoles = (
-  userRoles: DbUserRoleRow[],
-): Array<{ roleId: number; roleName: string }> =>
-  (userRoles ?? [])
-    .map((x) => {
-      const roleId = typeof x.role_id === 'number' ? x.role_id : null
-      const roleName =
-        x?.role && typeof x.role.name === 'string' ? x.role.name : null
-      if (!roleId || !roleName) return null
-      return { roleId, roleName }
-    })
-    .filter(
-      (
-        value,
-      ): value is {
-        roleId: number
-        roleName: string
-      } => value !== null,
-    )
-
-const isUniqueViolation = (error: unknown): boolean => {
-  if (typeof error !== 'object' || error === null) return false
-  return (error as any).code === '23505'
-}
-
+/**
+ * Service quản lý Admin users (list/get/create/update/status/delete) và mapping roles từ DB.
+ */
 @Injectable()
 export class AdminUsersService {
   constructor(private readonly supabaseService: SupabaseService) {}
@@ -67,7 +49,7 @@ export class AdminUsersService {
       .returns<DbRoleRow[]>()
 
     if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
+      throwSupabaseError('ADMIN_USERS_ROLES_LOOKUP_FAILED', HttpStatus.INTERNAL_SERVER_ERROR, error)
     }
 
     return data ?? []
@@ -81,7 +63,7 @@ export class AdminUsersService {
       .maybeSingle<DbRoleRow>()
 
     if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
+      throwSupabaseError('ADMIN_USERS_ROLE_LOOKUP_FAILED', HttpStatus.INTERNAL_SERVER_ERROR, error)
     }
 
     return data ?? null
@@ -129,7 +111,7 @@ export class AdminUsersService {
       .returns<DbAdminUserRow[]>()
 
     if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
+      throwSupabaseError('ADMIN_USERS_LIST_FAILED', HttpStatus.INTERNAL_SERVER_ERROR, error)
     }
 
     const items = (data ?? []).map((x) => this.buildAdminUserItem(x))
@@ -150,7 +132,7 @@ export class AdminUsersService {
       .maybeSingle<DbAdminUserRow>()
 
     if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
+      throwSupabaseError('ADMIN_USERS_GET_FAILED', HttpStatus.INTERNAL_SERVER_ERROR, error)
     }
 
     if (!data) return null
@@ -164,9 +146,9 @@ export class AdminUsersService {
         ? await this.getRoleById(payload.roleId)
         : defaultAdminRole
 
-    if (!role) throw new HttpException('Invalid role', HttpStatus.BAD_REQUEST)
+    if (!role) throw new ApiHttpException({ code: 'ADMIN_USERS_INVALID_ROLE' }, HttpStatus.BAD_REQUEST)
     if (role.name === 'Super Admin') {
-      throw new HttpException('Forbidden', HttpStatus.FORBIDDEN)
+      throw new ApiHttpException({ code: 'ADMIN_USERS_SUPER_ADMIN_ROLE_FORBIDDEN' }, HttpStatus.FORBIDDEN)
     }
 
     const passwordHash = await hash(payload.password, 10)
@@ -184,14 +166,24 @@ export class AdminUsersService {
 
     if (insertUserError) {
       if (isUniqueViolation(insertUserError)) {
-        throw new HttpException('Email already exists', HttpStatus.CONFLICT)
+        throw new ApiHttpException(
+          { code: 'ADMIN_USERS_EMAIL_ALREADY_EXISTS' },
+          HttpStatus.CONFLICT,
+        )
       }
-      throw new HttpException(insertUserError.message, HttpStatus.INTERNAL_SERVER_ERROR)
+      throwSupabaseError(
+        'ADMIN_USERS_CREATE_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        insertUserError,
+      )
     }
 
     const inserted = insertedUsers?.[0]
     if (!inserted) {
-      throw new HttpException('Failed to create user', HttpStatus.INTERNAL_SERVER_ERROR)
+      throw new ApiHttpException(
+        { code: 'ADMIN_USERS_CREATE_FAILED' },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      )
     }
 
     const { error: insertRoleError } = await this.supabaseService.client.from('user_roles').insert({
@@ -200,12 +192,19 @@ export class AdminUsersService {
     })
 
     if (insertRoleError) {
-      throw new HttpException(insertRoleError.message, HttpStatus.INTERNAL_SERVER_ERROR)
+      throwSupabaseError(
+        'ADMIN_USERS_ROLE_ASSIGN_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        insertRoleError,
+      )
     }
 
     const admin = await this.getAdminById(inserted.id)
     if (!admin) {
-      throw new HttpException('Failed to load created user', HttpStatus.INTERNAL_SERVER_ERROR)
+      throw new ApiHttpException(
+        { code: 'ADMIN_USERS_LOAD_FAILED' },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      )
     }
 
     return admin
@@ -217,8 +216,10 @@ export class AdminUsersService {
 
   async updateAdmin(adminId: string, payload: UpdateAdminUserRequestDto): Promise<AdminUserItem> {
     const existing = await this.getAdminById(adminId)
-    if (!existing) throw new HttpException('Not Found', HttpStatus.NOT_FOUND)
-    if (this.isSuperAdmin(existing.roles)) throw new HttpException('Forbidden', HttpStatus.FORBIDDEN)
+    if (!existing) throw new ApiHttpException({ code: 'ADMIN_USER_NOT_FOUND' }, HttpStatus.NOT_FOUND)
+    if (this.isSuperAdmin(existing.roles)) {
+      throw new ApiHttpException({ code: 'ADMIN_USERS_SUPER_ADMIN_PROTECTED' }, HttpStatus.FORBIDDEN)
+    }
 
     const updates: Record<string, unknown> = {}
     if (typeof payload.email === 'string') updates.email = payload.email
@@ -229,17 +230,20 @@ export class AdminUsersService {
       const { error } = await this.supabaseService.client.from('users').update(updates).eq('id', adminId)
       if (error) {
         if (isUniqueViolation(error)) {
-          throw new HttpException('Email already exists', HttpStatus.CONFLICT)
+          throw new ApiHttpException(
+            { code: 'ADMIN_USERS_EMAIL_ALREADY_EXISTS' },
+            HttpStatus.CONFLICT,
+          )
         }
-        throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
+        throwSupabaseError('ADMIN_USERS_UPDATE_FAILED', HttpStatus.INTERNAL_SERVER_ERROR, error)
       }
     }
 
     if (typeof payload.roleId === 'number') {
       const role = await this.getRoleById(payload.roleId)
-      if (!role) throw new HttpException('Invalid role', HttpStatus.BAD_REQUEST)
+      if (!role) throw new ApiHttpException({ code: 'ADMIN_USERS_INVALID_ROLE' }, HttpStatus.BAD_REQUEST)
       if (role.name === 'Super Admin') {
-        throw new HttpException('Forbidden', HttpStatus.FORBIDDEN)
+        throw new ApiHttpException({ code: 'ADMIN_USERS_SUPER_ADMIN_ROLE_FORBIDDEN' }, HttpStatus.FORBIDDEN)
       }
 
       const adminRoleIds = (await this.getRolesByNames(['Admin', 'Super Admin'])).map(
@@ -252,44 +256,60 @@ export class AdminUsersService {
           .eq('user_id', adminId)
           .in('role_id', adminRoleIds)
 
-        if (deleteError) throw new HttpException(deleteError.message, HttpStatus.INTERNAL_SERVER_ERROR)
+        if (deleteError) {
+          throwSupabaseError(
+            'ADMIN_USERS_ROLE_UNASSIGN_FAILED',
+            HttpStatus.INTERNAL_SERVER_ERROR,
+            deleteError,
+          )
+        }
       }
 
       const { error: insertError } = await this.supabaseService.client.from('user_roles').insert({
         user_id: adminId,
         role_id: role.id,
       })
-      if (insertError) throw new HttpException(insertError.message, HttpStatus.INTERNAL_SERVER_ERROR)
+      if (insertError) {
+        throwSupabaseError(
+          'ADMIN_USERS_ROLE_ASSIGN_FAILED',
+          HttpStatus.INTERNAL_SERVER_ERROR,
+          insertError,
+        )
+      }
     }
 
     const updated = await this.getAdminById(adminId)
-    if (!updated) throw new HttpException('Not Found', HttpStatus.NOT_FOUND)
+    if (!updated) throw new ApiHttpException({ code: 'ADMIN_USER_NOT_FOUND' }, HttpStatus.NOT_FOUND)
     return updated
   }
 
   async updateAdminStatus(adminId: string, status: 'ACTIVE' | 'LOCKED'): Promise<AdminUserItem> {
     const existing = await this.getAdminById(adminId)
-    if (!existing) throw new HttpException('Not Found', HttpStatus.NOT_FOUND)
-    if (this.isSuperAdmin(existing.roles)) throw new HttpException('Forbidden', HttpStatus.FORBIDDEN)
+    if (!existing) throw new ApiHttpException({ code: 'ADMIN_USER_NOT_FOUND' }, HttpStatus.NOT_FOUND)
+    if (this.isSuperAdmin(existing.roles)) {
+      throw new ApiHttpException({ code: 'ADMIN_USERS_SUPER_ADMIN_PROTECTED' }, HttpStatus.FORBIDDEN)
+    }
 
     const { error } = await this.supabaseService.client.from('users').update({ status }).eq('id', adminId)
-    if (error) throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
+    if (error) throwSupabaseError('ADMIN_USERS_UPDATE_STATUS_FAILED', HttpStatus.INTERNAL_SERVER_ERROR, error)
 
     const updated = await this.getAdminById(adminId)
-    if (!updated) throw new HttpException('Not Found', HttpStatus.NOT_FOUND)
+    if (!updated) throw new ApiHttpException({ code: 'ADMIN_USER_NOT_FOUND' }, HttpStatus.NOT_FOUND)
     return updated
   }
 
   async softDeleteAdmin(adminId: string): Promise<void> {
     const existing = await this.getAdminById(adminId)
-    if (!existing) throw new HttpException('Not Found', HttpStatus.NOT_FOUND)
-    if (this.isSuperAdmin(existing.roles)) throw new HttpException('Forbidden', HttpStatus.FORBIDDEN)
+    if (!existing) throw new ApiHttpException({ code: 'ADMIN_USER_NOT_FOUND' }, HttpStatus.NOT_FOUND)
+    if (this.isSuperAdmin(existing.roles)) {
+      throw new ApiHttpException({ code: 'ADMIN_USERS_SUPER_ADMIN_PROTECTED' }, HttpStatus.FORBIDDEN)
+    }
 
     const { error } = await this.supabaseService.client
       .from('users')
       .update({ status: 'DELETED' })
       .eq('id', adminId)
 
-    if (error) throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
+    if (error) throwSupabaseError('ADMIN_USERS_DELETE_FAILED', HttpStatus.INTERNAL_SERVER_ERROR, error)
   }
 }

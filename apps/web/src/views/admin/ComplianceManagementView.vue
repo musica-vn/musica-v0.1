@@ -119,6 +119,18 @@ const extractApiErrorDetails = (details: unknown) => {
   return typeof inner === 'object' && inner !== null ? inner : null
 }
 
+const readStringField = (value: unknown, key: string): string | null => {
+  if (typeof value !== 'object' || value === null) return null
+  const record = value as Record<string, unknown>
+  return typeof record[key] === 'string' ? record[key] : null
+}
+
+const readNumberField = (value: unknown, key: string): number | null => {
+  if (typeof value !== 'object' || value === null) return null
+  const record = value as Record<string, unknown>
+  return typeof record[key] === 'number' ? record[key] : null
+}
+
 const resolveErrorMessage = (error: ApiClientError) => {
   const inner = extractApiErrorDetails(error.details)
 
@@ -127,8 +139,8 @@ const resolveErrorMessage = (error: ApiClientError) => {
   }
 
   if (error.message === 'LEGAL_FILE_TOO_LARGE') {
-    const fileName = typeof (inner as any)?.fileName === 'string' ? (inner as any).fileName : null
-    const maxBytes = typeof (inner as any)?.maxBytes === 'number' ? (inner as any).maxBytes : null
+    const fileName = readStringField(inner, 'fileName')
+    const maxBytes = readNumberField(inner, 'maxBytes')
     const maxMb = maxBytes ? Math.round(maxBytes / (1024 * 1024)) : null
     const namePart = fileName ? ` (${fileName})` : ''
     const sizePart = maxMb ? ` Giới hạn ${maxMb}MB.` : ''
@@ -136,8 +148,8 @@ const resolveErrorMessage = (error: ApiClientError) => {
   }
 
   if (error.message === 'LEGAL_FILE_TYPE_NOT_ALLOWED') {
-    const fileName = typeof (inner as any)?.fileName === 'string' ? (inner as any).fileName : null
-    const mimeType = typeof (inner as any)?.mimeType === 'string' ? (inner as any).mimeType : null
+    const fileName = readStringField(inner, 'fileName')
+    const mimeType = readStringField(inner, 'mimeType')
     const namePart = fileName ? ` (${fileName})` : ''
     const mimePart = mimeType ? ` (mime: ${mimeType})` : ''
     return `Định dạng file không được hỗ trợ${namePart}.${mimePart} Chỉ hỗ trợ: PDF, DOC, DOCX, PNG, JPG/JPEG, WEBP.`

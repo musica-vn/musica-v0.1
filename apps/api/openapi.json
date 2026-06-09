@@ -29,66 +29,6 @@
         ]
       }
     },
-    "/examples": {
-      "get": {
-        "operationId": "ExamplesController_listExamples",
-        "parameters": [
-          {
-            "name": "page",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "minimum": 1,
-              "default": 1,
-              "type": "number"
-            }
-          },
-          {
-            "name": "pageSize",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "minimum": 1,
-              "maximum": 100,
-              "default": 20,
-              "type": "number"
-            }
-          },
-          {
-            "name": "q",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "sort",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "example": "createdAt:desc",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ExampleListResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "examples"
-        ]
-      }
-    },
     "/auth/login": {
       "post": {
         "operationId": "AuthController_login",
@@ -539,6 +479,42 @@
         ]
       }
     },
+    "/admin/products/{productId}/sheet-music-upload-url": {
+      "post": {
+        "operationId": "AdminProductsController_sheetMusicUploadUrl",
+        "parameters": [
+          {
+            "name": "productId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminProductUploadUrlResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get signed upload URL for sheet music PDF (admin)",
+        "tags": [
+          "Admin - Products"
+        ]
+      }
+    },
     "/admin/products/{productId}/confirm-audio-upload": {
       "post": {
         "operationId": "AdminProductsController_confirmAudioUpload",
@@ -631,6 +607,52 @@
         ]
       }
     },
+    "/admin/products/{productId}/confirm-sheet-music-upload": {
+      "post": {
+        "operationId": "AdminProductsController_confirmSheetMusicUpload",
+        "parameters": [
+          {
+            "name": "productId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminConfirmProductSheetMusicUploadRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminProductResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Confirm uploaded sheet music key (admin)",
+        "tags": [
+          "Admin - Products"
+        ]
+      }
+    },
     "/admin/products/{productId}/thumbnail-url": {
       "get": {
         "operationId": "AdminProductsController_thumbnailUrl",
@@ -698,6 +720,42 @@
           }
         ],
         "summary": "Get signed playback URL for original audio (admin)",
+        "tags": [
+          "Admin - Products"
+        ]
+      }
+    },
+    "/admin/products/{productId}/sheet-music-url": {
+      "get": {
+        "operationId": "AdminProductsController_sheetMusicUrl",
+        "parameters": [
+          {
+            "name": "productId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminProductSheetMusicUrlResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get signed URL for sheet music PDF (admin)",
         "tags": [
           "Admin - Products"
         ]
@@ -772,6 +830,131 @@
         "summary": "Hide product (admin)",
         "tags": [
           "Admin - Products"
+        ]
+      }
+    },
+    "/marketplace/products": {
+      "get": {
+        "operationId": "MarketplaceProductsController_list",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 12,
+              "type": "number"
+            }
+          },
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "createdAt:desc",
+              "example": "createdAt:desc",
+              "type": "string",
+              "enum": [
+                "createdAt:desc",
+                "createdAt:asc",
+                "updatedAt:desc",
+                "updatedAt:asc",
+                "title:asc",
+                "title:desc"
+              ]
+            }
+          },
+          {
+            "name": "keyword",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "genre",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "artistId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarketplaceProductsListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "List marketplace products (public, PUBLISHED only)",
+        "tags": [
+          "Marketplace - Products"
+        ]
+      }
+    },
+    "/marketplace/products/{productId}": {
+      "get": {
+        "operationId": "MarketplaceProductsController_detail",
+        "parameters": [
+          {
+            "name": "productId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarketplaceProductDetailResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Get marketplace product detail (public, PUBLISHED only)",
+        "tags": [
+          "Marketplace - Products"
         ]
       }
     },
@@ -3652,6 +3835,37 @@
           "Creator - Product Package Registrations"
         ]
       }
+    },
+    "/public/variant-pricing/calculate": {
+      "post": {
+        "operationId": "PublicVariantPricingController_calculate",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublicVariantPricingCalculateRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicVariantPricingCalculateResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Public - Variant Pricing"
+        ]
+      }
     }
   },
   "info": {
@@ -3671,112 +3885,6 @@
       }
     },
     "schemas": {
-      "ExampleItemDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "name"
-        ]
-      },
-      "ExampleListDataDto": {
-        "type": "object",
-        "properties": {
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ExampleItemDto"
-            }
-          }
-        },
-        "required": [
-          "items"
-        ]
-      },
-      "PaginationDto": {
-        "type": "object",
-        "properties": {
-          "page": {
-            "type": "number"
-          },
-          "pageSize": {
-            "type": "number"
-          },
-          "totalItems": {
-            "type": "number"
-          },
-          "totalPages": {
-            "type": "number"
-          },
-          "hasNextPage": {
-            "type": "boolean"
-          },
-          "hasPrevPage": {
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "page",
-          "pageSize",
-          "totalItems",
-          "totalPages",
-          "hasNextPage",
-          "hasPrevPage"
-        ]
-      },
-      "ExampleListMetaDto": {
-        "type": "object",
-        "properties": {
-          "pagination": {
-            "$ref": "#/components/schemas/PaginationDto"
-          }
-        },
-        "required": [
-          "pagination"
-        ]
-      },
-      "ExampleListResponseDto": {
-        "type": "object",
-        "properties": {
-          "success": {
-            "type": "boolean",
-            "example": true
-          },
-          "statusCode": {
-            "type": "number",
-            "example": 200
-          },
-          "data": {
-            "$ref": "#/components/schemas/ExampleListDataDto"
-          },
-          "meta": {
-            "$ref": "#/components/schemas/ExampleListMetaDto"
-          },
-          "requestId": {
-            "type": "string",
-            "example": "2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a"
-          },
-          "timestamp": {
-            "type": "string",
-            "example": "2026-05-20T00:00:00.000Z"
-          }
-        },
-        "required": [
-          "success",
-          "statusCode",
-          "data",
-          "meta",
-          "requestId",
-          "timestamp"
-        ]
-      },
       "AuthLoginRequestDto": {
         "type": "object",
         "properties": {
@@ -4101,6 +4209,29 @@
           "missingPermissions"
         ]
       },
+      "ProductPriorityDto": {
+        "type": "object",
+        "properties": {
+          "priorityScore": {
+            "type": "number"
+          },
+          "isTrigger": {
+            "type": "boolean"
+          },
+          "effectiveStart": {
+            "type": "object",
+            "nullable": true
+          },
+          "effectiveEnd": {
+            "type": "object",
+            "nullable": true
+          }
+        },
+        "required": [
+          "priorityScore",
+          "isTrigger"
+        ]
+      },
       "ProductDto": {
         "type": "object",
         "properties": {
@@ -4121,6 +4252,12 @@
             "type": "object",
             "nullable": true
           },
+          "genres": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
           "duration": {
             "type": "object",
             "nullable": true
@@ -4135,6 +4272,12 @@
           "useCase": {
             "type": "object",
             "nullable": true
+          },
+          "useCases": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           },
           "description": {
             "type": "object",
@@ -4193,6 +4336,19 @@
             "type": "object",
             "nullable": true
           },
+          "sheetMusicPdfKey": {
+            "type": "object",
+            "nullable": true
+          },
+          "priority": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ProductPriorityDto"
+              }
+            ]
+          },
           "createdBy": {
             "type": "string"
           },
@@ -4207,7 +4363,9 @@
           "id",
           "title",
           "artistId",
+          "genres",
           "status",
+          "useCases",
           "allowedPermissionIds",
           "allowedPermissions",
           "licensingEligibility",
@@ -4378,8 +4536,40 @@
           "genre": {
             "type": "string"
           },
+          "genres": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "POP",
+                "ELECTRONIC",
+                "HIP_HOP",
+                "ROCK",
+                "JAZZ",
+                "CLASSICAL",
+                "FOLK",
+                "RNB",
+                "EDM"
+              ]
+            }
+          },
           "useCase": {
             "type": "string"
+          },
+          "useCases": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "ADVERTISEMENT",
+                "VLOG",
+                "SOCIAL",
+                "FILM",
+                "GAME",
+                "PODCAST",
+                "EVENT"
+              ]
+            }
           },
           "description": {
             "type": "string"
@@ -4436,8 +4626,40 @@
           "genre": {
             "type": "string"
           },
+          "genres": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "POP",
+                "ELECTRONIC",
+                "HIP_HOP",
+                "ROCK",
+                "JAZZ",
+                "CLASSICAL",
+                "FOLK",
+                "RNB",
+                "EDM"
+              ]
+            }
+          },
           "useCase": {
             "type": "string"
+          },
+          "useCases": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "ADVERTISEMENT",
+                "VLOG",
+                "SOCIAL",
+                "FILM",
+                "GAME",
+                "PODCAST",
+                "EVENT"
+              ]
+            }
           },
           "description": {
             "type": "string"
@@ -4535,7 +4757,7 @@
           },
           "fileKey": {
             "type": "string",
-            "example": "123.mp3"
+            "example": "1.mp3"
           }
         },
         "required": [
@@ -4549,6 +4771,18 @@
           "fileKey": {
             "type": "string",
             "example": "123.png"
+          }
+        },
+        "required": [
+          "fileKey"
+        ]
+      },
+      "AdminConfirmProductSheetMusicUploadRequestDto": {
+        "type": "object",
+        "properties": {
+          "fileKey": {
+            "type": "string",
+            "example": "1.pdf"
           }
         },
         "required": [
@@ -4621,6 +4855,265 @@
           },
           "data": {
             "$ref": "#/components/schemas/AdminProductPlaybackUrlResponseDataDto"
+          },
+          "requestId": {
+            "type": "string",
+            "example": "2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a"
+          },
+          "timestamp": {
+            "type": "string",
+            "example": "2026-05-20T00:00:00.000Z"
+          }
+        },
+        "required": [
+          "success",
+          "statusCode",
+          "data",
+          "requestId",
+          "timestamp"
+        ]
+      },
+      "AdminProductSheetMusicUrlResponseDataDto": {
+        "type": "object",
+        "properties": {
+          "sheetMusicUrl": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "sheetMusicUrl"
+        ]
+      },
+      "AdminProductSheetMusicUrlResponseDto": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "statusCode": {
+            "type": "number",
+            "example": 200
+          },
+          "data": {
+            "$ref": "#/components/schemas/AdminProductSheetMusicUrlResponseDataDto"
+          },
+          "requestId": {
+            "type": "string",
+            "example": "2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a"
+          },
+          "timestamp": {
+            "type": "string",
+            "example": "2026-05-20T00:00:00.000Z"
+          }
+        },
+        "required": [
+          "success",
+          "statusCode",
+          "data",
+          "requestId",
+          "timestamp"
+        ]
+      },
+      "MarketplaceProductListItemDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "authorName": {
+            "type": "object",
+            "nullable": true
+          },
+          "genres": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "duration": {
+            "type": "object",
+            "nullable": true
+          },
+          "artistId": {
+            "type": "string"
+          },
+          "thumbnailUrl": {
+            "type": "object",
+            "nullable": true
+          },
+          "previewAudioUrl": {
+            "type": "object",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "genres",
+          "artistId",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "MarketplaceProductsListDataDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MarketplaceProductListItemDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "MarketplaceProductsListResponseDto": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "statusCode": {
+            "type": "number",
+            "example": 200
+          },
+          "data": {
+            "$ref": "#/components/schemas/MarketplaceProductsListDataDto"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PaginationMetaDto"
+          },
+          "requestId": {
+            "type": "string",
+            "example": "2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a"
+          },
+          "timestamp": {
+            "type": "string",
+            "example": "2026-05-20T00:00:00.000Z"
+          }
+        },
+        "required": [
+          "success",
+          "statusCode",
+          "data",
+          "meta",
+          "requestId",
+          "timestamp"
+        ]
+      },
+      "MarketplaceAllowedPermissionDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "lawReference": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "lawReference"
+        ]
+      },
+      "MarketplaceProductDetailDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "authorName": {
+            "type": "object",
+            "nullable": true
+          },
+          "genres": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "duration": {
+            "type": "object",
+            "nullable": true
+          },
+          "artistId": {
+            "type": "string"
+          },
+          "thumbnailUrl": {
+            "type": "object",
+            "nullable": true
+          },
+          "previewAudioUrl": {
+            "type": "object",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "description": {
+            "type": "object",
+            "nullable": true
+          },
+          "useCases": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "allowedPermissions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MarketplaceAllowedPermissionDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "genres",
+          "artistId",
+          "createdAt",
+          "updatedAt",
+          "useCases",
+          "allowedPermissions"
+        ]
+      },
+      "MarketplaceProductDetailResponseDto": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "statusCode": {
+            "type": "number",
+            "example": 200
+          },
+          "data": {
+            "$ref": "#/components/schemas/MarketplaceProductDetailDto"
           },
           "requestId": {
             "type": "string",
@@ -5062,6 +5555,37 @@
         },
         "required": [
           "items"
+        ]
+      },
+      "PaginationDto": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "number"
+          },
+          "pageSize": {
+            "type": "number"
+          },
+          "totalItems": {
+            "type": "number"
+          },
+          "totalPages": {
+            "type": "number"
+          },
+          "hasNextPage": {
+            "type": "boolean"
+          },
+          "hasPrevPage": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "page",
+          "pageSize",
+          "totalItems",
+          "totalPages",
+          "hasNextPage",
+          "hasPrevPage"
         ]
       },
       "AdminUserListMetaDto": {
@@ -5829,6 +6353,18 @@
           },
           "basePriceMultiplier": {
             "type": "number"
+          },
+          "priceModifiers": {
+            "example": [
+              {
+                "key": "SUBJECT_INDIVIDUAL",
+                "multiplier": 1.2
+              }
+            ],
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
           }
         },
         "required": [
@@ -5840,7 +6376,8 @@
           "updatedAt",
           "targetPlatform",
           "durationType",
-          "basePriceMultiplier"
+          "basePriceMultiplier",
+          "priceModifiers"
         ]
       },
       "DigitalRightConfigsListDataDto": {
@@ -5923,6 +6460,32 @@
           "data"
         ]
       },
+      "ConfigPriceModifierDto": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "enum": [
+              "SUBJECT_INDIVIDUAL",
+              "SUBJECT_ORGANIZATION",
+              "DURATION_ONE_YEAR",
+              "DURATION_PERPETUAL",
+              "SCOPE_SINGLE_CHANNEL",
+              "SCOPE_MULTI_CHANNEL",
+              "EXPRESSION",
+              "MODIFICATION"
+            ]
+          },
+          "multiplier": {
+            "type": "number",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "key",
+          "multiplier"
+        ]
+      },
       "CreateDigitalRightConfigRequestDto": {
         "type": "object",
         "properties": {
@@ -5950,6 +6513,13 @@
             "type": "array",
             "items": {
               "type": "string"
+            }
+          },
+          "priceModifiers": {
+            "default": [],
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConfigPriceModifierDto"
             }
           },
           "status": {
@@ -5996,6 +6566,13 @@
           "basePriceMultiplier": {
             "type": "number",
             "minimum": 1
+          },
+          "priceModifiers": {
+            "default": [],
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConfigPriceModifierDto"
+            }
           }
         }
       },
@@ -6048,6 +6625,18 @@
           },
           "basePriceMultiplier": {
             "type": "number"
+          },
+          "priceModifiers": {
+            "example": [
+              {
+                "key": "SCOPE_MULTI_CHANNEL",
+                "multiplier": 1.2
+              }
+            ],
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
           }
         },
         "required": [
@@ -6058,7 +6647,8 @@
           "createdAt",
           "updatedAt",
           "venueUsageType",
-          "basePriceMultiplier"
+          "basePriceMultiplier",
+          "priceModifiers"
         ]
       },
       "PhysicalRightConfigsListDataDto": {
@@ -6158,6 +6748,13 @@
               "type": "string"
             }
           },
+          "priceModifiers": {
+            "default": [],
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConfigPriceModifierDto"
+            }
+          },
           "status": {
             "type": "string",
             "enum": [
@@ -6189,6 +6786,13 @@
           "basePriceMultiplier": {
             "type": "number",
             "minimum": 1
+          },
+          "priceModifiers": {
+            "default": [],
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConfigPriceModifierDto"
+            }
           }
         }
       },
@@ -6589,6 +7193,9 @@
           "productId": {
             "type": "string"
           },
+          "productTitle": {
+            "type": "string"
+          },
           "configId": {
             "type": "string"
           },
@@ -6654,6 +7261,7 @@
         "required": [
           "registrationId",
           "productId",
+          "productTitle",
           "configId",
           "packageType",
           "title",
@@ -6739,6 +7347,123 @@
           "meta",
           "requestId",
           "timestamp"
+        ]
+      },
+      "PublicVariantPricingCalculateRequestDto": {
+        "type": "object",
+        "properties": {
+          "platformType": {
+            "type": "string",
+            "enum": [
+              "DIGITAL",
+              "PHYSICAL"
+            ]
+          },
+          "digitalRightConfigId": {
+            "type": "string"
+          },
+          "physicalRightConfigId": {
+            "type": "string"
+          },
+          "subject": {
+            "type": "string",
+            "enum": [
+              "INDIVIDUAL",
+              "ORGANIZATION"
+            ]
+          },
+          "duration": {
+            "type": "string",
+            "enum": [
+              "ONE_YEAR",
+              "PERPETUAL"
+            ]
+          },
+          "scope": {
+            "type": "string",
+            "enum": [
+              "SINGLE_CHANNEL",
+              "MULTI_CHANNEL"
+            ]
+          },
+          "expressionConfigId": {
+            "type": "string"
+          },
+          "modificationConfigId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "platformType"
+        ]
+      },
+      "VariantPricingBreakdownLineDto": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "label"
+        ]
+      },
+      "PublicVariantPricingCalculateDataDto": {
+        "type": "object",
+        "properties": {
+          "totalPrice": {
+            "type": "number"
+          },
+          "currency": {
+            "type": "string",
+            "example": "VND"
+          },
+          "breakdown": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VariantPricingBreakdownLineDto"
+            }
+          }
+        },
+        "required": [
+          "totalPrice",
+          "currency",
+          "breakdown"
+        ]
+      },
+      "PublicVariantPricingCalculateResponseDto": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "statusCode": {
+            "type": "number",
+            "example": 200
+          },
+          "requestId": {
+            "type": "string",
+            "example": "2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a"
+          },
+          "timestamp": {
+            "type": "string",
+            "example": "2026-05-20T00:00:00.000Z"
+          },
+          "data": {
+            "$ref": "#/components/schemas/PublicVariantPricingCalculateDataDto"
+          }
+        },
+        "required": [
+          "success",
+          "statusCode",
+          "requestId",
+          "timestamp",
+          "data"
         ]
       }
     }

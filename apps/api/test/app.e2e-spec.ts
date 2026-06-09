@@ -52,23 +52,6 @@ describe('AppController (e2e)', () => {
     });
   });
 
-  it('/examples (GET) pagination', async () => {
-    const response = await request(app.getHttpServer())
-      .get('/examples')
-      .query({ page: 1, pageSize: 10 })
-      .expect(200);
-
-    expect(response.body.success).toBe(true);
-    expect(response.body.statusCode).toBe(200);
-    expect(Array.isArray(response.body.data.items)).toBe(true);
-    expect(response.body.data.items).toHaveLength(10);
-    expect(response.body.meta.pagination).toMatchObject({
-      page: 1,
-      pageSize: 10,
-      totalItems: 128,
-    });
-  });
-
   afterEach(async () => {
     await app.close();
   });

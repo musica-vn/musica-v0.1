@@ -8,6 +8,10 @@ import type { Response } from 'express';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import type { ApiSuccessResponse } from '@musica/contracts';
+import {
+  getOrCreateRequestId,
+  getResponseTimestamp,
+} from '../http/request-context';
 
 export type ApiEnvelopePayload<TData, TMeta = undefined> = {
   data: TData;
@@ -24,6 +28,9 @@ const isEnvelopePayload = (
 
 @Injectable()
 export class ApiResponseInterceptor implements NestInterceptor {
+  /**
+   * Global interceptor để wrap mọi response thành ApiSuccessResponse theo `@musica/contracts`.
+   */
   intercept(
     context: ExecutionContext,
     next: CallHandler,
@@ -33,12 +40,8 @@ export class ApiResponseInterceptor implements NestInterceptor {
 
     return next.handle().pipe(
       map((value) => {
-        const requestId =
-          typeof response.locals.requestId === 'string'
-            ? response.locals.requestId
-            : '';
-
-        const timestamp = new Date().toISOString();
+        const requestId = getOrCreateRequestId(response);
+        const timestamp = getResponseTimestamp();
         const statusCode = response.statusCode;
 
         const payload = isEnvelopePayload(value)

@@ -1,6 +1,9 @@
 import axios, { AxiosError, type AxiosRequestConfig } from 'axios'
 import type { ApiErrorResponse, ApiResponse, ApiSuccessResponse } from '@musica/contracts'
 
+/**
+ * Client-side error wrapper cho ApiErrorResponse để các page/store xử lý thống nhất.
+ */
 export class ApiClientError extends Error {
   public readonly statusCode: number
   public readonly code: string
@@ -44,7 +47,9 @@ type ApiOkResult<TData, TMeta> = Pick<
   (TMeta extends undefined ? { meta?: undefined } : { meta: TMeta })
 
 const isApiErrorResponse = (value: unknown): value is ApiErrorResponse =>
-  typeof value === 'object' && value !== null && 'success' in value && (value as any).success === false
+  typeof value === 'object' &&
+  value !== null &&
+  (value as Record<string, unknown>).success === false
 
 const isApiSuccessResponse = <TData, TMeta>(
   value: ApiResponse<TData, TMeta>,

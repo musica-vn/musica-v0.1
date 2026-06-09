@@ -3,6 +3,8 @@ import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'crypto';
 import { SupabaseService } from '../../database/supabase.service';
 import { buildPaginationMeta } from '../../common/base/pagination-meta';
+import { ApiHttpException } from '../../common/errors/api-http.exception';
+import { throwSupabaseError } from '../../common/database/supabase-errors';
 import type { PaginationMeta } from '@musica/contracts';
 import type { ApiEnvelopePayload } from '../../common/interceptors/api-response.interceptor';
 import {
@@ -240,6 +242,17 @@ const mapProductRowToDto = (row: DbProductJoinRow): ProductDto => {
 
 const normalizeKeyword = (value: string) => value.trim();
 
+const escapePostgrestOrValue = (value: string): string =>
+  value
+    .replaceAll('%', '')
+    .replaceAll(',', ' ')
+    .replaceAll('(', ' ')
+    .replaceAll(')', ' ')
+    .replaceAll('"', ' ')
+    .replaceAll("'", ' ')
+    .replaceAll(':', ' ')
+    .trim();
+
 const SIGNED_URL_EXPIRES_IN_SECONDS = 60 * 60 * 6;
 
 const parseSort = (
@@ -321,7 +334,11 @@ export class ProductsService {
     );
 
     if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+      throwSupabaseError(
+        'STORAGE_ALLOCATE_INDEX_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
     }
 
     if (typeof data !== 'number') {
@@ -347,7 +364,11 @@ export class ProductsService {
       .returns<DbDigitalEligibilityConfigRow[]>();
 
     if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+      throwSupabaseError(
+        'DIGITAL_ELIGIBILITY_CONFIGS_LOAD_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
     }
 
     return (data ?? []).map((config) => ({
@@ -381,7 +402,11 @@ export class ProductsService {
       .returns<DbPhysicalEligibilityConfigRow[]>();
 
     if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+      throwSupabaseError(
+        'PHYSICAL_ELIGIBILITY_CONFIGS_LOAD_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
     }
 
     return (data ?? []).map((config) => ({
@@ -441,7 +466,11 @@ export class ProductsService {
       .returns<DbDigitalRegistrationJoinRow[]>();
 
     if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+      throwSupabaseError(
+        'DIGITAL_PACKAGE_REGISTRATIONS_LOAD_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
     }
 
     return (data ?? [])
@@ -497,7 +526,7 @@ export class ProductsService {
       .returns<Array<DbDigitalRegistrationJoinRow & { product_id: string }>>();
 
     if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+      throwSupabaseError('PRODUCTS_QUERY_FAILED', HttpStatus.INTERNAL_SERVER_ERROR, error);
     }
 
     const grouped = (data ?? []).reduce<
@@ -570,7 +599,7 @@ export class ProductsService {
       .returns<DbPhysicalRegistrationJoinRow[]>();
 
     if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+      throwSupabaseError('PRODUCTS_QUERY_FAILED', HttpStatus.INTERNAL_SERVER_ERROR, error);
     }
 
     return (data ?? [])
@@ -623,7 +652,7 @@ export class ProductsService {
       .returns<Array<DbPhysicalRegistrationJoinRow & { product_id: string }>>();
 
     if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+      throwSupabaseError('PRODUCTS_QUERY_FAILED', HttpStatus.INTERNAL_SERVER_ERROR, error);
     }
 
     const grouped = (data ?? []).reduce<
@@ -961,19 +990,29 @@ export class ProductsService {
     const from = (query.page - 1) * query.pageSize;
     const to = from + query.pageSize - 1;
 
-    const requestBuilder = this.applyProductAdminFilters(
-      applyProductPriorityOrdering(
-        this.supabaseService.client
-          .from('products')
-          .select(
-            `*, track_allowed_permissions(permission_id, core_permissions(name,law_reference)), compliance_reviews(legal_status,review_status), ${PRODUCT_PRIORITY_SELECT}`,
-            { count: 'exact' },
-          )
-          .order(column, { ascending })
-          .returns<DbProductJoinRow[]>(),
-      ),
-      query,
+    const rawRequestBuilder = applyProductPriorityOrdering(
+      this.supabaseService.client
+        .from('products')
+        .select(
+          `*, track_allowed_permissions(permission_id, core_permissions(name,law_reference)), compliance_reviews(legal_status,review_status), ${PRODUCT_PRIORITY_SELECT}`,
+          { count: 'exact' },
+        )
+        .order(column, { ascending })
+        .returns<DbProductJoinRow[]>(),
     );
+    const requestBuilder = this.applyProductAdminFilters(
+      rawRequestBuilder as unknown,
+      query,
+    ) as unknown as {
+      range: (
+        from: number,
+        to: number,
+      ) => Promise<{
+        data: unknown;
+        error: { message: string } | null;
+        count: unknown;
+      }>;
+    };
 
     const { data, error, count } = await requestBuilder.range(from, to);
 
@@ -1038,12 +1077,19 @@ export class ProductsService {
   }
 
   private applyProductAdminFilters(
-    requestBuilder: any,
+    requestBuilder: unknown,
     query: Pick<
       AdminProductsSummaryQueryDto,
       'keyword' | 'q' | 'genre' | 'artistId'
     > & { status?: 'PENDING' | 'HIDDEN' | 'PUBLISHED' },
   ) {
+    type FilterableBuilder = {
+      eq: (column: string, value: unknown) => unknown;
+      contains: (column: string, value: unknown) => unknown;
+      or: (filters: string) => unknown;
+    };
+
+    let builder = requestBuilder as FilterableBuilder;
     const keyword =
       typeof query.keyword === 'string' && query.keyword.trim().length > 0
         ? normalizeKeyword(query.keyword)
@@ -1059,13 +1105,13 @@ export class ProductsService {
       requestBuilder = requestBuilder.eq('artist_id', query.artistId);
 
     if (keyword) {
-      const escaped = keyword.replaceAll(',', ' ');
-      requestBuilder = requestBuilder.or(
+      const escaped = escapePostgrestOrValue(keyword);
+      builder = builder.or(
         `title.ilike.%${escaped}%,author_name.ilike.%${escaped}%,genre.ilike.%${escaped}%,use_case.ilike.%${escaped}%`,
-      );
+      ) as FilterableBuilder;
     }
 
-    return requestBuilder;
+    return builder;
   }
 
   private async countProductsByStatus(
@@ -1082,7 +1128,7 @@ export class ProductsService {
     const { count, error } = await requestBuilder.limit(1);
 
     if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+      throwSupabaseError('PRODUCTS_QUERY_FAILED', HttpStatus.INTERNAL_SERVER_ERROR, error);
     }
 
     return typeof count === 'number' ? count : 0;
@@ -1117,7 +1163,14 @@ export class ProductsService {
       .single<DbProductJoinRow>();
 
     if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+      throwSupabaseError('PRODUCTS_QUERY_FAILED', HttpStatus.INTERNAL_SERVER_ERROR, error);
+    }
+
+    if (!data) {
+      throw new ApiHttpException(
+        { code: 'PRODUCT_CREATE_FAILED' },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
 
     const { error: complianceError } = await this.supabaseService.client
@@ -1125,9 +1178,10 @@ export class ProductsService {
       .insert({ track_id: data.id });
 
     if (complianceError) {
-      throw new HttpException(
-        complianceError.message,
+      throwSupabaseError(
+        'COMPLIANCE_CREATE_FAILED',
         HttpStatus.INTERNAL_SERVER_ERROR,
+        complianceError,
       );
     }
 
@@ -1144,7 +1198,7 @@ export class ProductsService {
       .maybeSingle<DbProductJoinRow>();
 
     if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+      throwSupabaseError('PRODUCTS_QUERY_FAILED', HttpStatus.INTERNAL_SERVER_ERROR, error);
     }
 
     if (!data) {
@@ -1165,7 +1219,7 @@ export class ProductsService {
       .maybeSingle<{ id: string }>();
 
     if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+      throwSupabaseError('PRODUCTS_QUERY_FAILED', HttpStatus.INTERNAL_SERVER_ERROR, error);
     }
 
     if (!data) {
@@ -1190,7 +1244,7 @@ export class ProductsService {
     const { data, error } = await requestBuilder;
 
     if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+      throwSupabaseError('PRODUCTS_QUERY_FAILED', HttpStatus.INTERNAL_SERVER_ERROR, error);
     }
 
     const definitions = await this.loadLicensingEligibilityDefinitionsCached();
@@ -1255,7 +1309,7 @@ export class ProductsService {
       .maybeSingle<DbProductJoinRow>();
 
     if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+      throwSupabaseError('PRODUCTS_QUERY_FAILED', HttpStatus.INTERNAL_SERVER_ERROR, error);
     }
 
     if (!data) {
@@ -1288,7 +1342,7 @@ export class ProductsService {
       }>();
 
     if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+      throwSupabaseError('PRODUCTS_QUERY_FAILED', HttpStatus.INTERNAL_SERVER_ERROR, error);
     }
 
     if (!data) {
@@ -1418,7 +1472,7 @@ export class ProductsService {
       .maybeSingle<DbProductJoinRow>();
 
     if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+      throwSupabaseError('PRODUCTS_QUERY_FAILED', HttpStatus.INTERNAL_SERVER_ERROR, error);
     }
 
     if (!data) {
@@ -1442,7 +1496,7 @@ export class ProductsService {
       .maybeSingle<DbProductJoinRow>();
 
     if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+      throwSupabaseError('PRODUCTS_QUERY_FAILED', HttpStatus.INTERNAL_SERVER_ERROR, error);
     }
 
     if (!data) {
@@ -1460,29 +1514,16 @@ export class ProductsService {
   ): Promise<{ uploadUrl: string; fileKey: string }> {
     await this.ensureProductExists(productId);
 
-    const bucket = this.configService.get<string>(
-      'STORAGE_BUCKET_ORIGINAL_AUDIO',
-    );
-    if (!bucket) {
-      throw new HttpException(
-        'Missing STORAGE_BUCKET_ORIGINAL_AUDIO',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+    const bucket = this.getRequiredBucket('STORAGE_BUCKET_ORIGINAL_AUDIO');
 
     const fileKey = await this.allocateNextStorageKey(bucket, 'mp3');
-    const { data, error } = await this.supabaseService.client.storage
-      .from(bucket)
-      .createSignedUploadUrl(fileKey);
+    const uploadUrl = await this.createSignedUploadUrlOrThrow(
+      bucket,
+      fileKey,
+      'PRODUCT_ORIGINAL_AUDIO_SIGNED_UPLOAD_URL_CREATE_FAILED',
+    );
 
-    if (error || !data) {
-      throw new HttpException(
-        error?.message ?? 'Failed to create signed upload URL',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-
-    return { uploadUrl: data.signedUrl, fileKey };
+    return { uploadUrl, fileKey };
   }
 
   async createThumbnailUploadUrl(
@@ -1491,29 +1532,16 @@ export class ProductsService {
   ): Promise<{ uploadUrl: string; fileKey: string }> {
     await this.ensureProductExists(productId);
 
-    const bucket = this.configService.get<string>(
-      'STORAGE_BUCKET_TRACK_THUMBNAILS',
-    );
-    if (!bucket) {
-      throw new HttpException(
-        'Missing STORAGE_BUCKET_TRACK_THUMBNAILS',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+    const bucket = this.getRequiredBucket('STORAGE_BUCKET_TRACK_THUMBNAILS');
 
     const fileKey = await this.allocateNextStorageKey(bucket, extension);
-    const { data, error } = await this.supabaseService.client.storage
-      .from(bucket)
-      .createSignedUploadUrl(fileKey);
+    const uploadUrl = await this.createSignedUploadUrlOrThrow(
+      bucket,
+      fileKey,
+      'PRODUCT_THUMBNAIL_SIGNED_UPLOAD_URL_CREATE_FAILED',
+    );
 
-    if (error || !data) {
-      throw new HttpException(
-        error?.message ?? 'Failed to create signed upload URL',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-
-    return { uploadUrl: data.signedUrl, fileKey };
+    return { uploadUrl, fileKey };
   }
 
   async confirmProductAudioUpload(
@@ -1530,7 +1558,7 @@ export class ProductsService {
       .maybeSingle<DbProductJoinRow>();
 
     if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+      throwSupabaseError('PRODUCTS_QUERY_FAILED', HttpStatus.INTERNAL_SERVER_ERROR, error);
     }
 
     if (!data) {
@@ -1557,7 +1585,7 @@ export class ProductsService {
       .maybeSingle<DbProductJoinRow>();
 
     if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+      throwSupabaseError('PRODUCTS_QUERY_FAILED', HttpStatus.INTERNAL_SERVER_ERROR, error);
     }
 
     if (!data) {
@@ -1584,7 +1612,7 @@ export class ProductsService {
       .maybeSingle<DbProductJoinRow>();
 
     if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+      throwSupabaseError('PRODUCTS_QUERY_FAILED', HttpStatus.INTERNAL_SERVER_ERROR, error);
     }
 
     if (!data) {
@@ -1660,9 +1688,13 @@ export class ProductsService {
       );
     }
 
-    const { data, error } = await this.supabaseService.client.storage
-      .from(bucket)
-      .createSignedUrl(audioKey, SIGNED_URL_EXPIRES_IN_SECONDS);
+    const bucket = this.getRequiredBucket('STORAGE_BUCKET_ORIGINAL_AUDIO');
+    const playbackUrl = await this.createSignedUrlOrThrow(
+      bucket,
+      audioKey,
+      'PRODUCT_AUDIO_SIGNED_URL_CREATE_FAILED',
+      'PRODUCT_AUDIO_OBJECT_NOT_FOUND',
+    );
 
     if (data?.signedUrl) {
       return { playbackUrl: data.signedUrl };
@@ -1682,27 +1714,16 @@ export class ProductsService {
   ): Promise<{ uploadUrl: string; fileKey: string }> {
     await this.ensureProductExists(productId);
 
-    const bucket = this.configService.get<string>('STORAGE_BUCKET_SHEET_MUSIC');
-    if (!bucket) {
-      throw new HttpException(
-        'Missing STORAGE_BUCKET_SHEET_MUSIC',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+    const bucket = this.getRequiredBucket('STORAGE_BUCKET_SHEET_MUSIC');
 
     const fileKey = `products/${productId}/sheet-music/${randomUUID()}.pdf`;
-    const { data, error } = await this.supabaseService.client.storage
-      .from(bucket)
-      .createSignedUploadUrl(fileKey);
+    const uploadUrl = await this.createSignedUploadUrlOrThrow(
+      bucket,
+      fileKey,
+      'PRODUCT_SHEET_MUSIC_SIGNED_UPLOAD_URL_CREATE_FAILED',
+    );
 
-    if (error || !data) {
-      throw new HttpException(
-        error?.message ?? 'Failed to create signed upload URL',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-
-    return { uploadUrl: data.signedUrl, fileKey };
+    return { uploadUrl, fileKey };
   }
 
   async createSheetMusicUrl(
@@ -1725,9 +1746,13 @@ export class ProductsService {
       );
     }
 
-    const { data, error } = await this.supabaseService.client.storage
-      .from(bucket)
-      .createSignedUrl(fileKey, SIGNED_URL_EXPIRES_IN_SECONDS);
+    const bucket = this.getRequiredBucket('STORAGE_BUCKET_SHEET_MUSIC');
+    const sheetMusicUrl = await this.createSignedUrlOrThrow(
+      bucket,
+      fileKey,
+      'PRODUCT_SHEET_MUSIC_SIGNED_URL_CREATE_FAILED',
+      'PRODUCT_SHEET_MUSIC_OBJECT_NOT_FOUND',
+    );
 
     if (data?.signedUrl) {
       return { sheetMusicUrl: data.signedUrl };

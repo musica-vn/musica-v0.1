@@ -1,13 +1,13 @@
 import {
   CanActivate,
   type ExecutionContext,
-  HttpException,
   HttpStatus,
   Injectable,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import jwt from 'jsonwebtoken';
 import type { AuthenticatedRequest, JwtPayload } from './auth.types';
+import { ApiHttpException } from '../errors/api-http.exception';
 
 const readBearerToken = (request: AuthenticatedRequest): string | null => {
   const raw = request.headers.authorization;
@@ -22,13 +22,16 @@ const readBearerToken = (request: AuthenticatedRequest): string | null => {
 export class JwtAuthGuard implements CanActivate {
   constructor(private readonly configService: ConfigService) {}
 
+  /**
+   * Guard xác thực JWT Bearer token và attach `request.user` theo AuthenticatedRequest.
+   */
   canActivate(context: ExecutionContext): boolean {
     const http = context.switchToHttp();
     const request = http.getRequest<AuthenticatedRequest>();
 
     const token = readBearerToken(request);
     if (!token) {
-      throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED);
+      throw new ApiHttpException({ code: 'UNAUTHORIZED' }, HttpStatus.UNAUTHORIZED);
     }
 
     let jwtSecret = this.configService.get<string>('JWT_SECRET');
@@ -40,8 +43,8 @@ export class JwtAuthGuard implements CanActivate {
       if (nodeEnv === 'development' || nodeEnv === 'test') {
         jwtSecret = 'dev-secret';
       } else {
-        throw new HttpException(
-          'Server misconfigured',
+        throw new ApiHttpException(
+          { code: 'SERVER_MISCONFIGURED', message: 'Server misconfigured' },
           HttpStatus.INTERNAL_SERVER_ERROR,
         );
       }
@@ -59,7 +62,7 @@ export class JwtAuthGuard implements CanActivate {
       request.user = { userId, roleId, roleName };
       return true;
     } catch {
-      throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED);
+      throw new ApiHttpException({ code: 'UNAUTHORIZED' }, HttpStatus.UNAUTHORIZED);
     }
   }
 }

@@ -98,7 +98,11 @@ const client = createClient(supabaseUrl, supabaseServiceRoleKey, {
 })
 
 const seedPassword = 'Password123!'
-const seedTag = ''
+
+const stripSeedSuffix = (value) => {
+  if (typeof value !== 'string') return value
+  return value.replace(/\s*\(seed\)\s*$/i, '').replace(/\s+seed\s*$/i, '').trim()
+}
 
 const seedPermissionIds = {
   reproduction: '3c6c1819-73b5-4d50-8a62-2c84c6152c11',
@@ -126,76 +130,76 @@ const usersSeed = [
 ]
 
 const tracksSeed = [
-  { title: `Midnight Pulse${seedTag}`, artistEmail: 'artist01@musica.local', genre: 'Electronic', duration: 182, status: 'PUBLISHED' },
-  { title: `Neon Skyline${seedTag}`, artistEmail: 'artist01@musica.local', genre: 'Electronic', duration: 156, status: 'PUBLISHED' },
-  { title: `Cinematic Rise${seedTag}`, artistEmail: 'artist02@musica.local', genre: 'Cinematic', duration: 201, status: 'PUBLISHED' },
-  { title: `Corporate Breeze${seedTag}`, artistEmail: 'artist02@musica.local', genre: 'Corporate', duration: 128, status: 'PUBLISHED' },
-  { title: `Pop Spark${seedTag}`, artistEmail: 'artist03@musica.local', genre: 'Pop', duration: 174, status: 'PUBLISHED' },
-  { title: `Ambient Drift${seedTag}`, artistEmail: 'artist03@musica.local', genre: 'Cinematic', duration: 223, status: 'PUBLISHED' },
-  { title: `Late Night Drive${seedTag}`, artistEmail: 'artist01@musica.local', genre: 'Electronic', duration: 190, status: 'PUBLISHED' },
-  { title: `Bright Morning${seedTag}`, artistEmail: 'artist02@musica.local', genre: 'Pop', duration: 165, status: 'PUBLISHED' },
-  { title: `Soft Focus${seedTag}`, artistEmail: 'artist03@musica.local', genre: 'Corporate', duration: 142, status: 'PUBLISHED' },
-  { title: `Festival Lights${seedTag}`, artistEmail: 'artist01@musica.local', genre: 'Pop', duration: 198, status: 'PUBLISHED' },
-  { title: `Hidden Draft 01${seedTag}`, artistEmail: 'artist01@musica.local', genre: 'Electronic', duration: 160, status: 'HIDDEN' },
-  { title: `Hidden Draft 02${seedTag}`, artistEmail: 'artist02@musica.local', genre: 'Cinematic', duration: 210, status: 'HIDDEN' },
-  { title: `Hidden Draft 03${seedTag}`, artistEmail: 'artist03@musica.local', genre: 'Corporate', duration: 120, status: 'HIDDEN' },
-  { title: `Hidden Draft 04${seedTag}`, artistEmail: 'artist01@musica.local', genre: 'Pop', duration: 175, status: 'HIDDEN' },
-  { title: `Hidden Draft 05${seedTag}`, artistEmail: 'artist02@musica.local', genre: 'Corporate', duration: 135, status: 'HIDDEN' },
-  { title: `Ocean Haze${seedTag}`, artistEmail: 'artist03@musica.local', genre: 'Ambient', duration: 204, status: 'PUBLISHED' },
-  { title: `Street Rhythm${seedTag}`, artistEmail: 'artist01@musica.local', genre: 'HipHop', duration: 177, status: 'PUBLISHED' },
-  { title: `Golden Hour${seedTag}`, artistEmail: 'artist02@musica.local', genre: 'Pop', duration: 189, status: 'PUBLISHED' },
-  { title: `Tech Pulse${seedTag}`, artistEmail: 'artist01@musica.local', genre: 'Electronic', duration: 161, status: 'HIDDEN' },
-  { title: `Minimal Corporate${seedTag}`, artistEmail: 'artist03@musica.local', genre: 'Corporate', duration: 133, status: 'HIDDEN' },
-]
+  { title: 'Midnight Pulse', artistEmail: 'artist01@musica.local', genre: 'Electronic', duration: 182, status: 'PUBLISHED' },
+  { title: 'Neon Skyline', artistEmail: 'artist01@musica.local', genre: 'Electronic', duration: 156, status: 'PUBLISHED' },
+  { title: 'Cinematic Rise', artistEmail: 'artist02@musica.local', genre: 'Cinematic', duration: 201, status: 'PUBLISHED' },
+  { title: 'Corporate Breeze', artistEmail: 'artist02@musica.local', genre: 'Corporate', duration: 128, status: 'PUBLISHED' },
+  { title: 'Pop Spark', artistEmail: 'artist03@musica.local', genre: 'Pop', duration: 174, status: 'PUBLISHED' },
+  { title: 'Ambient Drift', artistEmail: 'artist03@musica.local', genre: 'Cinematic', duration: 223, status: 'PUBLISHED' },
+  { title: 'Late Night Drive', artistEmail: 'artist01@musica.local', genre: 'Electronic', duration: 190, status: 'PUBLISHED' },
+  { title: 'Bright Morning', artistEmail: 'artist02@musica.local', genre: 'Pop', duration: 165, status: 'PUBLISHED' },
+  { title: 'Soft Focus', artistEmail: 'artist03@musica.local', genre: 'Corporate', duration: 142, status: 'PUBLISHED' },
+  { title: 'Festival Lights', artistEmail: 'artist01@musica.local', genre: 'Pop', duration: 198, status: 'PUBLISHED' },
+  { title: 'Hidden Draft 01', artistEmail: 'artist01@musica.local', genre: 'Electronic', duration: 160, status: 'HIDDEN' },
+  { title: 'Hidden Draft 02', artistEmail: 'artist02@musica.local', genre: 'Cinematic', duration: 210, status: 'HIDDEN' },
+  { title: 'Hidden Draft 03', artistEmail: 'artist03@musica.local', genre: 'Corporate', duration: 120, status: 'HIDDEN' },
+  { title: 'Hidden Draft 04', artistEmail: 'artist01@musica.local', genre: 'Pop', duration: 175, status: 'HIDDEN' },
+  { title: 'Hidden Draft 05', artistEmail: 'artist02@musica.local', genre: 'Corporate', duration: 135, status: 'HIDDEN' },
+  { title: 'Ocean Haze', artistEmail: 'artist03@musica.local', genre: 'Ambient', duration: 204, status: 'PUBLISHED' },
+  { title: 'Street Rhythm', artistEmail: 'artist01@musica.local', genre: 'HipHop', duration: 177, status: 'PUBLISHED' },
+  { title: 'Golden Hour', artistEmail: 'artist02@musica.local', genre: 'Pop', duration: 189, status: 'PUBLISHED' },
+  { title: 'Tech Pulse', artistEmail: 'artist01@musica.local', genre: 'Electronic', duration: 161, status: 'HIDDEN' },
+  { title: 'Minimal Corporate', artistEmail: 'artist03@musica.local', genre: 'Corporate', duration: 133, status: 'HIDDEN' },
+].map((item) => ({ ...item, title: stripSeedSuffix(item.title) }))
 
 const certificatesSeed = [
-  { trackTitle: `Midnight Pulse${seedTag}`, buyerEmail: 'buyer01@musica.local', rights: ['DERIVATIVE_WORK_RIGHT'], daysAgo: 3 },
-  { trackTitle: `Neon Skyline${seedTag}`, buyerEmail: 'buyer01@musica.local', rights: ['COMMUNICATION_TO_PUBLIC_RIGHT'], daysAgo: 8 },
-  { trackTitle: `Cinematic Rise${seedTag}`, buyerEmail: 'buyer02@musica.local', rights: ['DERIVATIVE_WORK_RIGHT'], daysAgo: 6 },
-  { trackTitle: `Corporate Breeze${seedTag}`, buyerEmail: 'buyer03@musica.local', rights: ['REPRODUCTION_RIGHT'], daysAgo: 10 },
-  { trackTitle: `Pop Spark${seedTag}`, buyerEmail: 'buyer04@musica.local', rights: ['DISTRIBUTION_RIGHT'], daysAgo: 2 },
-  { trackTitle: `Ambient Drift${seedTag}`, buyerEmail: 'buyer05@musica.local', rights: ['DERIVATIVE_WORK_RIGHT'], daysAgo: 4 },
-  { trackTitle: `Late Night Drive${seedTag}`, buyerEmail: 'buyer06@musica.local', rights: ['COMMUNICATION_TO_PUBLIC_RIGHT'], daysAgo: 1 },
-  { trackTitle: `Bright Morning${seedTag}`, buyerEmail: 'buyer07@musica.local', rights: ['REPRODUCTION_RIGHT', 'COMMUNICATION_TO_PUBLIC_RIGHT'], daysAgo: 7 },
-  { trackTitle: `Soft Focus${seedTag}`, buyerEmail: 'buyer08@musica.local', rights: ['DISTRIBUTION_RIGHT'], daysAgo: 12 },
-  { trackTitle: `Festival Lights${seedTag}`, buyerEmail: 'buyer02@musica.local', rights: ['DERIVATIVE_WORK_RIGHT'], daysAgo: 5 },
-  { trackTitle: `Ocean Haze${seedTag}`, buyerEmail: 'buyer03@musica.local', rights: ['REPRODUCTION_RIGHT'], daysAgo: 9 },
-  { trackTitle: `Street Rhythm${seedTag}`, buyerEmail: 'buyer04@musica.local', rights: ['DISTRIBUTION_RIGHT'], daysAgo: 11 },
-  { trackTitle: `Golden Hour${seedTag}`, buyerEmail: 'buyer05@musica.local', rights: ['DISTRIBUTION_RIGHT'], daysAgo: 13 },
-]
+  { trackTitle: 'Midnight Pulse', buyerEmail: 'buyer01@musica.local', rights: ['DERIVATIVE_WORK_RIGHT'], daysAgo: 3 },
+  { trackTitle: 'Neon Skyline', buyerEmail: 'buyer01@musica.local', rights: ['COMMUNICATION_TO_PUBLIC_RIGHT'], daysAgo: 8 },
+  { trackTitle: 'Cinematic Rise', buyerEmail: 'buyer02@musica.local', rights: ['DERIVATIVE_WORK_RIGHT'], daysAgo: 6 },
+  { trackTitle: 'Corporate Breeze', buyerEmail: 'buyer03@musica.local', rights: ['REPRODUCTION_RIGHT'], daysAgo: 10 },
+  { trackTitle: 'Pop Spark', buyerEmail: 'buyer04@musica.local', rights: ['DISTRIBUTION_RIGHT'], daysAgo: 2 },
+  { trackTitle: 'Ambient Drift', buyerEmail: 'buyer05@musica.local', rights: ['DERIVATIVE_WORK_RIGHT'], daysAgo: 4 },
+  { trackTitle: 'Late Night Drive', buyerEmail: 'buyer06@musica.local', rights: ['COMMUNICATION_TO_PUBLIC_RIGHT'], daysAgo: 1 },
+  { trackTitle: 'Bright Morning', buyerEmail: 'buyer07@musica.local', rights: ['REPRODUCTION_RIGHT', 'COMMUNICATION_TO_PUBLIC_RIGHT'], daysAgo: 7 },
+  { trackTitle: 'Soft Focus', buyerEmail: 'buyer08@musica.local', rights: ['DISTRIBUTION_RIGHT'], daysAgo: 12 },
+  { trackTitle: 'Festival Lights', buyerEmail: 'buyer02@musica.local', rights: ['DERIVATIVE_WORK_RIGHT'], daysAgo: 5 },
+  { trackTitle: 'Ocean Haze', buyerEmail: 'buyer03@musica.local', rights: ['REPRODUCTION_RIGHT'], daysAgo: 9 },
+  { trackTitle: 'Street Rhythm', buyerEmail: 'buyer04@musica.local', rights: ['DISTRIBUTION_RIGHT'], daysAgo: 11 },
+  { trackTitle: 'Golden Hour', buyerEmail: 'buyer05@musica.local', rights: ['DISTRIBUTION_RIGHT'], daysAgo: 13 },
+].map((item) => ({ ...item, trackTitle: stripSeedSuffix(item.trackTitle) }))
 
 const corePermissionsSeed = [
   {
     id: seedPermissionIds.reproduction,
-    name: `Quyen sao chep${seedTag}`,
+    name: 'Quyen sao chep',
     law_reference: 'Khoan 1 Dieu 20 Luat SHTT',
     description: 'Cho phep sao chep ban ghi va tac pham phuc vu khai thac thuong mai.',
     status: 'ACTIVE',
   },
   {
     id: seedPermissionIds.distribution,
-    name: `Quyen phan phoi${seedTag}`,
+    name: 'Quyen phan phoi',
     law_reference: 'Khoan 2 Dieu 20 Luat SHTT',
     description: 'Cho phep phan phoi ban sao, ban ghi va cac hinh thuc luu hanh hop phap.',
     status: 'ACTIVE',
   },
   {
     id: seedPermissionIds.communication,
-    name: `Quyen truyen dat den cong chung${seedTag}`,
+    name: 'Quyen truyen dat den cong chung',
     law_reference: 'Khoan 3 Dieu 20 Luat SHTT',
     description: 'Cho phep dua tac pham den cong chung thong qua nen tang so va kenh phat hanh.',
     status: 'ACTIVE',
   },
   {
     id: seedPermissionIds.performance,
-    name: `Quyen bieu dien truoc cong chung${seedTag}`,
+    name: 'Quyen bieu dien truoc cong chung',
     law_reference: 'Khoan 4 Dieu 20 Luat SHTT',
     description: 'Cho phep bieu dien, phat nhac va khai thac trong cac khong gian cong cong.',
     status: 'ACTIVE',
   },
   {
     id: seedPermissionIds.derivative,
-    name: `Quyen lam tac pham phai sinh${seedTag}`,
+    name: 'Quyen lam tac pham phai sinh',
     law_reference: 'Khoan 5 Dieu 20 Luat SHTT',
     description: 'Cho phep cai bien, phoi khi va tao san pham phai sinh tu tac pham goc.',
     status: 'ACTIVE',
@@ -228,14 +232,14 @@ const digitalRightConfigsSeed = [
 const physicalRightConfigsSeed = [
   {
     id: '8b53d577-0815-4d1d-bc4c-1d1e58f28511',
-    venue_usage_type: `Quan cafe${seedTag}`,
+    venue_usage_type: 'Quan cafe',
     base_price_multiplier: 1.1,
     status: 'ACTIVE',
     permissionIds: [seedPermissionIds.performance],
   },
   {
     id: '8b53d577-0815-4d1d-bc4c-1d1e58f28512',
-    venue_usage_type: `Hoi cho su kien${seedTag}`,
+    venue_usage_type: 'Hoi cho su kien',
     base_price_multiplier: 1.45,
     status: 'ACTIVE',
     permissionIds: [seedPermissionIds.performance, seedPermissionIds.communication],
@@ -245,14 +249,14 @@ const physicalRightConfigsSeed = [
 const expressionConfigsSeed = [
   {
     id: '8b53d577-0815-4d1d-bc4c-1d1e58f28521',
-    name: `Nhac nen Vlog${seedTag}`,
+    name: 'Nhac nen Vlog',
     price_multiplier: 1.2,
     status: 'ACTIVE',
     permissionIds: [seedPermissionIds.reproduction, seedPermissionIds.communication],
   },
   {
     id: '8b53d577-0815-4d1d-bc4c-1d1e58f28522',
-    name: `Nhac quang cao${seedTag}`,
+    name: 'Nhac quang cao',
     price_multiplier: 1.85,
     status: 'ACTIVE',
     permissionIds: [
@@ -266,14 +270,14 @@ const expressionConfigsSeed = [
 const modificationConfigsSeed = [
   {
     id: '8b53d577-0815-4d1d-bc4c-1d1e58f28531',
-    name: `Giu nguyen master${seedTag}`,
+    name: 'Giu nguyen master',
     price_multiplier: 1,
     status: 'ACTIVE',
     permissionIds: [seedPermissionIds.reproduction],
   },
   {
     id: '8b53d577-0815-4d1d-bc4c-1d1e58f28532',
-    name: `Cai bien phoi khi${seedTag}`,
+    name: 'Cai bien phoi khi',
     price_multiplier: 2.1,
     status: 'ACTIVE',
     permissionIds: [seedPermissionIds.reproduction, seedPermissionIds.derivative],
@@ -559,6 +563,36 @@ const main = async () => {
 
   const titleToTrack = new Map((insertedTracks ?? []).map((t) => [t.title, t]))
 
+  const productPrioritiesSeed = [
+    { trackTitle: 'Pop Spark', priority_score: 100, is_trigger: true },
+    { trackTitle: 'Midnight Pulse', priority_score: 95, is_trigger: true },
+    { trackTitle: 'Festival Lights', priority_score: 90, is_trigger: true },
+    { trackTitle: 'Cinematic Rise', priority_score: 85, is_trigger: true },
+    { trackTitle: 'Bright Morning', priority_score: 80, is_trigger: true },
+  ].map((item) => ({ ...item, trackTitle: stripSeedSuffix(item.trackTitle) }))
+
+  const productPrioritiesToUpsert = productPrioritiesSeed
+    .map((priority) => {
+      const track = titleToTrack.get(priority.trackTitle)
+      if (!track) return null
+      return {
+        product_id: track.id,
+        priority_score: priority.priority_score,
+        is_trigger: priority.is_trigger,
+        effective_start: null,
+        effective_end: null,
+      }
+    })
+    .filter(Boolean)
+
+  if (productPrioritiesToUpsert.length > 0) {
+    const { error: upsertProductPrioritiesError } = await client
+      .from('product_priorities')
+      .upsert(productPrioritiesToUpsert, { onConflict: 'product_id' })
+
+    if (upsertProductPrioritiesError) throw new Error(upsertProductPrioritiesError.message)
+  }
+
   const complianceReviewsToInsert = buildComplianceSeedEntries().map((entry, index) => {
     const track = titleToTrack.get(entry.trackTitle)
     if (!track) throw new Error(`Missing track for compliance seed ${entry.trackTitle}`)
@@ -699,6 +733,64 @@ const main = async () => {
   if (insertTemplateError && !isMissingTableError(insertTemplateError.message)) {
     throw new Error(insertTemplateError.message)
   }
+
+  const outputDir = path.resolve(
+    path.dirname(fileURLToPath(import.meta.url)),
+    '..',
+    '..',
+    '..',
+    'docs',
+    'mock-data',
+  )
+  fs.mkdirSync(outputDir, { recursive: true })
+
+  const exportPayload = {
+    users: insertedUsers ?? [],
+    user_roles: userRolesToInsert,
+    core_permissions: corePermissionsSeed,
+    digital_right_configs: digitalRightConfigsSeed,
+    digital_right_config_permissions: digitalRightConfigsSeed.flatMap((cfg) =>
+      (cfg.permissionIds ?? []).map((permissionId) => ({
+        digital_right_config_id: cfg.id,
+        core_permission_id: permissionId,
+      })),
+    ),
+    physical_right_configs: physicalRightConfigsSeed,
+    physical_right_config_permissions: physicalRightConfigsSeed.flatMap((cfg) =>
+      (cfg.permissionIds ?? []).map((permissionId) => ({
+        physical_right_config_id: cfg.id,
+        core_permission_id: permissionId,
+      })),
+    ),
+    expression_configs: expressionConfigsSeed,
+    expression_config_permissions: expressionConfigsSeed.flatMap((cfg) =>
+      (cfg.permissionIds ?? []).map((permissionId) => ({
+        expression_config_id: cfg.id,
+        core_permission_id: permissionId,
+      })),
+    ),
+    modification_configs: modificationConfigsSeed,
+    modification_config_permissions: modificationConfigsSeed.flatMap((cfg) =>
+      (cfg.permissionIds ?? []).map((permissionId) => ({
+        modification_config_id: cfg.id,
+        core_permission_id: permissionId,
+      })),
+    ),
+    products: insertedTracks ?? [],
+    product_priorities: productPrioritiesToUpsert,
+    compliance_reviews: insertedComplianceReviews ?? [],
+    compliance_legal_files: complianceLegalFilesToInsert,
+    compliance_approved_permissions: complianceApprovedPermissionsToInsert,
+    track_allowed_permissions: trackAllowedPermissionsToInsert,
+    certificates: certificatesToInsert,
+    certificate_templates: [{ html_template: defaultTemplate }],
+  }
+
+  fs.writeFileSync(
+    path.join(outputDir, 'dev-mock-data.json'),
+    JSON.stringify(exportPayload, null, 2),
+    'utf8',
+  )
 
   process.stdout.write('Seed dev data: DONE\n')
   process.stdout.write('Login users: admin01@musica.local / Password123!\n')

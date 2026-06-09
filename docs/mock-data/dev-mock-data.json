@@ -1,0 +1,1537 @@
+{
+  "users": [
+    {
+      "id": "bd2cbf18-9bfd-45ce-911a-23867106e577",
+      "email": "superadmin@musica.local",
+      "full_name": "Super Admin"
+    },
+    {
+      "id": "eb44207d-e70a-4693-b840-4271f06eb510",
+      "email": "admin01@musica.local",
+      "full_name": "Admin 01"
+    },
+    {
+      "id": "ca6886eb-58b9-4db0-9bc4-464e2a1bb2f0",
+      "email": "admin02@musica.local",
+      "full_name": "Admin 02"
+    },
+    {
+      "id": "eefd4991-c7e2-40ee-ab1b-a70519f554dc",
+      "email": "artist01@musica.local",
+      "full_name": "Artist 01"
+    },
+    {
+      "id": "59914664-a81f-4f75-99fa-497721e5d23b",
+      "email": "artist02@musica.local",
+      "full_name": "Artist 02"
+    },
+    {
+      "id": "66059c62-4bfc-4298-be30-3cf082ae4187",
+      "email": "artist03@musica.local",
+      "full_name": "Artist 03"
+    },
+    {
+      "id": "b4675c8f-5717-4c35-b466-3a70731f8929",
+      "email": "buyer01@musica.local",
+      "full_name": "Buyer 01"
+    },
+    {
+      "id": "5466d7c8-c8bc-424f-855b-5730d3c77456",
+      "email": "buyer02@musica.local",
+      "full_name": "Buyer 02"
+    },
+    {
+      "id": "2f9fdafd-68ee-447d-a4bb-4e24786730fb",
+      "email": "buyer03@musica.local",
+      "full_name": "Buyer 03"
+    },
+    {
+      "id": "fcf0676c-5798-470d-bfc3-fb905dcc7af8",
+      "email": "buyer04@musica.local",
+      "full_name": "Buyer 04"
+    },
+    {
+      "id": "c466763c-31b5-4ce5-a3a7-699dad0c1eaa",
+      "email": "buyer05@musica.local",
+      "full_name": "Buyer 05"
+    },
+    {
+      "id": "ebe8a67d-0d9f-4703-bc77-f87de9089292",
+      "email": "buyer06@musica.local",
+      "full_name": "Buyer 06"
+    },
+    {
+      "id": "1b0d1d21-4b8c-4d68-9569-cc85f2b9c6ac",
+      "email": "buyer07@musica.local",
+      "full_name": "Buyer 07"
+    },
+    {
+      "id": "06919168-9d27-4d8d-8eaf-4814ab053488",
+      "email": "buyer08@musica.local",
+      "full_name": "Buyer 08"
+    }
+  ],
+  "user_roles": [
+    {
+      "user_id": "bd2cbf18-9bfd-45ce-911a-23867106e577",
+      "role_id": 1
+    },
+    {
+      "user_id": "eb44207d-e70a-4693-b840-4271f06eb510",
+      "role_id": 2
+    },
+    {
+      "user_id": "ca6886eb-58b9-4db0-9bc4-464e2a1bb2f0",
+      "role_id": 2
+    },
+    {
+      "user_id": "eefd4991-c7e2-40ee-ab1b-a70519f554dc",
+      "role_id": 3
+    },
+    {
+      "user_id": "59914664-a81f-4f75-99fa-497721e5d23b",
+      "role_id": 3
+    },
+    {
+      "user_id": "66059c62-4bfc-4298-be30-3cf082ae4187",
+      "role_id": 3
+    },
+    {
+      "user_id": "b4675c8f-5717-4c35-b466-3a70731f8929",
+      "role_id": 4
+    },
+    {
+      "user_id": "5466d7c8-c8bc-424f-855b-5730d3c77456",
+      "role_id": 4
+    },
+    {
+      "user_id": "2f9fdafd-68ee-447d-a4bb-4e24786730fb",
+      "role_id": 4
+    },
+    {
+      "user_id": "fcf0676c-5798-470d-bfc3-fb905dcc7af8",
+      "role_id": 4
+    },
+    {
+      "user_id": "c466763c-31b5-4ce5-a3a7-699dad0c1eaa",
+      "role_id": 4
+    },
+    {
+      "user_id": "ebe8a67d-0d9f-4703-bc77-f87de9089292",
+      "role_id": 4
+    },
+    {
+      "user_id": "1b0d1d21-4b8c-4d68-9569-cc85f2b9c6ac",
+      "role_id": 4
+    },
+    {
+      "user_id": "06919168-9d27-4d8d-8eaf-4814ab053488",
+      "role_id": 4
+    }
+  ],
+  "core_permissions": [
+    {
+      "id": "3c6c1819-73b5-4d50-8a62-2c84c6152c11",
+      "name": "Quyen sao chep",
+      "law_reference": "Khoan 1 Dieu 20 Luat SHTT",
+      "description": "Cho phep sao chep ban ghi va tac pham phuc vu khai thac thuong mai.",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "3c6c1819-73b5-4d50-8a62-2c84c6152c12",
+      "name": "Quyen phan phoi",
+      "law_reference": "Khoan 2 Dieu 20 Luat SHTT",
+      "description": "Cho phep phan phoi ban sao, ban ghi va cac hinh thuc luu hanh hop phap.",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "3c6c1819-73b5-4d50-8a62-2c84c6152c13",
+      "name": "Quyen truyen dat den cong chung",
+      "law_reference": "Khoan 3 Dieu 20 Luat SHTT",
+      "description": "Cho phep dua tac pham den cong chung thong qua nen tang so va kenh phat hanh.",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "3c6c1819-73b5-4d50-8a62-2c84c6152c14",
+      "name": "Quyen bieu dien truoc cong chung",
+      "law_reference": "Khoan 4 Dieu 20 Luat SHTT",
+      "description": "Cho phep bieu dien, phat nhac va khai thac trong cac khong gian cong cong.",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "3c6c1819-73b5-4d50-8a62-2c84c6152c15",
+      "name": "Quyen lam tac pham phai sinh",
+      "law_reference": "Khoan 5 Dieu 20 Luat SHTT",
+      "description": "Cho phep cai bien, phoi khi va tao san pham phai sinh tu tac pham goc.",
+      "status": "ACTIVE"
+    }
+  ],
+  "digital_right_configs": [
+    {
+      "id": "8b53d577-0815-4d1d-bc4c-1d1e58f28501",
+      "target_platform": "YOUTUBE",
+      "duration_type": "ONE_YEAR",
+      "base_price_multiplier": 1.25,
+      "status": "ACTIVE",
+      "permissionIds": [
+        "3c6c1819-73b5-4d50-8a62-2c84c6152c11",
+        "3c6c1819-73b5-4d50-8a62-2c84c6152c13"
+      ]
+    },
+    {
+      "id": "8b53d577-0815-4d1d-bc4c-1d1e58f28502",
+      "target_platform": "TIKTOK",
+      "duration_type": "PERPETUAL",
+      "base_price_multiplier": 1.6,
+      "status": "ACTIVE",
+      "permissionIds": [
+        "3c6c1819-73b5-4d50-8a62-2c84c6152c11",
+        "3c6c1819-73b5-4d50-8a62-2c84c6152c13",
+        "3c6c1819-73b5-4d50-8a62-2c84c6152c12"
+      ]
+    }
+  ],
+  "digital_right_config_permissions": [
+    {
+      "digital_right_config_id": "8b53d577-0815-4d1d-bc4c-1d1e58f28501",
+      "core_permission_id": "3c6c1819-73b5-4d50-8a62-2c84c6152c11"
+    },
+    {
+      "digital_right_config_id": "8b53d577-0815-4d1d-bc4c-1d1e58f28501",
+      "core_permission_id": "3c6c1819-73b5-4d50-8a62-2c84c6152c13"
+    },
+    {
+      "digital_right_config_id": "8b53d577-0815-4d1d-bc4c-1d1e58f28502",
+      "core_permission_id": "3c6c1819-73b5-4d50-8a62-2c84c6152c11"
+    },
+    {
+      "digital_right_config_id": "8b53d577-0815-4d1d-bc4c-1d1e58f28502",
+      "core_permission_id": "3c6c1819-73b5-4d50-8a62-2c84c6152c13"
+    },
+    {
+      "digital_right_config_id": "8b53d577-0815-4d1d-bc4c-1d1e58f28502",
+      "core_permission_id": "3c6c1819-73b5-4d50-8a62-2c84c6152c12"
+    }
+  ],
+  "physical_right_configs": [
+    {
+      "id": "8b53d577-0815-4d1d-bc4c-1d1e58f28511",
+      "venue_usage_type": "Quan cafe",
+      "base_price_multiplier": 1.1,
+      "status": "ACTIVE",
+      "permissionIds": [
+        "3c6c1819-73b5-4d50-8a62-2c84c6152c14"
+      ]
+    },
+    {
+      "id": "8b53d577-0815-4d1d-bc4c-1d1e58f28512",
+      "venue_usage_type": "Hoi cho su kien",
+      "base_price_multiplier": 1.45,
+      "status": "ACTIVE",
+      "permissionIds": [
+        "3c6c1819-73b5-4d50-8a62-2c84c6152c14",
+        "3c6c1819-73b5-4d50-8a62-2c84c6152c13"
+      ]
+    }
+  ],
+  "physical_right_config_permissions": [
+    {
+      "physical_right_config_id": "8b53d577-0815-4d1d-bc4c-1d1e58f28511",
+      "core_permission_id": "3c6c1819-73b5-4d50-8a62-2c84c6152c14"
+    },
+    {
+      "physical_right_config_id": "8b53d577-0815-4d1d-bc4c-1d1e58f28512",
+      "core_permission_id": "3c6c1819-73b5-4d50-8a62-2c84c6152c14"
+    },
+    {
+      "physical_right_config_id": "8b53d577-0815-4d1d-bc4c-1d1e58f28512",
+      "core_permission_id": "3c6c1819-73b5-4d50-8a62-2c84c6152c13"
+    }
+  ],
+  "expression_configs": [
+    {
+      "id": "8b53d577-0815-4d1d-bc4c-1d1e58f28521",
+      "name": "Nhac nen Vlog",
+      "price_multiplier": 1.2,
+      "status": "ACTIVE",
+      "permissionIds": [
+        "3c6c1819-73b5-4d50-8a62-2c84c6152c11",
+        "3c6c1819-73b5-4d50-8a62-2c84c6152c13"
+      ]
+    },
+    {
+      "id": "8b53d577-0815-4d1d-bc4c-1d1e58f28522",
+      "name": "Nhac quang cao",
+      "price_multiplier": 1.85,
+      "status": "ACTIVE",
+      "permissionIds": [
+        "3c6c1819-73b5-4d50-8a62-2c84c6152c11",
+        "3c6c1819-73b5-4d50-8a62-2c84c6152c13",
+        "3c6c1819-73b5-4d50-8a62-2c84c6152c12"
+      ]
+    }
+  ],
+  "expression_config_permissions": [
+    {
+      "expression_config_id": "8b53d577-0815-4d1d-bc4c-1d1e58f28521",
+      "core_permission_id": "3c6c1819-73b5-4d50-8a62-2c84c6152c11"
+    },
+    {
+      "expression_config_id": "8b53d577-0815-4d1d-bc4c-1d1e58f28521",
+      "core_permission_id": "3c6c1819-73b5-4d50-8a62-2c84c6152c13"
+    },
+    {
+      "expression_config_id": "8b53d577-0815-4d1d-bc4c-1d1e58f28522",
+      "core_permission_id": "3c6c1819-73b5-4d50-8a62-2c84c6152c11"
+    },
+    {
+      "expression_config_id": "8b53d577-0815-4d1d-bc4c-1d1e58f28522",
+      "core_permission_id": "3c6c1819-73b5-4d50-8a62-2c84c6152c13"
+    },
+    {
+      "expression_config_id": "8b53d577-0815-4d1d-bc4c-1d1e58f28522",
+      "core_permission_id": "3c6c1819-73b5-4d50-8a62-2c84c6152c12"
+    }
+  ],
+  "modification_configs": [
+    {
+      "id": "8b53d577-0815-4d1d-bc4c-1d1e58f28531",
+      "name": "Giu nguyen master",
+      "price_multiplier": 1,
+      "status": "ACTIVE",
+      "permissionIds": [
+        "3c6c1819-73b5-4d50-8a62-2c84c6152c11"
+      ]
+    },
+    {
+      "id": "8b53d577-0815-4d1d-bc4c-1d1e58f28532",
+      "name": "Cai bien phoi khi",
+      "price_multiplier": 2.1,
+      "status": "ACTIVE",
+      "permissionIds": [
+        "3c6c1819-73b5-4d50-8a62-2c84c6152c11",
+        "3c6c1819-73b5-4d50-8a62-2c84c6152c15"
+      ]
+    }
+  ],
+  "modification_config_permissions": [
+    {
+      "modification_config_id": "8b53d577-0815-4d1d-bc4c-1d1e58f28531",
+      "core_permission_id": "3c6c1819-73b5-4d50-8a62-2c84c6152c11"
+    },
+    {
+      "modification_config_id": "8b53d577-0815-4d1d-bc4c-1d1e58f28532",
+      "core_permission_id": "3c6c1819-73b5-4d50-8a62-2c84c6152c11"
+    },
+    {
+      "modification_config_id": "8b53d577-0815-4d1d-bc4c-1d1e58f28532",
+      "core_permission_id": "3c6c1819-73b5-4d50-8a62-2c84c6152c15"
+    }
+  ],
+  "products": [
+    {
+      "id": "2c424a5d-8b3d-44f4-9ebd-52495eadd160",
+      "title": "Midnight Pulse",
+      "artist_id": "eefd4991-c7e2-40ee-ab1b-a70519f554dc"
+    },
+    {
+      "id": "6e6ba9b3-1b7e-42e7-a68b-75d3c3d50ac3",
+      "title": "Neon Skyline",
+      "artist_id": "eefd4991-c7e2-40ee-ab1b-a70519f554dc"
+    },
+    {
+      "id": "09ccab89-fe07-44f9-ad57-d222dd94fd5e",
+      "title": "Cinematic Rise",
+      "artist_id": "59914664-a81f-4f75-99fa-497721e5d23b"
+    },
+    {
+      "id": "ac13d7b5-1b4e-4d9c-a9da-2e01e0d5da0d",
+      "title": "Corporate Breeze",
+      "artist_id": "59914664-a81f-4f75-99fa-497721e5d23b"
+    },
+    {
+      "id": "c8c2b2a0-7402-4764-9e74-74677d4b5d02",
+      "title": "Pop Spark",
+      "artist_id": "66059c62-4bfc-4298-be30-3cf082ae4187"
+    },
+    {
+      "id": "2e291058-d448-4788-b5c2-85831303f1fc",
+      "title": "Ambient Drift",
+      "artist_id": "66059c62-4bfc-4298-be30-3cf082ae4187"
+    },
+    {
+      "id": "277178fd-6fd0-4eb4-9350-492cb9af9ee6",
+      "title": "Late Night Drive",
+      "artist_id": "eefd4991-c7e2-40ee-ab1b-a70519f554dc"
+    },
+    {
+      "id": "77e27db5-db50-4ad4-be09-3d280b1621b9",
+      "title": "Bright Morning",
+      "artist_id": "59914664-a81f-4f75-99fa-497721e5d23b"
+    },
+    {
+      "id": "ac08ebe5-5d43-495c-8dce-3aff0edfe2aa",
+      "title": "Soft Focus",
+      "artist_id": "66059c62-4bfc-4298-be30-3cf082ae4187"
+    },
+    {
+      "id": "64b46af2-6003-4c4a-877a-b198415a1d88",
+      "title": "Festival Lights",
+      "artist_id": "eefd4991-c7e2-40ee-ab1b-a70519f554dc"
+    },
+    {
+      "id": "19cb933f-9dfe-419e-b3cd-f66e56be3653",
+      "title": "Hidden Draft 01",
+      "artist_id": "eefd4991-c7e2-40ee-ab1b-a70519f554dc"
+    },
+    {
+      "id": "28d84df5-f549-45ad-9f68-78218f732f53",
+      "title": "Hidden Draft 02",
+      "artist_id": "59914664-a81f-4f75-99fa-497721e5d23b"
+    },
+    {
+      "id": "d1fe11b6-ff6e-4f74-a99f-fe7515263bdb",
+      "title": "Hidden Draft 03",
+      "artist_id": "66059c62-4bfc-4298-be30-3cf082ae4187"
+    },
+    {
+      "id": "330631c7-03f2-4835-8750-b4c87939bc6c",
+      "title": "Hidden Draft 04",
+      "artist_id": "eefd4991-c7e2-40ee-ab1b-a70519f554dc"
+    },
+    {
+      "id": "4ed5d4db-9c45-4e9f-8872-1843801fabbb",
+      "title": "Hidden Draft 05",
+      "artist_id": "59914664-a81f-4f75-99fa-497721e5d23b"
+    },
+    {
+      "id": "ec2912b0-d927-40ed-84ca-8ed069be451d",
+      "title": "Ocean Haze",
+      "artist_id": "66059c62-4bfc-4298-be30-3cf082ae4187"
+    },
+    {
+      "id": "5f9a1b11-f1f3-4ca0-a1b4-91fbc70113c3",
+      "title": "Street Rhythm",
+      "artist_id": "eefd4991-c7e2-40ee-ab1b-a70519f554dc"
+    },
+    {
+      "id": "2583655b-6884-46de-a36c-2614bd7e2199",
+      "title": "Golden Hour",
+      "artist_id": "59914664-a81f-4f75-99fa-497721e5d23b"
+    },
+    {
+      "id": "35fe79fc-440d-4617-9c93-bab1cc04daef",
+      "title": "Tech Pulse",
+      "artist_id": "eefd4991-c7e2-40ee-ab1b-a70519f554dc"
+    },
+    {
+      "id": "12fb011a-0a3c-4730-9939-7ab18b52360b",
+      "title": "Minimal Corporate",
+      "artist_id": "66059c62-4bfc-4298-be30-3cf082ae4187"
+    }
+  ],
+  "product_priorities": [
+    {
+      "product_id": "c8c2b2a0-7402-4764-9e74-74677d4b5d02",
+      "priority_score": 100,
+      "is_trigger": true,
+      "effective_start": null,
+      "effective_end": null
+    },
+    {
+      "product_id": "2c424a5d-8b3d-44f4-9ebd-52495eadd160",
+      "priority_score": 95,
+      "is_trigger": true,
+      "effective_start": null,
+      "effective_end": null
+    },
+    {
+      "product_id": "64b46af2-6003-4c4a-877a-b198415a1d88",
+      "priority_score": 90,
+      "is_trigger": true,
+      "effective_start": null,
+      "effective_end": null
+    },
+    {
+      "product_id": "09ccab89-fe07-44f9-ad57-d222dd94fd5e",
+      "priority_score": 85,
+      "is_trigger": true,
+      "effective_start": null,
+      "effective_end": null
+    },
+    {
+      "product_id": "77e27db5-db50-4ad4-be09-3d280b1621b9",
+      "priority_score": 80,
+      "is_trigger": true,
+      "effective_start": null,
+      "effective_end": null
+    }
+  ],
+  "compliance_reviews": [
+    {
+      "id": "26e4e567-0276-4ae9-a9df-2b7784f2c0ed",
+      "track_id": "2c424a5d-8b3d-44f4-9ebd-52495eadd160",
+      "uploaded_legal_files": [
+        {
+          "size": 1024,
+          "fileKey": "legal-files/2026/06/7b1719a3-06cb-401d-bc98-62787a24e01f.pdf",
+          "fileName": "legal-1-1.pdf",
+          "mimeType": "application/pdf",
+          "uploadedAt": "2026-06-04T21:55:05.022Z"
+        },
+        {
+          "size": 2048,
+          "fileKey": "legal-files/2026/06/102201ea-ca44-4696-a339-d11f00708f08.pdf",
+          "fileName": "legal-1-2.pdf",
+          "mimeType": "application/pdf",
+          "uploadedAt": "2026-06-04T21:55:05.022Z"
+        }
+      ]
+    },
+    {
+      "id": "0a90f31a-fa27-46f3-b3b6-c145cdd01d5f",
+      "track_id": "6e6ba9b3-1b7e-42e7-a68b-75d3c3d50ac3",
+      "uploaded_legal_files": [
+        {
+          "size": 1024,
+          "fileKey": "legal-files/2026/06/2e9264dc-82aa-4f20-bec6-abe47544a898.pdf",
+          "fileName": "legal-2-1.pdf",
+          "mimeType": "application/pdf",
+          "uploadedAt": "2026-06-04T15:55:05.025Z"
+        },
+        {
+          "size": 2048,
+          "fileKey": "legal-files/2026/06/7ac9b88b-a8e4-438a-a28c-8d4cdb1fe722.pdf",
+          "fileName": "legal-2-2.pdf",
+          "mimeType": "application/pdf",
+          "uploadedAt": "2026-06-04T15:55:05.025Z"
+        }
+      ]
+    },
+    {
+      "id": "f6fdc5c3-3c6a-4be9-8891-2c0661fc3213",
+      "track_id": "09ccab89-fe07-44f9-ad57-d222dd94fd5e",
+      "uploaded_legal_files": [
+        {
+          "size": 1024,
+          "fileKey": "legal-files/2026/06/e6cac51a-e53a-4a84-90fb-2bab10e7db16.pdf",
+          "fileName": "legal-3-1.pdf",
+          "mimeType": "application/pdf",
+          "uploadedAt": "2026-06-04T09:55:05.025Z"
+        },
+        {
+          "size": 2048,
+          "fileKey": "legal-files/2026/06/173fd0cf-11ab-4b5b-8d89-d24676e0c1a5.pdf",
+          "fileName": "legal-3-2.pdf",
+          "mimeType": "application/pdf",
+          "uploadedAt": "2026-06-04T09:55:05.025Z"
+        }
+      ]
+    },
+    {
+      "id": "779fca5b-c9f0-4616-9416-ddd8b72e1a05",
+      "track_id": "ac13d7b5-1b4e-4d9c-a9da-2e01e0d5da0d",
+      "uploaded_legal_files": [
+        {
+          "size": 1024,
+          "fileKey": "legal-files/2026/06/03fd3460-f130-45e9-bf94-d7932b23cad4.pdf",
+          "fileName": "legal-4-1.pdf",
+          "mimeType": "application/pdf",
+          "uploadedAt": "2026-06-04T03:55:05.026Z"
+        },
+        {
+          "size": 2048,
+          "fileKey": "legal-files/2026/06/04199cda-65dc-451e-9a3c-0ab2daeddf85.pdf",
+          "fileName": "legal-4-2.pdf",
+          "mimeType": "application/pdf",
+          "uploadedAt": "2026-06-04T03:55:05.026Z"
+        }
+      ]
+    },
+    {
+      "id": "a0f455f3-9b2b-400f-85db-cda4b62c7e7e",
+      "track_id": "c8c2b2a0-7402-4764-9e74-74677d4b5d02",
+      "uploaded_legal_files": [
+        {
+          "size": 1024,
+          "fileKey": "legal-files/2026/06/6f546d1c-5fb0-4fe6-b2eb-93e06ed7ed4e.pdf",
+          "fileName": "legal-5-1.pdf",
+          "mimeType": "application/pdf",
+          "uploadedAt": "2026-06-03T21:55:05.026Z"
+        },
+        {
+          "size": 2048,
+          "fileKey": "legal-files/2026/06/00a54711-522e-423c-895b-6f34e11455eb.pdf",
+          "fileName": "legal-5-2.pdf",
+          "mimeType": "application/pdf",
+          "uploadedAt": "2026-06-03T21:55:05.026Z"
+        }
+      ]
+    },
+    {
+      "id": "edcaa303-2eb7-46ab-a1c6-0dcd609f5a7b",
+      "track_id": "2e291058-d448-4788-b5c2-85831303f1fc",
+      "uploaded_legal_files": [
+        {
+          "size": 1024,
+          "fileKey": "legal-files/2026/06/cccdc17f-081c-4f0b-95b1-ad83845d08c4.pdf",
+          "fileName": "legal-6-1.pdf",
+          "mimeType": "application/pdf",
+          "uploadedAt": "2026-06-03T15:55:05.026Z"
+        },
+        {
+          "size": 2048,
+          "fileKey": "legal-files/2026/06/06160de0-9900-463e-9802-f5eb69a80f6f.pdf",
+          "fileName": "legal-6-2.pdf",
+          "mimeType": "application/pdf",
+          "uploadedAt": "2026-06-03T15:55:05.026Z"
+        }
+      ]
+    },
+    {
+      "id": "52fb4332-6e21-4c46-a8bf-dcd3b96ba2e8",
+      "track_id": "277178fd-6fd0-4eb4-9350-492cb9af9ee6",
+      "uploaded_legal_files": [
+        {
+          "size": 1024,
+          "fileKey": "legal-files/2026/06/57187920-b0b7-4ab1-8c49-53e12eaad87c.pdf",
+          "fileName": "legal-7-1.pdf",
+          "mimeType": "application/pdf",
+          "uploadedAt": "2026-06-03T09:55:05.026Z"
+        },
+        {
+          "size": 2048,
+          "fileKey": "legal-files/2026/06/8350fd23-b33b-49d2-8ac1-600150ddfec8.pdf",
+          "fileName": "legal-7-2.pdf",
+          "mimeType": "application/pdf",
+          "uploadedAt": "2026-06-03T09:55:05.026Z"
+        }
+      ]
+    },
+    {
+      "id": "c4136bff-ef7a-4949-939e-1a0710b7d86d",
+      "track_id": "77e27db5-db50-4ad4-be09-3d280b1621b9",
+      "uploaded_legal_files": [
+        {
+          "size": 1024,
+          "fileKey": "legal-files/2026/06/c53d3485-a35b-4dd7-8b71-8ec41ed9caa0.pdf",
+          "fileName": "legal-8-1.pdf",
+          "mimeType": "application/pdf",
+          "uploadedAt": "2026-06-03T03:55:05.026Z"
+        },
+        {
+          "size": 2048,
+          "fileKey": "legal-files/2026/06/35ecde8f-d323-4c49-b3cd-529850ebb12b.pdf",
+          "fileName": "legal-8-2.pdf",
+          "mimeType": "application/pdf",
+          "uploadedAt": "2026-06-03T03:55:05.026Z"
+        }
+      ]
+    },
+    {
+      "id": "1766ab36-fcdb-445e-a5aa-6ffffdfb99c4",
+      "track_id": "ac08ebe5-5d43-495c-8dce-3aff0edfe2aa",
+      "uploaded_legal_files": [
+        {
+          "size": 1024,
+          "fileKey": "legal-files/2026/06/e807bbb7-6ec9-45dd-84eb-b4454e9b2b37.pdf",
+          "fileName": "legal-9-1.pdf",
+          "mimeType": "application/pdf",
+          "uploadedAt": "2026-06-02T21:55:05.026Z"
+        },
+        {
+          "size": 2048,
+          "fileKey": "legal-files/2026/06/46b479af-8f8f-4d6f-bffc-d88068f23936.pdf",
+          "fileName": "legal-9-2.pdf",
+          "mimeType": "application/pdf",
+          "uploadedAt": "2026-06-02T21:55:05.026Z"
+        }
+      ]
+    },
+    {
+      "id": "d3bfef67-e835-42aa-ba6d-5e40305c0ede",
+      "track_id": "64b46af2-6003-4c4a-877a-b198415a1d88",
+      "uploaded_legal_files": [
+        {
+          "size": 1024,
+          "fileKey": "legal-files/2026/06/a298a81f-be75-41a2-bee0-a75e09532c5d.pdf",
+          "fileName": "legal-10-1.pdf",
+          "mimeType": "application/pdf",
+          "uploadedAt": "2026-06-02T15:55:05.026Z"
+        },
+        {
+          "size": 2048,
+          "fileKey": "legal-files/2026/06/7185e7d2-6d45-4a4c-b0a6-f4627edfcddb.pdf",
+          "fileName": "legal-10-2.pdf",
+          "mimeType": "application/pdf",
+          "uploadedAt": "2026-06-02T15:55:05.026Z"
+        }
+      ]
+    },
+    {
+      "id": "786c5a1d-7184-4241-a889-e9736cc730d0",
+      "track_id": "19cb933f-9dfe-419e-b3cd-f66e56be3653",
+      "uploaded_legal_files": [
+        {
+          "size": 1024,
+          "fileKey": "legal-files/2026/06/1f1386ef-d26d-4019-9812-148bdaef3fe3.pdf",
+          "fileName": "legal-11-1.pdf",
+          "mimeType": "application/pdf",
+          "uploadedAt": "2026-06-02T09:55:05.026Z"
+        }
+      ]
+    },
+    {
+      "id": "ef3935e8-50b2-4e13-9a63-9959c1cc5737",
+      "track_id": "28d84df5-f549-45ad-9f68-78218f732f53",
+      "uploaded_legal_files": [
+        {
+          "size": 1024,
+          "fileKey": "legal-files/2026/06/b711f774-efaa-47ec-96f1-dc3713dbe2f7.pdf",
+          "fileName": "legal-12-1.pdf",
+          "mimeType": "application/pdf",
+          "uploadedAt": "2026-06-05T03:55:05.026Z"
+        }
+      ]
+    },
+    {
+      "id": "53cc5d73-cb4d-424a-84bc-e77e7aa90f96",
+      "track_id": "d1fe11b6-ff6e-4f74-a99f-fe7515263bdb",
+      "uploaded_legal_files": [
+        {
+          "size": 1024,
+          "fileKey": "legal-files/2026/06/4751ba6c-862a-411b-8628-b7905473ef94.pdf",
+          "fileName": "legal-13-1.pdf",
+          "mimeType": "application/pdf",
+          "uploadedAt": "2026-06-01T21:55:05.026Z"
+        }
+      ]
+    },
+    {
+      "id": "529d29f8-22fd-4a15-8046-9432ea92d051",
+      "track_id": "330631c7-03f2-4835-8750-b4c87939bc6c",
+      "uploaded_legal_files": [
+        {
+          "size": 1024,
+          "fileKey": "legal-files/2026/06/19e24851-826e-489b-823d-6544a5b6a31a.pdf",
+          "fileName": "legal-14-1.pdf",
+          "mimeType": "application/pdf",
+          "uploadedAt": "2026-06-05T03:55:05.026Z"
+        }
+      ]
+    },
+    {
+      "id": "61ea06c0-e5b6-445b-bc10-74951364db38",
+      "track_id": "4ed5d4db-9c45-4e9f-8872-1843801fabbb",
+      "uploaded_legal_files": [
+        {
+          "size": 1024,
+          "fileKey": "legal-files/2026/06/a76d181e-1fa8-487d-987f-448f3953ab76.pdf",
+          "fileName": "legal-15-1.pdf",
+          "mimeType": "application/pdf",
+          "uploadedAt": "2026-06-01T09:55:05.026Z"
+        }
+      ]
+    },
+    {
+      "id": "3a13290a-b12e-4ff4-8077-7eb6ecdf4814",
+      "track_id": "ec2912b0-d927-40ed-84ca-8ed069be451d",
+      "uploaded_legal_files": [
+        {
+          "size": 1024,
+          "fileKey": "legal-files/2026/06/51f24020-7373-4934-ae96-fa2b32899b12.pdf",
+          "fileName": "legal-16-1.pdf",
+          "mimeType": "application/pdf",
+          "uploadedAt": "2026-06-01T03:55:05.026Z"
+        },
+        {
+          "size": 2048,
+          "fileKey": "legal-files/2026/06/d9913c8f-9607-4191-8341-66b41a85dac8.pdf",
+          "fileName": "legal-16-2.pdf",
+          "mimeType": "application/pdf",
+          "uploadedAt": "2026-06-01T03:55:05.026Z"
+        }
+      ]
+    },
+    {
+      "id": "c26b3a4b-af0f-41d1-b0ef-ab9f9d0fec37",
+      "track_id": "5f9a1b11-f1f3-4ca0-a1b4-91fbc70113c3",
+      "uploaded_legal_files": [
+        {
+          "size": 1024,
+          "fileKey": "legal-files/2026/06/e1cd4a3e-674d-4991-98b5-f2d086a46a33.pdf",
+          "fileName": "legal-17-1.pdf",
+          "mimeType": "application/pdf",
+          "uploadedAt": "2026-05-31T21:55:05.026Z"
+        },
+        {
+          "size": 2048,
+          "fileKey": "legal-files/2026/06/ae521a61-fba7-4afd-a640-b834e6dc465d.pdf",
+          "fileName": "legal-17-2.pdf",
+          "mimeType": "application/pdf",
+          "uploadedAt": "2026-05-31T21:55:05.026Z"
+        }
+      ]
+    },
+    {
+      "id": "e808fc80-6f5d-46f9-ab32-e93e6999516b",
+      "track_id": "2583655b-6884-46de-a36c-2614bd7e2199",
+      "uploaded_legal_files": [
+        {
+          "size": 1024,
+          "fileKey": "legal-files/2026/06/5c871c7b-dda2-4536-baf1-a9fc662fa94d.pdf",
+          "fileName": "legal-18-1.pdf",
+          "mimeType": "application/pdf",
+          "uploadedAt": "2026-05-31T15:55:05.026Z"
+        },
+        {
+          "size": 2048,
+          "fileKey": "legal-files/2026/06/4eb1ff7f-bf00-44db-ac73-d3f54c47728f.pdf",
+          "fileName": "legal-18-2.pdf",
+          "mimeType": "application/pdf",
+          "uploadedAt": "2026-05-31T15:55:05.026Z"
+        }
+      ]
+    },
+    {
+      "id": "16729edc-1ffe-41c4-82a5-81669ed0e287",
+      "track_id": "35fe79fc-440d-4617-9c93-bab1cc04daef",
+      "uploaded_legal_files": [
+        {
+          "size": 1024,
+          "fileKey": "legal-files/2026/06/d2d4e50f-b873-4bfc-8b7c-fb8874565dea.pdf",
+          "fileName": "legal-19-1.pdf",
+          "mimeType": "application/pdf",
+          "uploadedAt": "2026-05-31T09:55:05.026Z"
+        }
+      ]
+    },
+    {
+      "id": "8dfd99c6-c571-4e51-94ac-48f1c570ecfc",
+      "track_id": "12fb011a-0a3c-4730-9939-7ab18b52360b",
+      "uploaded_legal_files": [
+        {
+          "size": 1024,
+          "fileKey": "legal-files/2026/06/4889a9b8-f4fb-4089-ae49-f537b65af8ec.pdf",
+          "fileName": "legal-20-1.pdf",
+          "mimeType": "application/pdf",
+          "uploadedAt": "2026-06-05T03:55:05.026Z"
+        }
+      ]
+    }
+  ],
+  "compliance_legal_files": [
+    {
+      "compliance_review_id": "26e4e567-0276-4ae9-a9df-2b7784f2c0ed",
+      "file_name": "legal-1-1.pdf",
+      "file_key": "legal-files/2026/06/7b1719a3-06cb-401d-bc98-62787a24e01f.pdf",
+      "mime_type": "application/pdf",
+      "file_size_bytes": 1024,
+      "uploaded_by": "eb44207d-e70a-4693-b840-4271f06eb510",
+      "uploaded_at": "2026-06-04T21:55:05.022Z"
+    },
+    {
+      "compliance_review_id": "26e4e567-0276-4ae9-a9df-2b7784f2c0ed",
+      "file_name": "legal-1-2.pdf",
+      "file_key": "legal-files/2026/06/102201ea-ca44-4696-a339-d11f00708f08.pdf",
+      "mime_type": "application/pdf",
+      "file_size_bytes": 2048,
+      "uploaded_by": "eb44207d-e70a-4693-b840-4271f06eb510",
+      "uploaded_at": "2026-06-04T21:55:05.022Z"
+    },
+    {
+      "compliance_review_id": "0a90f31a-fa27-46f3-b3b6-c145cdd01d5f",
+      "file_name": "legal-2-1.pdf",
+      "file_key": "legal-files/2026/06/2e9264dc-82aa-4f20-bec6-abe47544a898.pdf",
+      "mime_type": "application/pdf",
+      "file_size_bytes": 1024,
+      "uploaded_by": "eb44207d-e70a-4693-b840-4271f06eb510",
+      "uploaded_at": "2026-06-04T15:55:05.025Z"
+    },
+    {
+      "compliance_review_id": "0a90f31a-fa27-46f3-b3b6-c145cdd01d5f",
+      "file_name": "legal-2-2.pdf",
+      "file_key": "legal-files/2026/06/7ac9b88b-a8e4-438a-a28c-8d4cdb1fe722.pdf",
+      "mime_type": "application/pdf",
+      "file_size_bytes": 2048,
+      "uploaded_by": "eb44207d-e70a-4693-b840-4271f06eb510",
+      "uploaded_at": "2026-06-04T15:55:05.025Z"
+    },
+    {
+      "compliance_review_id": "f6fdc5c3-3c6a-4be9-8891-2c0661fc3213",
+      "file_name": "legal-3-1.pdf",
+      "file_key": "legal-files/2026/06/e6cac51a-e53a-4a84-90fb-2bab10e7db16.pdf",
+      "mime_type": "application/pdf",
+      "file_size_bytes": 1024,
+      "uploaded_by": "eb44207d-e70a-4693-b840-4271f06eb510",
+      "uploaded_at": "2026-06-04T09:55:05.025Z"
+    },
+    {
+      "compliance_review_id": "f6fdc5c3-3c6a-4be9-8891-2c0661fc3213",
+      "file_name": "legal-3-2.pdf",
+      "file_key": "legal-files/2026/06/173fd0cf-11ab-4b5b-8d89-d24676e0c1a5.pdf",
+      "mime_type": "application/pdf",
+      "file_size_bytes": 2048,
+      "uploaded_by": "eb44207d-e70a-4693-b840-4271f06eb510",
+      "uploaded_at": "2026-06-04T09:55:05.025Z"
+    },
+    {
+      "compliance_review_id": "779fca5b-c9f0-4616-9416-ddd8b72e1a05",
+      "file_name": "legal-4-1.pdf",
+      "file_key": "legal-files/2026/06/03fd3460-f130-45e9-bf94-d7932b23cad4.pdf",
+      "mime_type": "application/pdf",
+      "file_size_bytes": 1024,
+      "uploaded_by": "eb44207d-e70a-4693-b840-4271f06eb510",
+      "uploaded_at": "2026-06-04T03:55:05.026Z"
+    },
+    {
+      "compliance_review_id": "779fca5b-c9f0-4616-9416-ddd8b72e1a05",
+      "file_name": "legal-4-2.pdf",
+      "file_key": "legal-files/2026/06/04199cda-65dc-451e-9a3c-0ab2daeddf85.pdf",
+      "mime_type": "application/pdf",
+      "file_size_bytes": 2048,
+      "uploaded_by": "eb44207d-e70a-4693-b840-4271f06eb510",
+      "uploaded_at": "2026-06-04T03:55:05.026Z"
+    },
+    {
+      "compliance_review_id": "a0f455f3-9b2b-400f-85db-cda4b62c7e7e",
+      "file_name": "legal-5-1.pdf",
+      "file_key": "legal-files/2026/06/6f546d1c-5fb0-4fe6-b2eb-93e06ed7ed4e.pdf",
+      "mime_type": "application/pdf",
+      "file_size_bytes": 1024,
+      "uploaded_by": "eb44207d-e70a-4693-b840-4271f06eb510",
+      "uploaded_at": "2026-06-03T21:55:05.026Z"
+    },
+    {
+      "compliance_review_id": "a0f455f3-9b2b-400f-85db-cda4b62c7e7e",
+      "file_name": "legal-5-2.pdf",
+      "file_key": "legal-files/2026/06/00a54711-522e-423c-895b-6f34e11455eb.pdf",
+      "mime_type": "application/pdf",
+      "file_size_bytes": 2048,
+      "uploaded_by": "eb44207d-e70a-4693-b840-4271f06eb510",
+      "uploaded_at": "2026-06-03T21:55:05.026Z"
+    },
+    {
+      "compliance_review_id": "edcaa303-2eb7-46ab-a1c6-0dcd609f5a7b",
+      "file_name": "legal-6-1.pdf",
+      "file_key": "legal-files/2026/06/cccdc17f-081c-4f0b-95b1-ad83845d08c4.pdf",
+      "mime_type": "application/pdf",
+      "file_size_bytes": 1024,
+      "uploaded_by": "eb44207d-e70a-4693-b840-4271f06eb510",
+      "uploaded_at": "2026-06-03T15:55:05.026Z"
+    },
+    {
+      "compliance_review_id": "edcaa303-2eb7-46ab-a1c6-0dcd609f5a7b",
+      "file_name": "legal-6-2.pdf",
+      "file_key": "legal-files/2026/06/06160de0-9900-463e-9802-f5eb69a80f6f.pdf",
+      "mime_type": "application/pdf",
+      "file_size_bytes": 2048,
+      "uploaded_by": "eb44207d-e70a-4693-b840-4271f06eb510",
+      "uploaded_at": "2026-06-03T15:55:05.026Z"
+    },
+    {
+      "compliance_review_id": "52fb4332-6e21-4c46-a8bf-dcd3b96ba2e8",
+      "file_name": "legal-7-1.pdf",
+      "file_key": "legal-files/2026/06/57187920-b0b7-4ab1-8c49-53e12eaad87c.pdf",
+      "mime_type": "application/pdf",
+      "file_size_bytes": 1024,
+      "uploaded_by": "eb44207d-e70a-4693-b840-4271f06eb510",
+      "uploaded_at": "2026-06-03T09:55:05.026Z"
+    },
+    {
+      "compliance_review_id": "52fb4332-6e21-4c46-a8bf-dcd3b96ba2e8",
+      "file_name": "legal-7-2.pdf",
+      "file_key": "legal-files/2026/06/8350fd23-b33b-49d2-8ac1-600150ddfec8.pdf",
+      "mime_type": "application/pdf",
+      "file_size_bytes": 2048,
+      "uploaded_by": "eb44207d-e70a-4693-b840-4271f06eb510",
+      "uploaded_at": "2026-06-03T09:55:05.026Z"
+    },
+    {
+      "compliance_review_id": "c4136bff-ef7a-4949-939e-1a0710b7d86d",
+      "file_name": "legal-8-1.pdf",
+      "file_key": "legal-files/2026/06/c53d3485-a35b-4dd7-8b71-8ec41ed9caa0.pdf",
+      "mime_type": "application/pdf",
+      "file_size_bytes": 1024,
+      "uploaded_by": "eb44207d-e70a-4693-b840-4271f06eb510",
+      "uploaded_at": "2026-06-03T03:55:05.026Z"
+    },
+    {
+      "compliance_review_id": "c4136bff-ef7a-4949-939e-1a0710b7d86d",
+      "file_name": "legal-8-2.pdf",
+      "file_key": "legal-files/2026/06/35ecde8f-d323-4c49-b3cd-529850ebb12b.pdf",
+      "mime_type": "application/pdf",
+      "file_size_bytes": 2048,
+      "uploaded_by": "eb44207d-e70a-4693-b840-4271f06eb510",
+      "uploaded_at": "2026-06-03T03:55:05.026Z"
+    },
+    {
+      "compliance_review_id": "1766ab36-fcdb-445e-a5aa-6ffffdfb99c4",
+      "file_name": "legal-9-1.pdf",
+      "file_key": "legal-files/2026/06/e807bbb7-6ec9-45dd-84eb-b4454e9b2b37.pdf",
+      "mime_type": "application/pdf",
+      "file_size_bytes": 1024,
+      "uploaded_by": "eb44207d-e70a-4693-b840-4271f06eb510",
+      "uploaded_at": "2026-06-02T21:55:05.026Z"
+    },
+    {
+      "compliance_review_id": "1766ab36-fcdb-445e-a5aa-6ffffdfb99c4",
+      "file_name": "legal-9-2.pdf",
+      "file_key": "legal-files/2026/06/46b479af-8f8f-4d6f-bffc-d88068f23936.pdf",
+      "mime_type": "application/pdf",
+      "file_size_bytes": 2048,
+      "uploaded_by": "eb44207d-e70a-4693-b840-4271f06eb510",
+      "uploaded_at": "2026-06-02T21:55:05.026Z"
+    },
+    {
+      "compliance_review_id": "d3bfef67-e835-42aa-ba6d-5e40305c0ede",
+      "file_name": "legal-10-1.pdf",
+      "file_key": "legal-files/2026/06/a298a81f-be75-41a2-bee0-a75e09532c5d.pdf",
+      "mime_type": "application/pdf",
+      "file_size_bytes": 1024,
+      "uploaded_by": "eb44207d-e70a-4693-b840-4271f06eb510",
+      "uploaded_at": "2026-06-02T15:55:05.026Z"
+    },
+    {
+      "compliance_review_id": "d3bfef67-e835-42aa-ba6d-5e40305c0ede",
+      "file_name": "legal-10-2.pdf",
+      "file_key": "legal-files/2026/06/7185e7d2-6d45-4a4c-b0a6-f4627edfcddb.pdf",
+      "mime_type": "application/pdf",
+      "file_size_bytes": 2048,
+      "uploaded_by": "eb44207d-e70a-4693-b840-4271f06eb510",
+      "uploaded_at": "2026-06-02T15:55:05.026Z"
+    },
+    {
+      "compliance_review_id": "786c5a1d-7184-4241-a889-e9736cc730d0",
+      "file_name": "legal-11-1.pdf",
+      "file_key": "legal-files/2026/06/1f1386ef-d26d-4019-9812-148bdaef3fe3.pdf",
+      "mime_type": "application/pdf",
+      "file_size_bytes": 1024,
+      "uploaded_by": "eb44207d-e70a-4693-b840-4271f06eb510",
+      "uploaded_at": "2026-06-02T09:55:05.026Z"
+    },
+    {
+      "compliance_review_id": "ef3935e8-50b2-4e13-9a63-9959c1cc5737",
+      "file_name": "legal-12-1.pdf",
+      "file_key": "legal-files/2026/06/b711f774-efaa-47ec-96f1-dc3713dbe2f7.pdf",
+      "mime_type": "application/pdf",
+      "file_size_bytes": 1024,
+      "uploaded_by": "eb44207d-e70a-4693-b840-4271f06eb510",
+      "uploaded_at": "2026-06-05T03:55:05.026Z"
+    },
+    {
+      "compliance_review_id": "53cc5d73-cb4d-424a-84bc-e77e7aa90f96",
+      "file_name": "legal-13-1.pdf",
+      "file_key": "legal-files/2026/06/4751ba6c-862a-411b-8628-b7905473ef94.pdf",
+      "mime_type": "application/pdf",
+      "file_size_bytes": 1024,
+      "uploaded_by": "eb44207d-e70a-4693-b840-4271f06eb510",
+      "uploaded_at": "2026-06-01T21:55:05.026Z"
+    },
+    {
+      "compliance_review_id": "529d29f8-22fd-4a15-8046-9432ea92d051",
+      "file_name": "legal-14-1.pdf",
+      "file_key": "legal-files/2026/06/19e24851-826e-489b-823d-6544a5b6a31a.pdf",
+      "mime_type": "application/pdf",
+      "file_size_bytes": 1024,
+      "uploaded_by": "eb44207d-e70a-4693-b840-4271f06eb510",
+      "uploaded_at": "2026-06-05T03:55:05.026Z"
+    },
+    {
+      "compliance_review_id": "61ea06c0-e5b6-445b-bc10-74951364db38",
+      "file_name": "legal-15-1.pdf",
+      "file_key": "legal-files/2026/06/a76d181e-1fa8-487d-987f-448f3953ab76.pdf",
+      "mime_type": "application/pdf",
+      "file_size_bytes": 1024,
+      "uploaded_by": "eb44207d-e70a-4693-b840-4271f06eb510",
+      "uploaded_at": "2026-06-01T09:55:05.026Z"
+    },
+    {
+      "compliance_review_id": "3a13290a-b12e-4ff4-8077-7eb6ecdf4814",
+      "file_name": "legal-16-1.pdf",
+      "file_key": "legal-files/2026/06/51f24020-7373-4934-ae96-fa2b32899b12.pdf",
+      "mime_type": "application/pdf",
+      "file_size_bytes": 1024,
+      "uploaded_by": "eb44207d-e70a-4693-b840-4271f06eb510",
+      "uploaded_at": "2026-06-01T03:55:05.026Z"
+    },
+    {
+      "compliance_review_id": "3a13290a-b12e-4ff4-8077-7eb6ecdf4814",
+      "file_name": "legal-16-2.pdf",
+      "file_key": "legal-files/2026/06/d9913c8f-9607-4191-8341-66b41a85dac8.pdf",
+      "mime_type": "application/pdf",
+      "file_size_bytes": 2048,
+      "uploaded_by": "eb44207d-e70a-4693-b840-4271f06eb510",
+      "uploaded_at": "2026-06-01T03:55:05.026Z"
+    },
+    {
+      "compliance_review_id": "c26b3a4b-af0f-41d1-b0ef-ab9f9d0fec37",
+      "file_name": "legal-17-1.pdf",
+      "file_key": "legal-files/2026/06/e1cd4a3e-674d-4991-98b5-f2d086a46a33.pdf",
+      "mime_type": "application/pdf",
+      "file_size_bytes": 1024,
+      "uploaded_by": "eb44207d-e70a-4693-b840-4271f06eb510",
+      "uploaded_at": "2026-05-31T21:55:05.026Z"
+    },
+    {
+      "compliance_review_id": "c26b3a4b-af0f-41d1-b0ef-ab9f9d0fec37",
+      "file_name": "legal-17-2.pdf",
+      "file_key": "legal-files/2026/06/ae521a61-fba7-4afd-a640-b834e6dc465d.pdf",
+      "mime_type": "application/pdf",
+      "file_size_bytes": 2048,
+      "uploaded_by": "eb44207d-e70a-4693-b840-4271f06eb510",
+      "uploaded_at": "2026-05-31T21:55:05.026Z"
+    },
+    {
+      "compliance_review_id": "e808fc80-6f5d-46f9-ab32-e93e6999516b",
+      "file_name": "legal-18-1.pdf",
+      "file_key": "legal-files/2026/06/5c871c7b-dda2-4536-baf1-a9fc662fa94d.pdf",
+      "mime_type": "application/pdf",
+      "file_size_bytes": 1024,
+      "uploaded_by": "eb44207d-e70a-4693-b840-4271f06eb510",
+      "uploaded_at": "2026-05-31T15:55:05.026Z"
+    },
+    {
+      "compliance_review_id": "e808fc80-6f5d-46f9-ab32-e93e6999516b",
+      "file_name": "legal-18-2.pdf",
+      "file_key": "legal-files/2026/06/4eb1ff7f-bf00-44db-ac73-d3f54c47728f.pdf",
+      "mime_type": "application/pdf",
+      "file_size_bytes": 2048,
+      "uploaded_by": "eb44207d-e70a-4693-b840-4271f06eb510",
+      "uploaded_at": "2026-05-31T15:55:05.026Z"
+    },
+    {
+      "compliance_review_id": "16729edc-1ffe-41c4-82a5-81669ed0e287",
+      "file_name": "legal-19-1.pdf",
+      "file_key": "legal-files/2026/06/d2d4e50f-b873-4bfc-8b7c-fb8874565dea.pdf",
+      "mime_type": "application/pdf",
+      "file_size_bytes": 1024,
+      "uploaded_by": "eb44207d-e70a-4693-b840-4271f06eb510",
+      "uploaded_at": "2026-05-31T09:55:05.026Z"
+    },
+    {
+      "compliance_review_id": "8dfd99c6-c571-4e51-94ac-48f1c570ecfc",
+      "file_name": "legal-20-1.pdf",
+      "file_key": "legal-files/2026/06/4889a9b8-f4fb-4089-ae49-f537b65af8ec.pdf",
+      "mime_type": "application/pdf",
+      "file_size_bytes": 1024,
+      "uploaded_by": "eb44207d-e70a-4693-b840-4271f06eb510",
+      "uploaded_at": "2026-06-05T03:55:05.026Z"
+    }
+  ],
+  "compliance_approved_permissions": [
+    {
+      "compliance_id": "26e4e567-0276-4ae9-a9df-2b7784f2c0ed",
+      "permission_id": "3c6c1819-73b5-4d50-8a62-2c84c6152c11"
+    },
+    {
+      "compliance_id": "26e4e567-0276-4ae9-a9df-2b7784f2c0ed",
+      "permission_id": "3c6c1819-73b5-4d50-8a62-2c84c6152c13"
+    },
+    {
+      "compliance_id": "0a90f31a-fa27-46f3-b3b6-c145cdd01d5f",
+      "permission_id": "3c6c1819-73b5-4d50-8a62-2c84c6152c11"
+    },
+    {
+      "compliance_id": "0a90f31a-fa27-46f3-b3b6-c145cdd01d5f",
+      "permission_id": "3c6c1819-73b5-4d50-8a62-2c84c6152c12"
+    },
+    {
+      "compliance_id": "f6fdc5c3-3c6a-4be9-8891-2c0661fc3213",
+      "permission_id": "3c6c1819-73b5-4d50-8a62-2c84c6152c14"
+    },
+    {
+      "compliance_id": "f6fdc5c3-3c6a-4be9-8891-2c0661fc3213",
+      "permission_id": "3c6c1819-73b5-4d50-8a62-2c84c6152c13"
+    },
+    {
+      "compliance_id": "779fca5b-c9f0-4616-9416-ddd8b72e1a05",
+      "permission_id": "3c6c1819-73b5-4d50-8a62-2c84c6152c11"
+    },
+    {
+      "compliance_id": "779fca5b-c9f0-4616-9416-ddd8b72e1a05",
+      "permission_id": "3c6c1819-73b5-4d50-8a62-2c84c6152c15"
+    },
+    {
+      "compliance_id": "a0f455f3-9b2b-400f-85db-cda4b62c7e7e",
+      "permission_id": "3c6c1819-73b5-4d50-8a62-2c84c6152c11"
+    },
+    {
+      "compliance_id": "a0f455f3-9b2b-400f-85db-cda4b62c7e7e",
+      "permission_id": "3c6c1819-73b5-4d50-8a62-2c84c6152c13"
+    },
+    {
+      "compliance_id": "edcaa303-2eb7-46ab-a1c6-0dcd609f5a7b",
+      "permission_id": "3c6c1819-73b5-4d50-8a62-2c84c6152c11"
+    },
+    {
+      "compliance_id": "edcaa303-2eb7-46ab-a1c6-0dcd609f5a7b",
+      "permission_id": "3c6c1819-73b5-4d50-8a62-2c84c6152c12"
+    },
+    {
+      "compliance_id": "52fb4332-6e21-4c46-a8bf-dcd3b96ba2e8",
+      "permission_id": "3c6c1819-73b5-4d50-8a62-2c84c6152c14"
+    },
+    {
+      "compliance_id": "52fb4332-6e21-4c46-a8bf-dcd3b96ba2e8",
+      "permission_id": "3c6c1819-73b5-4d50-8a62-2c84c6152c13"
+    },
+    {
+      "compliance_id": "c4136bff-ef7a-4949-939e-1a0710b7d86d",
+      "permission_id": "3c6c1819-73b5-4d50-8a62-2c84c6152c11"
+    },
+    {
+      "compliance_id": "c4136bff-ef7a-4949-939e-1a0710b7d86d",
+      "permission_id": "3c6c1819-73b5-4d50-8a62-2c84c6152c15"
+    },
+    {
+      "compliance_id": "1766ab36-fcdb-445e-a5aa-6ffffdfb99c4",
+      "permission_id": "3c6c1819-73b5-4d50-8a62-2c84c6152c11"
+    },
+    {
+      "compliance_id": "1766ab36-fcdb-445e-a5aa-6ffffdfb99c4",
+      "permission_id": "3c6c1819-73b5-4d50-8a62-2c84c6152c13"
+    },
+    {
+      "compliance_id": "d3bfef67-e835-42aa-ba6d-5e40305c0ede",
+      "permission_id": "3c6c1819-73b5-4d50-8a62-2c84c6152c11"
+    },
+    {
+      "compliance_id": "d3bfef67-e835-42aa-ba6d-5e40305c0ede",
+      "permission_id": "3c6c1819-73b5-4d50-8a62-2c84c6152c12"
+    },
+    {
+      "compliance_id": "3a13290a-b12e-4ff4-8077-7eb6ecdf4814",
+      "permission_id": "3c6c1819-73b5-4d50-8a62-2c84c6152c11"
+    },
+    {
+      "compliance_id": "3a13290a-b12e-4ff4-8077-7eb6ecdf4814",
+      "permission_id": "3c6c1819-73b5-4d50-8a62-2c84c6152c15"
+    },
+    {
+      "compliance_id": "c26b3a4b-af0f-41d1-b0ef-ab9f9d0fec37",
+      "permission_id": "3c6c1819-73b5-4d50-8a62-2c84c6152c11"
+    },
+    {
+      "compliance_id": "c26b3a4b-af0f-41d1-b0ef-ab9f9d0fec37",
+      "permission_id": "3c6c1819-73b5-4d50-8a62-2c84c6152c13"
+    },
+    {
+      "compliance_id": "e808fc80-6f5d-46f9-ab32-e93e6999516b",
+      "permission_id": "3c6c1819-73b5-4d50-8a62-2c84c6152c11"
+    },
+    {
+      "compliance_id": "e808fc80-6f5d-46f9-ab32-e93e6999516b",
+      "permission_id": "3c6c1819-73b5-4d50-8a62-2c84c6152c12"
+    }
+  ],
+  "track_allowed_permissions": [
+    {
+      "track_id": "2c424a5d-8b3d-44f4-9ebd-52495eadd160",
+      "permission_id": "3c6c1819-73b5-4d50-8a62-2c84c6152c11"
+    },
+    {
+      "track_id": "2c424a5d-8b3d-44f4-9ebd-52495eadd160",
+      "permission_id": "3c6c1819-73b5-4d50-8a62-2c84c6152c13"
+    },
+    {
+      "track_id": "6e6ba9b3-1b7e-42e7-a68b-75d3c3d50ac3",
+      "permission_id": "3c6c1819-73b5-4d50-8a62-2c84c6152c11"
+    },
+    {
+      "track_id": "6e6ba9b3-1b7e-42e7-a68b-75d3c3d50ac3",
+      "permission_id": "3c6c1819-73b5-4d50-8a62-2c84c6152c12"
+    },
+    {
+      "track_id": "09ccab89-fe07-44f9-ad57-d222dd94fd5e",
+      "permission_id": "3c6c1819-73b5-4d50-8a62-2c84c6152c14"
+    },
+    {
+      "track_id": "09ccab89-fe07-44f9-ad57-d222dd94fd5e",
+      "permission_id": "3c6c1819-73b5-4d50-8a62-2c84c6152c13"
+    },
+    {
+      "track_id": "ac13d7b5-1b4e-4d9c-a9da-2e01e0d5da0d",
+      "permission_id": "3c6c1819-73b5-4d50-8a62-2c84c6152c11"
+    },
+    {
+      "track_id": "ac13d7b5-1b4e-4d9c-a9da-2e01e0d5da0d",
+      "permission_id": "3c6c1819-73b5-4d50-8a62-2c84c6152c15"
+    },
+    {
+      "track_id": "c8c2b2a0-7402-4764-9e74-74677d4b5d02",
+      "permission_id": "3c6c1819-73b5-4d50-8a62-2c84c6152c11"
+    },
+    {
+      "track_id": "c8c2b2a0-7402-4764-9e74-74677d4b5d02",
+      "permission_id": "3c6c1819-73b5-4d50-8a62-2c84c6152c13"
+    },
+    {
+      "track_id": "2e291058-d448-4788-b5c2-85831303f1fc",
+      "permission_id": "3c6c1819-73b5-4d50-8a62-2c84c6152c11"
+    },
+    {
+      "track_id": "2e291058-d448-4788-b5c2-85831303f1fc",
+      "permission_id": "3c6c1819-73b5-4d50-8a62-2c84c6152c12"
+    },
+    {
+      "track_id": "277178fd-6fd0-4eb4-9350-492cb9af9ee6",
+      "permission_id": "3c6c1819-73b5-4d50-8a62-2c84c6152c14"
+    },
+    {
+      "track_id": "277178fd-6fd0-4eb4-9350-492cb9af9ee6",
+      "permission_id": "3c6c1819-73b5-4d50-8a62-2c84c6152c13"
+    },
+    {
+      "track_id": "77e27db5-db50-4ad4-be09-3d280b1621b9",
+      "permission_id": "3c6c1819-73b5-4d50-8a62-2c84c6152c11"
+    },
+    {
+      "track_id": "77e27db5-db50-4ad4-be09-3d280b1621b9",
+      "permission_id": "3c6c1819-73b5-4d50-8a62-2c84c6152c15"
+    },
+    {
+      "track_id": "ac08ebe5-5d43-495c-8dce-3aff0edfe2aa",
+      "permission_id": "3c6c1819-73b5-4d50-8a62-2c84c6152c11"
+    },
+    {
+      "track_id": "ac08ebe5-5d43-495c-8dce-3aff0edfe2aa",
+      "permission_id": "3c6c1819-73b5-4d50-8a62-2c84c6152c13"
+    },
+    {
+      "track_id": "64b46af2-6003-4c4a-877a-b198415a1d88",
+      "permission_id": "3c6c1819-73b5-4d50-8a62-2c84c6152c11"
+    },
+    {
+      "track_id": "64b46af2-6003-4c4a-877a-b198415a1d88",
+      "permission_id": "3c6c1819-73b5-4d50-8a62-2c84c6152c12"
+    },
+    {
+      "track_id": "ec2912b0-d927-40ed-84ca-8ed069be451d",
+      "permission_id": "3c6c1819-73b5-4d50-8a62-2c84c6152c11"
+    },
+    {
+      "track_id": "ec2912b0-d927-40ed-84ca-8ed069be451d",
+      "permission_id": "3c6c1819-73b5-4d50-8a62-2c84c6152c15"
+    },
+    {
+      "track_id": "5f9a1b11-f1f3-4ca0-a1b4-91fbc70113c3",
+      "permission_id": "3c6c1819-73b5-4d50-8a62-2c84c6152c11"
+    },
+    {
+      "track_id": "5f9a1b11-f1f3-4ca0-a1b4-91fbc70113c3",
+      "permission_id": "3c6c1819-73b5-4d50-8a62-2c84c6152c13"
+    },
+    {
+      "track_id": "2583655b-6884-46de-a36c-2614bd7e2199",
+      "permission_id": "3c6c1819-73b5-4d50-8a62-2c84c6152c11"
+    },
+    {
+      "track_id": "2583655b-6884-46de-a36c-2614bd7e2199",
+      "permission_id": "3c6c1819-73b5-4d50-8a62-2c84c6152c12"
+    }
+  ],
+  "certificates": [
+    {
+      "track_id": "2c424a5d-8b3d-44f4-9ebd-52495eadd160",
+      "buyer_id": "b4675c8f-5717-4c35-b466-3a70731f8929",
+      "artist_id": "eefd4991-c7e2-40ee-ab1b-a70519f554dc",
+      "selected_usage_rights": [
+        "DERIVATIVE_WORK_RIGHT"
+      ],
+      "track_snapshot_name": "Midnight Pulse",
+      "buyer_snapshot_name": "Buyer 01",
+      "artist_snapshot_name": "Artist 01",
+      "pdf_file_key": "certificate-pdfs/2026/06/e0c714a8-e9dd-4e6a-9111-a042634c3c3f.pdf",
+      "status": "ACTIVE",
+      "valid_from": "2026-06-02T03:55:05.400Z",
+      "created_at": "2026-06-02T03:55:05.400Z"
+    },
+    {
+      "track_id": "6e6ba9b3-1b7e-42e7-a68b-75d3c3d50ac3",
+      "buyer_id": "b4675c8f-5717-4c35-b466-3a70731f8929",
+      "artist_id": "eefd4991-c7e2-40ee-ab1b-a70519f554dc",
+      "selected_usage_rights": [
+        "COMMUNICATION_TO_PUBLIC_RIGHT"
+      ],
+      "track_snapshot_name": "Neon Skyline",
+      "buyer_snapshot_name": "Buyer 01",
+      "artist_snapshot_name": "Artist 01",
+      "pdf_file_key": "certificate-pdfs/2026/05/c49e511a-381c-4c34-bd1a-49d61511c7a0.pdf",
+      "status": "ACTIVE",
+      "valid_from": "2026-05-28T03:55:05.400Z",
+      "created_at": "2026-05-28T03:55:05.400Z"
+    },
+    {
+      "track_id": "09ccab89-fe07-44f9-ad57-d222dd94fd5e",
+      "buyer_id": "5466d7c8-c8bc-424f-855b-5730d3c77456",
+      "artist_id": "59914664-a81f-4f75-99fa-497721e5d23b",
+      "selected_usage_rights": [
+        "DERIVATIVE_WORK_RIGHT"
+      ],
+      "track_snapshot_name": "Cinematic Rise",
+      "buyer_snapshot_name": "Buyer 02",
+      "artist_snapshot_name": "Artist 02",
+      "pdf_file_key": "certificate-pdfs/2026/05/ead8a68f-ce3e-46a2-ba3a-62e4dfbb6bc3.pdf",
+      "status": "ACTIVE",
+      "valid_from": "2026-05-30T03:55:05.400Z",
+      "created_at": "2026-05-30T03:55:05.400Z"
+    },
+    {
+      "track_id": "ac13d7b5-1b4e-4d9c-a9da-2e01e0d5da0d",
+      "buyer_id": "2f9fdafd-68ee-447d-a4bb-4e24786730fb",
+      "artist_id": "59914664-a81f-4f75-99fa-497721e5d23b",
+      "selected_usage_rights": [
+        "REPRODUCTION_RIGHT"
+      ],
+      "track_snapshot_name": "Corporate Breeze",
+      "buyer_snapshot_name": "Buyer 03",
+      "artist_snapshot_name": "Artist 02",
+      "pdf_file_key": "certificate-pdfs/2026/05/56131421-7ea7-4dde-a57b-142f2c47cc41.pdf",
+      "status": "ACTIVE",
+      "valid_from": "2026-05-26T03:55:05.400Z",
+      "created_at": "2026-05-26T03:55:05.400Z"
+    },
+    {
+      "track_id": "c8c2b2a0-7402-4764-9e74-74677d4b5d02",
+      "buyer_id": "fcf0676c-5798-470d-bfc3-fb905dcc7af8",
+      "artist_id": "66059c62-4bfc-4298-be30-3cf082ae4187",
+      "selected_usage_rights": [
+        "DISTRIBUTION_RIGHT"
+      ],
+      "track_snapshot_name": "Pop Spark",
+      "buyer_snapshot_name": "Buyer 04",
+      "artist_snapshot_name": "Artist 03",
+      "pdf_file_key": "certificate-pdfs/2026/06/97d4d6e2-15b1-43e5-84e3-edf64db5126c.pdf",
+      "status": "ACTIVE",
+      "valid_from": "2026-06-03T03:55:05.400Z",
+      "created_at": "2026-06-03T03:55:05.400Z"
+    },
+    {
+      "track_id": "2e291058-d448-4788-b5c2-85831303f1fc",
+      "buyer_id": "c466763c-31b5-4ce5-a3a7-699dad0c1eaa",
+      "artist_id": "66059c62-4bfc-4298-be30-3cf082ae4187",
+      "selected_usage_rights": [
+        "DERIVATIVE_WORK_RIGHT"
+      ],
+      "track_snapshot_name": "Ambient Drift",
+      "buyer_snapshot_name": "Buyer 05",
+      "artist_snapshot_name": "Artist 03",
+      "pdf_file_key": "certificate-pdfs/2026/06/20537352-b72c-40c4-8ba9-8a5622b011b3.pdf",
+      "status": "ACTIVE",
+      "valid_from": "2026-06-01T03:55:05.400Z",
+      "created_at": "2026-06-01T03:55:05.400Z"
+    },
+    {
+      "track_id": "277178fd-6fd0-4eb4-9350-492cb9af9ee6",
+      "buyer_id": "ebe8a67d-0d9f-4703-bc77-f87de9089292",
+      "artist_id": "eefd4991-c7e2-40ee-ab1b-a70519f554dc",
+      "selected_usage_rights": [
+        "COMMUNICATION_TO_PUBLIC_RIGHT"
+      ],
+      "track_snapshot_name": "Late Night Drive",
+      "buyer_snapshot_name": "Buyer 06",
+      "artist_snapshot_name": "Artist 01",
+      "pdf_file_key": "certificate-pdfs/2026/06/eb793034-ba3d-4750-9894-72e7e4ded4ae.pdf",
+      "status": "ACTIVE",
+      "valid_from": "2026-06-04T03:55:05.400Z",
+      "created_at": "2026-06-04T03:55:05.400Z"
+    },
+    {
+      "track_id": "77e27db5-db50-4ad4-be09-3d280b1621b9",
+      "buyer_id": "1b0d1d21-4b8c-4d68-9569-cc85f2b9c6ac",
+      "artist_id": "59914664-a81f-4f75-99fa-497721e5d23b",
+      "selected_usage_rights": [
+        "REPRODUCTION_RIGHT",
+        "COMMUNICATION_TO_PUBLIC_RIGHT"
+      ],
+      "track_snapshot_name": "Bright Morning",
+      "buyer_snapshot_name": "Buyer 07",
+      "artist_snapshot_name": "Artist 02",
+      "pdf_file_key": "certificate-pdfs/2026/05/020768e9-eb27-44f7-a555-50469aa8f7df.pdf",
+      "status": "ACTIVE",
+      "valid_from": "2026-05-29T03:55:05.400Z",
+      "created_at": "2026-05-29T03:55:05.400Z"
+    },
+    {
+      "track_id": "ac08ebe5-5d43-495c-8dce-3aff0edfe2aa",
+      "buyer_id": "06919168-9d27-4d8d-8eaf-4814ab053488",
+      "artist_id": "66059c62-4bfc-4298-be30-3cf082ae4187",
+      "selected_usage_rights": [
+        "DISTRIBUTION_RIGHT"
+      ],
+      "track_snapshot_name": "Soft Focus",
+      "buyer_snapshot_name": "Buyer 08",
+      "artist_snapshot_name": "Artist 03",
+      "pdf_file_key": "certificate-pdfs/2026/05/5cd3a067-bc33-4b8b-bd2d-e953b4d4134f.pdf",
+      "status": "ACTIVE",
+      "valid_from": "2026-05-24T03:55:05.401Z",
+      "created_at": "2026-05-24T03:55:05.401Z"
+    },
+    {
+      "track_id": "64b46af2-6003-4c4a-877a-b198415a1d88",
+      "buyer_id": "5466d7c8-c8bc-424f-855b-5730d3c77456",
+      "artist_id": "eefd4991-c7e2-40ee-ab1b-a70519f554dc",
+      "selected_usage_rights": [
+        "DERIVATIVE_WORK_RIGHT"
+      ],
+      "track_snapshot_name": "Festival Lights",
+      "buyer_snapshot_name": "Buyer 02",
+      "artist_snapshot_name": "Artist 01",
+      "pdf_file_key": "certificate-pdfs/2026/05/d413577c-9bcc-47e7-a390-1d9168dffe79.pdf",
+      "status": "ACTIVE",
+      "valid_from": "2026-05-31T03:55:05.401Z",
+      "created_at": "2026-05-31T03:55:05.401Z"
+    },
+    {
+      "track_id": "ec2912b0-d927-40ed-84ca-8ed069be451d",
+      "buyer_id": "2f9fdafd-68ee-447d-a4bb-4e24786730fb",
+      "artist_id": "66059c62-4bfc-4298-be30-3cf082ae4187",
+      "selected_usage_rights": [
+        "REPRODUCTION_RIGHT"
+      ],
+      "track_snapshot_name": "Ocean Haze",
+      "buyer_snapshot_name": "Buyer 03",
+      "artist_snapshot_name": "Artist 03",
+      "pdf_file_key": "certificate-pdfs/2026/05/c6b7a739-abee-4d0c-bae6-1833f244a92a.pdf",
+      "status": "ACTIVE",
+      "valid_from": "2026-05-27T03:55:05.401Z",
+      "created_at": "2026-05-27T03:55:05.401Z"
+    },
+    {
+      "track_id": "5f9a1b11-f1f3-4ca0-a1b4-91fbc70113c3",
+      "buyer_id": "fcf0676c-5798-470d-bfc3-fb905dcc7af8",
+      "artist_id": "eefd4991-c7e2-40ee-ab1b-a70519f554dc",
+      "selected_usage_rights": [
+        "DISTRIBUTION_RIGHT"
+      ],
+      "track_snapshot_name": "Street Rhythm",
+      "buyer_snapshot_name": "Buyer 04",
+      "artist_snapshot_name": "Artist 01",
+      "pdf_file_key": "certificate-pdfs/2026/05/3c6f4ea4-e041-411c-b426-8c0bfa66b773.pdf",
+      "status": "ACTIVE",
+      "valid_from": "2026-05-25T03:55:05.401Z",
+      "created_at": "2026-05-25T03:55:05.401Z"
+    },
+    {
+      "track_id": "2583655b-6884-46de-a36c-2614bd7e2199",
+      "buyer_id": "c466763c-31b5-4ce5-a3a7-699dad0c1eaa",
+      "artist_id": "59914664-a81f-4f75-99fa-497721e5d23b",
+      "selected_usage_rights": [
+        "DISTRIBUTION_RIGHT"
+      ],
+      "track_snapshot_name": "Golden Hour",
+      "buyer_snapshot_name": "Buyer 05",
+      "artist_snapshot_name": "Artist 02",
+      "pdf_file_key": "certificate-pdfs/2026/05/b3c63e78-3d83-4660-90a5-601bc7317f6a.pdf",
+      "status": "ACTIVE",
+      "valid_from": "2026-05-23T03:55:05.401Z",
+      "created_at": "2026-05-23T03:55:05.401Z"
+    }
+  ],
+  "certificate_templates": [
+    {
+      "html_template": "<!doctype html><html><head><meta charset=\"utf-8\" /><title>Certificate</title></head><body><h1>License Certificate</h1><p>Certificate ID: {{certificateId}}</p><p>Track: {{trackSnapshotName}}</p><p>Buyer: {{buyerSnapshotName}}</p><p>Artist: {{artistSnapshotName}}</p><p>Usage Rights: {{selectedUsageRights}}</p><p>Valid From: {{validFrom}}</p><p>Valid Until: {{validUntil}}</p><p>Issued At: {{createdAt}}</p></body></html>"
+    }
+  ]
+}

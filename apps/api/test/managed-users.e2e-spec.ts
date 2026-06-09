@@ -7,7 +7,7 @@ import { AppModule } from './../src/app.module'
 import { ManagedUsersService } from './../src/modules/managed-users/managed-users.service'
 import { SupabaseService } from './../src/database/supabase.service'
 
-const signToken = (payload: { sub: string; roles: string[] }) =>
+const signToken = (payload: { sub: string; roleId: number; roleName: string }) =>
   jwt.sign(payload, process.env.JWT_SECRET ?? 'dev-secret', { expiresIn: 60 * 60 })
 
 describe('Managed users (e2e)', () => {
@@ -21,7 +21,7 @@ describe('Managed users (e2e)', () => {
           email: 'buyer01@musica.local',
           fullName: 'Buyer 01',
           status: 'ACTIVE',
-          roleCodes: ['BUYER'],
+          roles: [{ roleId: 2, roleName: 'Buyer' }],
           createdAt: new Date().toISOString(),
         },
       ],
@@ -32,7 +32,7 @@ describe('Managed users (e2e)', () => {
       email: payload.email,
       fullName: payload.fullName,
       status: 'ACTIVE',
-      roleCodes: [payload.roleCode],
+      roles: [{ roleId: 2, roleName: payload.roleName }],
       createdAt: new Date().toISOString(),
     }),
     updateUser: async (userId: string, payload: any) => ({
@@ -40,7 +40,7 @@ describe('Managed users (e2e)', () => {
       email: payload.email ?? 'buyer01@musica.local',
       fullName: payload.fullName ?? 'Buyer 01',
       status: 'ACTIVE',
-      roleCodes: ['BUYER'],
+      roles: [{ roleId: 2, roleName: 'Buyer' }],
       createdAt: new Date().toISOString(),
     }),
     updateUserStatus: async (userId: string, status: any) => ({
@@ -48,7 +48,7 @@ describe('Managed users (e2e)', () => {
       email: 'buyer01@musica.local',
       fullName: 'Buyer 01',
       status,
-      roleCodes: ['BUYER'],
+      roles: [{ roleId: 2, roleName: 'Buyer' }],
       createdAt: new Date().toISOString(),
     }),
     softDeleteUser: async () => {},
@@ -81,7 +81,7 @@ describe('Managed users (e2e)', () => {
   })
 
   it('GET /admin/users with BUYER token -> 403', async () => {
-    const token = signToken({ sub: 'u_buyer', roles: ['BUYER'] })
+    const token = signToken({ sub: 'u_buyer', roleId: 2, roleName: 'BUYER' })
     const response = await request(app.getHttpServer()).get('/admin/users').set('Authorization', `Bearer ${token}`).expect(403)
 
     expect(response.body.success).toBe(false)
@@ -89,7 +89,7 @@ describe('Managed users (e2e)', () => {
   })
 
   it('GET /admin/users with ADMIN token -> 200 + pagination meta', async () => {
-    const token = signToken({ sub: 'u_admin', roles: ['ADMIN'] })
+    const token = signToken({ sub: 'u_admin', roleId: 1, roleName: 'ADMIN' })
     const response = await request(app.getHttpServer()).get('/admin/users').set('Authorization', `Bearer ${token}`).expect(200)
 
     expect(response.body.success).toBe(true)
@@ -102,20 +102,20 @@ describe('Managed users (e2e)', () => {
   })
 
   it('POST /admin/users with ADMIN token -> 201', async () => {
-    const token = signToken({ sub: 'u_admin', roles: ['ADMIN'] })
+    const token = signToken({ sub: 'u_admin', roleId: 1, roleName: 'ADMIN' })
     const response = await request(app.getHttpServer())
       .post('/admin/users')
       .set('Authorization', `Bearer ${token}`)
-      .send({ email: 'newbuyer@musica.local', fullName: 'New Buyer', password: 'Password123!', roleCode: 'BUYER' })
+      .send({ email: 'newbuyer@musica.local', fullName: 'New Buyer', password: 'Password123!', roleName: 'Buyer' })
       .expect(201)
 
     expect(response.body.success).toBe(true)
     expect(response.body.data.email).toBe('newbuyer@musica.local')
-    expect(response.body.data.roleCodes).toEqual(['BUYER'])
+    expect(response.body.data.roles).toEqual([{ roleId: 2, roleName: 'Buyer' }])
   })
 
   it('PATCH /admin/users/:userId/status with SUPER_ADMIN token -> 200', async () => {
-    const token = signToken({ sub: 'u_superadmin', roles: ['SUPER_ADMIN'] })
+    const token = signToken({ sub: 'u_superadmin', roleId: 99, roleName: 'SUPER_ADMIN' })
     const response = await request(app.getHttpServer())
       .patch('/admin/users/u_buyer_1/status')
       .set('Authorization', `Bearer ${token}`)

@@ -1,8 +1,13 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common'
+import { HttpStatus, Injectable } from '@nestjs/common'
 import type { PaginationMeta } from '@musica/contracts'
 import type { ApiEnvelopePayload } from '../../common/interceptors/api-response.interceptor'
 import { buildPaginationMeta } from '../../common/base/pagination-meta'
+import { ApiHttpException } from '../../common/errors/api-http.exception'
 import { SupabaseService } from '../../database/supabase.service'
+import {
+  VARIANT_PRICING_MODIFIER_KEYS,
+  type VariantPricingModifierKey,
+} from '../pricing/variant-pricing.enums'
 import type {
   ConfigPermissionSummaryDto,
   ConfigStatus,
@@ -139,6 +144,33 @@ const normalizeSearchKeyword = (value?: string): string | undefined => {
 
 const toNumber = (value: number | string): number => Number(value)
 
+const readStringField = (value: unknown, key: string): string | null => {
+  if (typeof value !== 'object' || value === null) return null
+  const record = value as Record<string, unknown>
+  return typeof record[key] === 'string' ? record[key] : null
+}
+
+const isVariantPricingModifierKey = (
+  value: string,
+): value is VariantPricingModifierKey =>
+  VARIANT_PRICING_MODIFIER_KEYS.includes(value as VariantPricingModifierKey)
+
+const mapPriceModifiers = (
+  rows: DbPriceModifierRow[] | undefined,
+): ConfigPriceModifierDto[] =>
+  (Array.isArray(rows) ? rows : [])
+    .map((item) => {
+      const key = isVariantPricingModifierKey(item.modifier_key)
+        ? item.modifier_key
+        : null
+      if (!key) return null
+      return { key, multiplier: toNumber(item.multiplier) }
+    })
+    .filter(
+      (value): value is ConfigPriceModifierDto =>
+        value !== null,
+    )
+
 const mapPermissionSummary = (row: DbConfigPermissionRelationRow): ConfigPermissionSummaryDto | null => {
   if (!row.core_permissions) return null
 
@@ -165,9 +197,6 @@ const mapReferencedPermissions = (
 
 const mapDigitalRightConfig = (row: DbDigitalRightConfigRow): DigitalRightConfigDto => {
   const permissionData = mapReferencedPermissions(row.digital_right_config_permissions)
-  const modifiers = Array.isArray(row.digital_right_config_price_modifiers)
-    ? row.digital_right_config_price_modifiers
-    : []
 
   return {
     id: row.id,
@@ -175,10 +204,7 @@ const mapDigitalRightConfig = (row: DbDigitalRightConfigRow): DigitalRightConfig
     durationType: row.duration_type,
     basePriceMultiplier: toNumber(row.base_price_multiplier),
     status: row.status,
-    priceModifiers: modifiers.map((item) => ({
-      key: item.modifier_key as ConfigPriceModifierDto['key'],
-      multiplier: toNumber(item.multiplier),
-    })),
+    priceModifiers: mapPriceModifiers(row.digital_right_config_price_modifiers),
     referencedPermissionIds: permissionData.referencedPermissionIds,
     referencedPermissions: permissionData.referencedPermissions,
     createdAt: row.created_at,
@@ -188,19 +214,13 @@ const mapDigitalRightConfig = (row: DbDigitalRightConfigRow): DigitalRightConfig
 
 const mapPhysicalRightConfig = (row: DbPhysicalRightConfigRow): PhysicalRightConfigDto => {
   const permissionData = mapReferencedPermissions(row.physical_right_config_permissions)
-  const modifiers = Array.isArray(row.physical_right_config_price_modifiers)
-    ? row.physical_right_config_price_modifiers
-    : []
 
   return {
     id: row.id,
     venueUsageType: row.venue_usage_type,
     basePriceMultiplier: toNumber(row.base_price_multiplier),
     status: row.status,
-    priceModifiers: modifiers.map((item) => ({
-      key: item.modifier_key as ConfigPriceModifierDto['key'],
-      multiplier: toNumber(item.multiplier),
-    })),
+    priceModifiers: mapPriceModifiers(row.physical_right_config_price_modifiers),
     referencedPermissionIds: permissionData.referencedPermissionIds,
     referencedPermissions: permissionData.referencedPermissions,
     createdAt: row.created_at,
@@ -242,6 +262,44 @@ const mapModificationConfig = (row: DbModificationConfigRow): ModificationConfig
 export class LicensingConfigsService {
   constructor(private readonly supabaseService: SupabaseService) {}
 
+  private throwSupabaseError(code: string, error: unknown): never {
+    const supabaseCode = readStringField(error, 'code')
+    throw new ApiHttpException(
+      { code, details: supabaseCode ? { supabaseCode } : undefined },
+      HttpStatus.INTERNAL_SERVER_ERROR,
+    )
+  }
+
+  private async getConfigById<TDbRow, TDto>(
+    params: {
+      tableName: string
+      select: string
+      mapper: (row: TDbRow) => TDto
+      notFoundCode: string
+      queryFailedCode: string
+    },
+    configId: string,
+  ): Promise<TDto> {
+    const { data, error } = await this.supabaseService.client
+      .from(params.tableName)
+      .select(params.select)
+      .eq('id', configId)
+      .maybeSingle<TDbRow>()
+
+    if (error) {
+      this.throwSupabaseError(params.queryFailedCode, error)
+    }
+
+    if (!data) {
+      throw new ApiHttpException(
+        { code: params.notFoundCode },
+        HttpStatus.NOT_FOUND,
+      )
+    }
+
+    return params.mapper(data)
+  }
+
   private async validateActivePermissionIds(permissionIds: string[]): Promise<string[]> {
     const normalizedIds = [...new Set(permissionIds.filter((item) => item.length > 0))]
     if (normalizedIds.length === 0) return []
@@ -253,12 +311,15 @@ export class LicensingConfigsService {
       .in('id', normalizedIds)
 
     if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
+      this.throwSupabaseError('CORE_PERMISSIONS_QUERY_FAILED', error)
     }
 
     const validIds = (data ?? []).map((item: { id: string }) => item.id)
     if (validIds.length !== normalizedIds.length) {
-      throw new HttpException('INVALID_REFERENCED_PERMISSIONS', HttpStatus.BAD_REQUEST)
+      throw new ApiHttpException(
+        { code: 'INVALID_REFERENCED_PERMISSIONS' },
+        HttpStatus.BAD_REQUEST,
+      )
     }
 
     return normalizedIds
@@ -277,7 +338,7 @@ export class LicensingConfigsService {
       .eq(resource.mappingForeignKey, configId)
 
     if (deleteError) {
-      throw new HttpException(deleteError.message, HttpStatus.INTERNAL_SERVER_ERROR)
+      this.throwSupabaseError('CONFIG_PERMISSION_SYNC_DELETE_FAILED', deleteError)
     }
 
     if (validPermissionIds.length === 0) return
@@ -290,7 +351,7 @@ export class LicensingConfigsService {
     const { error: insertError } = await this.supabaseService.client.from(resource.mappingTableName).insert(insertRows)
 
     if (insertError) {
-      throw new HttpException(insertError.message, HttpStatus.INTERNAL_SERVER_ERROR)
+      this.throwSupabaseError('CONFIG_PERMISSION_SYNC_INSERT_FAILED', insertError)
     }
   }
 
@@ -313,7 +374,7 @@ export class LicensingConfigsService {
       .eq(resource.mappingForeignKey, configId)
 
     if (deleteError) {
-      throw new HttpException(deleteError.message, HttpStatus.INTERNAL_SERVER_ERROR)
+      this.throwSupabaseError('CONFIG_PRICE_MODIFIER_SYNC_DELETE_FAILED', deleteError)
     }
 
     if (normalizedModifiers.length === 0) return
@@ -329,86 +390,64 @@ export class LicensingConfigsService {
       .insert(insertRows)
 
     if (insertError) {
-      throw new HttpException(insertError.message, HttpStatus.INTERNAL_SERVER_ERROR)
+      this.throwSupabaseError('CONFIG_PRICE_MODIFIER_SYNC_INSERT_FAILED', insertError)
     }
   }
 
   private async getDigitalRightConfigById(configId: string): Promise<DigitalRightConfigDto> {
-    const { data, error } = await this.supabaseService.client
-      .from(digitalRightConfigResource.tableName)
-      .select(
-        '*, digital_right_config_permissions(core_permission_id, core_permissions(id, name, law_reference)), digital_right_config_price_modifiers(id,modifier_key,multiplier,created_at)',
-      )
-      .eq('id', configId)
-      .maybeSingle<DbDigitalRightConfigRow>()
-
-    if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
-    }
-
-    if (!data) {
-      throw new HttpException('DIGITAL_RIGHT_CONFIG_NOT_FOUND', HttpStatus.NOT_FOUND)
-    }
-
-    return mapDigitalRightConfig(data)
+    return this.getConfigById(
+      {
+        tableName: digitalRightConfigResource.tableName,
+        select:
+          '*, digital_right_config_permissions(core_permission_id, core_permissions(id, name, law_reference)), digital_right_config_price_modifiers(id,modifier_key,multiplier,created_at)',
+        mapper: mapDigitalRightConfig,
+        notFoundCode: 'DIGITAL_RIGHT_CONFIG_NOT_FOUND',
+        queryFailedCode: 'DIGITAL_RIGHT_CONFIG_GET_FAILED',
+      },
+      configId,
+    )
   }
 
   private async getPhysicalRightConfigById(configId: string): Promise<PhysicalRightConfigDto> {
-    const { data, error } = await this.supabaseService.client
-      .from(physicalRightConfigResource.tableName)
-      .select(
-        '*, physical_right_config_permissions(core_permission_id, core_permissions(id, name, law_reference)), physical_right_config_price_modifiers(id,modifier_key,multiplier,created_at)',
-      )
-      .eq('id', configId)
-      .maybeSingle<DbPhysicalRightConfigRow>()
-
-    if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
-    }
-
-    if (!data) {
-      throw new HttpException('PHYSICAL_RIGHT_CONFIG_NOT_FOUND', HttpStatus.NOT_FOUND)
-    }
-
-    return mapPhysicalRightConfig(data)
+    return this.getConfigById(
+      {
+        tableName: physicalRightConfigResource.tableName,
+        select:
+          '*, physical_right_config_permissions(core_permission_id, core_permissions(id, name, law_reference)), physical_right_config_price_modifiers(id,modifier_key,multiplier,created_at)',
+        mapper: mapPhysicalRightConfig,
+        notFoundCode: 'PHYSICAL_RIGHT_CONFIG_NOT_FOUND',
+        queryFailedCode: 'PHYSICAL_RIGHT_CONFIG_GET_FAILED',
+      },
+      configId,
+    )
   }
 
   private async getExpressionConfigById(configId: string): Promise<ExpressionConfigDto> {
-    const { data, error } = await this.supabaseService.client
-      .from(expressionConfigResource.tableName)
-      .select('*, expression_config_permissions(core_permission_id, core_permissions(id, name, law_reference))')
-      .eq('id', configId)
-      .maybeSingle<DbExpressionConfigRow>()
-
-    if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
-    }
-
-    if (!data) {
-      throw new HttpException('EXPRESSION_CONFIG_NOT_FOUND', HttpStatus.NOT_FOUND)
-    }
-
-    return mapExpressionConfig(data)
+    return this.getConfigById(
+      {
+        tableName: expressionConfigResource.tableName,
+        select:
+          '*, expression_config_permissions(core_permission_id, core_permissions(id, name, law_reference))',
+        mapper: mapExpressionConfig,
+        notFoundCode: 'EXPRESSION_CONFIG_NOT_FOUND',
+        queryFailedCode: 'EXPRESSION_CONFIG_GET_FAILED',
+      },
+      configId,
+    )
   }
 
   private async getModificationConfigById(configId: string): Promise<ModificationConfigDto> {
-    const { data, error } = await this.supabaseService.client
-      .from(modificationConfigResource.tableName)
-      .select(
-        '*, modification_config_permissions(core_permission_id, core_permissions(id, name, law_reference))',
-      )
-      .eq('id', configId)
-      .maybeSingle<DbModificationConfigRow>()
-
-    if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
-    }
-
-    if (!data) {
-      throw new HttpException('MODIFICATION_CONFIG_NOT_FOUND', HttpStatus.NOT_FOUND)
-    }
-
-    return mapModificationConfig(data)
+    return this.getConfigById(
+      {
+        tableName: modificationConfigResource.tableName,
+        select:
+          '*, modification_config_permissions(core_permission_id, core_permissions(id, name, law_reference))',
+        mapper: mapModificationConfig,
+        notFoundCode: 'MODIFICATION_CONFIG_NOT_FOUND',
+        queryFailedCode: 'MODIFICATION_CONFIG_GET_FAILED',
+      },
+      configId,
+    )
   }
 
   async listDigitalRightConfigs(
@@ -439,7 +478,7 @@ export class LicensingConfigsService {
       .returns<DbDigitalRightConfigRow[]>()
 
     if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
+      this.throwSupabaseError('DIGITAL_RIGHT_CONFIG_LIST_FAILED', error)
     }
 
     return {
@@ -465,11 +504,14 @@ export class LicensingConfigsService {
       .maybeSingle<{ id: string }>()
 
     if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
+      this.throwSupabaseError('DIGITAL_RIGHT_CONFIG_CREATE_FAILED', error)
     }
 
     if (!data?.id) {
-      throw new HttpException('DIGITAL_RIGHT_CONFIG_CREATE_FAILED', HttpStatus.INTERNAL_SERVER_ERROR)
+      throw new ApiHttpException(
+        { code: 'DIGITAL_RIGHT_CONFIG_CREATE_FAILED' },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      )
     }
 
     await this.syncConfigPermissions(
@@ -503,7 +545,7 @@ export class LicensingConfigsService {
         .eq('id', configId)
 
       if (error) {
-        throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
+        this.throwSupabaseError('DIGITAL_RIGHT_CONFIG_UPDATE_FAILED', error)
       }
     }
 
@@ -532,7 +574,7 @@ export class LicensingConfigsService {
       .eq('id', configId)
 
     if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
+      this.throwSupabaseError('DIGITAL_RIGHT_CONFIG_UPDATE_STATUS_FAILED', error)
     }
 
     return this.getDigitalRightConfigById(configId)
@@ -542,7 +584,7 @@ export class LicensingConfigsService {
     const { error } = await this.supabaseService.client.from(digitalRightConfigResource.tableName).delete().eq('id', configId)
 
     if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
+      this.throwSupabaseError('DIGITAL_RIGHT_CONFIG_DELETE_FAILED', error)
     }
 
     return { ok: true }
@@ -574,7 +616,7 @@ export class LicensingConfigsService {
       .returns<DbPhysicalRightConfigRow[]>()
 
     if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
+      this.throwSupabaseError('PHYSICAL_RIGHT_CONFIG_LIST_FAILED', error)
     }
 
     return {
@@ -599,11 +641,14 @@ export class LicensingConfigsService {
       .maybeSingle<{ id: string }>()
 
     if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
+      this.throwSupabaseError('PHYSICAL_RIGHT_CONFIG_CREATE_FAILED', error)
     }
 
     if (!data?.id) {
-      throw new HttpException('PHYSICAL_RIGHT_CONFIG_CREATE_FAILED', HttpStatus.INTERNAL_SERVER_ERROR)
+      throw new ApiHttpException(
+        { code: 'PHYSICAL_RIGHT_CONFIG_CREATE_FAILED' },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      )
     }
 
     await this.syncConfigPermissions(
@@ -636,7 +681,7 @@ export class LicensingConfigsService {
         .eq('id', configId)
 
       if (error) {
-        throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
+        this.throwSupabaseError('PHYSICAL_RIGHT_CONFIG_UPDATE_FAILED', error)
       }
     }
 
@@ -665,7 +710,7 @@ export class LicensingConfigsService {
       .eq('id', configId)
 
     if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
+      this.throwSupabaseError('PHYSICAL_RIGHT_CONFIG_UPDATE_STATUS_FAILED', error)
     }
 
     return this.getPhysicalRightConfigById(configId)
@@ -675,7 +720,7 @@ export class LicensingConfigsService {
     const { error } = await this.supabaseService.client.from(physicalRightConfigResource.tableName).delete().eq('id', configId)
 
     if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
+      this.throwSupabaseError('PHYSICAL_RIGHT_CONFIG_DELETE_FAILED', error)
     }
 
     return { ok: true }
@@ -706,7 +751,7 @@ export class LicensingConfigsService {
       .returns<DbExpressionConfigRow[]>()
 
     if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
+      this.throwSupabaseError('EXPRESSION_CONFIG_LIST_FAILED', error)
     }
 
     return {
@@ -731,11 +776,14 @@ export class LicensingConfigsService {
       .maybeSingle<{ id: string }>()
 
     if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
+      this.throwSupabaseError('EXPRESSION_CONFIG_CREATE_FAILED', error)
     }
 
     if (!data?.id) {
-      throw new HttpException('EXPRESSION_CONFIG_CREATE_FAILED', HttpStatus.INTERNAL_SERVER_ERROR)
+      throw new ApiHttpException(
+        { code: 'EXPRESSION_CONFIG_CREATE_FAILED' },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      )
     }
 
     await this.syncConfigPermissions(expressionConfigResource, data.id, payload.referencedPermissionIds ?? [])
@@ -758,7 +806,7 @@ export class LicensingConfigsService {
         .eq('id', configId)
 
       if (error) {
-        throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
+        this.throwSupabaseError('EXPRESSION_CONFIG_UPDATE_FAILED', error)
       }
     }
 
@@ -779,7 +827,7 @@ export class LicensingConfigsService {
       .eq('id', configId)
 
     if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
+      this.throwSupabaseError('EXPRESSION_CONFIG_UPDATE_STATUS_FAILED', error)
     }
 
     return this.getExpressionConfigById(configId)
@@ -789,7 +837,7 @@ export class LicensingConfigsService {
     const { error } = await this.supabaseService.client.from(expressionConfigResource.tableName).delete().eq('id', configId)
 
     if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
+      this.throwSupabaseError('EXPRESSION_CONFIG_DELETE_FAILED', error)
     }
 
     return { ok: true }
@@ -821,7 +869,7 @@ export class LicensingConfigsService {
       .returns<DbModificationConfigRow[]>()
 
     if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
+      this.throwSupabaseError('MODIFICATION_CONFIG_LIST_FAILED', error)
     }
 
     return {
@@ -846,11 +894,14 @@ export class LicensingConfigsService {
       .maybeSingle<{ id: string }>()
 
     if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
+      this.throwSupabaseError('MODIFICATION_CONFIG_CREATE_FAILED', error)
     }
 
     if (!data?.id) {
-      throw new HttpException('MODIFICATION_CONFIG_CREATE_FAILED', HttpStatus.INTERNAL_SERVER_ERROR)
+      throw new ApiHttpException(
+        { code: 'MODIFICATION_CONFIG_CREATE_FAILED' },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      )
     }
 
     await this.syncConfigPermissions(modificationConfigResource, data.id, payload.referencedPermissionIds ?? [])
@@ -873,7 +924,7 @@ export class LicensingConfigsService {
         .eq('id', configId)
 
       if (error) {
-        throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
+        this.throwSupabaseError('MODIFICATION_CONFIG_UPDATE_FAILED', error)
       }
     }
 
@@ -894,7 +945,7 @@ export class LicensingConfigsService {
       .eq('id', configId)
 
     if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
+      this.throwSupabaseError('MODIFICATION_CONFIG_UPDATE_STATUS_FAILED', error)
     }
 
     return this.getModificationConfigById(configId)
@@ -907,7 +958,7 @@ export class LicensingConfigsService {
       .eq('id', configId)
 
     if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR)
+      this.throwSupabaseError('MODIFICATION_CONFIG_DELETE_FAILED', error)
     }
 
     return { ok: true }

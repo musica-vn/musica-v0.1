@@ -1,8 +1,10 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { ApiEnvelopePayload } from '../../common/interceptors/api-response.interceptor';
 import { buildPaginationMeta } from '../../common/base/pagination-meta';
 import type { PaginationMeta } from '@musica/contracts';
+import { ApiHttpException } from '../../common/errors/api-http.exception';
+import { throwSupabaseError } from '../../common/database/supabase-errors';
 import { SupabaseService } from '../../database/supabase.service';
 import { AdminCertificatesListQueryDto } from './admin-certificates.dto';
 import {
@@ -130,9 +132,10 @@ export class CertificatesService {
           .returns<DbUserRow[]>();
 
       if (usersError) {
-        throw new HttpException(
-          usersError.message,
+        throwSupabaseError(
+          'CERTIFICATE_BUYER_LOOKUP_FAILED',
           HttpStatus.INTERNAL_SERVER_ERROR,
+          usersError,
         );
       }
 
@@ -185,7 +188,11 @@ export class CertificatesService {
       .returns<DbCertificateJoinRow[]>();
 
     if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+      throwSupabaseError(
+        'CERTIFICATES_LIST_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
     }
 
     const totalItems = typeof count === 'number' ? count : 0;
@@ -224,11 +231,18 @@ export class CertificatesService {
       .maybeSingle<DbCertificateJoinRow>();
 
     if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+      throwSupabaseError(
+        'CERTIFICATE_GET_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
     }
 
     if (!data) {
-      throw new HttpException('CERTIFICATE_NOT_FOUND', HttpStatus.NOT_FOUND);
+      throw new ApiHttpException(
+        { code: 'CERTIFICATE_NOT_FOUND' },
+        HttpStatus.NOT_FOUND,
+      );
     }
 
     return {
@@ -258,8 +272,8 @@ export class CertificatesService {
     const detail = await this.getAdminCertificateDetail(certificateId);
 
     if (!detail.pdfFileKey || detail.pdfFileKey.trim().length === 0) {
-      throw new HttpException(
-        'CERTIFICATE_PDF_NOT_AVAILABLE',
+      throw new ApiHttpException(
+        { code: 'CERTIFICATE_PDF_NOT_AVAILABLE' },
         HttpStatus.CONFLICT,
       );
     }
@@ -268,8 +282,8 @@ export class CertificatesService {
       'STORAGE_BUCKET_CERTIFICATES',
     );
     if (!bucket) {
-      throw new HttpException(
-        'Missing STORAGE_BUCKET_CERTIFICATES',
+      throw new ApiHttpException(
+        { code: 'MISSING_STORAGE_BUCKET_CERTIFICATES' },
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
@@ -279,9 +293,17 @@ export class CertificatesService {
       .from(bucket)
       .createSignedUrl(detail.pdfFileKey, expiresInSeconds);
 
-    if (error || !data) {
-      throw new HttpException(
-        error?.message ?? 'Failed to create signed download URL',
+    if (error) {
+      throwSupabaseError(
+        'CERTIFICATE_DOWNLOAD_URL_CREATE_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
+    }
+
+    if (!data?.signedUrl) {
+      throw new ApiHttpException(
+        { code: 'CERTIFICATE_DOWNLOAD_URL_CREATE_FAILED' },
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
@@ -301,7 +323,11 @@ export class CertificatesService {
       .maybeSingle<DbTemplateRow>();
 
     if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+      throwSupabaseError(
+        'CERTIFICATE_TEMPLATE_GET_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
     }
 
     if (!data) {
@@ -335,7 +361,18 @@ export class CertificatesService {
       .single<DbTemplateRow>();
 
     if (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+      throwSupabaseError(
+        'CERTIFICATE_TEMPLATE_UPDATE_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
+    }
+
+    if (!data) {
+      throw new ApiHttpException(
+        { code: 'CERTIFICATE_TEMPLATE_UPDATE_FAILED' },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
 
     return {

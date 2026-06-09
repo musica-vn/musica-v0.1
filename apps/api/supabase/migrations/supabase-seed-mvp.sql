@@ -7,7 +7,7 @@ where buyer_id in (select id from public.users where email like '%@musica.local'
    or artist_id in (select id from public.users where email like '%@musica.local')
 ;
 
-delete from public.tracks
+delete from public.products
 where created_by in (select id from public.users where email like '%@musica.local');
 
 delete from public.user_roles
@@ -61,7 +61,7 @@ admin_picker as (
   from inserted_users
   where email = 'admin01@musica.local'
 ),
-seed_tracks as (
+seed_products as (
   select *
   from (
     values
@@ -82,12 +82,13 @@ seed_tracks as (
       ('Hidden Draft 05', 'artist02@musica.local', 'Corporate', 135, 'HIDDEN')
   ) as t(title, artist_email, genre, duration, status)
 ),
-inserted_tracks as (
-  insert into public.tracks (
+inserted_products as (
+  insert into public.products (
     title,
     artist_id,
     author_name,
     genre,
+    genres,
     duration,
     status,
     original_audio_key,
@@ -98,11 +99,12 @@ inserted_tracks as (
     au.id,
     au.full_name,
     st.genre,
+    array[st.genre]::text[],
     st.duration,
     st.status::public.track_status,
     '1.mp3',
     ap.admin_id
-  from seed_tracks st
+  from seed_products st
   join public.users au on au.email = st.artist_email
   cross join admin_picker ap
   returning id, title, artist_id
@@ -149,7 +151,7 @@ select
   now() - (sc.days_ago || ' days')::interval,
   now() - (sc.days_ago || ' days')::interval
 from seed_certificates sc
-join inserted_tracks it on it.title = sc.track_title
+join inserted_products it on it.title = sc.track_title
 join public.users bu on bu.email = sc.buyer_email
 join public.users au on au.id = it.artist_id;
 
