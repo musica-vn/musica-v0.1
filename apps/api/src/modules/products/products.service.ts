@@ -1043,6 +1043,16 @@ export class ProductsService {
       description: product.description,
       useCases: product.useCases,
       allowedPermissions: product.allowedPermissions,
+      digitalRightConfigId:
+        product.digitalPackageRegistrations.find(
+          (reg) =>
+            reg.registrationStatus === 'JOINED' && reg.configStatus === 'ACTIVE',
+        )?.configId ?? null,
+      physicalRightConfigId:
+        product.physicalPackageRegistrations.find(
+          (reg) =>
+            reg.registrationStatus === 'JOINED' && reg.configStatus === 'ACTIVE',
+        )?.configId ?? null,
     };
   }
 

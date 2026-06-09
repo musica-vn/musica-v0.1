@@ -112,5 +112,11 @@ export class MarketplaceProductDetailDto extends MarketplaceProductListItemDto {
 
   @ApiProperty({ type: [MarketplaceAllowedPermissionDto] })
   allowedPermissions: MarketplaceAllowedPermissionDto[]
+
+  @ApiProperty({ required: false, nullable: true })
+  digitalRightConfigId: string | null
+
+  @ApiProperty({ required: false, nullable: true })
+  physicalRightConfigId: string | null
 }
 
