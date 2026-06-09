@@ -5,6 +5,7 @@ export type AppThemeMode = 'light' | 'dark'
 const STORAGE_KEY = 'musica_app_theme_v1'
 const themeMode = ref<AppThemeMode>('light')
 let initialized = false
+let hasExplicitThemeSelection = false
 
 const applyThemeToDom = (mode: AppThemeMode) => {
   if (typeof document === 'undefined') return
@@ -32,6 +33,7 @@ const getSystemTheme = (): AppThemeMode => {
 
 const persistTheme = (mode: AppThemeMode) => {
   if (typeof window === 'undefined') return
+  hasExplicitThemeSelection = true
   window.localStorage.setItem(STORAGE_KEY, mode)
 }
 
@@ -49,9 +51,20 @@ export const initializeAppTheme = () => {
 
   const savedTheme = readSavedTheme()
   const initialTheme = savedTheme ?? getSystemTheme()
+  hasExplicitThemeSelection = savedTheme !== null
 
   themeMode.value = initialTheme
   applyThemeToDom(initialTheme)
+
+  if (typeof window !== 'undefined') {
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+    mediaQuery.addEventListener('change', (event) => {
+      if (hasExplicitThemeSelection) return
+      themeMode.value = event.matches ? 'dark' : 'light'
+      applyThemeToDom(themeMode.value)
+    })
+  }
+
   initialized = true
 }
 

@@ -4,20 +4,25 @@ import Message from 'primevue/message'
 import { useConfirm } from 'primevue/useconfirm'
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { ApiClientError } from '../../api/axios'
+import AdminStatCard from '../../components/features/admin-shell/AdminStatCard.vue'
 import CorePermissionMobileCardList from '../../components/features/admin-shell/CorePermissionMobileCardList.vue'
+import AdminFilterInput from '../../components/shared/admin/AdminFilterInput.vue'
+import AdminFilterSelect from '../../components/shared/admin/AdminFilterSelect.vue'
+import AdminPageHeader from '../../components/shared/admin/AdminPageHeader.vue'
+import AdminPaginationBar from '../../components/shared/admin/AdminPaginationBar.vue'
 import { useCorePermissionsStore } from '../../stores/core-permissions.store'
 import type { CorePermission, CorePermissionStatus } from '../../types/core-permissions.types'
 
 const fieldClass =
-  'h-12 w-full min-w-0 rounded-2xl border border-slate-200/80 bg-white/90 px-4 text-sm text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-violet-400 focus:ring-4 focus:ring-violet-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-800 dark:bg-slate-950/70 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-violet-500 dark:focus:ring-violet-500/20'
+  'h-12 w-full min-w-0 rounded-2xl border bg-[color:var(--admin-surface-0)] px-4 text-sm text-[color:var(--admin-text)] shadow-sm outline-none transition placeholder:text-[color:var(--admin-text-muted)] [border-color:var(--admin-border)] focus:[border-color:var(--admin-primary-500)] focus:ring-4 focus:ring-[color:var(--admin-ring)] disabled:cursor-not-allowed disabled:opacity-60'
 const textAreaClass =
-  'min-h-[132px] w-full rounded-2xl border border-slate-200/80 bg-white/90 px-4 py-3 text-sm text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-violet-400 focus:ring-4 focus:ring-violet-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-800 dark:bg-slate-950/70 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-violet-500 dark:focus:ring-violet-500/20'
+  'min-h-[132px] w-full rounded-2xl border bg-[color:var(--admin-surface-0)] px-4 py-3 text-sm text-[color:var(--admin-text)] shadow-sm outline-none transition placeholder:text-[color:var(--admin-text-muted)] [border-color:var(--admin-border)] focus:[border-color:var(--admin-primary-500)] focus:ring-4 focus:ring-[color:var(--admin-ring)] disabled:cursor-not-allowed disabled:opacity-60'
 const selectFieldClass =
-  'h-12 w-full min-w-0 appearance-none rounded-2xl border border-slate-200/80 bg-white/90 px-4 pr-11 text-sm text-slate-700 shadow-sm outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-800 dark:bg-slate-950/70 dark:text-slate-100 dark:focus:border-violet-500 dark:focus:ring-violet-500/20'
+  'h-12 w-full min-w-0 appearance-none rounded-2xl border bg-[color:var(--admin-surface-0)] px-4 pr-11 text-sm text-[color:var(--admin-text)] shadow-sm outline-none transition [border-color:var(--admin-border)] focus:[border-color:var(--admin-primary-500)] focus:ring-4 focus:ring-[color:var(--admin-ring)] disabled:cursor-not-allowed disabled:opacity-60'
 const primaryButtonClass =
-  'inline-flex items-center justify-center rounded-2xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-600 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-violet-500 dark:hover:bg-violet-400'
+  'inline-flex items-center justify-center rounded-2xl bg-[color:var(--admin-primary-button-bg)] px-4 py-2.5 text-sm font-semibold text-[color:var(--admin-primary-button-text)] transition hover:bg-[color:var(--admin-primary-button-hover)] active:bg-[color:var(--admin-primary-button-active)] disabled:cursor-not-allowed disabled:opacity-60'
 const secondaryButtonClass =
-  'inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-violet-300 hover:text-violet-600 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-violet-500 dark:hover:text-violet-300'
+  'inline-flex items-center justify-center rounded-2xl border bg-[color:var(--admin-surface-0)] px-4 py-2.5 text-sm font-semibold text-[color:var(--admin-text)] transition [border-color:var(--admin-border)] hover:border-[color:rgb(var(--admin-primary-rgb)/0.24)] hover:text-[color:var(--admin-primary-700)] disabled:cursor-not-allowed disabled:opacity-60'
 
 const confirm = useConfirm()
 const store = useCorePermissionsStore()
@@ -50,12 +55,11 @@ const form = reactive<{
 })
 
 const totalPages = computed(() => store.meta?.pagination.totalPages ?? 1)
-const pageStart = computed(() => (store.totalItems === 0 ? 0 : (pagination.page - 1) * pagination.pageSize + 1))
-const pageEnd = computed(() => Math.min(pagination.page * pagination.pageSize, store.totalItems))
+const totalPermissionCount = computed(() => store.totalItems)
 const totalActive = computed(() => store.items.filter((item) => item.status === 'ACTIVE').length)
 const totalInactive = computed(() => store.items.filter((item) => item.status === 'INACTIVE').length)
 const isCreateMode = computed(() => dialogMode.value === 'create')
-const dialogTitle = computed(() => (isCreateMode.value ? 'Thêm core permission' : 'Chỉnh sửa core permission'))
+const dialogTitle = computed(() => (isCreateMode.value ? 'Thêm quyền cốt lõi' : 'Chỉnh sửa quyền cốt lõi'))
 const dialogDescription = computed(() =>
   isCreateMode.value
     ? 'Tạo quyền cốt lõi mới cho luồng Product và Compliance.'
@@ -87,10 +91,10 @@ const formatStatusLabel = (status: CorePermissionStatus) => {
 
 const getStatusClass = (status: CorePermissionStatus) => {
   if (status === 'ACTIVE') {
-    return 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300'
+    return 'bg-[color:var(--admin-success-50)] text-[color:var(--admin-success-700)]'
   }
 
-  return 'border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300'
+  return 'bg-[color:var(--admin-surface-2)] text-[color:var(--admin-text-muted)]'
 }
 
 const formatUpdatedAt = (value: string) => {
@@ -107,6 +111,12 @@ const resolveStatusLabel = (permission: CorePermission) => formatStatusLabel(per
 const resolveStatusClass = (permission: CorePermission) => getStatusClass(permission.status)
 
 const resolveUpdatedAtLabel = (permission: CorePermission) => formatUpdatedAt(permission.updatedAt)
+
+const statusOptions = [
+  { label: 'Tất cả', value: '' as CorePermissionStatus | '' },
+  { label: 'Đang hoạt động', value: 'ACTIVE' as CorePermissionStatus },
+  { label: 'Ngừng hoạt động', value: 'INACTIVE' as CorePermissionStatus },
+]
 
 const fetchList = async () => {
   clearGlobalFeedback()
@@ -259,6 +269,17 @@ const goToPage = async (page: number) => {
   await fetchList()
 }
 
+const handlePageChange = async (page: number) => {
+  await goToPage(page)
+}
+
+const handlePageSizeChange = async (pageSize: number) => {
+  if (pageSize === pagination.pageSize) return
+  pagination.pageSize = pageSize
+  pagination.page = 1
+  await fetchList()
+}
+
 let filterDebounceTimer: number | null = null
 
 watch(
@@ -284,70 +305,67 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="flex min-w-0 flex-col gap-4 sm:gap-5 lg:gap-6">
-    <section
-      class="flex flex-col gap-4 rounded-[32px] border border-slate-200/80 bg-[radial-gradient(circle_at_top_left,rgba(109,74,255,0.18),transparent_38%),linear-gradient(135deg,rgba(255,255,255,0.96),rgba(245,243,255,0.92))] p-5 shadow-2xl shadow-slate-200/40 dark:border-slate-800 dark:bg-[radial-gradient(circle_at_top_left,rgba(124,58,237,0.24),transparent_30%),linear-gradient(135deg,rgba(15,23,42,0.92),rgba(2,6,23,0.96))] dark:shadow-black/20 sm:p-6 lg:flex-row lg:items-center lg:justify-between"
+    <AdminPageHeader
+      kicker="Cấu hình"
+      title="Quyền cốt lõi"
+      description="Quản lý danh mục quyền cốt lõi dùng làm nền cho các gói quyền và luồng Compliance."
+      icon-class="pi pi-sliders-h"
     >
-      <div class="min-w-0 space-y-3">
-        <div class="inline-flex items-center rounded-full bg-violet-100 px-3 py-1 text-xs font-bold uppercase tracking-[0.24em] text-violet-700 dark:bg-violet-500/20 dark:text-violet-200">
-          Cấu hình
-        </div>
-        <div>
-          <h1 class="m-0 text-2xl font-semibold tracking-tight !text-slate-950 sm:text-3xl dark:!text-white">Quyền cốt lõi</h1>
-          <div class="mt-2 text-sm text-slate-500 dark:text-slate-400">
-            Quản lý danh mục quyền cốt lõi, dùng làm nền cho các gói quyền và luồng Compliance.
-          </div>
-        </div>
-      </div>
+      <template #actions>
+        <button type="button" :class="[primaryButtonClass, 'w-full sm:w-auto']" :disabled="store.isLoading" @click="openCreate">
+          <i class="pi pi-plus mr-2 text-xs" />
+          Thêm quyền
+        </button>
+      </template>
+    </AdminPageHeader>
 
-      <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <article class="rounded-[24px] border border-white/70 bg-white/80 px-5 py-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/70">
-          <div class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Đang hoạt động</div>
-          <div class="mt-2 text-2xl font-semibold text-slate-950 dark:text-white">{{ totalActive }}</div>
-        </article>
-        <article class="rounded-[24px] border border-white/70 bg-white/80 px-5 py-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/70">
-          <div class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Tạm ngừng</div>
-          <div class="mt-2 text-2xl font-semibold text-slate-950 dark:text-white">{{ totalInactive }}</div>
-        </article>
-      </div>
+    <section class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <AdminStatCard
+        title="Tổng quyền"
+        :value="totalPermissionCount"
+        description="Tổng bản ghi phù hợp với bộ lọc hiện tại"
+        icon="pi pi-sitemap"
+        tone="slate"
+      />
+      <AdminStatCard
+        title="Đang hoạt động"
+        :value="totalActive"
+        description="Quyền đang sẵn sàng cho Product và Compliance"
+        icon="pi pi-check-circle"
+        tone="emerald"
+      />
+      <AdminStatCard
+        title="Tạm ngừng"
+        :value="totalInactive"
+        description="Quyền đang được giữ ở trạng thái an toàn"
+        icon="pi pi-ban"
+        tone="amber"
+      />
     </section>
 
-    <section class="rounded-[32px] border border-slate-200/80 bg-white/85 p-5 shadow-xl shadow-slate-200/40 backdrop-blur dark:border-slate-800 dark:bg-slate-950/70 dark:shadow-black/20">
+    <section class="rounded-[32px] border [border-color:var(--admin-border)] bg-[linear-gradient(180deg,var(--admin-surface-0),var(--admin-surface-1))] p-5 shadow-[var(--admin-elev-1)] backdrop-blur">
       <div class="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
         <div>
-          <div class="text-xl font-semibold text-slate-950 dark:text-white">Danh sách quyền cốt lõi</div>
-          <div class="mt-2 text-sm text-slate-500 dark:text-slate-400">
+          <div class="text-xl font-semibold text-[color:var(--admin-text)]">Danh sách quyền cốt lõi</div>
+          <div class="mt-2 text-sm text-[color:var(--admin-text-muted)]">
             Tìm kiếm nhanh, lọc theo trạng thái và chỉnh sửa trực tiếp trong modal.
           </div>
         </div>
 
         <div class="flex w-full min-w-0 flex-col gap-3">
           <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(0,1.7fr)_1fr_auto] xl:items-end">
-            <label class="space-y-2">
-              <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Từ khoá</span>
-              <input
-                v-model="filters.keyword"
-                :class="fieldClass"
-                placeholder="Tìm theo tên quyền hoặc law reference"
-                :disabled="store.isLoading"
-              />
-            </label>
-            <label class="space-y-2">
-              <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Trạng thái</span>
-              <div class="relative">
-                <select v-model="filters.status" :class="selectFieldClass" :disabled="store.isLoading">
-                  <option value="">Tất cả</option>
-                  <option value="ACTIVE">ACTIVE</option>
-                  <option value="INACTIVE">INACTIVE</option>
-                </select>
-                <i class="pi pi-chevron-down pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs text-slate-400 dark:text-slate-500" />
-              </div>
-            </label>
-            <div class="flex items-end">
-              <button type="button" :class="[primaryButtonClass, 'w-full xl:w-auto']" :disabled="store.isLoading" @click="openCreate">
-                <i class="pi pi-plus mr-2 text-xs" />
-                Thêm quyền
-              </button>
-            </div>
+            <AdminFilterInput
+              v-model="filters.keyword"
+              icon-class="pi pi-search"
+              placeholder="Tìm theo tên quyền hoặc law reference"
+              :disabled="store.isLoading"
+            />
+            <AdminFilterSelect
+              v-model="filters.status"
+              icon-class="pi pi-tag"
+              :options="statusOptions"
+              :disabled="store.isLoading"
+            />
           </div>
         </div>
       </div>
@@ -371,10 +389,10 @@ onBeforeUnmount(() => {
         @remove="confirmDelete"
       />
 
-      <div class="mt-6 hidden overflow-hidden rounded-[28px] border border-slate-200/80 bg-white dark:border-slate-800 dark:bg-slate-950/40 sm:block">
+      <div class="mt-6 hidden overflow-hidden rounded-[28px] border border-[color:var(--admin-border-strong)] bg-[color:var(--admin-surface-1)] shadow-[var(--admin-elev-1)] sm:block">
         <div class="overflow-x-auto">
           <table class="w-full min-w-[980px] border-separate border-spacing-0 text-left text-sm">
-            <thead class="bg-slate-50 text-xs uppercase tracking-[0.18em] text-slate-500 dark:bg-slate-950/60 dark:text-slate-300">
+            <thead class="bg-[linear-gradient(180deg,var(--admin-surface-3),var(--admin-surface-2))] text-xs uppercase tracking-[0.18em] text-[color:var(--admin-text)]">
               <tr>
                 <th class="w-20 px-4 py-4 font-semibold">STT</th>
                 <th class="px-4 py-4 font-semibold">Quyền cốt lõi</th>
@@ -384,42 +402,45 @@ onBeforeUnmount(() => {
                 <th class="w-32 px-4 py-4 text-right font-semibold">Thao tác</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-slate-200/70 dark:divide-slate-800">
+            <tbody class="divide-y [--tw-divide-opacity:1] [border-color:var(--admin-border)] divide-y-[color:var(--admin-border)]">
               <tr
                 v-for="(permission, index) in store.items"
                 :key="permission.id"
-                class="bg-white transition hover:bg-slate-50/70 dark:bg-transparent dark:hover:bg-slate-900/30"
+                class="transition"
+                :class="index % 2 === 0
+                  ? 'bg-[color:var(--admin-surface-0)] hover:bg-[color:var(--admin-surface-2)]'
+                  : 'bg-[color:var(--admin-surface-1)] hover:bg-[color:var(--admin-surface-2)]'"
               >
                 <td class="px-4 py-4">
-                  <div class="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-violet-100 text-sm font-semibold text-violet-700 dark:bg-violet-500/15 dark:text-violet-200">
+                  <div class="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-[color:var(--admin-surface-3)] text-sm font-semibold text-[color:var(--admin-primary-800)]">
                     {{ (pagination.page - 1) * pagination.pageSize + index + 1 }}
                   </div>
                 </td>
                 <td class="px-4 py-4">
-                  <div class="break-words font-semibold text-slate-900 dark:text-white">{{ permission.name }}</div>
-                  <div class="mt-1 line-clamp-2 break-words text-xs leading-5 text-slate-500 dark:text-slate-400">
+                  <div class="break-words font-semibold text-[color:var(--admin-text)]">{{ permission.name }}</div>
+                  <div class="mt-1 line-clamp-2 break-words text-xs leading-5 text-[color:var(--admin-text-muted)]">
                     {{ permission.description || 'Chưa có mô tả cho core permission này.' }}
                   </div>
                 </td>
-                <td class="px-4 py-4 text-slate-600 dark:text-slate-300">
+                <td class="px-4 py-4 text-[color:var(--admin-text-muted)]">
                   <div class="line-clamp-2 break-words">{{ permission.lawReference }}</div>
                 </td>
                 <td class="px-4 py-4">
                   <span
-                    class="inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em]"
+                    class="inline-flex items-center rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em]"
                     :class="getStatusClass(permission.status)"
                   >
                     {{ formatStatusLabel(permission.status) }}
                   </span>
                 </td>
-                <td class="px-4 py-4 text-slate-500 dark:text-slate-400">
+                <td class="px-4 py-4 text-[color:var(--admin-text-muted)]">
                   {{ formatUpdatedAt(permission.updatedAt) }}
                 </td>
                 <td class="px-4 py-4">
                   <div class="flex justify-end gap-2">
                     <button
                       type="button"
-                      class="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 transition hover:border-slate-300 hover:text-slate-900 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:text-white"
+                      class="inline-flex h-10 w-10 items-center justify-center rounded-2xl border bg-[color:var(--admin-surface-0)] text-[color:var(--admin-text-muted)] transition [border-color:var(--admin-border)] hover:border-[color:rgb(var(--admin-primary-rgb)/0.22)] hover:bg-[color:var(--admin-primary-50)] hover:text-[color:var(--admin-primary-800)] disabled:opacity-60"
                       :disabled="store.isLoading"
                       @click="openEdit(permission)"
                     >
@@ -427,7 +448,7 @@ onBeforeUnmount(() => {
                     </button>
                     <button
                       type="button"
-                      class="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 transition hover:border-slate-300 hover:text-slate-900 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:text-white"
+                      class="inline-flex h-10 w-10 items-center justify-center rounded-2xl border bg-[color:var(--admin-surface-0)] text-[color:var(--admin-text-muted)] transition [border-color:var(--admin-border)] hover:border-[color:rgb(var(--admin-primary-rgb)/0.22)] hover:bg-[color:var(--admin-primary-50)] hover:text-[color:var(--admin-primary-800)] disabled:opacity-60"
                       :disabled="store.isLoading"
                       @click="confirmToggleStatus(permission)"
                     >
@@ -435,7 +456,7 @@ onBeforeUnmount(() => {
                     </button>
                     <button
                       type="button"
-                      class="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-rose-600 transition hover:border-rose-200 hover:text-rose-700 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-rose-300 dark:hover:border-rose-500/30 dark:hover:text-rose-200"
+                      class="inline-flex h-10 w-10 items-center justify-center rounded-2xl border bg-[color:var(--admin-surface-0)] text-rose-600 transition [border-color:var(--admin-border)] hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700 disabled:opacity-60 dark:hover:bg-rose-500/10"
                       :disabled="store.isLoading"
                       @click="confirmDelete(permission)"
                     >
@@ -446,7 +467,7 @@ onBeforeUnmount(() => {
               </tr>
 
               <tr v-if="!store.isLoading && store.items.length === 0">
-                <td colspan="6" class="px-6 py-12 text-center text-sm text-slate-500 dark:text-slate-400">
+                <td colspan="6" class="px-6 py-12 text-center text-sm text-[color:var(--admin-text-muted)]">
                   Không có dữ liệu phù hợp với bộ lọc hiện tại.
                 </td>
               </tr>
@@ -455,21 +476,15 @@ onBeforeUnmount(() => {
         </div>
       </div>
 
-      <div class="mt-6 flex flex-col gap-4 border-t border-slate-200 pt-4 dark:border-slate-800 md:flex-row md:items-center md:justify-between">
-        <div class="text-sm text-slate-500 dark:text-slate-400">
-          Hiển thị {{ pageStart }}-{{ pageEnd }} / {{ store.totalItems }}
-        </div>
-        <div class="flex flex-wrap items-center justify-end gap-2">
-          <button type="button" :class="secondaryButtonClass" :disabled="store.isLoading || pagination.page <= 1" @click="goToPage(pagination.page - 1)">
-            Trước
-          </button>
-          <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
-            {{ pagination.page }} / {{ totalPages }}
-          </div>
-          <button type="button" :class="secondaryButtonClass" :disabled="store.isLoading || pagination.page >= totalPages" @click="goToPage(pagination.page + 1)">
-            Sau
-          </button>
-        </div>
+      <div class="mt-6">
+        <AdminPaginationBar
+          :page="pagination.page"
+          :page-size="pagination.pageSize"
+          :total-items="store.totalItems"
+          :disabled="store.isLoading"
+          @update:page="handlePageChange"
+          @update:page-size="handlePageSizeChange"
+        />
       </div>
     </section>
 
@@ -481,22 +496,22 @@ onBeforeUnmount(() => {
     >
       <template #header>
         <div class="w-full">
-          <div class="text-lg font-semibold text-slate-950 dark:text-white">{{ dialogTitle }}</div>
-          <div class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ dialogDescription }}</div>
+          <div class="text-lg font-semibold text-[color:var(--admin-text)]">{{ dialogTitle }}</div>
+          <div class="mt-1 text-sm text-[color:var(--admin-text-muted)]">{{ dialogDescription }}</div>
         </div>
       </template>
 
       <div class="grid grid-cols-1 gap-4 lg:grid-cols-[1.08fr_0.92fr]">
-        <section class="space-y-6 rounded-[28px] border border-slate-200/80 bg-slate-50/80 p-4 sm:p-6 dark:border-slate-800 dark:bg-slate-900/50">
-          <div class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Thông tin chính</div>
+        <section class="space-y-6 rounded-[28px] border [border-color:var(--admin-border)] bg-[linear-gradient(180deg,var(--admin-surface-0),var(--admin-surface-1))] p-4 sm:p-6">
+          <div class="text-sm font-semibold uppercase tracking-[0.18em] text-[color:var(--admin-text-muted)]">Thông tin chính</div>
 
           <label class="block">
-            <span class="mb-3 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Name</span>
+            <span class="mb-3 block text-xs font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]">Name</span>
             <input v-model="form.name" :class="fieldClass" :disabled="isSubmitting" />
           </label>
 
           <label class="block">
-            <span class="mb-3 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Law Reference</span>
+            <span class="mb-3 block text-xs font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]">Law Reference</span>
             <input
               v-model="form.lawReference"
               :class="fieldClass"
@@ -506,9 +521,9 @@ onBeforeUnmount(() => {
           </label>
         </section>
 
-        <section class="space-y-6 rounded-[28px] border border-slate-200/80 bg-slate-50/80 p-4 sm:p-6 dark:border-slate-800 dark:bg-slate-900/50">
+        <section class="space-y-6 rounded-[28px] border [border-color:var(--admin-border)] bg-[linear-gradient(180deg,var(--admin-surface-0),var(--admin-surface-1))] p-4 sm:p-6">
           <label class="block">
-            <span class="mb-3 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Description</span>
+            <span class="mb-3 block text-xs font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]">Description</span>
             <textarea
               v-model="form.description"
               :class="textAreaClass"
@@ -518,7 +533,7 @@ onBeforeUnmount(() => {
           </label>
 
           <div class="space-y-5">
-            <div class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+            <div class="text-sm font-semibold uppercase tracking-[0.18em] text-[color:var(--admin-text-muted)]">
               {{ isCreateMode ? 'Trạng thái mặc định' : 'Trạng thái quyền' }}
             </div>
 
@@ -527,15 +542,15 @@ onBeforeUnmount(() => {
               class="w-full rounded-[24px] border px-4 py-4 text-left transition"
               :class="
                 form.status === 'ACTIVE'
-                  ? 'border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200'
-                  : 'border-slate-200 bg-white text-slate-700 hover:border-emerald-200 dark:border-slate-800 dark:bg-slate-950/40 dark:text-slate-200'
+                  ? 'border-[color:rgb(var(--admin-success-rgb)/0.34)] bg-[color:var(--admin-success-50)] text-[color:var(--admin-success-700)]'
+                  : 'border-[color:var(--admin-border)] bg-[color:var(--admin-surface-0)] text-[color:var(--admin-text)] hover:border-[color:rgb(var(--admin-success-rgb)/0.22)]'
               "
               :disabled="isSubmitting"
               @click="form.status = 'ACTIVE'"
             >
               <div class="flex items-center justify-between gap-3">
                 <div class="space-y-2">
-                  <div class="font-semibold">ACTIVE</div>
+                  <div class="font-semibold">Đang hoạt động</div>
                   <div class="text-sm opacity-80">
                     {{ isCreateMode ? 'Cho phép quyền này sẵn sàng dùng ngay sau khi tạo.' : 'Quyền đang sẵn sàng để dùng cho Product và Compliance.' }}
                   </div>
@@ -549,15 +564,15 @@ onBeforeUnmount(() => {
               class="w-full rounded-[24px] border px-4 py-4 text-left transition"
               :class="
                 form.status === 'INACTIVE'
-                  ? 'border-rose-300 bg-rose-50 text-rose-800 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200'
-                  : 'border-slate-200 bg-white text-slate-700 hover:border-rose-200 dark:border-slate-800 dark:bg-slate-950/40 dark:text-slate-200'
+                  ? 'border-[color:rgb(var(--admin-danger-rgb)/0.32)] bg-[color:var(--admin-danger-50)] text-[color:var(--admin-danger-700)]'
+                  : 'border-[color:var(--admin-border)] bg-[color:var(--admin-surface-0)] text-[color:var(--admin-text)] hover:border-[color:rgb(var(--admin-danger-rgb)/0.2)]'
               "
               :disabled="isSubmitting"
               @click="form.status = 'INACTIVE'"
             >
               <div class="flex items-center justify-between gap-3">
                 <div class="space-y-2">
-                  <div class="font-semibold">INACTIVE</div>
+                  <div class="font-semibold">Ngừng hoạt động</div>
                   <div class="text-sm opacity-80">
                     {{ isCreateMode ? 'Mặc định an toàn hơn, chỉ kích hoạt khi bạn sẵn sàng sử dụng.' : 'Ngừng sử dụng quyền này trong các flow mới nếu không còn được tham chiếu.' }}
                   </div>

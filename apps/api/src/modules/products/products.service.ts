@@ -21,6 +21,14 @@ import {
   applyProductPriorityOrdering,
   PRODUCT_PRIORITY_SELECT,
 } from '../product-priorities/product-priority-ordering';
+import {
+  buildRequiredPermissionsFromDependencies,
+  dedupeRequiredPermissions,
+  mapRequiredPermissionSummary,
+  type RawPermissionSummary,
+  type RequiredPermissionSummary,
+} from '../licensing-configs/licensing-required-permissions';
+import type { VariantPricingModifierKey } from '../pricing/variant-pricing.enums';
 
 type DbProductRow = {
   id: string;
@@ -42,11 +50,7 @@ type DbProductRow = {
   updated_at: string;
 };
 
-type DbCorePermissionJoinRow = {
-  id: string;
-  name: string;
-  law_reference: string;
-};
+type DbCorePermissionJoinRow = RawPermissionSummary;
 
 type DbProductAllowedPermissionRow = {
   permission_id: string;
@@ -76,12 +80,17 @@ type DbLicensingConfigPermissionRow = {
   core_permissions?: DbCorePermissionJoinRow | null;
 };
 
+type DbConfigPriceModifierRow = {
+  modifier_key: VariantPricingModifierKey;
+};
+
 type DbDigitalEligibilityConfigRow = {
   id: string;
   status: 'ACTIVE' | 'INACTIVE';
   target_platform: 'YOUTUBE' | 'TIKTOK' | 'FACEBOOK';
   duration_type: 'ONE_YEAR' | 'PERPETUAL';
   digital_right_config_permissions?: DbLicensingConfigPermissionRow[] | null;
+  digital_right_config_price_modifiers?: DbConfigPriceModifierRow[] | null;
 };
 
 type DbPhysicalEligibilityConfigRow = {
@@ -89,6 +98,7 @@ type DbPhysicalEligibilityConfigRow = {
   status: 'ACTIVE' | 'INACTIVE';
   venue_usage_type: string;
   physical_right_config_permissions?: DbLicensingConfigPermissionRow[] | null;
+  physical_right_config_price_modifiers?: DbConfigPriceModifierRow[] | null;
 };
 
 type DbDigitalRegistrationJoinRow = {
@@ -145,11 +155,7 @@ const formatDigitalEligibilityTitle = (
 const mapReferencedPermissionSummary = (
   permissionId: string,
   permission: DbCorePermissionJoinRow | null | undefined,
-) => ({
-  id: permission?.id ?? permissionId,
-  name: permission?.name ?? permissionId,
-  lawReference: permission?.law_reference ?? '',
-});
+) => mapRequiredPermissionSummary(permissionId, permission);
 
 const mapProductRowToDto = (row: DbProductJoinRow): ProductDto => {
   const allowedPermissionRows = (row.track_allowed_permissions ?? []).filter(
@@ -331,6 +337,16 @@ export class ProductsService {
       }
     | null = null;
 
+  private licensingDependencyPermissionsCache:
+    | {
+        value: {
+          expressionPermissions: RequiredPermissionSummary[];
+          modificationPermissions: RequiredPermissionSummary[];
+        };
+        expiresAt: number;
+      }
+    | null = null;
+
   private async allocateNextStorageKey(
     bucket: string,
     extension: string,
@@ -359,12 +375,12 @@ export class ProductsService {
   }
 
   private async loadActiveDigitalEligibilityConfigs(): Promise<
-    ProductLicensingConfigDefinition[]
+    DbDigitalEligibilityConfigRow[]
   > {
     const { data, error } = await this.supabaseService.client
       .from('digital_right_configs')
       .select(
-        'id, target_platform, duration_type, digital_right_config_permissions(core_permission_id, core_permissions(id,name,law_reference))',
+        'id, target_platform, duration_type, digital_right_config_permissions(core_permission_id, core_permissions(id,name,law_reference)), digital_right_config_price_modifiers(modifier_key)',
       )
       .eq('status', 'ACTIVE')
       .order('target_platform', { ascending: true })
@@ -378,30 +394,16 @@ export class ProductsService {
       );
     }
 
-    return (data ?? []).map((config) => ({
-      configId: config.id,
-      configType: 'DIGITAL',
-      title: formatDigitalEligibilityTitle(
-        config.target_platform,
-        config.duration_type,
-      ),
-      referencedPermissions: (config.digital_right_config_permissions ?? []).map(
-        (permissionRow) =>
-          mapReferencedPermissionSummary(
-            permissionRow.core_permission_id,
-            permissionRow.core_permissions,
-          ),
-      ),
-    }));
+    return data ?? [];
   }
 
   private async loadActivePhysicalEligibilityConfigs(): Promise<
-    ProductLicensingConfigDefinition[]
+    DbPhysicalEligibilityConfigRow[]
   > {
     const { data, error } = await this.supabaseService.client
       .from('physical_right_configs')
       .select(
-        'id, venue_usage_type, physical_right_config_permissions(core_permission_id, core_permissions(id,name,law_reference))',
+        'id, venue_usage_type, physical_right_config_permissions(core_permission_id, core_permissions(id,name,law_reference)), physical_right_config_price_modifiers(modifier_key)',
       )
       .eq('status', 'ACTIVE')
       .order('venue_usage_type', { ascending: true })
@@ -415,30 +417,165 @@ export class ProductsService {
       );
     }
 
-    return (data ?? []).map((config) => ({
-      configId: config.id,
-      configType: 'PHYSICAL',
-      title: config.venue_usage_type,
-      referencedPermissions: (config.physical_right_config_permissions ?? []).map(
-        (permissionRow) =>
+    return data ?? [];
+  }
+
+  private async loadActiveExpressionPermissions(): Promise<
+    RequiredPermissionSummary[]
+  > {
+    const { data, error } = await this.supabaseService.client
+      .from('expression_configs')
+      .select(
+        'expression_config_permissions(core_permission_id, core_permissions(id,name,law_reference))',
+      )
+      .eq('status', 'ACTIVE')
+      .returns<
+        Array<{
+          expression_config_permissions?: DbLicensingConfigPermissionRow[] | null;
+        }>
+      >();
+
+    if (error) {
+      throwSupabaseError(
+        'EXPRESSION_CONFIGS_LOAD_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
+    }
+
+    return dedupeRequiredPermissions(
+      (data ?? []).flatMap((config) =>
+        (config.expression_config_permissions ?? []).map((permissionRow) =>
           mapReferencedPermissionSummary(
             permissionRow.core_permission_id,
             permissionRow.core_permissions,
           ),
+        ),
       ),
-    }));
+    );
+  }
+
+  private async loadActiveModificationPermissions(): Promise<
+    RequiredPermissionSummary[]
+  > {
+    const { data, error } = await this.supabaseService.client
+      .from('modification_configs')
+      .select(
+        'modification_config_permissions(core_permission_id, core_permissions(id,name,law_reference))',
+      )
+      .eq('status', 'ACTIVE')
+      .returns<
+        Array<{
+          modification_config_permissions?: DbLicensingConfigPermissionRow[] | null;
+        }>
+      >();
+
+    if (error) {
+      throwSupabaseError(
+        'MODIFICATION_CONFIGS_LOAD_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
+    }
+
+    return dedupeRequiredPermissions(
+      (data ?? []).flatMap((config) =>
+        (config.modification_config_permissions ?? []).map((permissionRow) =>
+          mapReferencedPermissionSummary(
+            permissionRow.core_permission_id,
+            permissionRow.core_permissions,
+          ),
+        ),
+      ),
+    );
+  }
+
+  private async loadLicensingDependencyPermissions(): Promise<{
+    expressionPermissions: RequiredPermissionSummary[];
+    modificationPermissions: RequiredPermissionSummary[];
+  }> {
+    const [expressionPermissions, modificationPermissions] = await Promise.all([
+      this.loadActiveExpressionPermissions(),
+      this.loadActiveModificationPermissions(),
+    ]);
+
+    return { expressionPermissions, modificationPermissions };
+  }
+
+  private async loadLicensingDependencyPermissionsCached(): Promise<{
+    expressionPermissions: RequiredPermissionSummary[];
+    modificationPermissions: RequiredPermissionSummary[];
+  }> {
+    const now = Date.now();
+    const cached = this.licensingDependencyPermissionsCache;
+    if (cached && cached.expiresAt > now) return cached.value;
+
+    const value = await this.loadLicensingDependencyPermissions();
+    this.licensingDependencyPermissionsCache = {
+      value,
+      expiresAt: now + 60_000,
+    };
+
+    return value;
   }
 
   private async loadLicensingEligibilityDefinitions(): Promise<{
     digitalConfigs: ProductLicensingConfigDefinition[];
     physicalConfigs: ProductLicensingConfigDefinition[];
   }> {
-    const [digitalConfigs, physicalConfigs] = await Promise.all([
+    const [
+      digitalConfigs,
+      physicalConfigs,
+      dependencyPermissions,
+    ] = await Promise.all([
       this.loadActiveDigitalEligibilityConfigs(),
       this.loadActivePhysicalEligibilityConfigs(),
+      this.loadLicensingDependencyPermissionsCached(),
     ]);
 
-    return { digitalConfigs, physicalConfigs };
+    return {
+      digitalConfigs: digitalConfigs.map((config) => ({
+        configId: config.id,
+        configType: 'DIGITAL',
+        title: formatDigitalEligibilityTitle(
+          config.target_platform,
+          config.duration_type,
+        ),
+        referencedPermissions: buildRequiredPermissionsFromDependencies({
+          basePermissions: (config.digital_right_config_permissions ?? []).map(
+            (permissionRow) =>
+              mapReferencedPermissionSummary(
+                permissionRow.core_permission_id,
+                permissionRow.core_permissions,
+              ),
+          ),
+          priceModifierKeys: (config.digital_right_config_price_modifiers ?? []).map(
+            (modifier) => modifier.modifier_key,
+          ),
+          expressionPermissions: dependencyPermissions.expressionPermissions,
+          modificationPermissions: dependencyPermissions.modificationPermissions,
+        }),
+      })),
+      physicalConfigs: physicalConfigs.map((config) => ({
+        configId: config.id,
+        configType: 'PHYSICAL',
+        title: config.venue_usage_type,
+        referencedPermissions: buildRequiredPermissionsFromDependencies({
+          basePermissions: (config.physical_right_config_permissions ?? []).map(
+            (permissionRow) =>
+              mapReferencedPermissionSummary(
+                permissionRow.core_permission_id,
+                permissionRow.core_permissions,
+              ),
+          ),
+          priceModifierKeys: (config.physical_right_config_price_modifiers ?? []).map(
+            (modifier) => modifier.modifier_key,
+          ),
+          expressionPermissions: dependencyPermissions.expressionPermissions,
+          modificationPermissions: dependencyPermissions.modificationPermissions,
+        }),
+      })),
+    };
   }
 
   private async loadLicensingEligibilityDefinitionsCached(): Promise<{
@@ -464,7 +601,7 @@ export class ProductsService {
     const { data, error } = await this.supabaseService.client
       .from('product_digital_right_registrations')
       .select(
-        'id,right_config_id,status,joined_at,joined_by,removed_at,removed_by,digital_right_configs(id,status,target_platform,duration_type,digital_right_config_permissions(core_permission_id, core_permissions(id,name,law_reference)))',
+        'id,right_config_id,status,joined_at,joined_by,removed_at,removed_by,digital_right_configs(id,status,target_platform,duration_type,digital_right_config_permissions(core_permission_id, core_permissions(id,name,law_reference)),digital_right_config_price_modifiers(modifier_key))',
       )
       .eq('product_id', productId)
       .order('joined_at', { ascending: false })
@@ -478,17 +615,27 @@ export class ProductsService {
       );
     }
 
+    const dependencyPermissions =
+      await this.loadLicensingDependencyPermissionsCached();
+
     return (data ?? [])
       .filter((registration) => registration.digital_right_configs)
       .map((registration) => {
         const config = registration.digital_right_configs!;
-        const referencedPermissions = (config.digital_right_config_permissions ?? []).map(
-          (permissionRow) =>
-            mapReferencedPermissionSummary(
-              permissionRow.core_permission_id,
-              permissionRow.core_permissions,
-            ),
-        );
+        const referencedPermissions = buildRequiredPermissionsFromDependencies({
+          basePermissions: (config.digital_right_config_permissions ?? []).map(
+            (permissionRow) =>
+              mapReferencedPermissionSummary(
+                permissionRow.core_permission_id,
+                permissionRow.core_permissions,
+              ),
+          ),
+          priceModifierKeys: (config.digital_right_config_price_modifiers ?? []).map(
+            (modifier) => modifier.modifier_key,
+          ),
+          expressionPermissions: dependencyPermissions.expressionPermissions,
+          modificationPermissions: dependencyPermissions.modificationPermissions,
+        });
         const allowedPermissionSet = new Set(allowedPermissionIds);
         const missingPermissions = referencedPermissions.filter(
           (permission) => !allowedPermissionSet.has(permission.id),
@@ -523,7 +670,7 @@ export class ProductsService {
     const { data, error } = await this.supabaseService.client
       .from('product_digital_right_registrations')
       .select(
-        'product_id,id,right_config_id,status,joined_at,joined_by,removed_at,removed_by,digital_right_configs(id,status,target_platform,duration_type,digital_right_config_permissions(core_permission_id, core_permissions(id,name,law_reference)))',
+        'product_id,id,right_config_id,status,joined_at,joined_by,removed_at,removed_by,digital_right_configs(id,status,target_platform,duration_type,digital_right_config_permissions(core_permission_id, core_permissions(id,name,law_reference)),digital_right_config_price_modifiers(modifier_key))',
       )
       .in('product_id', productIds)
       .order('joined_at', { ascending: false })
@@ -542,6 +689,9 @@ export class ProductsService {
       return acc;
     }, {});
 
+    const dependencyPermissions =
+      await this.loadLicensingDependencyPermissionsCached();
+
     return productIds.reduce<Record<string, ProductDto['digitalPackageRegistrations']>>(
       (acc, productId) => {
         const allowedPermissionIds = allowedPermissionIdsByProductId[productId] ?? [];
@@ -550,13 +700,20 @@ export class ProductsService {
           .filter((registration) => registration.digital_right_configs)
           .map((registration) => {
             const config = registration.digital_right_configs!;
-            const referencedPermissions = (config.digital_right_config_permissions ?? []).map(
-              (permissionRow) =>
-                mapReferencedPermissionSummary(
-                  permissionRow.core_permission_id,
-                  permissionRow.core_permissions,
-                ),
-            );
+            const referencedPermissions = buildRequiredPermissionsFromDependencies({
+              basePermissions: (config.digital_right_config_permissions ?? []).map(
+                (permissionRow) =>
+                  mapReferencedPermissionSummary(
+                    permissionRow.core_permission_id,
+                    permissionRow.core_permissions,
+                  ),
+              ),
+              priceModifierKeys: (config.digital_right_config_price_modifiers ?? []).map(
+                (modifier) => modifier.modifier_key,
+              ),
+              expressionPermissions: dependencyPermissions.expressionPermissions,
+              modificationPermissions: dependencyPermissions.modificationPermissions,
+            });
             const missingPermissions = referencedPermissions.filter(
               (permission) => !allowedPermissionSet.has(permission.id),
             );
@@ -592,7 +749,7 @@ export class ProductsService {
     const { data, error } = await this.supabaseService.client
       .from('product_physical_right_registrations')
       .select(
-        'id,right_config_id,status,joined_at,joined_by,removed_at,removed_by,physical_right_configs(id,status,venue_usage_type,physical_right_config_permissions(core_permission_id, core_permissions(id,name,law_reference)))',
+        'id,right_config_id,status,joined_at,joined_by,removed_at,removed_by,physical_right_configs(id,status,venue_usage_type,physical_right_config_permissions(core_permission_id, core_permissions(id,name,law_reference)),physical_right_config_price_modifiers(modifier_key))',
       )
       .eq('product_id', productId)
       .order('joined_at', { ascending: false })
@@ -602,17 +759,27 @@ export class ProductsService {
       throwSupabaseError('PRODUCTS_QUERY_FAILED', HttpStatus.INTERNAL_SERVER_ERROR, error);
     }
 
+    const dependencyPermissions =
+      await this.loadLicensingDependencyPermissionsCached();
+
     return (data ?? [])
       .filter((registration) => registration.physical_right_configs)
       .map((registration) => {
         const config = registration.physical_right_configs!;
-        const referencedPermissions = (config.physical_right_config_permissions ?? []).map(
-          (permissionRow) =>
-            mapReferencedPermissionSummary(
-              permissionRow.core_permission_id,
-              permissionRow.core_permissions,
-            ),
-        );
+        const referencedPermissions = buildRequiredPermissionsFromDependencies({
+          basePermissions: (config.physical_right_config_permissions ?? []).map(
+            (permissionRow) =>
+              mapReferencedPermissionSummary(
+                permissionRow.core_permission_id,
+                permissionRow.core_permissions,
+              ),
+          ),
+          priceModifierKeys: (config.physical_right_config_price_modifiers ?? []).map(
+            (modifier) => modifier.modifier_key,
+          ),
+          expressionPermissions: dependencyPermissions.expressionPermissions,
+          modificationPermissions: dependencyPermissions.modificationPermissions,
+        });
         const allowedPermissionSet = new Set(allowedPermissionIds);
         const missingPermissions = referencedPermissions.filter(
           (permission) => !allowedPermissionSet.has(permission.id),
@@ -644,7 +811,7 @@ export class ProductsService {
     const { data, error } = await this.supabaseService.client
       .from('product_physical_right_registrations')
       .select(
-        'product_id,id,right_config_id,status,joined_at,joined_by,removed_at,removed_by,physical_right_configs(id,status,venue_usage_type,physical_right_config_permissions(core_permission_id, core_permissions(id,name,law_reference)))',
+        'product_id,id,right_config_id,status,joined_at,joined_by,removed_at,removed_by,physical_right_configs(id,status,venue_usage_type,physical_right_config_permissions(core_permission_id, core_permissions(id,name,law_reference)),physical_right_config_price_modifiers(modifier_key))',
       )
       .in('product_id', productIds)
       .order('joined_at', { ascending: false })
@@ -663,6 +830,9 @@ export class ProductsService {
       return acc;
     }, {});
 
+    const dependencyPermissions =
+      await this.loadLicensingDependencyPermissionsCached();
+
     return productIds.reduce<Record<string, ProductDto['physicalPackageRegistrations']>>(
       (acc, productId) => {
         const allowedPermissionIds = allowedPermissionIdsByProductId[productId] ?? [];
@@ -671,13 +841,20 @@ export class ProductsService {
           .filter((registration) => registration.physical_right_configs)
           .map((registration) => {
             const config = registration.physical_right_configs!;
-            const referencedPermissions = (config.physical_right_config_permissions ?? []).map(
-              (permissionRow) =>
-                mapReferencedPermissionSummary(
-                  permissionRow.core_permission_id,
-                  permissionRow.core_permissions,
-                ),
-            );
+            const referencedPermissions = buildRequiredPermissionsFromDependencies({
+              basePermissions: (config.physical_right_config_permissions ?? []).map(
+                (permissionRow) =>
+                  mapReferencedPermissionSummary(
+                    permissionRow.core_permission_id,
+                    permissionRow.core_permissions,
+                  ),
+              ),
+              priceModifierKeys: (config.physical_right_config_price_modifiers ?? []).map(
+                (modifier) => modifier.modifier_key,
+              ),
+              expressionPermissions: dependencyPermissions.expressionPermissions,
+              modificationPermissions: dependencyPermissions.modificationPermissions,
+            });
             const missingPermissions = referencedPermissions.filter(
               (permission) => !allowedPermissionSet.has(permission.id),
             );

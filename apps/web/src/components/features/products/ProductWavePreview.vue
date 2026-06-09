@@ -8,6 +8,7 @@ const props = defineProps<{
   compact?: boolean
   disabled?: boolean
   rightLabel?: string | null
+  trackStatus?: 'PUBLISHED' | 'PENDING' | 'HIDDEN'
 }>()
 
 const waveformContainer = ref<HTMLElement | null>(null)
@@ -16,7 +17,18 @@ const isReady = ref(false)
 const isPlaying = ref(false)
 const localError = ref<string | null>(null)
 
+const getCssVarColor = (variableName: string, fallback: string) => {
+  if (typeof window === 'undefined') return fallback
+  const value = getComputedStyle(document.documentElement).getPropertyValue(variableName).trim()
+  return value.length > 0 ? value : fallback
+}
+
 const iconClass = computed(() => (isPlaying.value ? 'pi pi-pause' : 'pi pi-play'))
+const resolvedWaveColor = computed(() => {
+  if (props.trackStatus === 'PUBLISHED') return getCssVarColor('--admin-success-500', '#50B070')
+  if (props.trackStatus === 'HIDDEN') return getCssVarColor('--admin-neutral-200', '#CBD5E1')
+  return getCssVarColor('--admin-accent-400', '#5F9FE2')
+})
 const rootClass = computed(() =>
   props.compact
     ? 'grid grid-cols-[2.75rem_minmax(0,1fr)_3.25rem] items-center gap-2'
@@ -24,13 +36,13 @@ const rootClass = computed(() =>
 )
 const buttonClass = computed(() =>
   props.compact
-    ? 'inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 transition hover:border-violet-300 hover:text-violet-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300'
-    : 'inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 transition hover:border-violet-300 hover:text-violet-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300',
+    ? 'inline-flex h-11 w-11 items-center justify-center rounded-2xl border bg-[color:var(--admin-surface-0)] text-[color:var(--admin-text-muted)] transition [border-color:var(--admin-border)] hover:bg-[color:var(--admin-surface-1)] disabled:cursor-not-allowed disabled:opacity-50'
+    : 'inline-flex h-10 w-10 items-center justify-center rounded-2xl border bg-[color:var(--admin-surface-0)] text-[color:var(--admin-text-muted)] transition [border-color:var(--admin-border)] hover:bg-[color:var(--admin-surface-1)] disabled:cursor-not-allowed disabled:opacity-50',
 )
 const waveformClass = computed(() => [
   'min-w-0 w-full rounded-xl',
   Boolean(props.audioUrl) && !isReady.value
-    ? 'min-h-[22px] animate-pulse bg-gradient-to-r from-slate-100 via-slate-50 to-slate-100 dark:from-slate-800 dark:via-slate-900 dark:to-slate-800'
+    ? 'min-h-[22px] animate-pulse bg-[color:var(--admin-surface-1)]'
     : '',
 ])
 
@@ -61,11 +73,16 @@ const initializeWaveSurfer = async (audioUrl: string) => {
   await nextTick()
   if (!waveformContainer.value) return
 
+  const activeColor = getCssVarColor('--admin-accent-500', '#378ADD')
+  const cursorColor = getCssVarColor('--admin-border-strong', '#64748B')
+  const waveColor = resolvedWaveColor.value
+
   const instance = WaveSurfer.create({
     container: waveformContainer.value,
-    waveColor: '#c4b5fd',
-    progressColor: '#6d4aff',
-    cursorColor: '#94a3b8',
+    waveColor,
+    progressColor: activeColor,
+    cursorColor,
+    cursorWidth: 2,
     barWidth: props.compact ? 1.5 : 3,
     barGap: props.compact ? 1 : 2,
     barRadius: 999,
@@ -133,8 +150,8 @@ const togglePlayback = async () => {
 }
 
 watch(
-  () => props.audioUrl,
-  async (audioUrl) => {
+  () => [props.audioUrl, props.trackStatus] as const,
+  async ([audioUrl]) => {
     if (!audioUrl) {
       destroyWaveSurfer()
       return
@@ -156,10 +173,10 @@ onBeforeUnmount(() => {
     <div ref="waveformContainer" :class="waveformClass" />
     <span
       v-if="rightLabel"
-      class="whitespace-nowrap text-[11px] font-medium text-slate-500 [font-variant-numeric:tabular-nums] dark:text-slate-400"
+      class="whitespace-nowrap text-[11px] font-medium text-[color:var(--admin-text-muted)] [font-variant-numeric:tabular-nums]"
     >
       {{ rightLabel }}
     </span>
-    <div v-if="localError" class="col-span-full text-xs text-red-600 dark:text-red-400">{{ localError }}</div>
+    <div v-if="localError" class="col-span-full text-xs text-[color:var(--admin-text)]">{{ localError }}</div>
   </div>
 </template>

@@ -5,7 +5,6 @@ import Tag from 'primevue/tag'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
-import Dropdown from 'primevue/dropdown'
 import Message from 'primevue/message'
 import { ApiClientError } from '../../api/axios'
 import { useAdminsStore } from '../../stores/admins.store'
@@ -13,6 +12,10 @@ import { useAuthStore } from '../../stores/auth.store'
 import type { AdminUser, UpdateAdminUserPayload } from '../../types/admins.types'
 import type { UserStatus } from '../../types/auth.types'
 import AdminStatCard from '../../components/features/admin-shell/AdminStatCard.vue'
+import AdminFilterInput from '../../components/shared/admin/AdminFilterInput.vue'
+import AdminFilterSelect from '../../components/shared/admin/AdminFilterSelect.vue'
+import AdminPageHeader from '../../components/shared/admin/AdminPageHeader.vue'
+import AdminPaginationBar from '../../components/shared/admin/AdminPaginationBar.vue'
 
 const authStore = useAuthStore()
 const adminsStore = useAdminsStore()
@@ -78,10 +81,6 @@ onMounted(() => {
 })
 
 const totalPages = computed(() => adminsStore.meta?.pagination.totalPages ?? 1)
-const pageStart = computed(() =>
-  adminsStore.totalItems === 0 ? 0 : (page.value - 1) * pageSize.value + 1,
-)
-const pageEnd = computed(() => Math.min(page.value * pageSize.value, adminsStore.totalItems))
 
 const goToPage = async (nextPage: number) => {
   const safePage = Math.min(Math.max(nextPage, 1), totalPages.value)
@@ -94,10 +93,6 @@ const setPageSize = async (nextPageSize: number) => {
   pageSize.value = nextPageSize
   page.value = 1
   await loadAdmins()
-}
-
-const onPageSizeChange = (value: number) => {
-  void setPageSize(value)
 }
 
 const sortedAdmins = computed(() => {
@@ -125,18 +120,13 @@ const sortedAdmins = computed(() => {
   return items
 })
 
-const paginationButtons = computed(() => {
-  const maxButtons = 7
-  const current = page.value
-  const pages = totalPages.value
+const handlePageChange = async (nextPage: number) => {
+  await goToPage(nextPage)
+}
 
-  if (pages <= maxButtons) {
-    return Array.from({ length: pages }, (_, index) => index + 1)
-  }
-
-  const start = Math.max(1, Math.min(current - 2, pages - maxButtons + 1))
-  return Array.from({ length: maxButtons }, (_, index) => start + index)
-})
+const handlePageSizeChange = async (nextPageSize: number) => {
+  await setPageSize(nextPageSize)
+}
 
 const formatDateTime = (value: string) => {
   const date = new Date(value)
@@ -306,34 +296,24 @@ const confirmDelete = async () => {
 
 <template>
   <div class="flex min-w-0 flex-col gap-4 pb-8 sm:gap-5 lg:gap-6">
-    <section
-      class="flex flex-col gap-4 rounded-[32px] border border-slate-200/80 bg-[radial-gradient(circle_at_top_left,rgba(245,158,11,0.2),transparent_34%),radial-gradient(circle_at_70%_120%,rgba(109,74,255,0.14),transparent_42%),linear-gradient(135deg,rgba(255,255,255,0.96),rgba(250,245,255,0.92))] p-5 shadow-2xl shadow-slate-200/40 dark:border-slate-800 dark:bg-[radial-gradient(circle_at_top_left,rgba(245,158,11,0.18),transparent_30%),radial-gradient(circle_at_70%_120%,rgba(124,58,237,0.18),transparent_42%),linear-gradient(135deg,rgba(15,23,42,0.92),rgba(2,6,23,0.96))] dark:shadow-black/20 sm:p-6 xl:flex-row xl:items-center xl:justify-between"
+    <AdminPageHeader
+      kicker="Super Admin Only"
+      title="Quản lý admin nội bộ"
+      description="Kiểm soát tài khoản quản trị, chỉnh sửa thông tin cơ bản, khoá/mở khoá và giữ an toàn cho tài khoản SUPER_ADMIN."
+      icon-class="pi pi-shield"
     >
-      <div class="min-w-0 space-y-3">
-        <div class="inline-flex items-center rounded-full bg-amber-100 px-3 py-1 text-xs font-bold uppercase tracking-[0.24em] text-amber-700 dark:bg-amber-500/20 dark:text-amber-200">
-          Super Admin Only
-        </div>
-        <div>
-          <h2 class="!m-0 text-2xl font-semibold tracking-tight !text-slate-950 sm:text-3xl dark:!text-white">
-            Quản lý admin nội bộ
-          </h2>
-          <p class="mt-3 max-w-3xl text-sm leading-6 text-slate-600 dark:text-slate-300">
-            Khu vực này dùng để kiểm soát tài khoản quản trị, chỉnh sửa thông tin cơ bản,
-            khoá/mở khoá và giữ an toàn cho tài khoản SUPER_ADMIN.
-          </p>
-        </div>
-      </div>
-
-      <button
-        type="button"
-        class="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-violet-600 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-violet-500 dark:hover:bg-violet-400 sm:w-auto"
-        :disabled="adminsStore.isLoading || isMutating"
-        @click="openCreate"
-      >
-        <i class="pi pi-plus" />
-        Tạo admin mới
-      </button>
-    </section>
+      <template #actions>
+        <button
+          type="button"
+          class="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[color:var(--admin-primary-button-bg)] px-4 py-3 text-sm font-semibold text-[color:var(--admin-primary-button-text)] transition hover:bg-[color:var(--admin-primary-button-hover)] active:bg-[color:var(--admin-primary-button-active)] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+          :disabled="adminsStore.isLoading || isMutating"
+          @click="openCreate"
+        >
+          <i class="pi pi-plus" />
+          Tạo admin mới
+        </button>
+      </template>
+    </AdminPageHeader>
 
     <section class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <AdminStatCard
@@ -366,39 +346,40 @@ const confirmDelete = async () => {
       />
     </section>
 
-    <section class="rounded-[32px] border border-slate-200/80 bg-white/92 p-6 shadow-xl shadow-slate-200/40 backdrop-blur dark:border-slate-800 dark:bg-slate-900/80 dark:shadow-black/20">
+    <section class="rounded-[32px] border [border-color:var(--admin-border)] bg-[linear-gradient(180deg,var(--admin-surface-0),var(--admin-surface-1))] p-6 shadow-[var(--admin-elev-1)] backdrop-blur">
       <div class="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
         <div>
-          <div class="text-lg font-semibold text-slate-950 dark:text-white">Directory admin</div>
-          <div class="mt-2 text-sm text-slate-500 dark:text-slate-400">
+          <div class="text-lg font-semibold text-[color:var(--admin-text)]">Directory admin</div>
+          <div class="mt-2 text-sm text-[color:var(--admin-text-muted)]">
             Tìm kiếm theo email, họ tên hoặc lọc theo trạng thái tài khoản.
           </div>
         </div>
 
         <div class="grid w-full grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(0,320px)_190px_190px_auto_auto] xl:items-end">
-          <InputText v-model="keyword" placeholder="Tìm theo email hoặc họ tên" class="w-full min-w-0" />
-          <Dropdown
-            v-model="statusFilter"
-            :options="statusOptions"
-            optionLabel="label"
-            optionValue="value"
-            placeholder="Trạng thái"
-            class="w-full min-w-0"
+          <AdminFilterInput
+            v-model="keyword"
+            icon-class="pi pi-search"
+            placeholder="Tìm theo email hoặc họ tên"
+            :disabled="adminsStore.isLoading || isMutating"
           />
-          <Dropdown
+          <AdminFilterSelect
+            v-model="statusFilter"
+            icon-class="pi pi-tag"
+            :options="statusOptions"
+            :disabled="adminsStore.isLoading || isMutating"
+          />
+          <AdminFilterSelect
             v-model="sortValue"
+            icon-class="pi pi-sort-alt"
             :options="sortOptions"
-            optionLabel="label"
-            optionValue="value"
-            placeholder="Sắp xếp"
-            class="w-full min-w-0"
+            :disabled="adminsStore.isLoading || isMutating"
           />
           <Button label="Tìm kiếm" severity="secondary" class="w-full xl:w-auto" :disabled="adminsStore.isLoading || isMutating" @click="loadAdmins" />
           <Button label="Làm mới" severity="contrast" outlined class="w-full xl:w-auto" :disabled="adminsStore.isLoading || isMutating" @click="loadAdmins" />
         </div>
       </div>
 
-      <div class="mt-4 rounded-[24px] border border-slate-200/80 bg-slate-50/80 px-4 py-3 text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-950/50 dark:text-slate-300">
+      <div class="mt-4 rounded-[24px] border [border-color:var(--admin-border)] bg-[color:var(--admin-surface-1)] px-4 py-3 text-sm text-[color:var(--admin-text-muted)]">
         Tài khoản mang role <span class="font-semibold">SUPER_ADMIN</span> được hiển thị để
         quan sát nhưng không cho sửa trạng thái hay xoá trực tiếp trong giao diện này.
       </div>
@@ -407,10 +388,10 @@ const confirmDelete = async () => {
         <Message v-if="errorMessage" severity="error">{{ errorMessage }}</Message>
       </div>
 
-      <div class="mt-6 overflow-hidden rounded-[24px] border border-slate-200/80 bg-white dark:border-slate-800 dark:bg-slate-950/40">
+      <div class="mt-6 overflow-hidden rounded-[28px] border border-[color:var(--admin-border-strong)] bg-[color:var(--admin-surface-1)] shadow-[var(--admin-elev-1)]">
         <div class="overflow-x-auto">
           <table class="min-w-[980px] border-separate border-spacing-0 text-left text-sm">
-            <thead class="bg-slate-50 text-xs uppercase tracking-[0.18em] text-slate-500 dark:bg-slate-950/60 dark:text-slate-300">
+            <thead class="bg-[linear-gradient(180deg,var(--admin-surface-3),var(--admin-surface-2))] text-xs uppercase tracking-[0.18em] text-[color:var(--admin-text)]">
               <tr>
                 <th class="px-5 py-4 font-semibold">Admin</th>
                 <th class="px-5 py-4 font-semibold">Email</th>
@@ -420,28 +401,31 @@ const confirmDelete = async () => {
                 <th class="px-5 py-4 text-right font-semibold">Thao tác</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-slate-200/70 dark:divide-slate-800">
+            <tbody class="divide-y [--tw-divide-opacity:1] [border-color:var(--admin-border)] divide-y-[color:var(--admin-border)]">
               <tr
-                v-for="admin in sortedAdmins"
+                v-for="(admin, index) in sortedAdmins"
                 :key="admin.id"
-                class="bg-white transition hover:bg-slate-50/70 dark:bg-transparent dark:hover:bg-slate-900/30"
+                class="transition"
+                :class="index % 2 === 0
+                  ? 'bg-[color:var(--admin-surface-0)] hover:bg-[color:var(--admin-surface-2)]'
+                  : 'bg-[color:var(--admin-surface-1)] hover:bg-[color:var(--admin-surface-2)]'"
               >
                 <td class="px-5 py-4">
                   <div class="flex items-center gap-3">
-                    <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 to-fuchsia-500 text-sm font-semibold text-white">
+                    <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,var(--admin-primary-600),var(--admin-accent-400))] text-sm font-semibold text-[color:var(--admin-brand-contrast)]">
                       {{ admin.fullName.slice(0, 1).toUpperCase() }}
                     </div>
                     <div class="min-w-0">
-                      <div class="truncate font-semibold text-slate-900 dark:text-white">
+                      <div class="truncate font-semibold text-[color:var(--admin-text)]">
                         {{ admin.fullName }}
                       </div>
-                      <div class="truncate text-xs text-slate-500 dark:text-slate-400">
+                      <div class="truncate text-xs text-[color:var(--admin-text-muted)]">
                         Tạo lúc {{ formatDateTime(admin.createdAt) }}
                       </div>
                     </div>
                   </div>
                 </td>
-                <td class="px-5 py-4 text-slate-600 dark:text-slate-300">
+                <td class="px-5 py-4 text-[color:var(--admin-text-muted)]">
                   {{ admin.email }}
                 </td>
                 <td class="px-5 py-4">
@@ -449,7 +433,7 @@ const confirmDelete = async () => {
                     <span
                       v-for="role in admin.roles"
                       :key="`${admin.id}-${role.roleId}`"
-                      class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300"
+                      class="rounded-full border [border-color:var(--admin-border)] bg-[color:var(--admin-surface-0)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]"
                     >
                       {{ role.roleName }}
                     </span>
@@ -467,7 +451,7 @@ const confirmDelete = async () => {
                     "
                   />
                 </td>
-                <td class="px-5 py-4 text-slate-600 dark:text-slate-300">
+                <td class="px-5 py-4 text-[color:var(--admin-text-muted)]">
                   {{ formatDateTime(admin.createdAt) }}
                 </td>
                 <td class="px-5 py-4">
@@ -498,7 +482,7 @@ const confirmDelete = async () => {
               </tr>
 
               <tr v-if="!adminsStore.isLoading && sortedAdmins.length === 0">
-                <td colspan="6" class="px-5 py-10 text-center text-sm text-slate-500 dark:text-slate-400">
+                <td colspan="6" class="px-5 py-10 text-center text-sm text-[color:var(--admin-text-muted)]">
                   Không có admin phù hợp với bộ lọc hiện tại.
                 </td>
               </tr>
@@ -507,57 +491,15 @@ const confirmDelete = async () => {
         </div>
       </div>
 
-      <div class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div class="text-sm text-slate-500 dark:text-slate-400">
-          Hiển thị {{ pageStart }}-{{ pageEnd }} / {{ adminsStore.totalItems }} admin
-        </div>
-
-        <div class="flex flex-wrap items-center justify-end gap-2">
-          <Dropdown
-            :modelValue="pageSize"
-            :options="[
-              { label: '10 / trang', value: 10 },
-              { label: '20 / trang', value: 20 },
-              { label: '50 / trang', value: 50 },
-            ]"
-            optionLabel="label"
-            optionValue="value"
-            class="w-[140px]"
-            @update:modelValue="onPageSizeChange"
-          />
-
-          <Button
-            icon="pi pi-angle-left"
-            severity="secondary"
-            rounded
-            :disabled="adminsStore.isLoading || page <= 1"
-            @click="() => void goToPage(page - 1)"
-          />
-
-          <button
-            v-for="value in paginationButtons"
-            :key="`admin-page-${value}`"
-            type="button"
-            class="inline-flex h-10 min-w-[40px] items-center justify-center rounded-2xl border px-3 text-sm font-semibold transition"
-            :class="
-              value === page
-                ? 'border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-500/30 dark:bg-violet-500/10 dark:text-violet-200'
-                : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:text-white'
-            "
-            :disabled="adminsStore.isLoading"
-            @click="() => void goToPage(value)"
-          >
-            {{ value }}
-          </button>
-
-          <Button
-            icon="pi pi-angle-right"
-            severity="secondary"
-            rounded
-            :disabled="adminsStore.isLoading || page >= totalPages"
-            @click="() => void goToPage(page + 1)"
-          />
-        </div>
+      <div class="mt-4">
+        <AdminPaginationBar
+          :page="page"
+          :page-size="pageSize"
+          :total-items="adminsStore.totalItems"
+          :disabled="adminsStore.isLoading || isMutating"
+          @update:page="handlePageChange"
+          @update:page-size="handlePageSizeChange"
+        />
       </div>
     </section>
 
@@ -568,16 +510,16 @@ const confirmDelete = async () => {
       class="w-[calc(100vw-1rem)] sm:w-[min(540px,92vw)]"
       :pt="{ content: { class: 'max-h-[calc(100svh-12rem)] overflow-y-auto' } }"
     >
-      <div class="space-y-4">
-        <Message v-if="lockError" severity="error">{{ lockError }}</Message>
-        <div class="text-sm leading-6 text-slate-600 dark:text-slate-300">
+        <div class="space-y-4">
+          <Message v-if="lockError" severity="error">{{ lockError }}</Message>
+          <div class="text-sm leading-6 text-[color:var(--admin-text-muted)]">
           {{
             lockNextStatus === 'LOCKED'
               ? 'Bạn sắp khoá tài khoản admin bên dưới.'
               : 'Bạn sắp mở khoá lại tài khoản admin bên dưới.'
           }}
         </div>
-        <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+        <div class="rounded-2xl border [border-color:var(--admin-border)] bg-[color:var(--admin-surface-1)] px-4 py-3 text-sm font-medium text-[color:var(--admin-text)]">
           {{ lockTarget?.email }}
         </div>
       </div>
@@ -596,12 +538,12 @@ const confirmDelete = async () => {
       class="w-[calc(100vw-1rem)] sm:w-[min(540px,92vw)]"
       :pt="{ content: { class: 'max-h-[calc(100svh-12rem)] overflow-y-auto' } }"
     >
-      <div class="space-y-4">
-        <Message v-if="deleteError" severity="error">{{ deleteError }}</Message>
-        <div class="text-sm leading-6 text-slate-600 dark:text-slate-300">
+        <div class="space-y-4">
+          <Message v-if="deleteError" severity="error">{{ deleteError }}</Message>
+          <div class="text-sm leading-6 text-[color:var(--admin-text-muted)]">
           Tài khoản này sẽ bị xoá khỏi danh sách admin nội bộ.
         </div>
-        <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+        <div class="rounded-2xl border [border-color:var(--admin-border)] bg-[color:var(--admin-surface-1)] px-4 py-3 text-sm font-medium text-[color:var(--admin-text)]">
           {{ deleteTarget?.email }}
         </div>
       </div>
@@ -620,18 +562,18 @@ const confirmDelete = async () => {
       class="w-[calc(100vw-1rem)] sm:w-[min(620px,94vw)]"
       :pt="{ content: { class: 'max-h-[calc(100svh-12rem)] overflow-y-auto' } }"
     >
-      <div class="space-y-4">
+      <div class="space-y-4 rounded-[28px] border [border-color:var(--admin-border)] bg-[linear-gradient(180deg,var(--admin-surface-0),var(--admin-surface-1))] p-1">
         <Message v-if="createError" severity="error">{{ createError }}</Message>
         <div class="grid gap-4">
-          <label class="grid gap-2 text-sm text-slate-600 dark:text-slate-300">
+          <label class="grid gap-2 text-sm text-[color:var(--admin-text-muted)]">
             <span class="font-medium">Họ và tên</span>
             <InputText v-model="createForm.fullName" class="w-full" />
           </label>
-          <label class="grid gap-2 text-sm text-slate-600 dark:text-slate-300">
+          <label class="grid gap-2 text-sm text-[color:var(--admin-text-muted)]">
             <span class="font-medium">Email</span>
             <InputText v-model="createForm.email" class="w-full" />
           </label>
-          <label class="grid gap-2 text-sm text-slate-600 dark:text-slate-300">
+          <label class="grid gap-2 text-sm text-[color:var(--admin-text-muted)]">
             <span class="font-medium">Mật khẩu</span>
             <Password v-model="createForm.password" toggleMask class="w-full" :feedback="false" />
           </label>
@@ -652,18 +594,18 @@ const confirmDelete = async () => {
       class="w-[calc(100vw-1rem)] sm:w-[min(620px,94vw)]"
       :pt="{ content: { class: 'max-h-[calc(100svh-12rem)] overflow-y-auto' } }"
     >
-      <div class="space-y-4">
+      <div class="space-y-4 rounded-[28px] border [border-color:var(--admin-border)] bg-[linear-gradient(180deg,var(--admin-surface-0),var(--admin-surface-1))] p-1">
         <Message v-if="editError" severity="error">{{ editError }}</Message>
         <div class="grid gap-4">
-          <label class="grid gap-2 text-sm text-slate-600 dark:text-slate-300">
+          <label class="grid gap-2 text-sm text-[color:var(--admin-text-muted)]">
             <span class="font-medium">Họ và tên</span>
             <InputText v-model="editForm.fullName" class="w-full" />
           </label>
-          <label class="grid gap-2 text-sm text-slate-600 dark:text-slate-300">
+          <label class="grid gap-2 text-sm text-[color:var(--admin-text-muted)]">
             <span class="font-medium">Email</span>
             <InputText v-model="editForm.email" class="w-full" />
           </label>
-          <label class="grid gap-2 text-sm text-slate-600 dark:text-slate-300">
+          <label class="grid gap-2 text-sm text-[color:var(--admin-text-muted)]">
             <span class="font-medium">Mật khẩu mới (không bắt buộc)</span>
             <Password v-model="editForm.password" toggleMask class="w-full" :feedback="false" />
           </label>

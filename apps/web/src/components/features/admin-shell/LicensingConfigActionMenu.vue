@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import Dialog from 'primevue/dialog'
 import type { LicensingConfigResource } from '../../../types/licensing-configs.types'
+import { computed } from 'vue'
 
-defineProps<{
+const props = defineProps<{
   visible: boolean
   item: any | null
   resource: LicensingConfigResource
@@ -11,6 +12,13 @@ defineProps<{
   isLoading: boolean
   canOpenPackages: boolean
 }>()
+
+const resourceLabel = computed(() => {
+  if (props.resource === 'digital') return 'Nền tảng số'
+  if (props.resource === 'physical') return 'Sử dụng vật lý'
+  if (props.resource === 'expression') return 'Biểu hiện'
+  return 'Biến đổi'
+})
 
 const emit = defineEmits<{
   close: []
@@ -54,7 +62,7 @@ const handleAction = (
     :draggable="false"
     class="sm:hidden w-[calc(100vw-1rem)] max-w-[28rem]"
     :pt="{
-      root: { class: 'overflow-hidden rounded-[28px] border border-slate-200/80 bg-white dark:border-slate-800 dark:bg-slate-950' },
+      root: { class: 'overflow-hidden rounded-[28px] border [border-color:var(--admin-border)] bg-[color:var(--admin-surface-0)]' },
       mask: { class: 'items-end px-2 pb-2 sm:items-center sm:p-6' },
       header: { class: 'px-5 pb-0 pt-5' },
       content: { class: 'max-h-[calc(100svh-6rem)] overflow-y-auto px-5 pb-5 pt-0' },
@@ -64,7 +72,7 @@ const handleAction = (
     <template #header>
       <div v-if="item" class="w-full">
         <div class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-          {{ resource }}
+          {{ resourceLabel }}
         </div>
         <div class="mt-2 text-lg font-semibold text-slate-950 dark:text-white">
           {{ detailText }}
@@ -78,7 +86,7 @@ const handleAction = (
     <div v-if="item" class="space-y-3">
       <button
         type="button"
-        class="flex w-full items-start gap-3 rounded-[24px] border border-slate-200/80 bg-white px-4 py-4 text-left transition hover:border-violet-300 hover:bg-violet-50/60 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-800 dark:bg-slate-950/60 dark:hover:border-violet-500/30 dark:hover:bg-slate-900"
+        class="flex w-full items-start gap-3 rounded-[24px] border border-slate-200/80 bg-white px-4 py-4 text-left transition hover:border-[color:rgb(var(--admin-primary-rgb)/0.28)] hover:bg-[linear-gradient(135deg,var(--admin-primary-50),var(--admin-accent-50))] disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-800 dark:bg-slate-950/60 dark:hover:border-[color:rgb(var(--admin-primary-rgb)/0.38)] dark:hover:bg-[color:var(--admin-primary-50)]"
         :disabled="isLoading"
         @click="handleAction('edit', item)"
       >
@@ -93,7 +101,7 @@ const handleAction = (
 
       <button
         type="button"
-        class="flex w-full items-start gap-3 rounded-[24px] border border-slate-200/80 bg-white px-4 py-4 text-left transition hover:border-violet-300 hover:bg-violet-50/60 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-800 dark:bg-slate-950/60 dark:hover:border-violet-500/30 dark:hover:bg-slate-900"
+        class="flex w-full items-start gap-3 rounded-[24px] border border-slate-200/80 bg-white px-4 py-4 text-left transition hover:border-[color:rgb(var(--admin-primary-rgb)/0.28)] hover:bg-[linear-gradient(135deg,var(--admin-primary-50),var(--admin-accent-50))] disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-800 dark:bg-slate-950/60 dark:hover:border-[color:rgb(var(--admin-primary-rgb)/0.38)] dark:hover:bg-[color:var(--admin-primary-50)]"
         :disabled="isLoading"
         @click="handleAction('toggle', item)"
       >
@@ -101,14 +109,14 @@ const handleAction = (
           <i :class="item.status === 'ACTIVE' ? 'pi pi-ban' : 'pi pi-check'" />
         </span>
         <span>
-          <span class="block text-sm font-semibold text-slate-900 dark:text-white">{{ item.status === 'ACTIVE' ? 'Tắt / chuyển nháp' : 'Bật / publish' }}</span>
+          <span class="block text-sm font-semibold text-slate-900 dark:text-white">{{ item.status === 'ACTIVE' ? 'Chuyển về nháp' : 'Xuất bản' }}</span>
           <span class="mt-1 block text-xs leading-5 text-slate-500 dark:text-slate-400">Đổi trạng thái cấu hình ngay từ mobile.</span>
         </span>
       </button>
 
       <button
         type="button"
-        class="flex w-full items-start gap-3 rounded-[24px] border border-slate-200/80 bg-white px-4 py-4 text-left transition hover:border-violet-300 hover:bg-violet-50/60 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-800 dark:bg-slate-950/60 dark:hover:border-violet-500/30 dark:hover:bg-slate-900"
+        class="flex w-full items-start gap-3 rounded-[24px] border border-slate-200/80 bg-white px-4 py-4 text-left transition hover:border-[color:rgb(var(--admin-primary-rgb)/0.28)] hover:bg-[linear-gradient(135deg,var(--admin-primary-50),var(--admin-accent-50))] disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-800 dark:bg-slate-950/60 dark:hover:border-[color:rgb(var(--admin-primary-rgb)/0.38)] dark:hover:bg-[color:var(--admin-primary-50)]"
         :disabled="isLoading"
         @click="handleAction('permissions', item)"
       >
@@ -124,7 +132,7 @@ const handleAction = (
       <button
         v-if="canOpenPackages"
         type="button"
-        class="flex w-full items-start gap-3 rounded-[24px] border border-slate-200/80 bg-white px-4 py-4 text-left transition hover:border-violet-300 hover:bg-violet-50/60 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-800 dark:bg-slate-950/60 dark:hover:border-violet-500/30 dark:hover:bg-slate-900"
+        class="flex w-full items-start gap-3 rounded-[24px] border border-slate-200/80 bg-white px-4 py-4 text-left transition hover:border-[color:rgb(var(--admin-primary-rgb)/0.28)] hover:bg-[linear-gradient(135deg,var(--admin-primary-50),var(--admin-accent-50))] disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-800 dark:bg-slate-950/60 dark:hover:border-[color:rgb(var(--admin-primary-rgb)/0.38)] dark:hover:bg-[color:var(--admin-primary-50)]"
         :disabled="isLoading"
         @click="handleAction('packages', item)"
       >
@@ -133,7 +141,7 @@ const handleAction = (
         </span>
         <span>
           <span class="block text-sm font-semibold text-slate-900 dark:text-white">Xem sản phẩm tham gia</span>
-          <span class="mt-1 block text-xs leading-5 text-slate-500 dark:text-slate-400">Kiểm tra sản phẩm đang tham gia gói quyền này.</span>
+          <span class="mt-1 block text-xs leading-5 text-slate-500 dark:text-slate-400">Kiểm tra sản phẩm đang dùng cấu hình này.</span>
         </span>
       </button>
 

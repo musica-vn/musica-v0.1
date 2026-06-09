@@ -28,7 +28,7 @@ const formatCertificateStatus = (value: string) => (value === 'ACTIVE' ? 'Đang 
   >
     <div class="flex min-w-0 gap-4">
       <div
-        class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-500 text-lg font-semibold text-white shadow-lg shadow-violet-500/20"
+        class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,var(--admin-primary-600),var(--admin-accent-400))] text-lg font-semibold text-[color:var(--admin-brand-contrast)] shadow-[var(--admin-glow)]"
       >
         C
       </div>
@@ -65,14 +65,14 @@ const formatCertificateStatus = (value: string) => (value === 'ACTIVE' ? 'Đang 
     </div>
 
     <div class="flex flex-wrap items-center justify-between gap-3 lg:w-[220px] lg:flex-col lg:items-end">
-      <span class="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300">
+      <span class="inline-flex items-center rounded-full bg-emerald-50 px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-emerald-800 dark:bg-emerald-500/12 dark:text-emerald-200">
         {{ formatCertificateStatus(props.certificate.status) }}
       </span>
 
       <div class="flex flex-wrap justify-end gap-2">
         <button
           type="button"
-          class="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 transition hover:border-violet-300 hover:text-violet-600 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+          class="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-[color:var(--admin-border)] bg-[color:var(--admin-surface-0)] text-[color:var(--admin-text-muted)] transition hover:border-[color:rgb(var(--admin-primary-rgb)/0.28)] hover:text-[color:var(--admin-primary-700)] disabled:cursor-not-allowed disabled:opacity-60"
           :disabled="props.isBusy"
           @click="emit('detail', props.certificate.id)"
         >
@@ -80,7 +80,7 @@ const formatCertificateStatus = (value: string) => (value === 'ACTIVE' ? 'Đang 
         </button>
         <button
           type="button"
-          class="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 transition hover:border-violet-300 hover:text-violet-600 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+          class="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-[color:var(--admin-border)] bg-[color:var(--admin-surface-0)] text-[color:var(--admin-text-muted)] transition hover:border-[color:rgb(var(--admin-primary-rgb)/0.28)] hover:text-[color:var(--admin-primary-700)] disabled:cursor-not-allowed disabled:opacity-60"
           :disabled="props.isBusy"
           @click="emit('preview', props.certificate.id)"
         >
@@ -88,7 +88,7 @@ const formatCertificateStatus = (value: string) => (value === 'ACTIVE' ? 'Đang 
         </button>
         <button
           type="button"
-          class="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 transition hover:border-violet-300 hover:text-violet-600 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+          class="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-[color:var(--admin-border)] bg-[color:var(--admin-surface-0)] text-[color:var(--admin-text-muted)] transition hover:border-[color:rgb(var(--admin-primary-rgb)/0.28)] hover:text-[color:var(--admin-primary-700)] disabled:cursor-not-allowed disabled:opacity-60"
           :disabled="props.isBusy"
           @click="emit('download', props.certificate.id)"
         >

@@ -15,10 +15,10 @@ const emit = defineEmits<{
 <template>
   <button
     type="button"
-    class="group relative rounded-2xl border px-4 py-4 text-left transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-200/80 disabled:cursor-not-allowed disabled:opacity-60 dark:focus-visible:ring-violet-500/20"
+    class="group relative rounded-2xl border px-4 py-4 text-left transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--admin-ring)] disabled:cursor-not-allowed disabled:opacity-60"
     :class="props.selected
-      ? 'border-violet-500 bg-violet-50/80 text-violet-950 shadow-sm dark:border-violet-500/50 dark:bg-violet-950/25 dark:text-violet-100'
-      : 'border-slate-200/80 bg-white text-slate-700 hover:border-violet-300 hover:shadow-sm dark:border-slate-800 dark:bg-slate-950/40 dark:text-slate-200 dark:hover:border-violet-500/40'"
+      ? 'border-[color:rgb(var(--admin-primary-rgb)/0.22)] bg-[linear-gradient(135deg,var(--admin-primary-50),var(--admin-accent-50))] text-[color:var(--admin-primary-900)] shadow-sm'
+      : 'border-[color:var(--admin-border)] bg-[color:var(--admin-surface-0)] text-[color:var(--admin-text)] hover:border-[color:rgb(var(--admin-primary-rgb)/0.24)] hover:shadow-sm'"
     :disabled="props.disabled"
     @click="emit('toggle', props.id)"
   >
@@ -35,20 +35,20 @@ const emit = defineEmits<{
     <div class="flex items-start justify-between gap-3">
       <div class="min-w-0">
         <div class="truncate text-sm font-semibold">{{ props.name }}</div>
-        <div class="mt-1 line-clamp-2 text-xs text-slate-500 dark:text-slate-400">
+        <div class="mt-1 line-clamp-2 text-xs text-[color:var(--admin-text-muted)]">
           {{ props.lawReference }}
         </div>
       </div>
 
       <span
         v-if="props.selected"
-        class="inline-flex shrink-0 items-center rounded-full bg-violet-600 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-white"
+        class="inline-flex shrink-0 items-center rounded-full bg-[color:var(--admin-primary-button-bg)] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-[color:var(--admin-primary-button-text)]"
       >
         Đã chọn
       </span>
       <span
         v-else
-        class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-slate-200 text-slate-300 transition group-hover:border-violet-300 group-hover:text-violet-400 dark:border-slate-700 dark:text-slate-600 dark:group-hover:border-violet-500/40 dark:group-hover:text-violet-300"
+        class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border [border-color:var(--admin-border)] text-[color:var(--admin-text-muted)] transition group-hover:border-[color:rgb(var(--admin-primary-rgb)/0.24)] group-hover:text-[color:var(--admin-primary-700)]"
       >
         <i class="pi pi-plus text-[10px]" />
       </span>

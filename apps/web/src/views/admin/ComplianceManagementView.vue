@@ -13,7 +13,6 @@ import {
   uploadAdminComplianceFiles,
 } from '../../services/compliance.service'
 import ComplianceDecisionContextRail from '../../components/features/compliance/ComplianceDecisionContextRail.vue'
-import ComplianceDecisionHeader from '../../components/features/compliance/ComplianceDecisionHeader.vue'
 import ComplianceDecisionWorkspace from '../../components/features/compliance/ComplianceDecisionWorkspace.vue'
 import type {
   ComplianceDetail,
@@ -25,13 +24,13 @@ import type {
 import { useCorePermissionsStore } from '../../stores/core-permissions.store'
 
 const fieldClass =
-  'h-12 w-full min-w-0 rounded-2xl border border-slate-200/80 bg-white/90 px-4 text-sm text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-violet-400 focus:ring-4 focus:ring-violet-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-800 dark:bg-slate-950/70 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-violet-500 dark:focus:ring-violet-500/20'
+  'h-12 w-full min-w-0 rounded-2xl border bg-[color:var(--admin-surface-0)] px-4 text-sm text-[color:var(--admin-text)] shadow-sm outline-none transition placeholder:text-[color:var(--admin-text-muted)] [border-color:var(--admin-border)] focus:[border-color:var(--admin-primary-500)] focus:ring-4 focus:ring-[color:var(--admin-ring)] disabled:cursor-not-allowed disabled:opacity-60'
 const selectFieldClass =
-  'h-12 w-full min-w-0 appearance-none rounded-2xl border border-slate-200/80 bg-white/90 px-4 pr-11 text-sm text-slate-700 shadow-sm outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-800 dark:bg-slate-950/70 dark:text-slate-100 dark:focus:border-violet-500 dark:focus:ring-violet-500/20'
+  'h-12 w-full min-w-0 appearance-none rounded-2xl border bg-[color:var(--admin-surface-0)] px-4 pr-11 text-sm text-[color:var(--admin-text)] shadow-sm outline-none transition [border-color:var(--admin-border)] focus:[border-color:var(--admin-primary-500)] focus:ring-4 focus:ring-[color:var(--admin-ring)] disabled:cursor-not-allowed disabled:opacity-60'
 const primaryButtonClass =
-  'inline-flex items-center justify-center rounded-2xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-600 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-violet-500 dark:hover:bg-violet-400'
+  'inline-flex items-center justify-center rounded-2xl bg-[color:var(--admin-primary-button-bg)] px-4 py-2.5 text-sm font-semibold text-[color:var(--admin-primary-button-text)] transition hover:bg-[color:var(--admin-primary-button-hover)] active:bg-[color:var(--admin-primary-button-active)] disabled:cursor-not-allowed disabled:opacity-60'
 const secondaryButtonClass =
-  'inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-violet-300 hover:text-violet-600 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-violet-500 dark:hover:text-violet-300'
+  'inline-flex items-center justify-center rounded-2xl border border-[color:var(--admin-border)] bg-[color:var(--admin-surface-0)] px-4 py-2.5 text-sm font-semibold text-[color:var(--admin-text)] transition hover:border-[color:rgb(var(--admin-primary-rgb)/0.24)] hover:text-[color:var(--admin-primary-700)] disabled:cursor-not-allowed disabled:opacity-60 dark:border-[color:var(--admin-border)] dark:bg-[color:var(--admin-surface-0)] dark:text-[color:var(--admin-text)] dark:hover:border-[color:rgb(var(--admin-primary-rgb)/0.3)] dark:hover:text-[color:var(--admin-primary-700)]'
 
 const route = useRoute()
 const corePermissionsStore = useCorePermissionsStore()
@@ -188,32 +187,32 @@ const formatProductStatusLabel = (status: ProductStatus) => {
 
 const getLegalStatusClass = (status: ComplianceLegalStatus) => {
   if (status === 'SUFFICIENT') {
-    return 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300'
+    return 'bg-emerald-50 text-emerald-800 dark:bg-emerald-500/12 dark:text-emerald-200'
   }
   if (status === 'INSUFFICIENT') {
-    return 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300'
+    return 'bg-rose-50 text-rose-800 dark:bg-rose-500/12 dark:text-rose-200'
   }
-  return 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300'
+  return 'bg-amber-50 text-amber-800 dark:bg-amber-500/12 dark:text-amber-200'
 }
 
 const getReviewStatusClass = (status: ComplianceReviewStatus) => {
   if (status === 'APPROVED') {
-    return 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300'
+    return 'bg-emerald-50 text-emerald-800 dark:bg-emerald-500/12 dark:text-emerald-200'
   }
   if (status === 'REJECTED') {
-    return 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300'
+    return 'bg-rose-50 text-rose-800 dark:bg-rose-500/12 dark:text-rose-200'
   }
-  return 'border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300'
+  return 'bg-slate-100 text-slate-700 dark:bg-slate-800/80 dark:text-slate-200'
 }
 
 const getProductStatusClass = (status: ProductStatus) => {
   if (status === 'PUBLISHED') {
-    return 'border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-violet-300'
+    return 'bg-[color:var(--admin-primary-50)] text-[color:var(--admin-primary-800)] dark:bg-[color:var(--admin-primary-100)] dark:text-[color:var(--admin-primary-800)]'
   }
   if (status === 'HIDDEN') {
-    return 'border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300'
+    return 'bg-slate-100 text-slate-700 dark:bg-slate-800/80 dark:text-slate-200'
   }
-  return 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300'
+  return 'bg-amber-50 text-amber-800 dark:bg-amber-500/12 dark:text-amber-200'
 }
 
 const formatFileSize = (size: number) => {
@@ -400,49 +399,49 @@ watch(
 <template>
   <div class="flex min-w-0 flex-col gap-4 sm:gap-5 lg:gap-6">
     <section
-      class="flex flex-col gap-4 rounded-[32px] border border-slate-200/80 bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.18),transparent_38%),linear-gradient(135deg,rgba(255,255,255,0.96),rgba(240,249,255,0.92))] p-5 shadow-2xl shadow-slate-200/40 dark:border-slate-800 dark:bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.18),transparent_30%),linear-gradient(135deg,rgba(15,23,42,0.92),rgba(2,6,23,0.96))] dark:shadow-black/20 sm:p-6 lg:flex-row lg:items-center lg:justify-between"
+      class="flex flex-col gap-4 rounded-[32px] border border-[color:var(--admin-border)] bg-[radial-gradient(circle_at_top_left,var(--admin-primary-soft),transparent_38%),linear-gradient(135deg,var(--admin-surface-0),var(--admin-surface-1))] p-5 shadow-[var(--admin-elev-2)] sm:p-6 lg:flex-row lg:items-center lg:justify-between"
     >
       <div class="min-w-0 space-y-3">
-        <div class="inline-flex items-center rounded-full bg-sky-100 px-3 py-1 text-xs font-bold uppercase tracking-[0.24em] text-sky-700 dark:bg-sky-500/20 dark:text-sky-200">
+        <div class="inline-flex items-center rounded-full bg-[linear-gradient(135deg,var(--admin-primary-100),var(--admin-accent-50))] px-3 py-1 text-xs font-bold uppercase tracking-[0.24em] text-[color:var(--admin-primary-800)]">
           Compliance
         </div>
         <div>
-          <h1 class="m-0 text-2xl font-semibold tracking-tight !text-slate-950 sm:text-3xl dark:!text-white">Pháp lý & Kiểm duyệt</h1>
-          <div class="mt-2 text-sm text-slate-500 dark:text-slate-400">
+          <h1 class="m-0 text-2xl font-semibold tracking-tight !text-[color:var(--admin-text)] sm:text-3xl">Pháp lý & Kiểm duyệt</h1>
+          <div class="mt-2 text-sm text-[color:var(--admin-text-muted)]">
             Upload giấy tờ pháp lý, theo dõi trạng thái review và cấp `Approved permissions` làm nguồn để Product tự chọn quyền bán thủ công.
           </div>
         </div>
       </div>
 
       <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        <article class="rounded-[24px] border border-white/70 bg-white/80 px-5 py-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/70">
-          <div class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Tổng hồ sơ</div>
-          <div class="mt-2 text-2xl font-semibold text-slate-950 dark:text-white">{{ totalItems }}</div>
+        <article class="rounded-[24px] border border-[rgb(var(--admin-primary-rgb)/0.16)] bg-[linear-gradient(135deg,#f7fcff,var(--admin-primary-50))] px-5 py-4 shadow-[var(--admin-elev-1)]">
+          <div class="text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--admin-primary-600)]">Tổng hồ sơ</div>
+          <div class="mt-2 text-2xl font-semibold text-[color:var(--admin-primary-800)]">{{ totalItems }}</div>
         </article>
-        <article class="rounded-[24px] border border-white/70 bg-white/80 px-5 py-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/70">
-          <div class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Chờ review</div>
-          <div class="mt-2 text-2xl font-semibold text-amber-600 dark:text-amber-300">{{ pendingReviewCount }}</div>
+        <article class="rounded-[24px] border border-amber-200 bg-[linear-gradient(135deg,#fffaf0,#fff1d8)] px-5 py-4 shadow-[var(--admin-elev-1)]">
+          <div class="text-xs font-semibold uppercase tracking-[0.18em] text-amber-700">Chờ review</div>
+          <div class="mt-2 text-2xl font-semibold text-[color:#9c5a00]">{{ pendingReviewCount }}</div>
         </article>
-        <article class="rounded-[24px] border border-white/70 bg-white/80 px-5 py-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/70">
-          <div class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Sẵn sàng chọn</div>
-          <div class="mt-2 text-2xl font-semibold text-emerald-600 dark:text-emerald-300">{{ readyToSyncCount }}</div>
+        <article class="rounded-[24px] border border-emerald-200 bg-[linear-gradient(135deg,#f7fff8,#e7faec)] px-5 py-4 shadow-[var(--admin-elev-1)]">
+          <div class="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">Sẵn sàng chọn</div>
+          <div class="mt-2 text-2xl font-semibold text-[color:#1f7447]">{{ readyToSyncCount }}</div>
         </article>
       </div>
     </section>
 
-    <section class="rounded-[32px] border border-slate-200/80 bg-white/85 p-5 shadow-xl shadow-slate-200/40 backdrop-blur dark:border-slate-800 dark:bg-slate-950/70 dark:shadow-black/20">
+    <section class="rounded-[32px] border border-[color:var(--admin-border)] bg-[linear-gradient(180deg,var(--admin-surface-0),var(--admin-surface-1))] p-5 shadow-[var(--admin-elev-1)] backdrop-blur">
       <div class="w-full">
         <div class="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 items-end">
           <label class="space-y-1.5 lg:col-span-4">
-            <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Keyword</span>
+            <span class="text-xs font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]">Keyword</span>
             <div class="relative">
-              <i class="pi pi-search absolute left-4 top-1/2 -translate-y-1/2 text-xs text-slate-400 dark:text-slate-500" />
+              <i class="pi pi-search absolute left-4 top-1/2 -translate-y-1/2 text-xs text-[color:var(--admin-text-muted)]" />
               <input v-model="filters.keyword" :class="fieldClass" class="pl-10" placeholder="Tìm theo tên sản phẩm hoặc nghệ sĩ" :disabled="isLoading" />
             </div>
           </label>
 
           <label class="space-y-1.5 lg:col-span-2">
-            <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Legal</span>
+            <span class="text-xs font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]">Legal</span>
             <div class="relative">
               <select v-model="filters.legalStatus" :class="selectFieldClass" :disabled="isLoading">
                 <option value="">Tất cả</option>
@@ -450,12 +449,12 @@ watch(
                 <option value="SUFFICIENT">SUFFICIENT</option>
                 <option value="INSUFFICIENT">INSUFFICIENT</option>
               </select>
-              <i class="pi pi-chevron-down pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs text-slate-400 dark:text-slate-500" />
+              <i class="pi pi-chevron-down pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs text-[color:var(--admin-text-muted)]" />
             </div>
           </label>
 
           <label class="space-y-1.5 lg:col-span-2">
-            <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Review</span>
+            <span class="text-xs font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]">Review</span>
             <div class="relative">
               <select v-model="filters.reviewStatus" :class="selectFieldClass" :disabled="isLoading">
                 <option value="">Tất cả</option>
@@ -463,12 +462,12 @@ watch(
                 <option value="APPROVED">APPROVED</option>
                 <option value="REJECTED">REJECTED</option>
               </select>
-              <i class="pi pi-chevron-down pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs text-slate-400 dark:text-slate-500" />
+              <i class="pi pi-chevron-down pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs text-[color:var(--admin-text-muted)]" />
             </div>
           </label>
 
           <label class="space-y-1.5 lg:col-span-2">
-            <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Product status</span>
+            <span class="text-xs font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]">Product status</span>
             <div class="relative">
               <select v-model="filters.productStatus" :class="selectFieldClass" :disabled="isLoading">
                 <option value="">Tất cả</option>
@@ -476,15 +475,15 @@ watch(
                 <option value="PUBLISHED">PUBLISHED</option>
                 <option value="HIDDEN">HIDDEN</option>
               </select>
-              <i class="pi pi-chevron-down pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs text-slate-400 dark:text-slate-500" />
+              <i class="pi pi-chevron-down pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs text-[color:var(--admin-text-muted)]" />
             </div>
           </label>
 
-          <div class="flex items-end lg:col-span-2">
+          <div class="flex lg:col-span-2 lg:items-end lg:pt-[1.625rem]">
             <button
               type="button"
               :class="secondaryButtonClass"
-              class="w-full h-12 flex items-center justify-center gap-2 border-dashed hover:border-rose-400 hover:text-rose-500 dark:hover:border-rose-500/50 dark:hover:text-rose-400"
+              class="h-12 w-full sm:w-auto lg:w-full shrink-0 items-center justify-center gap-2 border-dashed hover:border-[color:rgb(var(--admin-primary-rgb)/0.24)] hover:bg-[color:var(--admin-primary-50)] hover:text-[color:var(--admin-primary-800)]"
               :disabled="isLoading"
               @click="resetFilters"
             >
@@ -530,13 +529,13 @@ watch(
           </div>
 
           <div class="mt-3 flex flex-wrap gap-2">
-            <span class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold" :class="getProductStatusClass(item.product.status)">
+            <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold" :class="getProductStatusClass(item.product.status)">
               {{ formatProductStatusLabel(item.product.status) }}
             </span>
-            <span class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold" :class="getLegalStatusClass(item.legalStatus)">
+            <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold" :class="getLegalStatusClass(item.legalStatus)">
               {{ formatLegalStatusLabel(item.legalStatus) }}
             </span>
-            <span class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold" :class="getReviewStatusClass(item.reviewStatus)">
+            <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold" :class="getReviewStatusClass(item.reviewStatus)">
               {{ formatReviewStatusLabel(item.reviewStatus) }}
             </span>
           </div>
@@ -563,52 +562,59 @@ watch(
         </div>
       </div>
 
-      <div class="mt-6 hidden overflow-hidden rounded-[28px] border border-slate-200/80 bg-white dark:border-slate-800 dark:bg-slate-950/40 sm:block">
+      <div class="mt-6 hidden overflow-hidden rounded-[28px] border border-[color:var(--admin-border-strong)] bg-[color:var(--admin-surface-1)] shadow-[var(--admin-elev-1)] sm:block">
         <div class="overflow-x-auto">
           <table class="w-full min-w-[920px] lg:min-w-[980px] border-separate border-spacing-0 text-left text-sm">
-            <thead class="bg-slate-50 text-xs uppercase tracking-[0.18em] text-slate-500 dark:bg-slate-950/60 dark:text-slate-300">
+            <thead class="bg-[linear-gradient(180deg,var(--admin-surface-3),var(--admin-surface-2))] text-xs uppercase tracking-[0.18em] text-[color:var(--admin-text)]">
               <tr>
                 <th class="w-20 px-4 py-4 font-semibold">STT</th>
                 <th class="px-4 py-4 font-semibold">Product</th>
                 <th class="px-4 py-4 font-semibold">Pháp lý</th>
                 <th class="px-4 py-4 font-semibold">Kiểm duyệt</th>
-                <th class="w-24 px-4 py-4 font-semibold">Files</th>
-                <th class="w-44 px-4 py-4 font-semibold">Review time</th>
-                <th class="w-28 px-4 py-4 text-right font-semibold">Thao tác</th>
+                <th class="w-24 px-4 py-4 text-center font-semibold">Files</th>
+                <th class="w-44 px-4 py-4 text-center font-semibold">Review time</th>
+                <th class="w-28 px-4 py-4 text-center font-semibold">Thao tác</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-slate-200/70 dark:divide-slate-800">
-              <tr v-for="(item, index) in rows" :key="item.complianceId" class="bg-white transition hover:bg-slate-50/70 dark:bg-transparent dark:hover:bg-slate-900/30">
-                <td class="px-4 py-4">
-                  <div class="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-sky-100 text-sm font-semibold text-sky-700 dark:bg-sky-500/15 dark:text-sky-200">
+            <tbody class="divide-y [--tw-divide-opacity:1] [border-color:var(--admin-border)] divide-y-[color:var(--admin-border)]">
+              <tr
+                v-for="(item, index) in rows"
+                :key="item.complianceId"
+                class="transition"
+                :class="index % 2 === 0
+                  ? 'bg-[color:var(--admin-surface-0)] hover:bg-[color:var(--admin-surface-2)]'
+                  : 'bg-[color:var(--admin-surface-1)] hover:bg-[color:var(--admin-surface-2)]'"
+              >
+                <td class="px-4 py-4 align-middle">
+                  <div class="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-[color:var(--admin-primary-100)] text-sm font-semibold text-[color:var(--admin-primary-800)]">
                     {{ (pagination.page - 1) * pagination.pageSize + index + 1 }}
                   </div>
                 </td>
-                <td class="px-4 py-4">
-                  <div class="font-semibold text-slate-900 dark:text-white">{{ item.product.title }}</div>
-                  <div class="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                <td class="px-4 py-4 align-middle">
+                  <div class="font-semibold text-[color:var(--admin-text)]">{{ item.product.title }}</div>
+                  <div class="mt-1 flex flex-wrap items-center gap-2 text-xs text-[color:var(--admin-text-muted)]">
                     <span>{{ item.product.artistName || item.product.artistId }}</span>
-                    <span class="h-1 w-1 rounded-full bg-slate-300 dark:bg-slate-600" />
-                    <span class="inline-flex items-center rounded-full border px-2.5 py-1 font-semibold" :class="getProductStatusClass(item.product.status)">
+                    <span class="h-1 w-1 rounded-full bg-[color:var(--admin-border-strong)]" />
+                    <span class="inline-flex items-center rounded-full px-2.5 py-1 font-semibold" :class="getProductStatusClass(item.product.status)">
                       {{ formatProductStatusLabel(item.product.status) }}
                     </span>
                   </div>
                 </td>
-                <td class="px-4 py-4">
-                  <span class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold" :class="getLegalStatusClass(item.legalStatus)">
+                <td class="px-4 py-4 align-middle">
+                  <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold" :class="getLegalStatusClass(item.legalStatus)">
                     {{ formatLegalStatusLabel(item.legalStatus) }}
                   </span>
                 </td>
-                <td class="px-4 py-4">
-                  <span class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold" :class="getReviewStatusClass(item.reviewStatus)">
+                <td class="px-4 py-4 align-middle">
+                  <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold" :class="getReviewStatusClass(item.reviewStatus)">
                     {{ formatReviewStatusLabel(item.reviewStatus) }}
                   </span>
                 </td>
-                <td class="px-4 py-4 text-slate-600 dark:text-slate-300">{{ item.filesCount }}</td>
-                <td class="px-4 py-4 text-slate-600 dark:text-slate-300">{{ formatReviewDateTime(item.reviewedAt) }}</td>
-                <td class="px-4 py-4">
-                  <div class="flex justify-end gap-2">
-                    <button type="button" class="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 transition hover:border-slate-300 hover:text-slate-900 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:text-white" :disabled="isLoading" @click="openDetail(item)">
+                <td class="px-4 py-4 align-middle text-center text-[color:var(--admin-text-muted)]">{{ item.filesCount }}</td>
+                <td class="px-4 py-4 align-middle text-center text-[color:var(--admin-text-muted)] whitespace-nowrap">{{ formatReviewDateTime(item.reviewedAt) }}</td>
+                <td class="px-4 py-4 align-middle">
+                  <div class="flex items-center justify-center">
+                    <button type="button" class="inline-flex h-10 w-10 items-center justify-center rounded-2xl border bg-[color:var(--admin-surface-0)] text-[color:var(--admin-text-muted)] transition [border-color:var(--admin-border)] hover:border-[color:rgb(var(--admin-primary-rgb)/0.28)] hover:bg-[color:var(--admin-primary-50)] hover:text-[color:var(--admin-primary-800)] disabled:opacity-60" :disabled="isLoading" @click="openDetail(item)">
                       <i class="pi pi-eye" />
                     </button>
                   </div>
@@ -616,7 +622,7 @@ watch(
               </tr>
 
               <tr v-if="!isLoading && rows.length === 0">
-                <td colspan="7" class="px-6 py-12 text-center text-sm text-slate-500 dark:text-slate-400">
+                <td colspan="7" class="px-6 py-12 text-center text-sm text-[color:var(--admin-text-muted)]">
                   Không có hồ sơ phù hợp.
                 </td>
               </tr>
@@ -625,10 +631,10 @@ watch(
         </div>
       </div>
 
-      <div class="mt-6 flex flex-col gap-4 border-t border-slate-200 pt-4 dark:border-slate-800 md:flex-row md:items-center md:justify-between">
-        <div class="text-sm text-slate-500 dark:text-slate-400">Hiển thị {{ pageStart }}-{{ pageEnd }} / {{ totalItems }} hồ sơ</div>
+      <div class="mt-6 flex flex-col gap-4 border-t pt-4 [border-color:var(--admin-border)] md:flex-row md:items-center md:justify-between">
+        <div class="text-sm text-[color:var(--admin-text-muted)]">Hiển thị {{ pageStart }}-{{ pageEnd }} / {{ totalItems }} hồ sơ</div>
         <div class="flex flex-wrap items-center justify-end gap-2">
-          <div class="rounded-2xl bg-slate-100 px-3 py-2 text-sm text-slate-600 dark:bg-slate-900 dark:text-slate-300">Đã duyệt: {{ approvedCount }}</div>
+          <div class="rounded-2xl border bg-[color:var(--admin-surface-1)] px-3 py-2 text-sm text-[color:var(--admin-text-muted)] [border-color:var(--admin-border)]">Đã duyệt: {{ approvedCount }}</div>
           <button type="button" :class="secondaryButtonClass" :disabled="isLoading || pagination.page <= 1" @click="goToPage(pagination.page - 1)">Trước</button>
           <button type="button" :class="secondaryButtonClass" :disabled="isLoading || pagination.page >= totalPages" @click="goToPage(pagination.page + 1)">Sau</button>
         </div>
@@ -638,57 +644,55 @@ watch(
     <Dialog
       v-model:visible="detailDialogVisible"
       modal
+      :closable="false"
       class="w-[calc(100vw-1rem)] sm:w-[min(1240px,96vw)] lg:w-[min(1320px,96vw)]"
       :pt="{
-        header: { class: 'px-0 pb-0 pt-0' },
+        header: { class: 'hidden' },
         content: { class: 'compliance-detail-scroll max-h-[calc(100svh-4rem)] !overflow-y-auto px-0 pb-0' },
-        footer: { class: 'border-t border-slate-100 px-4 py-5 dark:border-slate-800 sm:px-6 sm:py-6' },
+        footer: { class: 'hidden' },
       }"
     >
-      <template #header>
-        <div
-          v-if="selectedDetail"
-          class="sticky top-0 z-10 border-b border-slate-100 bg-white/95 px-4 py-4 backdrop-blur dark:border-slate-800 dark:bg-slate-950/95 sm:px-6 sm:py-5"
+      <div v-if="selectedDetail" class="relative space-y-5 px-4 pb-6 pt-4 sm:px-6 sm:pb-8 sm:pt-6">
+        <button
+          type="button"
+          class="absolute right-4 top-4 inline-flex h-12 w-12 items-center justify-center rounded-full bg-transparent text-[color:var(--admin-text-muted)] transition hover:bg-[color:var(--admin-surface-1)] hover:text-[color:var(--admin-primary-800)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--admin-ring)] sm:right-6 sm:top-6"
+          aria-label="Đóng"
+          @click="detailDialogVisible = false"
         >
-          <ComplianceDecisionHeader
-            :detail="selectedDetail"
-            :format-product-status-label="formatProductStatusLabel"
-            :format-legal-status-label="formatLegalStatusLabel"
-            :format-review-status-label="formatReviewStatusLabel"
-            :format-review-date-time="formatReviewDateTime"
-            :get-product-status-class="getProductStatusClass"
-            :get-legal-status-class="getLegalStatusClass"
-            :get-review-status-class="getReviewStatusClass"
-          />
-        </div>
-      </template>
+          <i class="pi pi-times text-xl" />
+        </button>
 
-      <div v-if="selectedDetail" class="space-y-5 px-4 pb-6 pt-4 sm:px-6 sm:pb-8">
         <div class="space-y-3">
           <Message v-if="detailDialogVisible && errorMessage" severity="error">{{ errorMessage }}</Message>
           <Message v-if="detailDialogVisible && successMessage" severity="success">{{ successMessage }}</Message>
         </div>
 
         <!-- Custom tabs header -->
-        <div class="mb-5 flex flex-nowrap gap-6 overflow-x-auto border-b border-slate-100 pb-1 no-scrollbar dark:border-slate-800">
+        <div class="mb-5 overflow-x-auto no-scrollbar">
+          <div class="inline-flex min-w-full items-center gap-2 rounded-[22px] border bg-[color:var(--admin-surface-1)] p-1 [border-color:var(--admin-border)] sm:min-w-0">
           <button
             type="button"
-            class="inline-flex shrink-0 items-center gap-2 border-b-2 bg-transparent pb-3 text-sm font-semibold outline-none transition"
-            :class="activeTab === 'info' ? 'border-violet-500 text-violet-600 dark:text-violet-400' : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'"
+            class="inline-flex min-w-0 flex-1 shrink-0 items-center justify-center gap-2 rounded-[18px] px-4 py-3 text-sm font-semibold outline-none transition focus-visible:ring-2 focus-visible:ring-[color:var(--admin-ring)] focus-visible:ring-offset-2 [--tw-ring-offset-color:var(--admin-surface-1)] sm:flex-none"
+            :class="activeTab === 'info'
+              ? 'bg-[linear-gradient(135deg,var(--admin-primary-100),var(--admin-accent-50))] text-[color:var(--admin-primary-800)] shadow-sm'
+              : 'bg-transparent text-slate-500 hover:bg-[color:var(--admin-surface-0)] hover:text-slate-700 dark:hover:text-slate-200'"
             @click="activeTab = 'info'"
           >
-            <i class="pi pi-file" />
-            Hồ sơ & Tài liệu
+            <i class="pi pi-file text-sm" />
+            <span class="truncate">Hồ sơ & Tài liệu</span>
           </button>
           <button
             type="button"
-            class="inline-flex shrink-0 items-center gap-2 border-b-2 bg-transparent pb-3 text-sm font-semibold outline-none transition"
-            :class="activeTab === 'decision' ? 'border-violet-500 text-violet-600 dark:text-violet-400' : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'"
+            class="inline-flex min-w-0 flex-1 shrink-0 items-center justify-center gap-2 rounded-[18px] px-4 py-3 text-sm font-semibold outline-none transition focus-visible:ring-2 focus-visible:ring-[color:var(--admin-ring)] focus-visible:ring-offset-2 [--tw-ring-offset-color:var(--admin-surface-1)] sm:flex-none"
+            :class="activeTab === 'decision'
+              ? 'bg-[linear-gradient(135deg,var(--admin-primary-100),var(--admin-accent-50))] text-[color:var(--admin-primary-800)] shadow-sm'
+              : 'bg-transparent text-slate-500 hover:bg-[color:var(--admin-surface-0)] hover:text-slate-700 dark:hover:text-slate-200'"
             @click="activeTab = 'decision'"
           >
-            <i class="pi pi-check-circle" />
-            Đánh giá & Duyệt
+            <i class="pi pi-check-circle text-sm" />
+            <span class="truncate">Đánh giá & Duyệt</span>
           </button>
+          </div>
         </div>
 
         <!-- Tab 1: Info & Documents -->
@@ -697,6 +701,35 @@ watch(
           <div class="space-y-4">
             <div class="rounded-2xl border border-slate-100 bg-slate-50/50 p-5 dark:border-slate-800/80 dark:bg-slate-900/30">
               <h3 class="text-xs font-bold uppercase tracking-[0.16em] text-slate-400 mb-4 mt-0">Thông tin chung</h3>
+              <div class="rounded-2xl bg-[color:var(--admin-surface-0)] px-4 py-4 shadow-sm">
+                <div class="text-[11px] font-bold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]">
+                  Hồ sơ đang xem
+                </div>
+                <h2 class="mt-2 text-[1.8rem] font-extrabold tracking-tight text-[color:var(--admin-text)]">
+                  {{ selectedDetail.product.title }}
+                </h2>
+                <div class="mt-4 flex flex-wrap items-center gap-2.5">
+                  <span
+                    class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold"
+                    :class="getProductStatusClass(selectedDetail.product.status)"
+                  >
+                    {{ formatProductStatusLabel(selectedDetail.product.status) }}
+                  </span>
+                  <span
+                    class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold"
+                    :class="getLegalStatusClass(selectedDetail.legalStatus)"
+                  >
+                    {{ formatLegalStatusLabel(selectedDetail.legalStatus) }}
+                  </span>
+                  <span
+                    class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold"
+                    :class="getReviewStatusClass(selectedDetail.reviewStatus)"
+                  >
+                    {{ formatReviewStatusLabel(selectedDetail.reviewStatus) }}
+                  </span>
+                </div>
+              </div>
+
               <div class="space-y-3.5">
                 <div class="flex items-center justify-between gap-4 border-b border-slate-100 py-1.5 dark:border-slate-800">
                   <span class="shrink-0 text-xs text-slate-500 dark:text-slate-400">Nghệ sĩ</span>
@@ -735,7 +768,7 @@ watch(
             <div class="rounded-2xl border border-slate-100 bg-slate-50/50 p-5 dark:border-slate-800/80 dark:bg-slate-900/30">
               <h3 class="text-xs font-bold uppercase tracking-[0.16em] text-slate-400 mb-3 mt-0">Tải tệp tin pháp lý</h3>
               
-              <div class="border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl p-5 text-center hover:border-violet-400 dark:hover:border-violet-500/50 transition cursor-pointer bg-white dark:bg-slate-950/20" @click="fileInput?.click()">
+              <div class="border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl p-5 text-center hover:border-[color:rgb(var(--admin-primary-rgb)/0.38)] dark:hover:border-[color:rgb(var(--admin-primary-rgb)/0.5)] transition cursor-pointer bg-white dark:bg-slate-950/20" @click="fileInput?.click()">
                 <input ref="fileInput" type="file" multiple accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.webp" class="hidden" :disabled="isUploadingFiles" @change="onUploadFilesChange" />
                 <div class="flex flex-col items-center gap-2">
                   <i class="pi pi-cloud-upload text-3xl text-slate-400 dark:text-slate-500" />
@@ -747,8 +780,8 @@ watch(
               </div>
 
               <!-- Upload action bar -->
-              <div v-if="uploadFilesValue.length > 0" class="flex items-center justify-between mt-3 p-3 bg-violet-50 dark:bg-violet-950/20 rounded-xl border border-violet-100 dark:border-violet-900/30">
-                <span class="text-xs font-semibold text-violet-750 dark:text-violet-300 flex items-center gap-1.5">
+              <div v-if="uploadFilesValue.length > 0" class="flex items-center justify-between mt-3 p-3 bg-[linear-gradient(135deg,var(--admin-primary-50),var(--admin-accent-50))] dark:bg-[color:var(--admin-primary-50)] rounded-xl border [border-color:rgb(var(--admin-primary-rgb)/0.16)] dark:[border-color:rgb(var(--admin-primary-rgb)/0.26)]">
+                <span class="text-xs font-semibold text-[color:var(--admin-primary-800)] dark:text-[color:var(--admin-primary-800)] flex items-center gap-1.5">
                   <i class="pi pi-file text-sm" />
                   Sẵn sàng tải lên {{ uploadFilesValue.length }} tệp
                 </span>
@@ -799,15 +832,7 @@ watch(
         </div>
 
         <!-- Tab 2: Decision & Permissions -->
-        <div v-else-if="activeTab === 'decision'" class="grid gap-6 lg:grid-cols-[340px_minmax(0,1fr)]">
-          <ComplianceDecisionContextRail
-            :detail="selectedDetail"
-            :suggested-action-text="suggestedActionText"
-            :format-legal-status-label="formatLegalStatusLabel"
-            :format-review-status-label="formatReviewStatusLabel"
-            :format-review-date-time="formatReviewDateTime"
-          />
-
+        <div v-else-if="activeTab === 'decision'" class="space-y-6">
           <ComplianceDecisionWorkspace
             :legal-status="decisionForm.legalStatus"
             :review-status="decisionForm.reviewStatus"
@@ -826,22 +851,23 @@ watch(
             @clear-permissions="decisionForm.approvedPermissionIds = []"
             @submit="submitDecision"
           />
+
+          <ComplianceDecisionContextRail
+            :detail="selectedDetail"
+            :suggested-action-text="suggestedActionText"
+            :format-legal-status-label="formatLegalStatusLabel"
+            :format-review-status-label="formatReviewStatusLabel"
+            :format-review-date-time="formatReviewDateTime"
+          />
         </div>
+
       </div>
 
       <div v-else class="py-10 text-center text-sm text-slate-500 dark:text-slate-400">
-        <i class="pi pi-spin pi-spinner text-xl text-violet-500 mb-2 block" />
+        <i class="pi pi-spin pi-spinner text-xl text-[color:var(--admin-primary-600)] mb-2 block" />
         Đang tải thông tin chi tiết hồ sơ...
       </div>
 
-      <template #footer>
-        <div class="flex w-full justify-end gap-2">
-          <button type="button" :class="[secondaryButtonClass, 'gap-2']" @click="detailDialogVisible = false">
-            <i class="pi pi-times text-sm" />
-            Đóng
-          </button>
-        </div>
-      </template>
     </Dialog>
   </div>
 </template>
