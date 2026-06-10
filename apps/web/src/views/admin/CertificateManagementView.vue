@@ -92,7 +92,7 @@ const summaryCards = computed(() => [
     value: activeCount.value,
     description: 'Chứng chỉ khả dụng trên trang hiện tại',
     icon: 'pi pi-verified',
-    tone: 'success' as const,
+    tone: 'emerald' as const,
   },
   {
     title: 'Người mua duy nhất',
@@ -106,7 +106,7 @@ const summaryCards = computed(() => [
     value: previewReadyCount.value,
     description: 'Bản ghi có thể render HTML để xem trước',
     icon: 'pi pi-eye',
-    tone: 'warning' as const,
+    tone: 'amber' as const,
   },
 ])
 
@@ -115,8 +115,6 @@ const statusOptions = [
   { label: 'Đang hiệu lực', value: 'ACTIVE' as const },
 ]
 const totalPages = computed(() => Math.max(1, Math.ceil(totalItems.value / pagination.pageSize)))
-const pageStart = computed(() => (totalItems.value === 0 ? 0 : (pagination.page - 1) * pagination.pageSize + 1))
-const pageEnd = computed(() => Math.min(pagination.page * pagination.pageSize, totalItems.value))
 const previewCandidates = computed(() => rows.value.filter((certificate) => certificate.trackSnapshotName))
 
 const setError = (error: unknown) => {

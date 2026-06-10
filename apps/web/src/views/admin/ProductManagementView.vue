@@ -210,12 +210,6 @@ const hasLoadedArtists = ref(false)
 const totalPages = computed(() => Math.max(1, Math.ceil(totalItems.value / pagination.pageSize)))
 const pageStart = computed(() => (totalItems.value === 0 ? 0 : (pagination.page - 1) * pagination.pageSize + 1))
 const pageEnd = computed(() => Math.min(pagination.page * pagination.pageSize, totalItems.value))
-const selectedCreateArtistOption = computed(() =>
-  artistOptions.value.find((option) => option.value === createForm.artistId) ?? null,
-)
-const selectedEditArtistOption = computed(() =>
-  artistOptions.value.find((option) => option.value === editForm.artistId) ?? null,
-)
 const pendingProductsDescription = computed(() =>
   summaryCounts.pending === 0
     ? 'Khong co gi can duyet - tuyet voi!'
@@ -620,9 +614,6 @@ const isAnyDialogVisible = computed(
 const revokeObjectUrl = (url: string | null) => {
   if (url) URL.revokeObjectURL(url)
 }
-
-const toggleSelection = <T extends string>(values: T[], value: T): T[] =>
-  values.includes(value) ? values.filter((item) => item !== value) : [...values, value]
 
 const getTrackGenreValues = (track: Product) =>
   track.genres && track.genres.length > 0 ? track.genres : track.genre ? [track.genre] : []
