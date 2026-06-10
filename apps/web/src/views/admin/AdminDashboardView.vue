@@ -46,6 +46,11 @@ const recentArtists = ref<ManagedUser[]>([])
 
 const managedUserTotal = computed(() => buyerTotal.value + artistTotal.value)
 const recentUsers = computed(() => [...recentArtists.value, ...recentBuyers.value].slice(0, 6))
+const pendingComplianceDescription = computed(() =>
+  pendingComplianceTotal.value === 0
+    ? 'Khong co gi can duyet - tuyet voi!'
+    : `${pendingComplianceTotal.value} hồ sơ compliance đang chờ xử lý`,
+)
 
 const statCards = computed<DashboardStatCard[]>(() => {
   const cards: DashboardStatCard[] = [
@@ -80,7 +85,7 @@ const statCards = computed<DashboardStatCard[]>(() => {
     {
       title: 'Licensing configs',
       value: activeLicensingConfigTotal.value,
-      description: `${pendingComplianceTotal.value} hồ sơ compliance đang chờ xử lý`,
+      description: pendingComplianceDescription.value,
       icon: 'pi pi-sitemap',
       tone: 'sky' as const,
     },
@@ -102,31 +107,25 @@ const statCards = computed<DashboardStatCard[]>(() => {
 const quickActions = computed(() => {
   const items = [
     {
-      title: 'Đi tới product',
+      title: 'Đi tới sản phẩm',
       description: 'Quản lý sản phẩm, audio, xuất bản và metadata',
       to: '/admin/products',
       icon: 'pi pi-arrow-up-right',
     },
     {
-      title: 'Đi tới users',
-      description: 'Quản lý buyer và artist theo vai trò',
-      to: '/admin/users/buyers',
-      icon: 'pi pi-arrow-up-right',
-    },
-    {
-      title: 'Đi tới certificates',
+      title: 'Đi tới chứng chỉ',
       description: 'Theo dõi chứng chỉ và template HTML',
       to: '/admin/certificates',
       icon: 'pi pi-arrow-up-right',
     },
     {
-      title: 'Đi tới digital rights',
-      description: 'Cấu hình pricing và permission set cho nền tảng số',
+      title: 'Đi tới nền tảng số',
+      description: 'Quản lý cấu hình thương mại và bộ quyền bắt buộc cho từng nền tảng số',
       to: '/admin/settings/digital-rights',
       icon: 'pi pi-arrow-up-right',
     },
     {
-      title: 'Đi tới core permissions',
+      title: 'Đi tới quyền cốt lõi',
       description: 'Quản lý tập quyền pháp lý gốc dùng cho toàn hệ thống',
       to: '/admin/settings/permissions',
       icon: 'pi pi-arrow-up-right',
@@ -135,7 +134,7 @@ const quickActions = computed(() => {
 
   if (authStore.isSuperAdmin) {
     items.splice(1, 0, {
-      title: 'Đi tới admin list',
+      title: 'Đi tới quản trị viên',
       description: 'Kiểm soát tài khoản nội bộ dành cho super-admin',
       to: '/admin/admins',
       icon: 'pi pi-arrow-up-right',
@@ -223,17 +222,17 @@ onMounted(() => {
 <template>
   <div class="flex min-w-0 flex-col gap-4 pb-8 sm:gap-5 lg:gap-6">
     <section
-      class="flex flex-col gap-5 rounded-[32px] border border-slate-200/80 bg-[radial-gradient(circle_at_top_left,rgba(109,74,255,0.22),transparent_38%),radial-gradient(circle_at_65%_120%,rgba(56,189,248,0.14),transparent_42%),linear-gradient(135deg,rgba(255,255,255,0.96),rgba(245,243,255,0.92))] p-5 shadow-2xl shadow-slate-200/40 dark:border-slate-800 dark:bg-[radial-gradient(circle_at_top_left,rgba(124,58,237,0.24),transparent_34%),radial-gradient(circle_at_65%_120%,rgba(14,165,233,0.18),transparent_42%),linear-gradient(135deg,rgba(15,23,42,0.92),rgba(2,6,23,0.96))] dark:shadow-black/20 sm:p-6 xl:flex-row xl:items-center xl:justify-between"
+      class="flex flex-col gap-5 rounded-[32px] border border-[color:var(--admin-border)] bg-[radial-gradient(circle_at_top_left,var(--admin-primary-soft),transparent_38%),radial-gradient(circle_at_75%_10%,var(--admin-accent-soft),transparent_28%),linear-gradient(135deg,var(--admin-surface-0),var(--admin-surface-1))] p-5 shadow-[var(--admin-elev-2)] sm:p-6 xl:flex-row xl:items-center xl:justify-between"
     >
       <div class="min-w-0 space-y-3">
-        <div class="inline-flex items-center rounded-full bg-violet-100 px-3 py-1 text-xs font-bold uppercase tracking-[0.24em] text-violet-700 dark:bg-violet-500/20 dark:text-violet-200">
+        <div class="inline-flex items-center rounded-full bg-[linear-gradient(135deg,var(--admin-primary-100),var(--admin-accent-50))] px-3 py-1 text-xs font-bold uppercase tracking-[0.24em] text-[color:var(--admin-primary-800)]">
           Dashboard
         </div>
         <div>
-          <h2 class="!m-0 text-2xl font-semibold tracking-tight !text-slate-950 sm:text-3xl dark:!text-white">
+          <h2 class="!m-0 text-2xl font-semibold tracking-tight !text-[color:var(--admin-text)] sm:text-3xl">
             Trung tâm điều hành Musica
           </h2>
-          <p class="mt-3 max-w-3xl text-sm leading-6 text-slate-600 dark:text-slate-300">
+          <p class="mt-3 max-w-3xl text-sm leading-6 text-[color:var(--admin-text-muted)]">
             Trang tổng quan tập trung cho tài khoản quản trị, ưu tiên nắm trạng thái track,
             user, certificate và các lối tắt thao tác quan trọng ngay khi đăng nhập.
           </p>
@@ -242,7 +241,7 @@ onMounted(() => {
 
       <button
         type="button"
-        class="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-violet-300 hover:text-violet-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:border-violet-500 dark:hover:text-violet-300 sm:w-auto"
+        class="inline-flex w-full items-center justify-center gap-2 rounded-2xl border bg-[color:var(--admin-surface-0)] px-4 py-3 text-sm font-semibold text-[color:var(--admin-text)] shadow-sm transition duration-150 hover:border-[color:rgb(var(--admin-primary-rgb)/0.22)] hover:bg-[linear-gradient(135deg,var(--admin-surface-1),var(--admin-accent-50))] hover:text-[color:var(--admin-primary-800)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--admin-ring)] focus-visible:ring-offset-2 [border-color:var(--admin-border)] [--tw-ring-offset-color:var(--admin-surface-0)] sm:w-auto"
         :disabled="isLoading"
         @click="loadDashboard"
       >
@@ -267,11 +266,11 @@ onMounted(() => {
 
     <section class="grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(360px,0.9fr)]">
       <div class="space-y-6">
-        <section class="rounded-[32px] border border-slate-200/80 bg-white/92 p-6 shadow-xl shadow-slate-200/40 backdrop-blur dark:border-slate-800 dark:bg-slate-900/80 dark:shadow-black/20">
+        <section class="rounded-[32px] border border-[color:var(--admin-border)] bg-[color:var(--admin-surface-0)] p-6 shadow-[var(--admin-elev-1)] backdrop-blur">
           <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <div class="text-lg font-semibold text-slate-950 dark:text-white">Quick actions</div>
-              <div class="mt-2 text-sm text-slate-500 dark:text-slate-400">
+              <div class="text-lg font-semibold text-[color:var(--admin-text)]">Quick actions</div>
+              <div class="mt-2 text-sm text-[color:var(--admin-text-muted)]">
                 Đi thẳng tới các khu vực vận hành chính của admin shell.
               </div>
             </div>
@@ -282,16 +281,16 @@ onMounted(() => {
               v-for="item in quickActions"
               :key="item.to"
               :to="item.to"
-              class="group rounded-[28px] border border-slate-200/80 bg-slate-50/90 p-5 transition hover:-translate-y-0.5 hover:border-violet-200 hover:shadow-lg dark:border-slate-800 dark:bg-slate-950/60 dark:hover:border-violet-500/30"
+              class="group rounded-[28px] border border-[color:var(--admin-border)] bg-[linear-gradient(135deg,var(--admin-surface-1),var(--admin-accent-50))] p-5 transition duration-150 hover:-translate-y-0.5 hover:border-[color:rgb(var(--admin-primary-rgb)/0.2)] hover:shadow-[var(--admin-elev-1)]"
             >
               <div class="flex items-start justify-between gap-3">
                 <div>
-                  <div class="font-semibold text-slate-950 dark:text-white">{{ item.title }}</div>
-                  <div class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
+                  <div class="font-semibold text-[color:var(--admin-text)]">{{ item.title }}</div>
+                  <div class="mt-2 text-sm leading-6 text-[color:var(--admin-text-muted)]">
                     {{ item.description }}
                   </div>
                 </div>
-                <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-violet-600 shadow-sm transition group-hover:text-violet-700 dark:bg-slate-900 dark:text-violet-300">
+                <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,var(--admin-brand-gradient-start),var(--admin-brand-gradient-end))] text-[color:var(--admin-brand-contrast)] shadow-[var(--admin-glow)] transition group-hover:scale-[1.02]">
                   <i :class="item.icon" />
                 </div>
               </div>
@@ -299,11 +298,11 @@ onMounted(() => {
           </div>
         </section>
 
-        <section class="rounded-[32px] border border-slate-200/80 bg-white/92 p-6 shadow-xl shadow-slate-200/40 backdrop-blur dark:border-slate-800 dark:bg-slate-900/80 dark:shadow-black/20">
+        <section class="rounded-[32px] border border-[color:var(--admin-border)] bg-[color:var(--admin-surface-0)] p-6 shadow-[var(--admin-elev-1)] backdrop-blur">
           <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <div class="text-lg font-semibold text-slate-950 dark:text-white">Người dùng mới lên dashboard</div>
-              <div class="mt-2 text-sm text-slate-500 dark:text-slate-400">
+              <div class="text-lg font-semibold text-[color:var(--admin-text)]">Người dùng mới lên dashboard</div>
+              <div class="mt-2 text-sm text-[color:var(--admin-text-muted)]">
                 Snapshot nhanh từ buyer và artist để kiểm tra dữ liệu hệ thống.
               </div>
             </div>
@@ -313,24 +312,24 @@ onMounted(() => {
             <article
               v-for="user in recentUsers"
               :key="user.id"
-              class="flex items-center justify-between gap-4 rounded-[24px] border border-slate-200/80 bg-slate-50/90 px-4 py-4 dark:border-slate-800 dark:bg-slate-950/60"
+              class="flex items-center justify-between gap-4 rounded-[24px] border border-[color:var(--admin-border)] bg-[color:var(--admin-surface-1)] px-4 py-4"
             >
               <div class="min-w-0">
-                <div class="font-semibold text-slate-950 dark:text-white">{{ user.fullName }}</div>
-                <div class="truncate text-sm text-slate-500 dark:text-slate-400">
+                <div class="font-semibold text-[color:var(--admin-text)]">{{ user.fullName }}</div>
+                <div class="truncate text-sm text-[color:var(--admin-text-muted)]">
                   {{ user.email }}
                 </div>
               </div>
               <div class="flex flex-wrap items-center gap-2">
-                <span class="rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-sky-700 dark:bg-sky-500/15 dark:text-sky-300">
+                <span class="rounded-full bg-[color:var(--admin-primary-50)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-primary-700)]">
                   {{ formatRoleNames(user.roles) }}
                 </span>
                 <span
                   class="rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em]"
                   :class="
                     user.status === 'ACTIVE'
-                      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300'
-                      : 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300'
+                      ? 'bg-[color:var(--admin-success-50)] text-[color:var(--admin-success-700)]'
+                      : 'bg-[color:var(--admin-warning-50)] text-[color:var(--admin-warning-700)]'
                   "
                 >
                   {{ user.status }}
@@ -340,7 +339,7 @@ onMounted(() => {
 
             <div
               v-if="!isLoading && recentUsers.length === 0"
-              class="rounded-[24px] border border-dashed border-slate-300 bg-slate-50/80 px-5 py-10 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-950/50 dark:text-slate-400"
+              class="rounded-[24px] border border-dashed border-[color:var(--admin-border-strong)] bg-[color:var(--admin-surface-1)] px-5 py-10 text-center text-sm text-[color:var(--admin-text-muted)]"
             >
               Chưa có dữ liệu user để hiển thị trên dashboard.
             </div>
@@ -351,11 +350,11 @@ onMounted(() => {
       <section class="space-y-6">
         <section
           v-if="authStore.isSuperAdmin"
-          class="rounded-[32px] border border-slate-200/80 bg-white/92 p-6 shadow-xl shadow-slate-200/40 backdrop-blur dark:border-slate-800 dark:bg-slate-900/80 dark:shadow-black/20"
+          class="rounded-[32px] border border-[color:var(--admin-border)] bg-[color:var(--admin-surface-0)] p-6 shadow-[var(--admin-elev-1)] backdrop-blur"
         >
           <div>
-            <div class="text-lg font-semibold text-slate-950 dark:text-white">Admin accounts gần đây</div>
-            <div class="mt-2 text-sm text-slate-500 dark:text-slate-400">
+            <div class="text-lg font-semibold text-[color:var(--admin-text)]">Admin accounts gần đây</div>
+            <div class="mt-2 text-sm text-[color:var(--admin-text-muted)]">
               Danh sách ngắn để rà nhanh quyền quản trị nội bộ.
             </div>
           </div>
@@ -364,12 +363,12 @@ onMounted(() => {
             <article
               v-for="admin in recentAdmins"
               :key="admin.id"
-              class="rounded-[24px] border border-slate-200/80 bg-slate-50/90 px-4 py-4 dark:border-slate-800 dark:bg-slate-950/60"
+              class="rounded-[24px] border border-[color:var(--admin-border)] bg-[color:var(--admin-surface-1)] px-4 py-4"
             >
               <div class="flex items-start justify-between gap-3">
                 <div class="min-w-0">
-                  <div class="font-semibold text-slate-950 dark:text-white">{{ admin.fullName }}</div>
-                  <div class="truncate text-sm text-slate-500 dark:text-slate-400">
+                  <div class="font-semibold text-[color:var(--admin-text)]">{{ admin.fullName }}</div>
+                  <div class="truncate text-sm text-[color:var(--admin-text-muted)]">
                     {{ admin.email }}
                   </div>
                 </div>
@@ -377,8 +376,8 @@ onMounted(() => {
                   class="rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em]"
                   :class="
                     admin.status === 'ACTIVE'
-                      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300'
-                      : 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300'
+                      ? 'bg-[color:var(--admin-success-50)] text-[color:var(--admin-success-700)]'
+                      : 'bg-[color:var(--admin-warning-50)] text-[color:var(--admin-warning-700)]'
                   "
                 >
                   {{ admin.status }}
@@ -388,34 +387,34 @@ onMounted(() => {
                 <span
                   v-for="role in admin.roles"
                   :key="`${admin.id}-${role.roleId}`"
-                  class="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+                  class="rounded-full border border-[color:var(--admin-border)] bg-[color:var(--admin-surface-0)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]"
                 >
                   {{ role.roleName }}
                 </span>
               </div>
-              <div class="mt-3 text-xs text-slate-400 dark:text-slate-500">
+              <div class="mt-3 text-xs text-[color:var(--admin-text-muted)]">
                 Tạo lúc {{ formatDateTime(admin.createdAt) }}
               </div>
             </article>
           </div>
         </section>
 
-        <section class="rounded-[32px] border border-slate-200/80 bg-white/92 p-6 shadow-xl shadow-slate-200/40 backdrop-blur dark:border-slate-800 dark:bg-slate-900/80 dark:shadow-black/20">
+        <section class="rounded-[32px] border border-[color:var(--admin-border)] bg-[color:var(--admin-surface-0)] p-6 shadow-[var(--admin-elev-1)] backdrop-blur">
           <div>
-            <div class="text-lg font-semibold text-slate-950 dark:text-white">System notes</div>
-            <div class="mt-2 text-sm text-slate-500 dark:text-slate-400">
+            <div class="text-lg font-semibold text-[color:var(--admin-text)]">System notes</div>
+            <div class="mt-2 text-sm text-[color:var(--admin-text-muted)]">
               Các quy ước hiện tại của admin workspace.
             </div>
           </div>
 
-          <div class="mt-5 space-y-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
-            <div class="rounded-[24px] border border-slate-200/80 bg-slate-50/90 px-4 py-4 dark:border-slate-800 dark:bg-slate-950/60">
+          <div class="mt-5 space-y-3 text-sm leading-6 text-[color:var(--admin-text-muted)]">
+            <div class="rounded-[24px] border border-[color:var(--admin-border)] bg-[color:var(--admin-surface-1)] px-4 py-4">
               Dashboard đang ưu tiên dữ liệu thật từ API thay cho mock data.
             </div>
-            <div class="rounded-[24px] border border-slate-200/80 bg-slate-50/90 px-4 py-4 dark:border-slate-800 dark:bg-slate-950/60">
+            <div class="rounded-[24px] border border-[color:var(--admin-border)] bg-[color:var(--admin-surface-1)] px-4 py-4">
               Theme sáng/tối được đồng bộ cho layout, text, icon và PrimeVue components.
             </div>
-            <div class="rounded-[24px] border border-slate-200/80 bg-slate-50/90 px-4 py-4 dark:border-slate-800 dark:bg-slate-950/60">
+            <div class="rounded-[24px] border border-[color:var(--admin-border)] bg-[color:var(--admin-surface-1)] px-4 py-4">
               Track và certificate giữ nguyên workflow hiện có, chỉ làm mới shell quản trị xung quanh.
             </div>
           </div>

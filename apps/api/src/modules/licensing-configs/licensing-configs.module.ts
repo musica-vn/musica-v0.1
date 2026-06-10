@@ -4,6 +4,7 @@ import { AdminDigitalRightConfigsController } from './admin-digital-right-config
 import { AdminExpressionConfigsController } from './admin-expression-configs.controller'
 import { AdminModificationConfigsController } from './admin-modification-configs.controller'
 import { AdminPhysicalRightConfigsController } from './admin-physical-right-configs.controller'
+import { PublicLicensingConfigsController } from './public-licensing-configs.controller'
 import { LicensingConfigsService } from './licensing-configs.service'
 
 @Module({
@@ -13,6 +14,7 @@ import { LicensingConfigsService } from './licensing-configs.service'
     AdminPhysicalRightConfigsController,
     AdminExpressionConfigsController,
     AdminModificationConfigsController,
+    PublicLicensingConfigsController,
   ],
   providers: [LicensingConfigsService],
   exports: [LicensingConfigsService],

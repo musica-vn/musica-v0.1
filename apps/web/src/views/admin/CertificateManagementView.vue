@@ -18,9 +18,12 @@ import type {
   CertificateDetail,
   CertificateListItem as CertificateListItemType,
 } from '../../types/certificates.types'
+import AdminStatCard from '../../components/features/admin-shell/AdminStatCard.vue'
+import AdminFilterInput from '../../components/shared/admin/AdminFilterInput.vue'
+import AdminFilterSelect from '../../components/shared/admin/AdminFilterSelect.vue'
+import AdminPageHeader from '../../components/shared/admin/AdminPageHeader.vue'
+import AdminPaginationBar from '../../components/shared/admin/AdminPaginationBar.vue'
 import CertificateListItemCard from '../../components/features/certificates/CertificateListItem.vue'
-import ProductFilterInput from '../../components/features/products/ProductFilterInput.vue'
-import ProductFilterSelect from '../../components/features/products/ProductFilterSelect.vue'
 import type { ManagedUser } from '../../types/managed-users.types'
 
 const usageRightLabelMap: Record<string, string> = {
@@ -52,20 +55,13 @@ const filters = reactive({
 })
 
 const fieldClass =
-  'h-12 w-full rounded-2xl border border-slate-200/80 bg-white/90 px-4 text-sm text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-violet-400 focus:ring-4 focus:ring-violet-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-800 dark:bg-slate-950/70 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-violet-500 dark:focus:ring-violet-500/20'
+  'h-12 w-full rounded-2xl border bg-[color:var(--admin-surface-0)] px-4 text-sm text-[color:var(--admin-text)] shadow-sm outline-none transition placeholder:text-[color:var(--admin-text-muted)] [border-color:var(--admin-border)] focus:[border-color:var(--admin-primary-500)] focus:ring-4 focus:ring-[color:var(--admin-ring)] disabled:cursor-not-allowed disabled:opacity-60'
 const selectFieldClass =
-  'h-12 w-full appearance-none rounded-2xl border border-slate-200/80 bg-white/90 px-4 pr-11 text-sm text-slate-700 shadow-sm outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-800 dark:bg-slate-950/70 dark:text-slate-100 dark:focus:border-violet-500 dark:focus:ring-violet-500/20'
+  'h-12 w-full appearance-none rounded-2xl border bg-[color:var(--admin-surface-0)] px-4 pr-11 text-sm text-[color:var(--admin-text)] shadow-sm outline-none transition [border-color:var(--admin-border)] focus:[border-color:var(--admin-primary-500)] focus:ring-4 focus:ring-[color:var(--admin-ring)] disabled:cursor-not-allowed disabled:opacity-60'
 const primaryButtonClass =
-  'inline-flex items-center justify-center rounded-2xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-600 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-violet-500 dark:hover:bg-violet-400'
+  'inline-flex items-center justify-center rounded-2xl bg-[color:var(--admin-primary-button-bg)] px-4 py-2.5 text-sm font-semibold text-[color:var(--admin-primary-button-text)] transition hover:bg-[color:var(--admin-primary-button-hover)] active:bg-[color:var(--admin-primary-button-active)] disabled:cursor-not-allowed disabled:opacity-60'
 const secondaryButtonClass =
-  'inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-violet-300 hover:text-violet-600 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-violet-500 dark:hover:text-violet-300'
-const summaryToneClassMap = {
-  primary: 'from-violet-500/15 to-fuchsia-500/10 border-violet-200/60 dark:border-violet-500/20',
-  success: 'from-emerald-500/15 to-teal-500/10 border-emerald-200/60 dark:border-emerald-500/20',
-  info: 'from-sky-500/15 to-cyan-500/10 border-sky-200/60 dark:border-sky-500/20',
-  warning: 'from-amber-500/15 to-orange-500/10 border-amber-200/60 dark:border-amber-500/20',
-} as const
-
+  'inline-flex items-center justify-center rounded-2xl border bg-[color:var(--admin-surface-0)] px-4 py-2.5 text-sm font-semibold text-[color:var(--admin-text)] transition [border-color:var(--admin-border)] hover:border-[color:rgb(var(--admin-primary-rgb)/0.24)] hover:text-[color:var(--admin-primary-700)] disabled:cursor-not-allowed disabled:opacity-60'
 const detailDialogVisible = ref(false)
 const detail = ref<CertificateDetail | null>(null)
 const renderedHtml = ref<string | null>(null)
@@ -89,7 +85,7 @@ const summaryCards = computed(() => [
     value: totalItems.value,
     description: 'Bản ghi khớp với bộ lọc hiện tại',
     icon: 'pi pi-file',
-    tone: 'primary' as const,
+    tone: 'slate' as const,
   },
   {
     title: 'Đang hiệu lực',
@@ -103,7 +99,7 @@ const summaryCards = computed(() => [
     value: uniqueBuyerCount.value,
     description: 'Số người mua khác nhau trong kết quả',
     icon: 'pi pi-users',
-    tone: 'info' as const,
+    tone: 'sky' as const,
   },
   {
     title: 'Sẵn sàng xem trước',
@@ -149,7 +145,6 @@ const formatDateTime = (value: string | null) => {
 
 const formatCertificateStatus = (value: string) => (value === 'ACTIVE' ? 'Đang hiệu lực' : value)
 const formatUsageRights = (values: string[]) => values.map((value) => usageRightLabelMap[value] ?? value).join(', ')
-const summaryCardToneClass = (tone: keyof typeof summaryToneClassMap) => summaryToneClassMap[tone]
 const formatArtistOptionLabel = (artist: ManagedUser) => `${artist.fullName} · ${artist.email}`
 
 const fetchArtistOptions = async () => {
@@ -310,6 +305,17 @@ const goToPage = async (page: number) => {
   await fetchCertificates()
 }
 
+const handlePageChange = async (page: number) => {
+  await goToPage(page)
+}
+
+const handlePageSizeChange = async (pageSize: number) => {
+  if (pageSize === pagination.pageSize) return
+  pagination.pageSize = pageSize
+  pagination.page = 1
+  await fetchCertificates()
+}
+
 onMounted(async () => {
   await Promise.all([fetchCertificates(), loadTemplate(), fetchArtistOptions()])
 })
@@ -317,55 +323,43 @@ onMounted(async () => {
 
 <template>
   <div class="flex min-w-0 flex-col gap-4 pb-8 sm:gap-5 lg:gap-6">
-    <section
-      class="flex flex-col gap-4 rounded-[32px] border border-slate-200/80 bg-[radial-gradient(circle_at_top_left,rgba(109,74,255,0.22),transparent_38%),radial-gradient(circle_at_60%_120%,rgba(56,189,248,0.14),transparent_44%),linear-gradient(135deg,rgba(255,255,255,0.96),rgba(245,243,255,0.92))] p-5 shadow-2xl shadow-slate-200/40 dark:border-slate-800 dark:bg-[radial-gradient(circle_at_top_left,rgba(124,58,237,0.25),transparent_32%),radial-gradient(circle_at_60%_120%,rgba(14,165,233,0.16),transparent_44%),linear-gradient(135deg,rgba(15,23,42,0.92),rgba(2,6,23,0.96))] dark:shadow-black/20 sm:p-6 lg:flex-row lg:items-start lg:justify-between"
+    <AdminPageHeader
+      kicker="Chứng chỉ"
+      title="Quản lý chứng chỉ"
+      description="Theo dõi danh sách chứng chỉ, bộ lọc giao dịch và template HTML trong cùng một ngôn ngữ UI."
+      icon-class="pi pi-file-pdf"
     >
-      <div class="min-w-0 space-y-3">
-        <div class="inline-flex items-center rounded-full bg-violet-100 px-3 py-1 text-xs font-bold uppercase tracking-[0.24em] text-violet-700 dark:bg-violet-500/20 dark:text-violet-200">
-          Quản trị viên
-        </div>
-        <div>
-          <h1 class="m-0 text-2xl font-semibold tracking-tight text-slate-950 sm:text-3xl dark:text-white">Quản lý chứng chỉ</h1>
-        </div>
-      </div>
-
-      <button type="button" :class="[secondaryButtonClass, 'w-full sm:w-auto']" :disabled="isLoading" @click="fetchCertificates">
-        <i class="pi pi-refresh mr-2" />
-        Làm mới
-      </button>
-    </section>
+      <template #actions>
+        <button type="button" :class="[secondaryButtonClass, 'w-full sm:w-auto']" :disabled="isLoading" @click="fetchCertificates">
+          <i class="pi pi-refresh mr-2" />
+          Làm mới
+        </button>
+      </template>
+    </AdminPageHeader>
 
     <section class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-      <article
+      <AdminStatCard
         v-for="card in summaryCards"
         :key="card.title"
-        class="rounded-[28px] border bg-gradient-to-br p-5 shadow-sm backdrop-blur"
-        :class="summaryCardToneClass(card.tone)"
-      >
-        <div class="flex items-start justify-between gap-3">
-          <div>
-            <div class="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">{{ card.title }}</div>
-            <div class="mt-3 text-3xl font-semibold tracking-tight text-slate-950 dark:text-white">{{ card.value }}</div>
-          </div>
-          <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/80 text-violet-600 shadow-sm dark:bg-slate-950/60 dark:text-violet-300">
-            <i :class="card.icon" />
-          </div>
-        </div>
-        <p class="mt-3 text-sm text-slate-500 dark:text-slate-400">{{ card.description }}</p>
-      </article>
+        :title="card.title"
+        :value="card.value"
+        :description="card.description"
+        :icon="card.icon"
+        :tone="card.tone"
+      />
     </section>
 
     <section class="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(380px,0.8fr)]">
       <div class="space-y-6">
-        <section class="rounded-[32px] border border-slate-200/80 bg-white/85 p-5 shadow-xl shadow-slate-200/40 backdrop-blur dark:border-slate-800 dark:bg-slate-950/70 dark:shadow-black/20">
+        <section class="rounded-[32px] border [border-color:var(--admin-border)] bg-[linear-gradient(180deg,var(--admin-surface-0),var(--admin-surface-1))] p-5 shadow-[var(--admin-elev-1)] backdrop-blur">
           <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <div class="text-xl font-semibold text-slate-950 dark:text-white">Danh sách chứng chỉ</div>
+              <div class="text-xl font-semibold text-[color:var(--admin-text)]">Danh sách chứng chỉ</div>
             </div>
             <div class="grid w-full grid-cols-1 gap-3 sm:grid-cols-2 xl:max-w-[780px] xl:grid-cols-3">
-              <ProductFilterInput v-model="filters.buyerKeyword" icon-class="pi pi-user" placeholder="Người mua" :disabled="isLoading" />
-              <ProductFilterInput v-model="filters.trackKeyword" icon-class="pi pi-wave-pulse" placeholder="Track" :disabled="isLoading" />
-              <ProductFilterSelect v-model="filters.status" icon-class="pi pi-tag" :options="statusOptions" :disabled="isLoading" />
+              <AdminFilterInput v-model="filters.buyerKeyword" icon-class="pi pi-user" placeholder="Người mua" :disabled="isLoading" />
+              <AdminFilterInput v-model="filters.trackKeyword" icon-class="pi pi-wave-pulse" placeholder="Track" :disabled="isLoading" />
+              <AdminFilterSelect v-model="filters.status" icon-class="pi pi-tag" :options="statusOptions" :disabled="isLoading" />
               <div class="relative">
                 <select v-model="filters.artistId" :class="selectFieldClass" :disabled="isLoading || isArtistsLoading">
                   <option value="">Tất cả nghệ sĩ</option>
@@ -373,7 +367,7 @@ onMounted(async () => {
                     {{ artist.label }}
                   </option>
                 </select>
-                <i class="pi pi-chevron-down pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs text-slate-400 dark:text-slate-500" />
+                <i class="pi pi-chevron-down pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs text-[color:var(--admin-text-muted)]" />
               </div>
               <input v-model="filters.fromDate" :class="fieldClass" placeholder="Từ ngày (ISO date)" />
               <input v-model="filters.toDate" :class="fieldClass" placeholder="Đến ngày (ISO date)" />
@@ -412,56 +406,48 @@ onMounted(async () => {
 
             <div
               v-if="!isLoading && rows.length === 0"
-              class="flex flex-col items-center justify-center rounded-[28px] border border-dashed border-slate-300 bg-slate-50/80 px-6 py-14 text-center dark:border-slate-700 dark:bg-slate-900/40"
+              class="flex flex-col items-center justify-center rounded-[28px] border border-dashed [border-color:var(--admin-border)] bg-[color:var(--admin-surface-1)] px-6 py-14 text-center"
             >
-              <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-violet-600 shadow-sm dark:bg-slate-950 dark:text-violet-300">
+              <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-[color:var(--admin-surface-0)] text-[color:var(--admin-primary-700)] shadow-sm">
                 <i class="pi pi-file-pdf text-xl" />
               </div>
-              <div class="mt-4 text-lg font-semibold text-slate-900 dark:text-white">Không có chứng chỉ phù hợp</div>
-              <div class="mt-2 max-w-md text-sm text-slate-500 dark:text-slate-400">
+              <div class="mt-4 text-lg font-semibold text-[color:var(--admin-text)]">Không có chứng chỉ phù hợp</div>
+              <div class="mt-2 max-w-md text-sm text-[color:var(--admin-text-muted)]">
                 Thử đổi bộ lọc người mua, track, trạng thái hoặc khoảng ngày để mở rộng kết quả.
               </div>
             </div>
           </div>
 
-          <div class="mt-6 flex flex-col gap-4 border-t border-slate-200 pt-4 dark:border-slate-800 md:flex-row md:items-center md:justify-between">
-            <div class="text-sm text-slate-500 dark:text-slate-400">
-              {{ pageStart }}-{{ pageEnd }} / {{ totalItems }} chứng chỉ
-            </div>
-            <div class="flex items-center gap-2">
-              <button type="button" :class="secondaryButtonClass" :disabled="isLoading || pagination.page <= 1" @click="() => void goToPage(pagination.page - 1)">
-                <i class="pi pi-arrow-left mr-2" />
-                Trước
-              </button>
-              <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
-                Trang {{ pagination.page }} / {{ totalPages }}
-              </div>
-              <button type="button" :class="secondaryButtonClass" :disabled="isLoading || pagination.page >= totalPages" @click="() => void goToPage(pagination.page + 1)">
-                Sau
-                <i class="pi pi-arrow-right ml-2" />
-              </button>
-            </div>
+          <div class="mt-6">
+            <AdminPaginationBar
+              :page="pagination.page"
+              :page-size="pagination.pageSize"
+              :total-items="totalItems"
+              :disabled="isLoading"
+              @update:page="handlePageChange"
+              @update:page-size="handlePageSizeChange"
+            />
           </div>
         </section>
       </div>
 
-      <section class="space-y-4 rounded-[32px] border border-slate-200/80 bg-white/85 p-5 shadow-xl shadow-slate-200/40 backdrop-blur dark:border-slate-800 dark:bg-slate-950/70 dark:shadow-black/20">
-        <div class="flex items-center gap-3 text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-          <i class="pi pi-code text-violet-500" />
+      <section class="space-y-4 rounded-[32px] border [border-color:var(--admin-border)] bg-[linear-gradient(180deg,var(--admin-surface-0),var(--admin-surface-1))] p-5 shadow-[var(--admin-elev-1)] backdrop-blur">
+        <div class="flex items-center gap-3 text-sm font-semibold uppercase tracking-[0.18em] text-[color:var(--admin-text-muted)]">
+          <i class="pi pi-code text-[color:var(--admin-primary-600)]" />
           Template Platform
         </div>
 
         <div class="space-y-2">
-          <div class="text-lg font-semibold text-slate-950 dark:text-white">Template chứng chỉ</div>
-          <div class="text-sm text-slate-500 dark:text-slate-400">
+          <div class="text-lg font-semibold text-[color:var(--admin-text)]">Template chứng chỉ</div>
+          <div class="text-sm text-[color:var(--admin-text-muted)]">
             Chỉnh sửa HTML template và render nhanh theo chứng chỉ đang có.
           </div>
         </div>
 
         <Message v-if="templateUnavailableMessage" severity="warn">{{ templateUnavailableMessage }}</Message>
 
-        <div v-if="templateUpdatedAt" class="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600 dark:bg-slate-900/70 dark:text-slate-300">
-          <span class="font-semibold text-slate-900 dark:text-white">Cập nhật lúc:</span>
+        <div v-if="templateUpdatedAt" class="rounded-2xl bg-[color:var(--admin-surface-1)] px-4 py-3 text-sm text-[color:var(--admin-text-muted)]">
+          <span class="font-semibold text-[color:var(--admin-text)]">Cập nhật lúc:</span>
           {{ formatDateTime(templateUpdatedAt) }}
         </div>
 
@@ -479,8 +465,8 @@ onMounted(async () => {
           </button>
         </div>
 
-        <div class="space-y-3 rounded-[28px] border border-slate-200/80 bg-slate-50/80 p-4 dark:border-slate-800 dark:bg-slate-900/50">
-          <div class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Xem trước HTML</div>
+        <div class="space-y-3 rounded-[28px] border [border-color:var(--admin-border)] bg-[color:var(--admin-surface-1)] p-4">
+          <div class="text-sm font-semibold uppercase tracking-[0.18em] text-[color:var(--admin-text-muted)]">Xem trước HTML</div>
           <div class="grid gap-3">
             <select
               v-model="previewCertificateId"
@@ -499,7 +485,7 @@ onMounted(async () => {
               Xem trước
             </button>
           </div>
-          <iframe v-if="previewHtml" class="h-[360px] w-full rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950" sandbox="" :srcdoc="previewHtml" />
+          <iframe v-if="previewHtml" class="h-[360px] w-full rounded-2xl border [border-color:var(--admin-border)] bg-[color:var(--admin-surface-0)]" sandbox="" :srcdoc="previewHtml" />
         </div>
       </section>
     </section>
@@ -513,15 +499,15 @@ onMounted(async () => {
     >
       <div v-if="detail" class="detail">
         <div class="detail-grid">
-          <div><strong>Track:</strong> {{ detail.trackSnapshotName }}</div>
-          <div><strong>Người mua:</strong> {{ detail.buyerSnapshotName }} ({{ detail.buyerEmail || 'Chưa có email' }})</div>
-          <div><strong>Nghệ sĩ:</strong> {{ detail.artistSnapshotName }}</div>
-          <div><strong>Trạng thái:</strong> {{ formatCertificateStatus(detail.status) }}</div>
-          <div><strong>Hiệu lực từ:</strong> {{ formatDateTime(detail.validFrom) }}</div>
-          <div><strong>Hiệu lực đến:</strong> {{ formatDateTime(detail.validUntil) }}</div>
-          <div><strong>Tạo lúc:</strong> {{ formatDateTime(detail.createdAt) }}</div>
-          <div><strong>PDF key:</strong> {{ detail.pdfFileKey }}</div>
-          <div><strong>Quyền đã chọn:</strong> {{ formatUsageRights(detail.selectedUsageRights) }}</div>
+          <div class="detail-row"><strong>Track:</strong> {{ detail.trackSnapshotName }}</div>
+          <div class="detail-row"><strong>Người mua:</strong> {{ detail.buyerSnapshotName }} ({{ detail.buyerEmail || 'Chưa có email' }})</div>
+          <div class="detail-row"><strong>Nghệ sĩ:</strong> {{ detail.artistSnapshotName }}</div>
+          <div class="detail-row"><strong>Trạng thái:</strong> {{ formatCertificateStatus(detail.status) }}</div>
+          <div class="detail-row"><strong>Hiệu lực từ:</strong> {{ formatDateTime(detail.validFrom) }}</div>
+          <div class="detail-row"><strong>Hiệu lực đến:</strong> {{ formatDateTime(detail.validUntil) }}</div>
+          <div class="detail-row"><strong>Tạo lúc:</strong> {{ formatDateTime(detail.createdAt) }}</div>
+          <div class="detail-row"><strong>PDF key:</strong> {{ detail.pdfFileKey }}</div>
+          <div class="detail-row"><strong>Quyền đã chọn:</strong> {{ formatUsageRights(detail.selectedUsageRights) }}</div>
         </div>
 
         <div class="detail-actions">
@@ -553,12 +539,25 @@ onMounted(async () => {
 
 .detail {
   display: grid;
-  gap: 12px;
+  gap: 16px;
 }
 
 .detail-grid {
   display: grid;
-  gap: 6px;
+  gap: 10px;
+  border: 1px solid var(--admin-border);
+  background: linear-gradient(180deg, var(--admin-surface-0), var(--admin-surface-1));
+  border-radius: 24px;
+  padding: 16px;
+}
+
+.detail-row {
+  color: var(--admin-text-muted);
+  line-height: 1.6;
+}
+
+.detail-row strong {
+  color: var(--admin-text);
 }
 
 .detail-actions {

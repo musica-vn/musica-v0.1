@@ -30,7 +30,7 @@ const emit = defineEmits<{
       </div>
 
       <span
-        class="inline-flex shrink-0 items-center rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em]"
+        class="inline-flex shrink-0 items-center rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em]"
         :class="statusClass"
       >
         {{ statusLabel }}
@@ -57,7 +57,7 @@ const emit = defineEmits<{
     <div class="mt-4 grid grid-cols-[minmax(0,1fr)_auto_auto] gap-2">
       <button
         type="button"
-        class="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-950 px-4 text-sm font-semibold text-white transition hover:bg-violet-600 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-violet-500 dark:hover:bg-violet-400"
+        class="inline-flex h-11 items-center justify-center rounded-2xl bg-[color:var(--admin-primary-button-bg)] px-4 text-sm font-semibold text-[color:var(--admin-primary-button-text)] transition hover:bg-[color:var(--admin-primary-button-hover)] active:bg-[color:var(--admin-primary-button-active)] disabled:cursor-not-allowed disabled:opacity-60"
         :disabled="isLoading"
         @click="emit('edit', permission)"
       >
@@ -65,7 +65,7 @@ const emit = defineEmits<{
       </button>
       <button
         type="button"
-        class="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:border-violet-300 hover:text-violet-600 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-violet-500 dark:hover:text-violet-300"
+        class="inline-flex h-11 items-center justify-center rounded-2xl border border-[color:var(--admin-border)] bg-[color:var(--admin-surface-0)] px-3 text-sm font-semibold text-[color:var(--admin-text)] transition hover:border-[color:rgb(var(--admin-primary-rgb)/0.28)] hover:text-[color:var(--admin-primary-700)] disabled:cursor-not-allowed disabled:opacity-60"
         :disabled="isLoading"
         @click="emit('toggle', permission)"
       >

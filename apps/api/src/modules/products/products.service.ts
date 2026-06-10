@@ -27,6 +27,14 @@ import {
   applyProductPriorityOrdering,
   PRODUCT_PRIORITY_SELECT,
 } from '../product-priorities/product-priority-ordering';
+import {
+  buildRequiredPermissionsFromDependencies,
+  dedupeRequiredPermissions,
+  mapRequiredPermissionSummary,
+  type RawPermissionSummary,
+  type RequiredPermissionSummary,
+} from '../licensing-configs/licensing-required-permissions';
+import type { VariantPricingModifierKey } from '../pricing/variant-pricing.enums';
 
 type DbProductRow = {
   id: string;
@@ -48,11 +56,7 @@ type DbProductRow = {
   updated_at: string;
 };
 
-type DbCorePermissionJoinRow = {
-  id: string;
-  name: string;
-  law_reference: string;
-};
+type DbCorePermissionJoinRow = RawPermissionSummary;
 
 type DbProductAllowedPermissionRow = {
   permission_id: string;
@@ -102,12 +106,17 @@ type DbLicensingConfigPermissionRow = {
   core_permissions?: DbCorePermissionJoinRow | null;
 };
 
+type DbConfigPriceModifierRow = {
+  modifier_key: VariantPricingModifierKey;
+};
+
 type DbDigitalEligibilityConfigRow = {
   id: string;
   status: 'ACTIVE' | 'INACTIVE';
   target_platform: 'YOUTUBE' | 'TIKTOK' | 'FACEBOOK';
   duration_type: 'ONE_YEAR' | 'PERPETUAL';
   digital_right_config_permissions?: DbLicensingConfigPermissionRow[] | null;
+  digital_right_config_price_modifiers?: DbConfigPriceModifierRow[] | null;
 };
 
 type DbPhysicalEligibilityConfigRow = {
@@ -115,6 +124,7 @@ type DbPhysicalEligibilityConfigRow = {
   status: 'ACTIVE' | 'INACTIVE';
   venue_usage_type: string;
   physical_right_config_permissions?: DbLicensingConfigPermissionRow[] | null;
+  physical_right_config_price_modifiers?: DbConfigPriceModifierRow[] | null;
 };
 
 type DbDigitalRegistrationJoinRow = {
@@ -172,11 +182,7 @@ const formatDigitalEligibilityTitle = (
 const mapReferencedPermissionSummary = (
   permissionId: string,
   permission: DbCorePermissionJoinRow | null | undefined,
-) => ({
-  id: permission?.id ?? permissionId,
-  name: permission?.name ?? permissionId,
-  lawReference: permission?.law_reference ?? '',
-});
+) => mapRequiredPermissionSummary(permissionId, permission);
 
 const mapProductRowToDto = (row: DbProductJoinRow): ProductDto => {
   const allowedPermissionRows = (row.track_allowed_permissions ?? []).filter(
@@ -405,19 +411,19 @@ export class ProductsService {
       throw new HttpException(notFoundCode, HttpStatus.NOT_FOUND);
     }
 
-    throw new HttpException(
-      error?.message ?? errorCode,
+    throw new ApiHttpException(
+      { code: errorCode, details: { message: error?.message ?? errorCode } },
       HttpStatus.INTERNAL_SERVER_ERROR,
     );
   }
 
   private async loadActiveDigitalEligibilityConfigs(): Promise<
-    ProductLicensingConfigDefinition[]
+    DbDigitalEligibilityConfigRow[]
   > {
     const { data, error } = await this.supabaseService.client
       .from('digital_right_configs')
       .select(
-        'id, target_platform, duration_type, digital_right_config_permissions(core_permission_id, core_permissions(id,name,law_reference))',
+        'id,status,target_platform,duration_type,digital_right_config_permissions(core_permission_id, core_permissions(id,name,law_reference)),digital_right_config_price_modifiers(modifier_key)',
       )
       .eq('status', 'ACTIVE')
       .order('target_platform', { ascending: true })
@@ -431,31 +437,16 @@ export class ProductsService {
       );
     }
 
-    return (data ?? []).map((config) => ({
-      configId: config.id,
-      configType: 'DIGITAL',
-      title: formatDigitalEligibilityTitle(
-        config.target_platform,
-        config.duration_type,
-      ),
-      referencedPermissions: (
-        config.digital_right_config_permissions ?? []
-      ).map((permissionRow) =>
-        mapReferencedPermissionSummary(
-          permissionRow.core_permission_id,
-          permissionRow.core_permissions,
-        ),
-      ),
-    }));
+    return data ?? [];
   }
 
   private async loadActivePhysicalEligibilityConfigs(): Promise<
-    ProductLicensingConfigDefinition[]
+    DbPhysicalEligibilityConfigRow[]
   > {
     const { data, error } = await this.supabaseService.client
       .from('physical_right_configs')
       .select(
-        'id, venue_usage_type, physical_right_config_permissions(core_permission_id, core_permissions(id,name,law_reference))',
+        'id,status,venue_usage_type,physical_right_config_permissions(core_permission_id, core_permissions(id,name,law_reference)),physical_right_config_price_modifiers(modifier_key)',
       )
       .eq('status', 'ACTIVE')
       .order('venue_usage_type', { ascending: true })
@@ -469,31 +460,176 @@ export class ProductsService {
       );
     }
 
-    return (data ?? []).map((config) => ({
-      configId: config.id,
-      configType: 'PHYSICAL',
-      title: config.venue_usage_type,
-      referencedPermissions: (
-        config.physical_right_config_permissions ?? []
-      ).map((permissionRow) =>
-        mapReferencedPermissionSummary(
-          permissionRow.core_permission_id,
-          permissionRow.core_permissions,
+    return data ?? [];
+  }
+
+  private licensingDependencyPermissionsCache: {
+    value: {
+      expressionPermissions: RequiredPermissionSummary[];
+      modificationPermissions: RequiredPermissionSummary[];
+    };
+    expiresAt: number;
+  } | null = null;
+
+  private async loadActiveExpressionPermissions(): Promise<
+    RequiredPermissionSummary[]
+  > {
+    const { data, error } = await this.supabaseService.client
+      .from('expression_configs')
+      .select(
+        'expression_config_permissions(core_permission_id, core_permissions(id,name,law_reference))',
+      )
+      .eq('status', 'ACTIVE')
+      .returns<
+        Array<{
+          expression_config_permissions?:
+            | DbLicensingConfigPermissionRow[]
+            | null;
+        }>
+      >();
+
+    if (error) {
+      throwSupabaseError(
+        'EXPRESSION_CONFIGS_LOAD_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
+    }
+
+    return dedupeRequiredPermissions(
+      (data ?? []).flatMap((config) =>
+        (config.expression_config_permissions ?? []).map((permissionRow) =>
+          mapReferencedPermissionSummary(
+            permissionRow.core_permission_id,
+            permissionRow.core_permissions,
+          ),
         ),
       ),
-    }));
+    );
+  }
+
+  private async loadActiveModificationPermissions(): Promise<
+    RequiredPermissionSummary[]
+  > {
+    const { data, error } = await this.supabaseService.client
+      .from('modification_configs')
+      .select(
+        'modification_config_permissions(core_permission_id, core_permissions(id,name,law_reference))',
+      )
+      .eq('status', 'ACTIVE')
+      .returns<
+        Array<{
+          modification_config_permissions?:
+            | DbLicensingConfigPermissionRow[]
+            | null;
+        }>
+      >();
+
+    if (error) {
+      throwSupabaseError(
+        'MODIFICATION_CONFIGS_LOAD_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
+    }
+
+    return dedupeRequiredPermissions(
+      (data ?? []).flatMap((config) =>
+        (config.modification_config_permissions ?? []).map((permissionRow) =>
+          mapReferencedPermissionSummary(
+            permissionRow.core_permission_id,
+            permissionRow.core_permissions,
+          ),
+        ),
+      ),
+    );
+  }
+
+  private async loadLicensingDependencyPermissions(): Promise<{
+    expressionPermissions: RequiredPermissionSummary[];
+    modificationPermissions: RequiredPermissionSummary[];
+  }> {
+    const [expressionPermissions, modificationPermissions] = await Promise.all([
+      this.loadActiveExpressionPermissions(),
+      this.loadActiveModificationPermissions(),
+    ]);
+
+    return { expressionPermissions, modificationPermissions };
+  }
+
+  private async loadLicensingDependencyPermissionsCached(): Promise<{
+    expressionPermissions: RequiredPermissionSummary[];
+    modificationPermissions: RequiredPermissionSummary[];
+  }> {
+    const now = Date.now();
+    const cached = this.licensingDependencyPermissionsCache;
+    if (cached && cached.expiresAt > now) return cached.value;
+
+    const value = await this.loadLicensingDependencyPermissions();
+    this.licensingDependencyPermissionsCache = {
+      value,
+      expiresAt: now + 60_000,
+    };
+
+    return value;
   }
 
   private async loadLicensingEligibilityDefinitions(): Promise<{
     digitalConfigs: ProductLicensingConfigDefinition[];
     physicalConfigs: ProductLicensingConfigDefinition[];
   }> {
-    const [digitalConfigs, physicalConfigs] = await Promise.all([
-      this.loadActiveDigitalEligibilityConfigs(),
-      this.loadActivePhysicalEligibilityConfigs(),
-    ]);
+    const [digitalConfigs, physicalConfigs, dependencyPermissions] =
+      await Promise.all([
+        this.loadActiveDigitalEligibilityConfigs(),
+        this.loadActivePhysicalEligibilityConfigs(),
+        this.loadLicensingDependencyPermissionsCached(),
+      ]);
 
-    return { digitalConfigs, physicalConfigs };
+    return {
+      digitalConfigs: digitalConfigs.map((config) => ({
+        configId: config.id,
+        configType: 'DIGITAL',
+        title: formatDigitalEligibilityTitle(
+          config.target_platform,
+          config.duration_type,
+        ),
+        referencedPermissions: buildRequiredPermissionsFromDependencies({
+          basePermissions: (config.digital_right_config_permissions ?? []).map(
+            (permissionRow) =>
+              mapReferencedPermissionSummary(
+                permissionRow.core_permission_id,
+                permissionRow.core_permissions,
+              ),
+          ),
+          priceModifierKeys: (
+            config.digital_right_config_price_modifiers ?? []
+          ).map((modifier) => modifier.modifier_key),
+          expressionPermissions: dependencyPermissions.expressionPermissions,
+          modificationPermissions:
+            dependencyPermissions.modificationPermissions,
+        }),
+      })),
+      physicalConfigs: physicalConfigs.map((config) => ({
+        configId: config.id,
+        configType: 'PHYSICAL',
+        title: config.venue_usage_type,
+        referencedPermissions: buildRequiredPermissionsFromDependencies({
+          basePermissions: (config.physical_right_config_permissions ?? []).map(
+            (permissionRow) =>
+              mapReferencedPermissionSummary(
+                permissionRow.core_permission_id,
+                permissionRow.core_permissions,
+              ),
+          ),
+          priceModifierKeys: (
+            config.physical_right_config_price_modifiers ?? []
+          ).map((modifier) => modifier.modifier_key),
+          expressionPermissions: dependencyPermissions.expressionPermissions,
+          modificationPermissions:
+            dependencyPermissions.modificationPermissions,
+        }),
+      })),
+    };
   }
 
   private async loadLicensingEligibilityDefinitionsCached(): Promise<{
@@ -519,7 +655,7 @@ export class ProductsService {
     const { data, error } = await this.supabaseService.client
       .from('product_digital_right_registrations')
       .select(
-        'id,right_config_id,status,joined_at,joined_by,removed_at,removed_by,digital_right_configs(id,status,target_platform,duration_type,digital_right_config_permissions(core_permission_id, core_permissions(id,name,law_reference)))',
+        'id,right_config_id,status,joined_at,joined_by,removed_at,removed_by,digital_right_configs(id,status,target_platform,duration_type,digital_right_config_permissions(core_permission_id, core_permissions(id,name,law_reference)),digital_right_config_price_modifiers(modifier_key))',
       )
       .eq('product_id', productId)
       .order('joined_at', { ascending: false })
@@ -533,18 +669,28 @@ export class ProductsService {
       );
     }
 
+    const dependencyPermissions =
+      await this.loadLicensingDependencyPermissionsCached();
+
     return (data ?? [])
       .filter((registration) => registration.digital_right_configs)
       .map((registration) => {
         const config = registration.digital_right_configs!;
-        const referencedPermissions = (
-          config.digital_right_config_permissions ?? []
-        ).map((permissionRow) =>
-          mapReferencedPermissionSummary(
-            permissionRow.core_permission_id,
-            permissionRow.core_permissions,
+        const referencedPermissions = buildRequiredPermissionsFromDependencies({
+          basePermissions: (config.digital_right_config_permissions ?? []).map(
+            (permissionRow) =>
+              mapReferencedPermissionSummary(
+                permissionRow.core_permission_id,
+                permissionRow.core_permissions,
+              ),
           ),
-        );
+          priceModifierKeys: (
+            config.digital_right_config_price_modifiers ?? []
+          ).map((modifier) => modifier.modifier_key),
+          expressionPermissions: dependencyPermissions.expressionPermissions,
+          modificationPermissions:
+            dependencyPermissions.modificationPermissions,
+        });
         const allowedPermissionSet = new Set(allowedPermissionIds);
         const missingPermissions = referencedPermissions.filter(
           (permission) => !allowedPermissionSet.has(permission.id),
@@ -579,14 +725,18 @@ export class ProductsService {
     const { data, error } = await this.supabaseService.client
       .from('product_digital_right_registrations')
       .select(
-        'product_id,id,right_config_id,status,joined_at,joined_by,removed_at,removed_by,digital_right_configs(id,status,target_platform,duration_type,digital_right_config_permissions(core_permission_id, core_permissions(id,name,law_reference)))',
+        'product_id,id,right_config_id,status,joined_at,joined_by,removed_at,removed_by,digital_right_configs(id,status,target_platform,duration_type,digital_right_config_permissions(core_permission_id, core_permissions(id,name,law_reference)),digital_right_config_price_modifiers(modifier_key))',
       )
       .in('product_id', productIds)
       .order('joined_at', { ascending: false })
       .returns<Array<DbDigitalRegistrationJoinRow & { product_id: string }>>();
 
     if (error) {
-      throwSupabaseError('PRODUCTS_QUERY_FAILED', HttpStatus.INTERNAL_SERVER_ERROR, error);
+      throwSupabaseError(
+        'DIGITAL_PACKAGE_REGISTRATIONS_LOAD_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
     }
 
     const grouped = (data ?? []).reduce<
@@ -601,6 +751,9 @@ export class ProductsService {
       return acc;
     }, {});
 
+    const dependencyPermissions =
+      await this.loadLicensingDependencyPermissionsCached();
+
     return productIds.reduce<
       Record<string, ProductDto['digitalPackageRegistrations']>
     >((acc, productId) => {
@@ -611,14 +764,24 @@ export class ProductsService {
         .filter((registration) => registration.digital_right_configs)
         .map((registration) => {
           const config = registration.digital_right_configs!;
-          const referencedPermissions = (
-            config.digital_right_config_permissions ?? []
-          ).map((permissionRow) =>
-            mapReferencedPermissionSummary(
-              permissionRow.core_permission_id,
-              permissionRow.core_permissions,
-            ),
-          );
+          const referencedPermissions =
+            buildRequiredPermissionsFromDependencies({
+              basePermissions: (
+                config.digital_right_config_permissions ?? []
+              ).map((permissionRow) =>
+                mapReferencedPermissionSummary(
+                  permissionRow.core_permission_id,
+                  permissionRow.core_permissions,
+                ),
+              ),
+              priceModifierKeys: (
+                config.digital_right_config_price_modifiers ?? []
+              ).map((modifier) => modifier.modifier_key),
+              expressionPermissions:
+                dependencyPermissions.expressionPermissions,
+              modificationPermissions:
+                dependencyPermissions.modificationPermissions,
+            });
           const missingPermissions = referencedPermissions.filter(
             (permission) => !allowedPermissionSet.has(permission.id),
           );
@@ -652,28 +815,42 @@ export class ProductsService {
     const { data, error } = await this.supabaseService.client
       .from('product_physical_right_registrations')
       .select(
-        'id,right_config_id,status,joined_at,joined_by,removed_at,removed_by,physical_right_configs(id,status,venue_usage_type,physical_right_config_permissions(core_permission_id, core_permissions(id,name,law_reference)))',
+        'id,right_config_id,status,joined_at,joined_by,removed_at,removed_by,physical_right_configs(id,status,venue_usage_type,physical_right_config_permissions(core_permission_id, core_permissions(id,name,law_reference)),physical_right_config_price_modifiers(modifier_key))',
       )
       .eq('product_id', productId)
       .order('joined_at', { ascending: false })
       .returns<DbPhysicalRegistrationJoinRow[]>();
 
     if (error) {
-      throwSupabaseError('PRODUCTS_QUERY_FAILED', HttpStatus.INTERNAL_SERVER_ERROR, error);
+      throwSupabaseError(
+        'PRODUCTS_QUERY_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
     }
+
+    const dependencyPermissions =
+      await this.loadLicensingDependencyPermissionsCached();
 
     return (data ?? [])
       .filter((registration) => registration.physical_right_configs)
       .map((registration) => {
         const config = registration.physical_right_configs!;
-        const referencedPermissions = (
-          config.physical_right_config_permissions ?? []
-        ).map((permissionRow) =>
-          mapReferencedPermissionSummary(
-            permissionRow.core_permission_id,
-            permissionRow.core_permissions,
+        const referencedPermissions = buildRequiredPermissionsFromDependencies({
+          basePermissions: (config.physical_right_config_permissions ?? []).map(
+            (permissionRow) =>
+              mapReferencedPermissionSummary(
+                permissionRow.core_permission_id,
+                permissionRow.core_permissions,
+              ),
           ),
-        );
+          priceModifierKeys: (
+            config.physical_right_config_price_modifiers ?? []
+          ).map((modifier) => modifier.modifier_key),
+          expressionPermissions: dependencyPermissions.expressionPermissions,
+          modificationPermissions:
+            dependencyPermissions.modificationPermissions,
+        });
         const allowedPermissionSet = new Set(allowedPermissionIds);
         const missingPermissions = referencedPermissions.filter(
           (permission) => !allowedPermissionSet.has(permission.id),
@@ -705,14 +882,18 @@ export class ProductsService {
     const { data, error } = await this.supabaseService.client
       .from('product_physical_right_registrations')
       .select(
-        'product_id,id,right_config_id,status,joined_at,joined_by,removed_at,removed_by,physical_right_configs(id,status,venue_usage_type,physical_right_config_permissions(core_permission_id, core_permissions(id,name,law_reference)))',
+        'product_id,id,right_config_id,status,joined_at,joined_by,removed_at,removed_by,physical_right_configs(id,status,venue_usage_type,physical_right_config_permissions(core_permission_id, core_permissions(id,name,law_reference)),physical_right_config_price_modifiers(modifier_key))',
       )
       .in('product_id', productIds)
       .order('joined_at', { ascending: false })
       .returns<Array<DbPhysicalRegistrationJoinRow & { product_id: string }>>();
 
     if (error) {
-      throwSupabaseError('PRODUCTS_QUERY_FAILED', HttpStatus.INTERNAL_SERVER_ERROR, error);
+      throwSupabaseError(
+        'PHYSICAL_PACKAGE_REGISTRATIONS_LOAD_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
     }
 
     const grouped = (data ?? []).reduce<
@@ -727,6 +908,9 @@ export class ProductsService {
       return acc;
     }, {});
 
+    const dependencyPermissions =
+      await this.loadLicensingDependencyPermissionsCached();
+
     return productIds.reduce<
       Record<string, ProductDto['physicalPackageRegistrations']>
     >((acc, productId) => {
@@ -737,14 +921,24 @@ export class ProductsService {
         .filter((registration) => registration.physical_right_configs)
         .map((registration) => {
           const config = registration.physical_right_configs!;
-          const referencedPermissions = (
-            config.physical_right_config_permissions ?? []
-          ).map((permissionRow) =>
-            mapReferencedPermissionSummary(
-              permissionRow.core_permission_id,
-              permissionRow.core_permissions,
-            ),
-          );
+          const referencedPermissions =
+            buildRequiredPermissionsFromDependencies({
+              basePermissions: (
+                config.physical_right_config_permissions ?? []
+              ).map((permissionRow) =>
+                mapReferencedPermissionSummary(
+                  permissionRow.core_permission_id,
+                  permissionRow.core_permissions,
+                ),
+              ),
+              priceModifierKeys: (
+                config.physical_right_config_price_modifiers ?? []
+              ).map((modifier) => modifier.modifier_key),
+              expressionPermissions:
+                dependencyPermissions.expressionPermissions,
+              modificationPermissions:
+                dependencyPermissions.modificationPermissions,
+            });
           const missingPermissions = referencedPermissions.filter(
             (permission) => !allowedPermissionSet.has(permission.id),
           );
@@ -938,7 +1132,12 @@ export class ProductsService {
     duration: row.duration,
     artistId: row.artist_id,
     thumbnailUrl: await this.createThumbnailUrlFromKey(row.thumbnail_key),
-    previewAudioUrl: null,
+    previewAudioUrl: row.original_audio_key ? await this.createSignedUrlOrThrow(
+      this.getRequiredBucket('STORAGE_BUCKET_ORIGINAL_AUDIO'),
+      row.original_audio_key,
+      'PRODUCT_AUDIO_SIGNED_URL_CREATE_FAILED',
+      'PRODUCT_AUDIO_OBJECT_NOT_FOUND',
+    ).catch(() => null) : null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   });
@@ -946,7 +1145,10 @@ export class ProductsService {
   async listMarketplaceProducts(
     query: MarketplaceProductsListQueryDto,
   ): Promise<
-    ApiEnvelopePayload<{ items: MarketplaceProductListItemDto[] }, PaginationMeta>
+    ApiEnvelopePayload<
+      { items: MarketplaceProductListItemDto[] },
+      PaginationMeta
+    >
   > {
     const { column, ascending } = parseSort(query.sort);
     const keyword =
@@ -957,7 +1159,7 @@ export class ProductsService {
     const { data, error } = await this.supabaseService.client
       .from('products')
       .select(
-        'id,title,artist_id,author_name,genre,genres,duration,thumbnail_key,created_at,updated_at,status',
+        'id,title,artist_id,author_name,genre,genres,duration,thumbnail_key,original_audio_key,created_at,updated_at,status',
       )
       .eq('status', 'PUBLISHED')
       .returns<DbProductRow[]>();
@@ -972,7 +1174,12 @@ export class ProductsService {
 
     const filteredRows = (data ?? []).filter((row) => {
       const genres = row.genres ?? (row.genre ? [row.genre] : []);
-      const searchable = [row.title, row.author_name ?? '', row.genre ?? '', ...genres]
+      const searchable = [
+        row.title,
+        row.author_name ?? '',
+        row.genre ?? '',
+        ...genres,
+      ]
         .join(' ')
         .toLowerCase();
 
@@ -1016,7 +1223,11 @@ export class ProductsService {
           pageRows.map((row) => this.mapRowToMarketplaceListItem(row)),
         ),
       },
-      meta: buildPaginationMeta(query.page, query.pageSize, filteredRows.length),
+      meta: buildPaginationMeta(
+        query.page,
+        query.pageSize,
+        filteredRows.length,
+      ),
     };
   }
 
@@ -1037,12 +1248,27 @@ export class ProductsService {
       duration: product.duration,
       artistId: product.artistId,
       thumbnailUrl: await this.createThumbnailUrlFromKey(product.thumbnailKey),
-      previewAudioUrl: null,
+      previewAudioUrl: product.originalAudioKey ? await this.createSignedUrlOrThrow(
+        this.getRequiredBucket('STORAGE_BUCKET_ORIGINAL_AUDIO'),
+        product.originalAudioKey,
+        'PRODUCT_AUDIO_SIGNED_URL_CREATE_FAILED',
+        'PRODUCT_AUDIO_OBJECT_NOT_FOUND',
+      ).catch(() => null) : null,
       createdAt: product.createdAt,
       updatedAt: product.updatedAt,
       description: product.description,
       useCases: product.useCases,
       allowedPermissions: product.allowedPermissions,
+      digitalRightConfigId:
+        product.digitalPackageRegistrations.find(
+          (reg) =>
+            reg.registrationStatus === 'JOINED' && reg.configStatus === 'ACTIVE',
+        )?.configId ?? null,
+      physicalRightConfigId:
+        product.physicalPackageRegistrations.find(
+          (reg) =>
+            reg.registrationStatus === 'JOINED' && reg.configStatus === 'ACTIVE',
+        )?.configId ?? null,
     };
   }
 
@@ -1307,7 +1533,11 @@ export class ProductsService {
     const { count, error } = await requestBuilder.limit(1);
 
     if (error) {
-      throwSupabaseError('PRODUCTS_QUERY_FAILED', HttpStatus.INTERNAL_SERVER_ERROR, error);
+      throwSupabaseError(
+        'PRODUCTS_QUERY_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
     }
 
     return typeof count === 'number' ? count : 0;
@@ -1342,7 +1572,11 @@ export class ProductsService {
       .single<DbProductJoinRow>();
 
     if (error) {
-      throwSupabaseError('PRODUCTS_QUERY_FAILED', HttpStatus.INTERNAL_SERVER_ERROR, error);
+      throwSupabaseError(
+        'PRODUCTS_QUERY_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
     }
 
     if (!data) {
@@ -1377,7 +1611,11 @@ export class ProductsService {
       .maybeSingle<DbProductJoinRow>();
 
     if (error) {
-      throwSupabaseError('PRODUCTS_QUERY_FAILED', HttpStatus.INTERNAL_SERVER_ERROR, error);
+      throwSupabaseError(
+        'PRODUCTS_QUERY_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
     }
 
     if (!data) {
@@ -1398,7 +1636,11 @@ export class ProductsService {
       .maybeSingle<{ id: string }>();
 
     if (error) {
-      throwSupabaseError('PRODUCTS_QUERY_FAILED', HttpStatus.INTERNAL_SERVER_ERROR, error);
+      throwSupabaseError(
+        'PRODUCTS_QUERY_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
     }
 
     if (!data) {
@@ -1423,7 +1665,11 @@ export class ProductsService {
     const { data, error } = await requestBuilder;
 
     if (error) {
-      throwSupabaseError('PRODUCTS_QUERY_FAILED', HttpStatus.INTERNAL_SERVER_ERROR, error);
+      throwSupabaseError(
+        'PRODUCTS_QUERY_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
     }
 
     const definitions = await this.loadLicensingEligibilityDefinitionsCached();
@@ -1488,7 +1734,11 @@ export class ProductsService {
       .maybeSingle<DbProductJoinRow>();
 
     if (error) {
-      throwSupabaseError('PRODUCTS_QUERY_FAILED', HttpStatus.INTERNAL_SERVER_ERROR, error);
+      throwSupabaseError(
+        'PRODUCTS_QUERY_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
     }
 
     if (!data) {
@@ -1521,7 +1771,11 @@ export class ProductsService {
       }>();
 
     if (error) {
-      throwSupabaseError('PRODUCTS_QUERY_FAILED', HttpStatus.INTERNAL_SERVER_ERROR, error);
+      throwSupabaseError(
+        'PRODUCTS_QUERY_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
     }
 
     if (!data) {
@@ -1651,7 +1905,11 @@ export class ProductsService {
       .maybeSingle<DbProductJoinRow>();
 
     if (error) {
-      throwSupabaseError('PRODUCTS_QUERY_FAILED', HttpStatus.INTERNAL_SERVER_ERROR, error);
+      throwSupabaseError(
+        'PRODUCTS_QUERY_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
     }
 
     if (!data) {
@@ -1675,7 +1933,11 @@ export class ProductsService {
       .maybeSingle<DbProductJoinRow>();
 
     if (error) {
-      throwSupabaseError('PRODUCTS_QUERY_FAILED', HttpStatus.INTERNAL_SERVER_ERROR, error);
+      throwSupabaseError(
+        'PRODUCTS_QUERY_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
     }
 
     if (!data) {
@@ -1737,7 +1999,11 @@ export class ProductsService {
       .maybeSingle<DbProductJoinRow>();
 
     if (error) {
-      throwSupabaseError('PRODUCTS_QUERY_FAILED', HttpStatus.INTERNAL_SERVER_ERROR, error);
+      throwSupabaseError(
+        'PRODUCTS_QUERY_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
     }
 
     if (!data) {
@@ -1764,7 +2030,11 @@ export class ProductsService {
       .maybeSingle<DbProductJoinRow>();
 
     if (error) {
-      throwSupabaseError('PRODUCTS_QUERY_FAILED', HttpStatus.INTERNAL_SERVER_ERROR, error);
+      throwSupabaseError(
+        'PRODUCTS_QUERY_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
     }
 
     if (!data) {
@@ -1791,7 +2061,11 @@ export class ProductsService {
       .maybeSingle<DbProductJoinRow>();
 
     if (error) {
-      throwSupabaseError('PRODUCTS_QUERY_FAILED', HttpStatus.INTERNAL_SERVER_ERROR, error);
+      throwSupabaseError(
+        'PRODUCTS_QUERY_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
     }
 
     if (!data) {

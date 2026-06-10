@@ -7,7 +7,6 @@ import Tag from 'primevue/tag'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
-import Dropdown from 'primevue/dropdown'
 import Message from 'primevue/message'
 import type { DataTablePageEvent } from 'primevue/datatable'
 import { ApiClientError } from '../../api/axios'
@@ -20,6 +19,9 @@ import type {
 } from '../../types/managed-users.types'
 import type { UserStatus } from '../../types/auth.types'
 import AdminStatCard from '../../components/features/admin-shell/AdminStatCard.vue'
+import AdminFilterInput from '../../components/shared/admin/AdminFilterInput.vue'
+import AdminFilterSelect from '../../components/shared/admin/AdminFilterSelect.vue'
+import AdminPageHeader from '../../components/shared/admin/AdminPageHeader.vue'
 
 const props = defineProps<{
   initialRole: ManagedRoleName
@@ -284,33 +286,24 @@ const removeUser = (row: ManagedUser) => {
 
 <template>
   <div class="flex min-w-0 flex-col gap-4 pb-8 sm:gap-5 lg:gap-6">
-    <section
-      class="flex flex-col gap-4 rounded-[32px] border border-slate-200/80 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.18),transparent_34%),radial-gradient(circle_at_75%_120%,rgba(124,58,237,0.14),transparent_42%),linear-gradient(135deg,rgba(255,255,255,0.96),rgba(244,248,255,0.92))] p-5 shadow-2xl shadow-slate-200/40 dark:border-slate-800 dark:bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.16),transparent_30%),radial-gradient(circle_at_75%_120%,rgba(124,58,237,0.2),transparent_42%),linear-gradient(135deg,rgba(15,23,42,0.92),rgba(2,6,23,0.96))] dark:shadow-black/20 sm:p-6 xl:flex-row xl:items-center xl:justify-between"
+    <AdminPageHeader
+      :kicker="roleMeta.accentLabel"
+      :title="roleMeta.title"
+      :description="roleMeta.subtitle"
+      icon-class="pi pi-users"
     >
-      <div class="min-w-0 space-y-3">
-        <div class="inline-flex items-center rounded-full bg-sky-100 px-3 py-1 text-xs font-bold uppercase tracking-[0.24em] text-sky-700 dark:bg-sky-500/20 dark:text-sky-200">
-          {{ roleMeta.accentLabel }}
-        </div>
-        <div>
-          <h2 class="!m-0 text-2xl font-semibold tracking-tight !text-slate-950 sm:text-3xl dark:!text-white">
-            {{ roleMeta.title }}
-          </h2>
-          <p class="mt-3 max-w-3xl text-sm leading-6 text-slate-600 dark:text-slate-300">
-            {{ roleMeta.subtitle }}
-          </p>
-        </div>
-      </div>
-
-      <button
-        type="button"
-        class="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-violet-600 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-violet-500 dark:hover:bg-violet-400 sm:w-auto"
-        :disabled="managedUsersStore.isLoading || isActionLoading"
-        @click="openCreate"
-      >
-        <i class="pi pi-plus" />
-        {{ roleMeta.createLabel }}
-      </button>
-    </section>
+      <template #actions>
+        <button
+          type="button"
+          class="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[color:var(--admin-primary-button-bg)] px-4 py-3 text-sm font-semibold text-[color:var(--admin-primary-button-text)] transition hover:bg-[color:var(--admin-primary-button-hover)] active:bg-[color:var(--admin-primary-button-active)] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+          :disabled="managedUsersStore.isLoading || isActionLoading"
+          @click="openCreate"
+        >
+          <i class="pi pi-plus" />
+          {{ roleMeta.createLabel }}
+        </button>
+      </template>
+    </AdminPageHeader>
 
     <section class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <AdminStatCard
@@ -343,28 +336,27 @@ const removeUser = (row: ManagedUser) => {
       />
     </section>
 
-    <section class="rounded-[32px] border border-slate-200/80 bg-white/92 p-6 shadow-xl shadow-slate-200/40 backdrop-blur dark:border-slate-800 dark:bg-slate-900/80 dark:shadow-black/20">
+    <section class="rounded-[32px] border [border-color:var(--admin-border)] bg-[linear-gradient(180deg,var(--admin-surface-0),var(--admin-surface-1))] p-6 shadow-[var(--admin-elev-1)] backdrop-blur">
       <div class="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
         <div>
-          <div class="text-lg font-semibold text-slate-950 dark:text-white">Directory user</div>
-          <div class="mt-2 text-sm text-slate-500 dark:text-slate-400">
+          <div class="text-lg font-semibold text-[color:var(--admin-text)]">Directory user</div>
+          <div class="mt-2 text-sm text-[color:var(--admin-text-muted)]">
             Tìm kiếm, lọc trạng thái và thao tác trực tiếp trên buyer hoặc artist.
           </div>
         </div>
 
         <div class="grid w-full grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(0,340px)_190px_auto_auto] xl:items-end">
-          <InputText
+          <AdminFilterInput
             v-model="keyword"
+            icon-class="pi pi-search"
             placeholder="Tìm theo email hoặc họ tên"
-            class="w-full min-w-0"
+            :disabled="managedUsersStore.isLoading || isActionLoading"
           />
-          <Dropdown
+          <AdminFilterSelect
             v-model="statusFilter"
+            icon-class="pi pi-tag"
             :options="statusOptions"
-            optionLabel="label"
-            optionValue="value"
-            placeholder="Trạng thái"
-            class="w-full min-w-0"
+            :disabled="managedUsersStore.isLoading || isActionLoading"
           />
           <Button
             label="Tìm kiếm"
@@ -388,7 +380,7 @@ const removeUser = (row: ManagedUser) => {
         <Message v-if="errorMessage" severity="error">{{ errorMessage }}</Message>
       </div>
 
-      <div class="mt-6 overflow-hidden rounded-[24px] border border-slate-200/80 bg-white dark:border-slate-800 dark:bg-slate-950/40">
+      <div class="mt-6 overflow-hidden rounded-[28px] border border-[color:var(--admin-border-strong)] bg-[color:var(--admin-surface-1)] shadow-[var(--admin-elev-1)]">
         <div class="overflow-x-auto">
           <DataTable
             :value="managedUsersStore.items"
@@ -410,7 +402,7 @@ const removeUser = (row: ManagedUser) => {
                   <span
                     v-for="role in data.roles"
                     :key="`${data.id}-${role.roleId}`"
-                    class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300"
+                    class="rounded-full border [border-color:var(--admin-border)] bg-[color:var(--admin-surface-0)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]"
                   >
                     {{ role.roleName }}
                   </span>
@@ -433,7 +425,7 @@ const removeUser = (row: ManagedUser) => {
             </Column>
             <Column header="Ngày tạo">
               <template #body="{ data }">
-                <span class="text-sm text-slate-600 dark:text-slate-300">
+                <span class="text-sm text-[color:var(--admin-text-muted)]">
                   {{ formatDateTime(data.createdAt) }}
                 </span>
               </template>
@@ -477,18 +469,18 @@ const removeUser = (row: ManagedUser) => {
       class="w-[calc(100vw-1rem)] sm:w-[min(620px,94vw)]"
       :pt="{ content: { class: 'max-h-[calc(100svh-12rem)] overflow-y-auto' } }"
     >
-      <div class="space-y-4">
+      <div class="space-y-4 rounded-[28px] border [border-color:var(--admin-border)] bg-[linear-gradient(180deg,var(--admin-surface-0),var(--admin-surface-1))] p-1">
         <Message v-if="createError" severity="error">{{ createError }}</Message>
         <div class="grid gap-4">
-          <label class="grid gap-2 text-sm text-slate-600 dark:text-slate-300">
+          <label class="grid gap-2 text-sm text-[color:var(--admin-text-muted)]">
             <span class="font-medium">Họ và tên</span>
             <InputText v-model="createForm.fullName" class="w-full" />
           </label>
-          <label class="grid gap-2 text-sm text-slate-600 dark:text-slate-300">
+          <label class="grid gap-2 text-sm text-[color:var(--admin-text-muted)]">
             <span class="font-medium">Email</span>
             <InputText v-model="createForm.email" class="w-full" />
           </label>
-          <label class="grid gap-2 text-sm text-slate-600 dark:text-slate-300">
+          <label class="grid gap-2 text-sm text-[color:var(--admin-text-muted)]">
             <span class="font-medium">Mật khẩu</span>
             <Password v-model="createForm.password" toggleMask class="w-full" :feedback="false" />
           </label>
@@ -509,18 +501,18 @@ const removeUser = (row: ManagedUser) => {
       class="w-[calc(100vw-1rem)] sm:w-[min(620px,94vw)]"
       :pt="{ content: { class: 'max-h-[calc(100svh-12rem)] overflow-y-auto' } }"
     >
-      <div class="space-y-4">
+      <div class="space-y-4 rounded-[28px] border [border-color:var(--admin-border)] bg-[linear-gradient(180deg,var(--admin-surface-0),var(--admin-surface-1))] p-1">
         <Message v-if="editError" severity="error">{{ editError }}</Message>
         <div class="grid gap-4">
-          <label class="grid gap-2 text-sm text-slate-600 dark:text-slate-300">
+          <label class="grid gap-2 text-sm text-[color:var(--admin-text-muted)]">
             <span class="font-medium">Họ và tên</span>
             <InputText v-model="editForm.fullName" class="w-full" />
           </label>
-          <label class="grid gap-2 text-sm text-slate-600 dark:text-slate-300">
+          <label class="grid gap-2 text-sm text-[color:var(--admin-text-muted)]">
             <span class="font-medium">Email</span>
             <InputText v-model="editForm.email" class="w-full" />
           </label>
-          <label class="grid gap-2 text-sm text-slate-600 dark:text-slate-300">
+          <label class="grid gap-2 text-sm text-[color:var(--admin-text-muted)]">
             <span class="font-medium">Mật khẩu mới (không bắt buộc)</span>
             <Password v-model="editForm.password" toggleMask class="w-full" :feedback="false" />
           </label>
@@ -542,7 +534,7 @@ const removeUser = (row: ManagedUser) => {
       :pt="{ content: { class: 'max-h-[calc(100svh-12rem)] overflow-y-auto' } }"
     >
       <div class="space-y-4">
-        <div class="text-sm leading-6 text-slate-600 dark:text-slate-300">
+        <div class="text-sm leading-6 text-[color:var(--admin-text-muted)]">
           {{ confirmMessage }}
         </div>
       </div>

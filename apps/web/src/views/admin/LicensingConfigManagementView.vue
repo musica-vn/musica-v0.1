@@ -4,6 +4,10 @@ import Message from 'primevue/message'
 import { useConfirm } from 'primevue/useconfirm'
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { ApiClientError } from '../../api/axios'
+import AdminFilterInput from '../../components/shared/admin/AdminFilterInput.vue'
+import AdminFilterSelect from '../../components/shared/admin/AdminFilterSelect.vue'
+import AdminPageHeader from '../../components/shared/admin/AdminPageHeader.vue'
+import AdminPaginationBar from '../../components/shared/admin/AdminPaginationBar.vue'
 import {
   listAdminDigitalRightConfigProducts,
   listAdminPhysicalRightConfigProducts,
@@ -50,19 +54,42 @@ const props = defineProps<{
 const confirm = useConfirm()
 
 const fieldClass =
-  'h-12 w-full min-w-0 rounded-2xl border border-slate-200/80 bg-white/90 px-4 text-sm text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-violet-400 focus:ring-4 focus:ring-violet-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-800 dark:bg-slate-950/70 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-violet-500 dark:focus:ring-violet-500/20'
+  'h-12 w-full min-w-0 rounded-2xl border bg-[color:var(--admin-surface-0)] px-4 text-sm text-[color:var(--admin-text)] shadow-sm outline-none transition placeholder:text-[color:var(--admin-text-muted)] [border-color:var(--admin-border)] focus:[border-color:var(--admin-primary-500)] focus:ring-4 focus:ring-[color:var(--admin-ring)] disabled:cursor-not-allowed disabled:opacity-60'
 const selectFieldClass =
-  'h-12 w-full min-w-0 appearance-none rounded-2xl border border-slate-200/80 bg-white/90 pl-4 pr-12 text-sm text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-violet-400 focus:ring-4 focus:ring-violet-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-800 dark:bg-slate-950/70 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-violet-500 dark:focus:ring-violet-500/20'
+  'h-12 w-full min-w-0 appearance-none rounded-2xl border bg-[color:var(--admin-surface-0)] pl-4 pr-12 text-sm text-[color:var(--admin-text)] shadow-sm outline-none transition placeholder:text-[color:var(--admin-text-muted)] [border-color:var(--admin-border)] focus:[border-color:var(--admin-primary-500)] focus:ring-4 focus:ring-[color:var(--admin-ring)] disabled:cursor-not-allowed disabled:opacity-60'
 const textAreaClass =
-  'min-h-[140px] w-full rounded-2xl border border-slate-200/80 bg-white/90 px-4 py-3 text-sm text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-violet-400 focus:ring-4 focus:ring-violet-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-800 dark:bg-slate-950/70 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-violet-500 dark:focus:ring-violet-500/20'
+  'min-h-[140px] w-full rounded-2xl border bg-[color:var(--admin-surface-0)] px-4 py-3 text-sm text-[color:var(--admin-text)] shadow-sm outline-none transition placeholder:text-[color:var(--admin-text-muted)] [border-color:var(--admin-border)] focus:[border-color:var(--admin-primary-500)] focus:ring-4 focus:ring-[color:var(--admin-ring)] disabled:cursor-not-allowed disabled:opacity-60'
 const primaryButtonClass =
-  'inline-flex items-center justify-center rounded-2xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-600 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-violet-500 dark:hover:bg-violet-400'
+  'inline-flex items-center justify-center rounded-2xl bg-[color:var(--admin-primary-button-bg)] px-4 py-2.5 text-sm font-semibold text-[color:var(--admin-primary-button-text)] transition hover:bg-[color:var(--admin-primary-button-hover)] active:bg-[color:var(--admin-primary-button-active)] disabled:cursor-not-allowed disabled:opacity-60'
 const secondaryButtonClass =
-  'inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-violet-300 hover:text-violet-600 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-violet-500 dark:hover:text-violet-300'
+  'inline-flex items-center justify-center rounded-2xl border bg-[color:var(--admin-surface-0)] px-4 py-2.5 text-sm font-semibold text-[color:var(--admin-text)] transition [border-color:var(--admin-border)] hover:border-[color:rgb(var(--admin-primary-rgb)/0.24)] hover:text-[color:var(--admin-primary-700)] disabled:cursor-not-allowed disabled:opacity-60'
 const iconButtonClass =
-  'inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 transition hover:border-slate-300 hover:text-slate-900 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:text-white'
+  'inline-flex h-10 w-10 items-center justify-center rounded-2xl border bg-[color:var(--admin-surface-0)] text-[color:var(--admin-text-muted)] transition [border-color:var(--admin-border)] hover:border-[color:rgb(var(--admin-primary-rgb)/0.24)] hover:text-[color:var(--admin-primary-800)] disabled:opacity-60'
 const selectChevronClass =
-  'pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500'
+  'pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[color:var(--admin-text-muted)]'
+const modalDialogClass = 'w-[calc(100vw-0.75rem)] sm:w-[min(1120px,98vw)] xl:w-[min(1240px,96vw)]'
+const dialogContentProps = {
+  content: { class: 'max-h-[calc(100svh-0.75rem)] overflow-y-auto px-0 sm:max-h-[calc(100svh-5rem)]' },
+}
+const dialogSurfaceClass =
+  'space-y-5 rounded-[30px] border [border-color:var(--admin-border)] bg-[linear-gradient(180deg,var(--admin-surface-0),var(--admin-surface-1))] p-3 sm:p-4'
+const formSectionClass =
+  'space-y-4 rounded-[26px] border [border-color:var(--admin-border)] bg-[color:var(--admin-surface-0)] p-5 sm:p-6'
+const sectionHeadingClass = 'flex items-center gap-3'
+const sectionTitleClass =
+  'text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--admin-text-muted)]'
+const sectionDividerClass = 'h-px flex-1 bg-[color:rgb(var(--admin-primary-rgb)/0.14)]'
+const modifierGroupCardClass =
+  'overflow-hidden rounded-[24px] border [border-color:var(--admin-border)] bg-[color:var(--admin-surface-0)] shadow-sm'
+const modifierGroupHeaderClass =
+  'flex items-start justify-between gap-3 border-b [border-color:var(--admin-border)] bg-[color:var(--admin-surface-1)] px-4 py-4'
+const modifierGroupBodyClass = 'space-y-3 px-4 py-4'
+const modifierItemCardClass =
+  'rounded-[20px] border [border-color:var(--admin-border)] bg-[linear-gradient(180deg,var(--admin-surface-0),var(--admin-surface-1))] p-4'
+const modifierInputLabelClass =
+  'mb-2 block text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]'
+const dependencyHelpText =
+  'Đối tượng, Thời hạn, Phạm vi chỉnh hệ số trực tiếp tại đây. Hình thức biểu hiện và Mức độ biến đổi lấy hệ số từ màn hình quản lý riêng.'
 
 const resourceConfigMap: Record<
   LicensingConfigResource,
@@ -88,24 +115,24 @@ const resourceConfigMap: Record<
   }
 > = {
   digital: {
-    title: 'Gói quyền nền tảng số',
+    title: 'Quản lý nền tảng số',
     description:
-      'Thiết lập gói thương mại cho nền tảng số, chọn bộ quyền cốt lõi bắt buộc và quản lý vòng đời bản nháp hoặc publish.',
-    createLabel: 'Tạo gói quyền số',
-    editLabel: 'Cập nhật gói quyền số',
-    detailColumnLabel: 'Nền tảng / Thời hạn',
-    detailPlaceholder: 'Nền tảng thương mại và thời hạn áp dụng',
+      'Thiết lập cấu hình thương mại cho nền tảng số, chọn bộ quyền cốt lõi bắt buộc và quản lý vòng đời bản nháp hoặc xuất bản.',
+    createLabel: 'Tạo cấu hình nền tảng',
+    editLabel: 'Cập nhật cấu hình nền tảng',
+    detailColumnLabel: 'Nền tảng',
+    detailPlaceholder: 'Nền tảng thương mại áp dụng',
     priceLabel: 'Giá cơ sở / hệ số',
-    emptyState: 'Chưa có gói quyền nền tảng số nào.',
-    keywordPlaceholder: 'Tìm theo nền tảng hoặc thời hạn gói số',
+    emptyState: 'Chưa có cấu hình nền tảng số nào.',
+    keywordPlaceholder: 'Tìm theo nền tảng, thời hạn hoặc mã cấu hình',
     permissionLabel: 'Quyền cốt lõi bắt buộc',
     emptyPermissionsText: 'Chưa chọn quyền cốt lõi bắt buộc',
     permissionLoadingMessage: 'Đang tải bộ quyền cốt lõi bắt buộc...',
-    createSuccessMessage: 'Đã tạo bản nháp gói quyền số.',
-    updateSuccessMessage: 'Đã cập nhật gói quyền số.',
-    deleteSuccessMessage: 'Đã xoá gói quyền số.',
+    createSuccessMessage: 'Đã tạo bản nháp cấu hình nền tảng.',
+    updateSuccessMessage: 'Đã cập nhật cấu hình nền tảng.',
+    deleteSuccessMessage: 'Đã xoá cấu hình nền tảng.',
     permissionsDialogEmptyState: 'Chưa cấu hình quyền cốt lõi bắt buộc.',
-    draftNotice: 'Bản ghi mới sẽ được tạo ở trạng thái Bản nháp. Dùng thao tác Publish sau khi hoàn tất cấu hình.',
+    draftNotice: 'Bản ghi mới sẽ được tạo ở trạng thái Bản nháp. Dùng thao tác Xuất bản sau khi hoàn tất cấu hình.',
     supportsDigitalFilters: true,
   },
   physical: {
@@ -191,6 +218,7 @@ const filters = reactive<{
   targetPlatform: '',
   durationType: '',
 })
+const showAdvancedFilters = ref(false)
 
 const pagination = reactive({ page: 1, pageSize: 20 })
 
@@ -200,6 +228,7 @@ const selectedItem = ref<AnyLicensingConfig | null>(null)
 const mobileActionItem = ref<AnyLicensingConfig | null>(null)
 const isSubmitting = ref(false)
 const hasLoadedPermissionOptions = ref(false)
+const hasLoadedDependencyConfigs = ref(false)
 const permissionsDialogVisible = ref(false)
 const permissionsDialogTitle = ref('Quyền tham khảo')
 const permissionsDialogPermissions = ref<ReferencedPermissionSummary[]>([])
@@ -235,8 +264,7 @@ const isExpressionOrModification = computed(
 const isDigitalOrPhysical = computed(() => props.resource === 'digital' || props.resource === 'physical')
 
 type PricingModifierGroupId = 'SUBJECT' | 'DURATION' | 'SCOPE' | 'EXPRESSION' | 'MODIFICATION'
-
-const pricingModifierGroups: Array<
+type PricingModifierGroup =
   | {
       id: PricingModifierGroupId
       label: string
@@ -249,7 +277,8 @@ const pricingModifierGroups: Array<
       kind: 'flag'
       flagKey: VariantPricingModifierKey
     }
-> = [
+
+const pricingModifierGroups: PricingModifierGroup[] = [
   {
     id: 'SUBJECT',
     label: 'Đối tượng',
@@ -291,6 +320,35 @@ const pricingModifierGroups: Array<
   },
 ]
 
+const digitalDisallowedModifierKeys = new Set<VariantPricingModifierKey>([
+  'DURATION_ONE_YEAR',
+  'DURATION_PERPETUAL',
+])
+
+const normalizePriceModifiers = (
+  modifiers: PriceModifier[],
+) =>
+  Array.from(
+    new Map(
+      modifiers
+        .filter((item) => !!item && typeof item === 'object')
+        .filter(
+          (item) =>
+            !(
+              props.resource === 'digital'
+              && digitalDisallowedModifierKeys.has(item.key)
+            ),
+        )
+        .map((item) => [item.key, { key: item.key, multiplier: Number(item.multiplier) }]),
+    ).values(),
+  )
+
+const selectablePricingModifierGroups = computed(() =>
+  pricingModifierGroups.filter(
+    (group) => !(props.resource === 'digital' && group.id === 'DURATION'),
+  ),
+)
+
 const getPriceModifierMultiplier = (key: VariantPricingModifierKey) =>
   form.priceModifiers.find((item) => item.key === key)?.multiplier ?? 1
 
@@ -304,7 +362,7 @@ const setPriceModifierMultiplier = (key: VariantPricingModifierKey, multiplier: 
 }
 
 const hasPriceModifierGroup = (groupId: PricingModifierGroupId) => {
-  const group = pricingModifierGroups.find((item) => item.id === groupId)
+  const group = selectablePricingModifierGroups.value.find((item) => item.id === groupId)
   if (!group) return false
 
   if (group.kind === 'flag') {
@@ -316,7 +374,7 @@ const hasPriceModifierGroup = (groupId: PricingModifierGroupId) => {
 
 const addPriceModifierGroup = (groupId: PricingModifierGroupId) => {
   if (!isDigitalOrPhysical.value) return
-  const group = pricingModifierGroups.find((item) => item.id === groupId)
+  const group = selectablePricingModifierGroups.value.find((item) => item.id === groupId)
   if (!group) return
 
   const existingKeys = new Set(form.priceModifiers.map((item) => item.key))
@@ -334,7 +392,7 @@ const addPriceModifierGroup = (groupId: PricingModifierGroupId) => {
 
 const removePriceModifierGroup = (groupId: PricingModifierGroupId) => {
   if (!isDigitalOrPhysical.value) return
-  const group = pricingModifierGroups.find((item) => item.id === groupId)
+  const group = selectablePricingModifierGroups.value.find((item) => item.id === groupId)
   if (!group) return
 
   const removeKeys = new Set(
@@ -345,15 +403,15 @@ const removePriceModifierGroup = (groupId: PricingModifierGroupId) => {
 }
 
 const activePricingModifierGroups = computed(() =>
-  pricingModifierGroups.filter((group) => hasPriceModifierGroup(group.id)),
+  selectablePricingModifierGroups.value.filter((group) => hasPriceModifierGroup(group.id)),
 )
 
 const availablePricingModifierGroups = computed(() =>
-  pricingModifierGroups.filter((group) => !hasPriceModifierGroup(group.id)),
+  selectablePricingModifierGroups.value.filter((group) => !hasPriceModifierGroup(group.id)),
 )
 
 const getPricingModifierGroupDescription = (
-  group: (typeof pricingModifierGroups)[number],
+  group: PricingModifierGroup,
 ) => {
   if (group.kind === 'flag') {
     return 'Bật thuộc tính để công thức sử dụng hệ số từ màn hình quản lý riêng.'
@@ -363,11 +421,11 @@ const getPricingModifierGroupDescription = (
 }
 
 const getPricingModifierGroupBadgeLabel = (
-  group: (typeof pricingModifierGroups)[number],
+  group: PricingModifierGroup,
 ) => (group.kind === 'flag' ? 'Lấy hệ số riêng' : 'Chỉnh tại đây')
 
 const getPricingModifierGroupIcon = (
-  group: (typeof pricingModifierGroups)[number],
+  group: PricingModifierGroup,
 ) => {
   switch (group.id) {
     case 'SUBJECT':
@@ -384,11 +442,77 @@ const getPricingModifierGroupIcon = (
 }
 
 const getPricingModifierGroupIconClass = (
-  group: (typeof pricingModifierGroups)[number],
-) =>
-  group.kind === 'flag'
-    ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300'
-    : 'bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300'
+  group: PricingModifierGroup,
+) => {
+  switch (group.id) {
+    case 'SUBJECT':
+      return 'bg-sky-100 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300'
+    case 'DURATION':
+      return 'bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300'
+    case 'SCOPE':
+      return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300'
+    case 'EXPRESSION':
+      return 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300'
+    case 'MODIFICATION':
+      return 'bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300'
+  }
+}
+
+const getPricingModifierGroupBadgeClass = (
+  group: PricingModifierGroup,
+) => {
+  switch (group.id) {
+    case 'SUBJECT':
+      return 'bg-sky-100 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300'
+    case 'DURATION':
+      return 'bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300'
+    case 'SCOPE':
+      return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300'
+    case 'EXPRESSION':
+      return 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300'
+    case 'MODIFICATION':
+      return 'bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300'
+  }
+}
+
+const getPricingModifierItemDescription = (key: VariantPricingModifierKey) => {
+  switch (key) {
+    case 'SUBJECT_INDIVIDUAL':
+      return 'Áp dụng cho khách hàng cá nhân.'
+    case 'SUBJECT_ORGANIZATION':
+      return 'Áp dụng cho khách hàng tổ chức.'
+    case 'DURATION_ONE_YEAR':
+      return 'Áp dụng cho gói thời hạn 1 năm.'
+    case 'DURATION_PERPETUAL':
+      return 'Áp dụng cho gói vĩnh viễn.'
+    case 'SCOPE_SINGLE_CHANNEL':
+      return 'Áp dụng cho phạm vi 1 kênh.'
+    case 'SCOPE_MULTI_CHANNEL':
+      return 'Áp dụng cho phạm vi đa kênh.'
+    case 'EXPRESSION':
+      return 'Lấy hệ số từ màn hình hình thức biểu hiện.'
+    case 'MODIFICATION':
+      return 'Lấy hệ số từ màn hình mức độ biến đổi.'
+  }
+}
+
+const isReferencedPermissionSelected = (permissionId: string) =>
+  form.referencedPermissionIds.includes(permissionId)
+
+const getReferencedPermissionCardClass = (permissionId: string) =>
+  isReferencedPermissionSelected(permissionId)
+    ? 'border-emerald-200 bg-emerald-50/90 text-emerald-950 shadow-[0_12px_32px_-24px_rgba(16,185,129,0.9)] hover:border-emerald-300 dark:border-emerald-400/40 dark:bg-emerald-500/10 dark:text-emerald-50'
+    : 'border-[color:var(--admin-border)] bg-[color:var(--admin-surface-0)] text-[color:var(--admin-text)] hover:-translate-y-0.5 hover:border-[color:rgb(var(--admin-primary-rgb)/0.24)] hover:bg-[color:var(--admin-surface-1)]'
+
+const getReferencedPermissionCheckboxClass = (permissionId: string) =>
+  isReferencedPermissionSelected(permissionId)
+    ? 'border-emerald-500 bg-emerald-500 text-white dark:border-emerald-400 dark:bg-emerald-400'
+    : 'border-[color:var(--admin-border)] bg-[color:var(--admin-surface-0)] text-transparent'
+
+const getReferencedPermissionChipClass = (permissionId: string) =>
+  isReferencedPermissionSelected(permissionId)
+    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300'
+    : 'bg-[color:var(--admin-surface-1)] text-[color:var(--admin-text-muted)]'
 const isNameValid = computed(() => {
   if (!isExpressionOrModification.value) return true
   return form.name.trim().length > 0
@@ -465,10 +589,37 @@ const statusFieldLabel = computed(() => 'Trạng thái')
 const permissionsLabel = computed(() => currentResource.value.permissionLabel)
 const actionsLabel = computed(() => 'Thao tác')
 const emptyPermissionsText = computed(() => currentResource.value.emptyPermissionsText)
+const statusFilterOptions = computed(() => [
+  { label: 'Tất cả', value: '' as LicensingConfigStatus | '' },
+  { label: isDigitalOrPhysicalResource.value ? formatStatusLabel('ACTIVE') : 'ACTIVE', value: 'ACTIVE' as LicensingConfigStatus },
+  { label: isDigitalOrPhysicalResource.value ? formatStatusLabel('INACTIVE') : 'INACTIVE', value: 'INACTIVE' as LicensingConfigStatus },
+])
+const platformFilterOptions = [
+  { label: 'Tất cả', value: '' as DigitalPlatform | '' },
+  { label: 'YouTube', value: 'YOUTUBE' as DigitalPlatform },
+  { label: 'TikTok', value: 'TIKTOK' as DigitalPlatform },
+  { label: 'Facebook', value: 'FACEBOOK' as DigitalPlatform },
+]
+const durationFilterOptions = [
+  { label: 'Tất cả', value: '' as DigitalDurationType | '' },
+  { label: '1 năm', value: 'ONE_YEAR' as DigitalDurationType },
+  { label: 'Vĩnh viễn', value: 'PERPETUAL' as DigitalDurationType },
+]
 const editDialogTitle = computed(() => currentResource.value.editLabel)
 const draftNotice = computed(() => currentResource.value.draftNotice ?? null)
 const isPermissionOptionsLoading = computed(
   () => supportsPermissionPicker.value && (!hasLoadedPermissionOptions.value || corePermissionsStore.isLoading),
+)
+const activeExpressionConfigs = computed(() =>
+  expressionStore.items.filter((item) => item.status === 'ACTIVE'),
+)
+const activeModificationConfigs = computed(() =>
+  modificationStore.items.filter((item) => item.status === 'ACTIVE'),
+)
+const isDependencyConfigOptionsLoading = computed(
+  () =>
+    isDigitalOrPhysicalResource.value
+    && (!hasLoadedDependencyConfigs.value || expressionStore.isLoading || modificationStore.isLoading),
 )
 const isPermissionSubmitDisabled = computed(
   () => isSubmitting.value || isPermissionOptionsLoading.value || !isNameValid.value,
@@ -495,6 +646,29 @@ const mergedPermissionOptions = computed<ReferencedPermissionSummary[]>(() => {
   return [...permissionMap.values()]
 })
 
+const getDependencyConfigsForGroup = (group: PricingModifierGroup) => {
+  if (group.id === 'EXPRESSION') return activeExpressionConfigs.value
+  if (group.id === 'MODIFICATION') return activeModificationConfigs.value
+  return []
+}
+
+const getDisplayReferencedPermissions = (
+  item: AnyLicensingConfig,
+): ReferencedPermissionSummary[] => {
+  if (props.resource === 'digital') {
+    return (item as DigitalRightConfig).effectiveReferencedPermissions
+  }
+
+  if (props.resource === 'physical') {
+    return (item as PhysicalRightConfig).effectiveReferencedPermissions
+  }
+
+  return item.referencedPermissions
+}
+
+const getPermissionCount = (item: AnyLicensingConfig) =>
+  getDisplayReferencedPermissions(item).length
+
 const toggleReferencedPermission = (permissionId: string) => {
   form.referencedPermissionIds = form.referencedPermissionIds.includes(permissionId)
     ? form.referencedPermissionIds.filter((item) => item !== permissionId)
@@ -503,8 +677,8 @@ const toggleReferencedPermission = (permissionId: string) => {
 
 const openPermissionsDialog = (item: AnyLicensingConfig) => {
   closeMobileActionMenu()
-  permissionsDialogTitle.value = `${getDetailText(item)} - ${currentResource.value.permissionLabel}`
-  permissionsDialogPermissions.value = item.referencedPermissions
+  permissionsDialogTitle.value = `${getItemDisplayTitle(item)} - Quyền cần thiết`
+  permissionsDialogPermissions.value = getDisplayReferencedPermissions(item)
   permissionsDialogVisible.value = true
 }
 
@@ -512,7 +686,7 @@ const openPackageProductsDialog = async (item: AnyLicensingConfig) => {
   if (!isDigitalOrPhysicalResource.value) return
   closeMobileActionMenu()
 
-  packageProductsDialogTitle.value = `Sản phẩm đã tham gia - ${getDetailText(item)}`
+  packageProductsDialogTitle.value = `Sản phẩm đã tham gia - ${getItemDisplayTitle(item)}`
   packageProducts.value = []
   packageProductsDialogVisible.value = true
   packageProductsLoading.value = true
@@ -567,16 +741,75 @@ const fetchListSafely = async () => {
 
 const formatStatusLabel = (status: LicensingConfigStatus) => {
   if (isDraftManagedResource.value) {
-    return status === 'ACTIVE' ? 'Đã publish' : 'Bản nháp'
+    return status === 'ACTIVE' ? 'Đã xuất bản' : 'Bản nháp'
   }
 
   return status === 'ACTIVE' ? 'Hoạt động' : 'Tắt'
 }
 
-const formatDigitalPlatformLabel = (platform: DigitalPlatform) => platform
+const getDigitalPlatformMeta = (platform: DigitalPlatform) => {
+  if (platform === 'YOUTUBE') {
+    return {
+      label: 'YouTube',
+      dotClass: 'bg-[color:#ff3b30]',
+    }
+  }
+  if (platform === 'TIKTOK') {
+    return {
+      label: 'TikTok',
+      dotClass: 'bg-[color:#111827]',
+    }
+  }
+  return {
+    label: 'Facebook',
+    dotClass: 'bg-[color:#1877f2]',
+  }
+}
+
+const fetchDependencyConfigOptions = async () => {
+  if (!isDigitalOrPhysicalResource.value) {
+    hasLoadedDependencyConfigs.value = true
+    return
+  }
+
+  hasLoadedDependencyConfigs.value = false
+
+  try {
+    await Promise.all([
+      expressionStore.fetchItems({ page: 1, pageSize: 100, status: 'ACTIVE' }),
+      modificationStore.fetchItems({ page: 1, pageSize: 100, status: 'ACTIVE' }),
+    ])
+  } catch (error) {
+    setError(error)
+  } finally {
+    hasLoadedDependencyConfigs.value = true
+  }
+}
+
+const getItemDisplayTitle = (item: AnyLicensingConfig) =>
+  isDigitalResource.value ? `${getDetailText(item)} · #${getConfigReferenceCode(item)}` : getDetailText(item)
+
+const formatDigitalPlatformLabel = (platform: DigitalPlatform) => getDigitalPlatformMeta(platform).label
 
 const formatDurationTypeLabel = (durationType: DigitalDurationType) =>
   durationType === 'ONE_YEAR' ? '1 năm' : 'Vĩnh viễn'
+
+const getDigitalPlatform = (item: AnyLicensingConfig) =>
+  props.resource === 'digital' ? (item as DigitalRightConfig).targetPlatform : null
+
+const getDigitalDurationType = (item: AnyLicensingConfig) =>
+  props.resource === 'digital' ? (item as DigitalRightConfig).durationType : null
+
+const getConfigReferenceCode = (item: AnyLicensingConfig) => item.id.slice(0, 8).toUpperCase()
+
+const activeAdvancedFilterCount = computed(
+  () => [filters.targetPlatform, filters.durationType].filter((value) => Boolean(value)).length,
+)
+
+const toggleAdvancedFilters = () => {
+  if (!currentResource.value.supportsDigitalFilters) return
+  showAdvancedFilters.value = !showAdvancedFilters.value
+}
 
 const resetForm = () => {
   form.targetPlatform = 'YOUTUBE'
@@ -599,14 +832,14 @@ const fillFormFromItem = (item: AnyLicensingConfig) => {
       form.targetPlatform = digitalItem.targetPlatform
       form.durationType = digitalItem.durationType
       form.basePriceMultiplier = digitalItem.basePriceMultiplier
-      form.priceModifiers = [...(digitalItem.priceModifiers ?? [])]
+      form.priceModifiers = normalizePriceModifiers(digitalItem.priceModifiers ?? [])
       break
     }
     case 'physical': {
       const physicalItem = item as PhysicalRightConfig
       form.venueUsageType = physicalItem.venueUsageType
       form.basePriceMultiplier = physicalItem.basePriceMultiplier
-      form.priceModifiers = [...(physicalItem.priceModifiers ?? [])]
+      form.priceModifiers = normalizePriceModifiers(physicalItem.priceModifiers ?? [])
       break
     }
     case 'expression': {
@@ -680,13 +913,7 @@ const openEdit = (item: AnyLicensingConfig) => {
 const buildCreatePayload = () => {
   const referencedPermissionIds = [...form.referencedPermissionIds]
   const priceModifiers = isDigitalOrPhysical.value
-    ? Array.from(
-        new Map(
-          form.priceModifiers
-            .filter((item) => !!item && typeof item === 'object')
-            .map((item) => [item.key, { key: item.key, multiplier: Number(item.multiplier) }]),
-        ).values(),
-      )
+    ? normalizePriceModifiers(form.priceModifiers)
     : []
 
   switch (props.resource) {
@@ -723,13 +950,7 @@ const buildCreatePayload = () => {
 const buildUpdatePayload = () => {
   const referencedPermissionIds = [...form.referencedPermissionIds]
   const priceModifiers = isDigitalOrPhysical.value
-    ? Array.from(
-        new Map(
-          form.priceModifiers
-            .filter((item) => !!item && typeof item === 'object')
-            .map((item) => [item.key, { key: item.key, multiplier: Number(item.multiplier) }]),
-        ).values(),
-      )
+    ? normalizePriceModifiers(form.priceModifiers)
     : []
 
   switch (props.resource) {
@@ -855,7 +1076,7 @@ const performToggleStatus = async (item: AnyLicensingConfig) => {
 
     successMessage.value = isDraftManagedResource.value
       ? nextStatus === 'ACTIVE'
-        ? 'Đã publish cấu hình.'
+        ? 'Đã xuất bản cấu hình.'
         : 'Đã chuyển cấu hình về bản nháp.'
       : 'Đã cập nhật trạng thái.'
     await fetchList()
@@ -898,6 +1119,17 @@ const goToPage = async (page: number) => {
   await fetchList()
 }
 
+const handlePageChange = async (page: number) => {
+  await goToPage(page)
+}
+
+const handlePageSizeChange = async (pageSize: number) => {
+  if (pageSize === pagination.pageSize) return
+  pagination.pageSize = pageSize
+  pagination.page = 1
+  await fetchList()
+}
+
 const getDetailText = (item: AnyLicensingConfig) => {
   switch (props.resource) {
     case 'digital': {
@@ -915,8 +1147,8 @@ const getDetailText = (item: AnyLicensingConfig) => {
 
 const getStatusClass = (status: LicensingConfigStatus) =>
   status === 'ACTIVE'
-    ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300'
-    : 'border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300'
+    ? 'border bg-[color:var(--admin-success-50)] text-[color:var(--admin-success-700)] [border-color:rgb(var(--admin-success-rgb)/0.28)]'
+    : 'border bg-[color:var(--admin-surface-1)] text-[color:var(--admin-text-muted)] [border-color:var(--admin-border)]'
 
 const resolveMobileStatusLabel = (item: AnyLicensingConfig) =>
   isDigitalOrPhysicalResource.value ? formatStatusLabel(item.status) : item.status
@@ -926,7 +1158,7 @@ const resolveMobileStatusClass = (item: AnyLicensingConfig) => getStatusClass(it
 const resolveMobilePriceValue = (item: AnyLicensingConfig) => String(getPriceValue(item))
 
 const resolveMobilePermissionCountLabel = (item: AnyLicensingConfig) =>
-  item.referencedPermissions.length === 0 ? emptyPermissionsText.value : `${item.referencedPermissions.length} quyền`
+  getPermissionCount(item) === 0 ? emptyPermissionsText.value : `${getPermissionCount(item)} quyền`
 
 const openMobileActionMenu = (item: AnyLicensingConfig) => {
   mobileActionItem.value = item
@@ -939,15 +1171,15 @@ const closeMobileActionMenu = () => {
 const confirmToggleStatus = (item: AnyLicensingConfig) => {
   closeMobileActionMenu()
   const nextStatus: LicensingConfigStatus = item.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE'
-  const title = getDetailText(item)
+  const title = getItemDisplayTitle(item)
 
   if (isDraftManagedResource.value) {
-    const header = nextStatus === 'ACTIVE' ? 'Xác nhận publish' : 'Xác nhận chuyển bản nháp'
+    const header = nextStatus === 'ACTIVE' ? 'Xác nhận xuất bản' : 'Xác nhận chuyển bản nháp'
     const message =
       nextStatus === 'ACTIVE'
-        ? `Bạn có chắc muốn publish "${title}" để mở cấu hình này cho đăng ký không?`
+        ? `Bạn có chắc muốn xuất bản "${title}" để mở cấu hình này cho đăng ký không?`
         : `Bạn có chắc muốn chuyển "${title}" về trạng thái bản nháp không?`
-    const acceptLabel = nextStatus === 'ACTIVE' ? 'Publish' : 'Chuyển nháp'
+    const acceptLabel = nextStatus === 'ACTIVE' ? 'Xuất bản' : 'Chuyển nháp'
 
     confirm.require({
       header,
@@ -976,7 +1208,7 @@ const confirmToggleStatus = (item: AnyLicensingConfig) => {
 
 const confirmRemoveOne = (item: AnyLicensingConfig) => {
   closeMobileActionMenu()
-  const title = getDetailText(item)
+  const title = getItemDisplayTitle(item)
 
   confirm.require({
     header: 'Xác nhận xoá',
@@ -1031,6 +1263,7 @@ watch(
     createDialogVisible.value = false
     editDialogVisible.value = false
     permissionsDialogVisible.value = false
+    showAdvancedFilters.value = false
     pagination.page = 1
     filters.keyword = ''
     filters.status = 'ACTIVE'
@@ -1041,6 +1274,7 @@ watch(
       keywordDebounceTimer = null
     }
     void fetchPermissionOptions()
+    void fetchDependencyConfigOptions()
     void fetchListSafely()
   },
   { immediate: true },
@@ -1052,66 +1286,76 @@ onBeforeUnmount(() => {
 
 onMounted(() => {
   void fetchPermissionOptions()
+  void fetchDependencyConfigOptions()
 })
 </script>
 
 <template>
   <div class="flex min-w-0 flex-col gap-4 sm:gap-5 lg:gap-6">
-    <section class="flex flex-col gap-4 rounded-[32px] border border-slate-200/80 bg-white/85 p-5 shadow-xl shadow-slate-200/40 backdrop-blur dark:border-slate-800 dark:bg-slate-950/70 dark:shadow-black/20 sm:p-6 md:flex-row md:items-center md:justify-between">
-      <div class="min-w-0">
-        <div class="text-xl font-semibold text-slate-950 sm:text-2xl dark:text-white">{{ currentResource.title }}</div>
-        <div class="mt-2 text-sm text-slate-500 dark:text-slate-400">{{ currentResource.description }}</div>
-      </div>
-      <button type="button" :class="[primaryButtonClass, 'w-full sm:w-auto']" :disabled="currentIsLoading" @click="openCreate">
-        <i class="pi pi-plus mr-2" />
-        {{ currentResource.createLabel }}
-      </button>
-    </section>
+    <AdminPageHeader
+      kicker="Cấu hình"
+      :title="currentResource.title"
+      :description="currentResource.description"
+      icon-class="pi pi-sitemap"
+    >
+      <template #actions>
+        <button type="button" :class="[primaryButtonClass, 'w-full sm:w-auto']" :disabled="currentIsLoading" @click="openCreate">
+          <i class="pi pi-plus mr-2" />
+          {{ currentResource.createLabel }}
+        </button>
+      </template>
+    </AdminPageHeader>
 
-    <section class="rounded-[32px] border border-slate-200/80 bg-white/85 p-5 shadow-xl shadow-slate-200/40 backdrop-blur dark:border-slate-800 dark:bg-slate-950/70 dark:shadow-black/20">
-      <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4 xl:items-end">
-        <label class="space-y-2 sm:col-span-2 xl:col-span-2">
-          <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">{{ keywordLabel }}</span>
-          <input v-model="filters.keyword" :class="fieldClass" :placeholder="keywordPlaceholder" :disabled="currentIsLoading" />
-        </label>
-        <label class="space-y-2">
-          <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">{{ statusFieldLabel }}</span>
-          <div class="relative">
-            <select v-model="filters.status" :class="selectFieldClass" :disabled="currentIsLoading">
-              <option value="">Tất cả</option>
-              <option value="ACTIVE">{{ isDigitalOrPhysicalResource ? formatStatusLabel('ACTIVE') : 'ACTIVE' }}</option>
-              <option value="INACTIVE">{{ isDigitalOrPhysicalResource ? formatStatusLabel('INACTIVE') : 'INACTIVE' }}</option>
-            </select>
-            <i class="pi pi-chevron-down" :class="selectChevronClass" />
-          </div>
-        </label>
-        <label v-if="currentResource.supportsDigitalFilters" class="space-y-2">
-          <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
-            {{ isDigitalOrPhysicalResource ? 'Nền tảng áp dụng' : 'Platform' }}
+    <section class="rounded-[32px] border [border-color:var(--admin-border)] bg-[linear-gradient(180deg,var(--admin-surface-0),var(--admin-surface-1))] p-5 shadow-[var(--admin-elev-1)] backdrop-blur">
+      <div class="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1.5fr)_220px] xl:grid-cols-[minmax(0,1.7fr)_220px_auto] xl:items-center">
+        <div>
+          <AdminFilterInput
+            v-model="filters.keyword"
+            icon-class="pi pi-search"
+            :placeholder="keywordPlaceholder"
+            :disabled="currentIsLoading"
+          />
+        </div>
+        <AdminFilterSelect
+          v-model="filters.status"
+          icon-class="pi pi-tag"
+          :options="statusFilterOptions"
+          :disabled="currentIsLoading"
+        />
+        <button
+          v-if="currentResource.supportsDigitalFilters"
+          type="button"
+          :class="[secondaryButtonClass, 'w-full gap-2 xl:w-auto']"
+          :disabled="currentIsLoading"
+          @click="toggleAdvancedFilters"
+        >
+          <i class="pi pi-sliders-h text-sm" />
+          Bộ lọc nâng cao
+          <span
+            v-if="activeAdvancedFilterCount > 0"
+            class="inline-flex min-w-6 items-center justify-center rounded-full bg-[color:var(--admin-primary-50)] px-2 py-0.5 text-[11px] font-semibold text-[color:var(--admin-primary-800)]"
+          >
+            {{ activeAdvancedFilterCount }}
           </span>
-          <div class="relative">
-            <select v-model="filters.targetPlatform" :class="selectFieldClass" :disabled="currentIsLoading">
-              <option value="">Tất cả</option>
-              <option value="YOUTUBE">YOUTUBE</option>
-              <option value="TIKTOK">TIKTOK</option>
-              <option value="FACEBOOK">FACEBOOK</option>
-            </select>
-            <i class="pi pi-chevron-down" :class="selectChevronClass" />
-          </div>
-        </label>
-        <label v-if="currentResource.supportsDigitalFilters" class="space-y-2">
-          <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
-            {{ isDigitalOrPhysicalResource ? 'Thời hạn áp dụng' : 'Duration' }}
-          </span>
-          <div class="relative">
-            <select v-model="filters.durationType" :class="selectFieldClass" :disabled="currentIsLoading">
-              <option value="">Tất cả</option>
-              <option value="ONE_YEAR">{{ isDigitalOrPhysicalResource ? '1 năm' : 'ONE_YEAR' }}</option>
-              <option value="PERPETUAL">{{ isDigitalOrPhysicalResource ? 'Vĩnh viễn' : 'PERPETUAL' }}</option>
-            </select>
-            <i class="pi pi-chevron-down" :class="selectChevronClass" />
-          </div>
-        </label>
+        </button>
+      </div>
+
+      <div
+        v-if="currentResource.supportsDigitalFilters && showAdvancedFilters"
+        class="mt-3 grid grid-cols-1 gap-3 rounded-[24px] border bg-[color:var(--admin-surface-0)] p-4 md:grid-cols-2 [border-color:var(--admin-border)]"
+      >
+        <AdminFilterSelect
+          v-model="filters.targetPlatform"
+          icon-class="pi pi-desktop"
+          :options="platformFilterOptions"
+          :disabled="currentIsLoading"
+        />
+        <AdminFilterSelect
+          v-model="filters.durationType"
+          icon-class="pi pi-clock"
+          :options="durationFilterOptions"
+          :disabled="currentIsLoading"
+        />
       </div>
 
       <div class="mt-4 space-y-3">
@@ -1126,6 +1370,10 @@ onMounted(() => {
         :is-loading="currentIsLoading"
         :empty-message="currentResource.emptyState"
         :resolve-detail-text="getDetailText"
+        :resolve-platform-label="(item) => isDigitalResource ? formatDigitalPlatformLabel(getDigitalPlatform(item)!) : null"
+        :resolve-platform-dot-class="(item) => isDigitalResource ? getDigitalPlatformMeta(getDigitalPlatform(item)!).dotClass : null"
+        :resolve-duration-label="(item) => isDigitalResource ? formatDurationTypeLabel(getDigitalDurationType(item)!) : null"
+        :resolve-reference-code="(item) => isDigitalResource ? getConfigReferenceCode(item) : null"
         :resolve-price-value="resolveMobilePriceValue"
         :resolve-permission-count-label="resolveMobilePermissionCountLabel"
         :resolve-status-label="resolveMobileStatusLabel"
@@ -1138,46 +1386,76 @@ onMounted(() => {
         @more="openMobileActionMenu"
       />
 
-      <div class="mt-6 hidden overflow-hidden rounded-[24px] border border-slate-200/80 bg-white dark:border-slate-800 dark:bg-slate-950/40 sm:block">
+      <div class="mt-6 hidden overflow-hidden rounded-[28px] border border-[color:var(--admin-border-strong)] bg-[color:var(--admin-surface-1)] shadow-[var(--admin-elev-1)] sm:block">
         <div class="overflow-x-auto">
           <table class="w-full min-w-[980px] border-separate border-spacing-0 text-left text-sm">
-            <thead class="bg-slate-50 text-xs uppercase tracking-[0.18em] text-slate-500 dark:bg-slate-950/60 dark:text-slate-300">
+            <thead class="bg-[linear-gradient(180deg,var(--admin-surface-3),var(--admin-surface-2))] text-xs uppercase tracking-[0.18em] text-[color:var(--admin-text)]">
               <tr>
-                <th class="px-4 py-4 font-semibold">{{ currentResource.detailColumnLabel }}</th>
+                <th v-if="isDigitalResource" class="px-4 py-4 font-semibold">Nền tảng</th>
+                <th v-if="isDigitalResource" class="px-4 py-4 font-semibold">Thời hạn</th>
+                <th v-else class="px-4 py-4 font-semibold">{{ currentResource.detailColumnLabel }}</th>
                 <th class="px-4 py-4 font-semibold">{{ currentResource.priceLabel }}</th>
                 <th class="px-4 py-4 font-semibold">{{ permissionsLabel }}</th>
                 <th class="px-4 py-4 font-semibold">{{ statusFieldLabel }}</th>
                 <th class="px-4 py-4 text-right font-semibold">{{ actionsLabel }}</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-slate-200/70 dark:divide-slate-800">
-              <tr v-for="item in currentItems" :key="item.id" class="bg-white transition hover:bg-slate-50/70 dark:bg-transparent dark:hover:bg-slate-900/30">
-                <td class="px-4 py-4">
+            <tbody class="divide-y [--tw-divide-opacity:1] [border-color:var(--admin-border)] divide-y-[color:var(--admin-border)]">
+              <tr
+                v-for="(item, index) in currentItems"
+                :key="item.id"
+                class="transition"
+                :class="index % 2 === 0
+                  ? 'bg-[color:var(--admin-surface-0)] hover:bg-[color:var(--admin-surface-2)]'
+                  : 'bg-[color:var(--admin-surface-1)] hover:bg-[color:var(--admin-surface-2)]'"
+              >
+                <td v-if="isDigitalResource" class="px-4 py-4">
+                  <div class="flex items-center gap-3">
+                    <span
+                      class="inline-flex h-2.5 w-2.5 shrink-0 rounded-full"
+                      :class="getDigitalPlatformMeta(getDigitalPlatform(item)!).dotClass"
+                    />
+                    <div class="min-w-0">
+                      <div class="font-semibold text-[color:var(--admin-text)]">
+                        {{ formatDigitalPlatformLabel(getDigitalPlatform(item)!) }}
+                      </div>
+                      <div class="mt-1 font-mono text-[11px] text-[color:var(--admin-text-muted)]">
+                        #{{ getConfigReferenceCode(item) }}
+                      </div>
+                    </div>
+                  </div>
+                </td>
+                <td v-if="isDigitalResource" class="px-4 py-4">
+                  <span class="inline-flex items-center rounded-full border bg-[color:var(--admin-surface-1)] px-3 py-1 text-xs font-semibold text-[color:var(--admin-text)] [border-color:var(--admin-border)]">
+                    {{ formatDurationTypeLabel(getDigitalDurationType(item)!) }}
+                  </span>
+                </td>
+                <td v-else class="px-4 py-4">
                   <div
-                    class="max-w-[240px] truncate font-semibold text-slate-900 dark:text-white md:max-w-[360px] lg:max-w-[480px]"
+                    class="max-w-[240px] truncate font-semibold text-[color:var(--admin-text)] md:max-w-[360px] lg:max-w-[480px]"
                     :title="getDetailText(item)"
                   >
                     {{ getDetailText(item) }}
                   </div>
-                  <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  <div class="mt-1 text-xs text-[color:var(--admin-text-muted)]">
                     {{ currentResource.detailPlaceholder }}
                   </div>
                 </td>
-                <td class="px-4 py-4 text-slate-600 dark:text-slate-300">{{ getPriceValue(item) }}</td>
+                <td class="px-4 py-4 text-[color:var(--admin-text-muted)]">{{ getPriceValue(item) }}</td>
                 <td class="px-4 py-4">
-                  <div v-if="item.referencedPermissions.length === 0" class="text-slate-400 dark:text-slate-500">{{ emptyPermissionsText }}</div>
+                  <div v-if="getPermissionCount(item) === 0" class="text-[color:var(--admin-text-muted)]">{{ emptyPermissionsText }}</div>
                   <div v-else class="flex items-center gap-3">
                     <button type="button" :class="iconButtonClass" :disabled="currentIsLoading" @click="openPermissionsDialog(item)">
                       <i class="pi pi-eye" />
                     </button>
-                    <div class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                      {{ item.referencedPermissions.length }} quyền
+                    <div class="text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--admin-text-muted)]">
+                      {{ getPermissionCount(item) }} quyền
                     </div>
                   </div>
                 </td>
                 <td class="px-4 py-4">
                   <span
-                    class="inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em]"
+                    class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold"
                     :class="getStatusClass(item.status)"
                   >
                     {{ isDigitalOrPhysicalResource ? formatStatusLabel(item.status) : item.status }}
@@ -1202,7 +1480,7 @@ onMounted(() => {
                     </button>
                     <button
                       type="button"
-                      class="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-rose-600 transition hover:border-rose-200 hover:text-rose-700 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-rose-300 dark:hover:border-rose-500/30 dark:hover:text-rose-200"
+                      class="inline-flex h-10 w-10 items-center justify-center rounded-2xl border bg-[color:var(--admin-surface-0)] text-rose-600 transition [border-color:var(--admin-border)] hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700 disabled:opacity-60 dark:hover:bg-rose-500/10"
                       :disabled="currentIsLoading"
                       @click="confirmRemoveOne(item)"
                     >
@@ -1213,7 +1491,7 @@ onMounted(() => {
               </tr>
 
               <tr v-if="!currentIsLoading && currentItems.length === 0">
-                <td colspan="5" class="px-6 py-12 text-center text-sm text-slate-500 dark:text-slate-400">
+                <td :colspan="isDigitalResource ? 6 : 5" class="px-6 py-12 text-center text-sm text-[color:var(--admin-text-muted)]">
                   {{ currentResource.emptyState }}
                 </td>
               </tr>
@@ -1222,69 +1500,84 @@ onMounted(() => {
         </div>
       </div>
 
-      <div class="mt-6 flex flex-col gap-4 border-t border-slate-200 pt-4 dark:border-slate-800 md:flex-row md:items-center md:justify-between">
-        <div class="text-sm text-slate-500 dark:text-slate-400">
-          Hiển thị {{ pageStart }}-{{ pageEnd }} / {{ currentTotalItems }}
-        </div>
-        <div class="flex flex-wrap items-center justify-end gap-2">
-          <button type="button" :class="secondaryButtonClass" :disabled="currentIsLoading || pagination.page <= 1" @click="goToPage(pagination.page - 1)">Trước</button>
-          <button type="button" :class="secondaryButtonClass" :disabled="currentIsLoading || pagination.page >= totalPages" @click="goToPage(pagination.page + 1)">Sau</button>
-        </div>
+      <div class="mt-6">
+        <AdminPaginationBar
+          :page="pagination.page"
+          :page-size="pagination.pageSize"
+          :total-items="currentTotalItems"
+          :disabled="currentIsLoading"
+          @update:page="handlePageChange"
+          @update:page-size="handlePageSizeChange"
+        />
       </div>
     </section>
 
     <Dialog
       v-model:visible="createDialogVisible"
       modal
-      class="w-[calc(100vw-0.75rem)] sm:w-[min(860px,96vw)]"
+      :class="modalDialogClass"
       :header="currentResource.createLabel"
-      :pt="{ content: { class: 'max-h-[calc(100svh-0.75rem)] overflow-y-auto sm:max-h-[calc(100svh-8rem)]' } }"
+      :pt="dialogContentProps"
     >
-      <div class="grid gap-4 sm:grid-cols-2">
+      <div :class="dialogSurfaceClass">
         <template v-if="props.resource === 'digital'">
-          <div v-if="draftNotice" class="sm:col-span-2">
+          <div v-if="draftNotice">
             <Message severity="info">{{ draftNotice }}</Message>
           </div>
-          <label class="space-y-2">
-            <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Nền tảng áp dụng</span>
-            <div class="relative">
-              <select v-model="form.targetPlatform" :class="selectFieldClass" :disabled="isSubmitting">
-                <option value="YOUTUBE">YOUTUBE</option>
-                <option value="TIKTOK">TIKTOK</option>
-                <option value="FACEBOOK">FACEBOOK</option>
-              </select>
-              <i class="pi pi-chevron-down" :class="selectChevronClass" />
+          <section :class="formSectionClass">
+            <div :class="sectionHeadingClass">
+              <span :class="sectionTitleClass">Thông tin cơ bản</span>
+              <div :class="sectionDividerClass" />
             </div>
-          </label>
-          <label class="space-y-2">
-            <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Thời hạn áp dụng</span>
-            <div class="relative">
-              <select v-model="form.durationType" :class="selectFieldClass" :disabled="isSubmitting">
-                <option value="ONE_YEAR">1 năm</option>
-                <option value="PERPETUAL">Vĩnh viễn</option>
-              </select>
-              <i class="pi pi-chevron-down" :class="selectChevronClass" />
+            <div class="grid gap-4 sm:grid-cols-2">
+              <label class="space-y-2">
+                <span class="text-xs font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]">Nền tảng áp dụng</span>
+                <div class="relative">
+                  <select v-model="form.targetPlatform" :class="selectFieldClass" :disabled="isSubmitting">
+                    <option value="YOUTUBE">YouTube</option>
+                    <option value="TIKTOK">TikTok</option>
+                    <option value="FACEBOOK">Facebook</option>
+                  </select>
+                  <i class="pi pi-chevron-down" :class="selectChevronClass" />
+                </div>
+              </label>
+              <label class="space-y-2">
+                <span class="text-xs font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]">Thời hạn áp dụng</span>
+                <div class="relative">
+                  <select v-model="form.durationType" :class="selectFieldClass" :disabled="isSubmitting">
+                    <option value="ONE_YEAR">1 năm</option>
+                    <option value="PERPETUAL">Vĩnh viễn</option>
+                  </select>
+                  <i class="pi pi-chevron-down" :class="selectChevronClass" />
+                </div>
+              </label>
+              <label class="space-y-2 sm:col-span-2">
+                <span class="text-xs font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]">Hệ số giá cơ sở</span>
+                <input v-model.number="form.basePriceMultiplier" type="number" min="1" step="0.01" :class="fieldClass" :disabled="isSubmitting" />
+              </label>
             </div>
-          </label>
-          <label class="space-y-2 sm:col-span-2">
-            <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Hệ số giá cơ sở</span>
-            <input v-model.number="form.basePriceMultiplier" type="number" min="1" step="0.01" :class="fieldClass" :disabled="isSubmitting" />
-          </label>
-          <div class="space-y-4 sm:col-span-2">
-            <div class="space-y-1">
-              <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
-                Yếu tố phụ thuộc
-              </span>
-              <p class="text-sm text-slate-500 dark:text-slate-400">
-                Chọn thuộc tính cần áp dụng cho gói. Với Đối tượng, Thời hạn, Phạm vi bạn chỉnh hệ số trực tiếp; với Hình thức biểu hiện và Mức độ biến đổi hệ số lấy từ màn hình quản lý riêng.
-              </p>
+          </section>
+          <section :class="formSectionClass">
+            <div :class="sectionHeadingClass">
+              <div class="flex items-center gap-2">
+                <span :class="sectionTitleClass">Yếu tố phụ thuộc</span>
+                <button
+                  type="button"
+                  class="inline-flex h-6 w-6 items-center justify-center rounded-full border bg-[color:var(--admin-surface-1)] text-[color:var(--admin-text-muted)] transition [border-color:var(--admin-border)] hover:text-[color:var(--admin-primary-700)]"
+                  :title="dependencyHelpText"
+                  :aria-label="dependencyHelpText"
+                >
+                  <i class="pi pi-question-circle text-xs" />
+                </button>
+              </div>
+              <div :class="sectionDividerClass" />
             </div>
-            <div class="grid gap-3 lg:grid-cols-2">
+            <div class="grid gap-3 xl:grid-cols-2">
               <button
                 v-for="group in availablePricingModifierGroups"
                 :key="`create-digital-available-group-${group.id}`"
                 type="button"
-                class="rounded-2xl border border-slate-200/80 bg-white/80 p-4 text-left transition hover:border-violet-300 hover:bg-violet-50/60 dark:border-slate-800 dark:bg-slate-950/40 dark:hover:border-violet-500/50 dark:hover:bg-violet-500/10"
+                class="rounded-2xl border [border-color:var(--admin-border)] bg-[color:var(--admin-surface-0)] p-4 text-left transition hover:border-[color:rgb(var(--admin-primary-rgb)/0.28)] hover:bg-[linear-gradient(135deg,var(--admin-primary-50),var(--admin-accent-50))] dark:hover:border-[color:rgb(var(--admin-primary-rgb)/0.38)] dark:hover:bg-[color:var(--admin-primary-50)]"
                 :disabled="isSubmitting"
                 @click="addPriceModifierGroup(group.id)"
               >
@@ -1297,42 +1590,40 @@ onMounted(() => {
                       <i class="pi text-sm" :class="getPricingModifierGroupIcon(group)" />
                     </span>
                     <div>
-                      <div class="text-sm font-semibold text-slate-800 dark:text-slate-100">{{ group.label }}</div>
-                      <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                      <div class="text-sm font-semibold text-[color:var(--admin-text)]">{{ group.label }}</div>
+                      <div class="mt-1 text-xs text-[color:var(--admin-text-muted)]">
                         {{ getPricingModifierGroupDescription(group) }}
                       </div>
                     </div>
                   </div>
                   <span
                     class="inline-flex shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold"
-                    :class="group.kind === 'flag'
-                      ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300'
-                      : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300'"
+                    :class="getPricingModifierGroupBadgeClass(group)"
                   >
                     {{ getPricingModifierGroupBadgeLabel(group) }}
                   </span>
                 </div>
                 <div class="mt-4">
-                  <span class="inline-flex items-center gap-2 text-sm font-semibold text-violet-600 dark:text-violet-300">
+                  <span class="inline-flex items-center gap-2 text-sm font-semibold text-[color:var(--admin-primary-700)] dark:text-[color:var(--admin-primary-700)]">
                     <i class="pi pi-plus-circle text-xs" />
                     Thêm thuộc tính
                   </span>
                 </div>
               </button>
             </div>
-            <div v-if="availablePricingModifierGroups.length === 0" class="rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 px-4 py-3 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-400">
+            <div v-if="availablePricingModifierGroups.length === 0" class="rounded-2xl border border-dashed [border-color:var(--admin-border)] bg-[color:var(--admin-surface-1)] px-4 py-3 text-sm text-[color:var(--admin-text-muted)]">
               Tất cả thuộc tính hiện có đã được thêm vào gói này.
             </div>
-            <div v-if="activePricingModifierGroups.length === 0" class="text-sm text-slate-500 dark:text-slate-400">
+            <div v-if="activePricingModifierGroups.length === 0" class="text-sm text-[color:var(--admin-text-muted)]">
               Chưa cấu hình yếu tố phụ thuộc.
             </div>
-            <div v-else class="space-y-3">
+            <div v-else class="grid gap-3 xl:grid-cols-2">
               <div
                 v-for="group in activePricingModifierGroups"
                 :key="`create-digital-active-group-${group.id}`"
-                class="rounded-2xl border border-slate-200/80 bg-white/70 px-4 py-3 dark:border-slate-800 dark:bg-slate-950/40"
+                :class="modifierGroupCardClass"
               >
-                <div class="flex items-center justify-between gap-3">
+                <div :class="modifierGroupHeaderClass">
                   <div class="flex min-w-0 items-start gap-3">
                     <span
                       class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl"
@@ -1341,8 +1632,8 @@ onMounted(() => {
                       <i class="pi text-sm" :class="getPricingModifierGroupIcon(group)" />
                     </span>
                     <div>
-                      <div class="text-sm font-semibold text-slate-700 dark:text-slate-200">{{ group.label }}</div>
-                      <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                      <div class="text-sm font-semibold text-[color:var(--admin-text)]">{{ group.label }}</div>
+                      <div class="mt-1 text-xs text-[color:var(--admin-text-muted)]">
                         {{ getPricingModifierGroupDescription(group) }}
                       </div>
                     </div>
@@ -1351,61 +1642,127 @@ onMounted(() => {
                     <i class="pi pi-times" />
                   </button>
                 </div>
-                <div class="mt-3 space-y-2">
-                  <div v-if="group.kind === 'flag'" class="text-sm text-slate-500 dark:text-slate-400">
-                    Hệ số được quản lý ở màn hình riêng. Chỉ cần bật thuộc tính này để áp dụng vào công thức tính giá.
+                <div :class="modifierGroupBodyClass">
+                  <div v-if="group.kind === 'flag'" class="text-sm text-[color:var(--admin-text-muted)]">
+                    <div class="text-sm text-[color:var(--admin-text-muted)]">
+                      Hệ số được quản lý ở màn hình riêng. Chỉ cần bật thuộc tính này để áp dụng vào công thức tính giá.
+                    </div>
+                    <div class="mt-3">
+                      <div
+                        v-if="isDependencyConfigOptionsLoading"
+                        class="rounded-2xl border border-dashed [border-color:var(--admin-border)] bg-[color:var(--admin-surface-1)] px-4 py-3 text-sm"
+                      >
+                        Đang tải danh sách {{ group.label.toLowerCase() }}...
+                      </div>
+                      <div
+                        v-else-if="getDependencyConfigsForGroup(group).length === 0"
+                        class="rounded-2xl border border-dashed [border-color:var(--admin-border)] bg-[color:var(--admin-surface-1)] px-4 py-3 text-sm"
+                      >
+                        Chưa có {{ group.label.toLowerCase() }} nào đang hoạt động.
+                      </div>
+                      <div v-else class="space-y-2">
+                        <div class="text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]">
+                          Danh sách đang áp dụng
+                        </div>
+                        <div class="space-y-2">
+                          <div
+                            v-for="dependencyItem in getDependencyConfigsForGroup(group)"
+                            :key="dependencyItem.id"
+                            class="flex items-start justify-between gap-3 rounded-2xl border [border-color:var(--admin-border)] bg-[color:var(--admin-surface-1)] px-3 py-3"
+                          >
+                            <div class="min-w-0">
+                              <div class="text-sm font-semibold text-[color:var(--admin-text)]">
+                                {{ dependencyItem.name }}
+                              </div>
+                              <div class="mt-1 text-xs text-[color:var(--admin-text-muted)]">
+                                {{ dependencyItem.referencedPermissions.length }} quyền tham chiếu
+                              </div>
+                            </div>
+                            <span class="inline-flex shrink-0 rounded-full bg-[color:var(--admin-surface-0)] px-2.5 py-1 text-[11px] font-semibold text-[color:var(--admin-text-muted)]">
+                              x{{ dependencyItem.priceMultiplier }}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div v-else>
+                  <div v-else class="space-y-3">
                     <div
                       v-for="item in group.items"
                       :key="`create-digital-modifier-${item.key}`"
-                      class="grid gap-2 rounded-2xl border border-slate-200/70 bg-slate-50/80 p-3 dark:border-slate-800 dark:bg-slate-900/40 sm:grid-cols-[minmax(96px,max-content)_minmax(0,1fr)] sm:items-center sm:gap-3"
+                      :class="modifierItemCardClass"
                     >
-                      <div class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ item.label }}</div>
-                      <input
-                        type="number"
-                        min="1"
-                        step="0.01"
-                        :class="fieldClass"
-                        :disabled="isSubmitting"
-                        :value="getPriceModifierMultiplier(item.key)"
-                        @input="setPriceModifierMultiplier(item.key, Number(($event.target as HTMLInputElement).value))"
-                      />
+                      <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between lg:gap-4">
+                        <div class="min-w-0 lg:max-w-[240px]">
+                          <div class="inline-flex items-center rounded-full bg-[color:var(--admin-surface-1)] px-3 py-1 text-sm font-semibold text-[color:var(--admin-text)]">
+                            {{ item.label }}
+                          </div>
+                          <div class="mt-2 text-xs leading-5 text-[color:var(--admin-text-muted)]">
+                            {{ getPricingModifierItemDescription(item.key) }}
+                          </div>
+                        </div>
+                        <label class="block w-full lg:max-w-[240px]">
+                          <span :class="modifierInputLabelClass">Hệ số áp dụng</span>
+                          <input
+                            type="number"
+                            min="1"
+                            step="0.01"
+                            :class="fieldClass"
+                            :disabled="isSubmitting"
+                            :value="getPriceModifierMultiplier(item.key)"
+                            @input="setPriceModifierMultiplier(item.key, Number(($event.target as HTMLInputElement).value))"
+                          />
+                        </label>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
+          </section>
         </template>
 
         <template v-if="props.resource === 'physical'">
-          <div v-if="draftNotice" class="sm:col-span-2">
+          <div v-if="draftNotice">
             <Message severity="info">{{ draftNotice }}</Message>
           </div>
-          <label class="space-y-2 sm:col-span-2">
-            <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Bối cảnh / địa điểm sử dụng</span>
-            <input v-model="form.venueUsageType" :class="fieldClass" placeholder="PHÒNG TRÀ / HỘI CHỢ / QUÁN CAFE" :disabled="isSubmitting" />
-          </label>
-          <label class="space-y-2 sm:col-span-2">
-            <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Hệ số giá cơ sở</span>
-            <input v-model.number="form.basePriceMultiplier" type="number" min="1" step="0.01" :class="fieldClass" :disabled="isSubmitting" />
-          </label>
-          <div class="space-y-4 sm:col-span-2">
-            <div class="space-y-1">
-              <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
-                Yếu tố phụ thuộc
-              </span>
-              <p class="text-sm text-slate-500 dark:text-slate-400">
-                Chọn thuộc tính cần áp dụng cho gói. Với Đối tượng, Thời hạn, Phạm vi bạn chỉnh hệ số trực tiếp; với Hình thức biểu hiện và Mức độ biến đổi hệ số lấy từ màn hình quản lý riêng.
-              </p>
+          <section :class="formSectionClass">
+            <div :class="sectionHeadingClass">
+              <span :class="sectionTitleClass">Thông tin cơ bản</span>
+              <div :class="sectionDividerClass" />
             </div>
-            <div class="grid gap-3 lg:grid-cols-2">
+            <div class="grid gap-4 sm:grid-cols-2">
+              <label class="space-y-2 sm:col-span-2">
+                <span class="text-xs font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]">Bối cảnh / địa điểm sử dụng</span>
+                <input v-model="form.venueUsageType" :class="fieldClass" placeholder="PHÒNG TRÀ / HỘI CHỢ / QUÁN CAFE" :disabled="isSubmitting" />
+              </label>
+              <label class="space-y-2 sm:col-span-2">
+                <span class="text-xs font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]">Hệ số giá cơ sở</span>
+                <input v-model.number="form.basePriceMultiplier" type="number" min="1" step="0.01" :class="fieldClass" :disabled="isSubmitting" />
+              </label>
+            </div>
+          </section>
+          <section :class="formSectionClass">
+            <div :class="sectionHeadingClass">
+              <div class="flex items-center gap-2">
+                <span :class="sectionTitleClass">Yếu tố phụ thuộc</span>
+                <button
+                  type="button"
+                  class="inline-flex h-6 w-6 items-center justify-center rounded-full border bg-[color:var(--admin-surface-1)] text-[color:var(--admin-text-muted)] transition [border-color:var(--admin-border)] hover:text-[color:var(--admin-primary-700)]"
+                  :title="dependencyHelpText"
+                  :aria-label="dependencyHelpText"
+                >
+                  <i class="pi pi-question-circle text-xs" />
+                </button>
+              </div>
+              <div :class="sectionDividerClass" />
+            </div>
+            <div class="grid gap-3 xl:grid-cols-2">
               <button
                 v-for="group in availablePricingModifierGroups"
                 :key="`create-physical-available-group-${group.id}`"
                 type="button"
-                class="rounded-2xl border border-slate-200/80 bg-white/80 p-4 text-left transition hover:border-violet-300 hover:bg-violet-50/60 dark:border-slate-800 dark:bg-slate-950/40 dark:hover:border-violet-500/50 dark:hover:bg-violet-500/10"
+                class="rounded-2xl border [border-color:var(--admin-border)] bg-[color:var(--admin-surface-0)] p-4 text-left transition hover:border-[color:rgb(var(--admin-primary-rgb)/0.28)] hover:bg-[linear-gradient(135deg,var(--admin-primary-50),var(--admin-accent-50))] dark:hover:border-[color:rgb(var(--admin-primary-rgb)/0.38)] dark:hover:bg-[color:var(--admin-primary-50)]"
                 :disabled="isSubmitting"
                 @click="addPriceModifierGroup(group.id)"
               >
@@ -1418,42 +1775,40 @@ onMounted(() => {
                       <i class="pi text-sm" :class="getPricingModifierGroupIcon(group)" />
                     </span>
                     <div>
-                      <div class="text-sm font-semibold text-slate-800 dark:text-slate-100">{{ group.label }}</div>
-                      <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                      <div class="text-sm font-semibold text-[color:var(--admin-text)]">{{ group.label }}</div>
+                      <div class="mt-1 text-xs text-[color:var(--admin-text-muted)]">
                         {{ getPricingModifierGroupDescription(group) }}
                       </div>
                     </div>
                   </div>
                   <span
                     class="inline-flex shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold"
-                    :class="group.kind === 'flag'
-                      ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300'
-                      : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300'"
+                    :class="getPricingModifierGroupBadgeClass(group)"
                   >
                     {{ getPricingModifierGroupBadgeLabel(group) }}
                   </span>
                 </div>
                 <div class="mt-4">
-                  <span class="inline-flex items-center gap-2 text-sm font-semibold text-violet-600 dark:text-violet-300">
+                  <span class="inline-flex items-center gap-2 text-sm font-semibold text-[color:var(--admin-primary-700)] dark:text-[color:var(--admin-primary-700)]">
                     <i class="pi pi-plus-circle text-xs" />
                     Thêm thuộc tính
                   </span>
                 </div>
               </button>
             </div>
-            <div v-if="availablePricingModifierGroups.length === 0" class="rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 px-4 py-3 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-400">
+            <div v-if="availablePricingModifierGroups.length === 0" class="rounded-2xl border border-dashed [border-color:var(--admin-border)] bg-[color:var(--admin-surface-1)] px-4 py-3 text-sm text-[color:var(--admin-text-muted)]">
               Tất cả thuộc tính hiện có đã được thêm vào gói này.
             </div>
-            <div v-if="activePricingModifierGroups.length === 0" class="text-sm text-slate-500 dark:text-slate-400">
+            <div v-if="activePricingModifierGroups.length === 0" class="text-sm text-[color:var(--admin-text-muted)]">
               Chưa cấu hình yếu tố phụ thuộc.
             </div>
-            <div v-else class="space-y-3">
+            <div v-else class="grid gap-3 xl:grid-cols-2">
               <div
                 v-for="group in activePricingModifierGroups"
                 :key="`create-physical-active-group-${group.id}`"
-                class="rounded-2xl border border-slate-200/80 bg-white/70 px-4 py-3 dark:border-slate-800 dark:bg-slate-950/40"
+                :class="modifierGroupCardClass"
               >
-                <div class="flex items-center justify-between gap-3">
+                <div :class="modifierGroupHeaderClass">
                   <div class="flex min-w-0 items-start gap-3">
                     <span
                       class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl"
@@ -1462,8 +1817,8 @@ onMounted(() => {
                       <i class="pi text-sm" :class="getPricingModifierGroupIcon(group)" />
                     </span>
                     <div>
-                      <div class="text-sm font-semibold text-slate-700 dark:text-slate-200">{{ group.label }}</div>
-                      <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                      <div class="text-sm font-semibold text-[color:var(--admin-text)]">{{ group.label }}</div>
+                      <div class="mt-1 text-xs text-[color:var(--admin-text-muted)]">
                         {{ getPricingModifierGroupDescription(group) }}
                       </div>
                     </div>
@@ -1472,97 +1827,165 @@ onMounted(() => {
                     <i class="pi pi-times" />
                   </button>
                 </div>
-                <div class="mt-3 space-y-2">
-                  <div v-if="group.kind === 'flag'" class="text-sm text-slate-500 dark:text-slate-400">
-                    Hệ số được quản lý ở màn hình riêng. Chỉ cần bật thuộc tính này để áp dụng vào công thức tính giá.
+                <div :class="modifierGroupBodyClass">
+                  <div v-if="group.kind === 'flag'" class="text-sm text-[color:var(--admin-text-muted)]">
+                    <div class="text-sm text-[color:var(--admin-text-muted)]">
+                      Hệ số được quản lý ở màn hình riêng. Chỉ cần bật thuộc tính này để áp dụng vào công thức tính giá.
+                    </div>
+                    <div class="mt-3">
+                      <div
+                        v-if="isDependencyConfigOptionsLoading"
+                        class="rounded-2xl border border-dashed [border-color:var(--admin-border)] bg-[color:var(--admin-surface-1)] px-4 py-3 text-sm"
+                      >
+                        Đang tải danh sách {{ group.label.toLowerCase() }}...
+                      </div>
+                      <div
+                        v-else-if="getDependencyConfigsForGroup(group).length === 0"
+                        class="rounded-2xl border border-dashed [border-color:var(--admin-border)] bg-[color:var(--admin-surface-1)] px-4 py-3 text-sm"
+                      >
+                        Chưa có {{ group.label.toLowerCase() }} nào đang hoạt động.
+                      </div>
+                      <div v-else class="space-y-2">
+                        <div class="text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]">
+                          Danh sách đang áp dụng
+                        </div>
+                        <div class="space-y-2">
+                          <div
+                            v-for="dependencyItem in getDependencyConfigsForGroup(group)"
+                            :key="dependencyItem.id"
+                            class="flex items-start justify-between gap-3 rounded-2xl border [border-color:var(--admin-border)] bg-[color:var(--admin-surface-1)] px-3 py-3"
+                          >
+                            <div class="min-w-0">
+                              <div class="text-sm font-semibold text-[color:var(--admin-text)]">
+                                {{ dependencyItem.name }}
+                              </div>
+                              <div class="mt-1 text-xs text-[color:var(--admin-text-muted)]">
+                                {{ dependencyItem.referencedPermissions.length }} quyền tham chiếu
+                              </div>
+                            </div>
+                            <span class="inline-flex shrink-0 rounded-full bg-[color:var(--admin-surface-0)] px-2.5 py-1 text-[11px] font-semibold text-[color:var(--admin-text-muted)]">
+                              x{{ dependencyItem.priceMultiplier }}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div v-else>
+                  <div v-else class="space-y-3">
                     <div
                       v-for="item in group.items"
                       :key="`create-physical-modifier-${item.key}`"
-                      class="grid gap-2 rounded-2xl border border-slate-200/70 bg-slate-50/80 p-3 dark:border-slate-800 dark:bg-slate-900/40 sm:grid-cols-[minmax(96px,max-content)_minmax(0,1fr)] sm:items-center sm:gap-3"
+                      :class="modifierItemCardClass"
                     >
-                      <div class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ item.label }}</div>
-                      <input
-                        type="number"
-                        min="1"
-                        step="0.01"
-                        :class="fieldClass"
-                        :disabled="isSubmitting"
-                        :value="getPriceModifierMultiplier(item.key)"
-                        @input="setPriceModifierMultiplier(item.key, Number(($event.target as HTMLInputElement).value))"
-                      />
+                      <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between lg:gap-4">
+                        <div class="min-w-0 lg:max-w-[240px]">
+                          <div class="inline-flex items-center rounded-full bg-[color:var(--admin-surface-1)] px-3 py-1 text-sm font-semibold text-[color:var(--admin-text)]">
+                            {{ item.label }}
+                          </div>
+                          <div class="mt-2 text-xs leading-5 text-[color:var(--admin-text-muted)]">
+                            {{ getPricingModifierItemDescription(item.key) }}
+                          </div>
+                        </div>
+                        <label class="block w-full lg:max-w-[240px]">
+                          <span :class="modifierInputLabelClass">Hệ số áp dụng</span>
+                          <input
+                            type="number"
+                            min="1"
+                            step="0.01"
+                            :class="fieldClass"
+                            :disabled="isSubmitting"
+                            :value="getPriceModifierMultiplier(item.key)"
+                            @input="setPriceModifierMultiplier(item.key, Number(($event.target as HTMLInputElement).value))"
+                          />
+                        </label>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
+          </section>
         </template>
 
         <template v-if="props.resource === 'expression' || props.resource === 'modification'">
-          <label class="space-y-2 sm:col-span-2">
-            <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
-              {{ props.resource === 'expression' ? 'Tên hình thức biểu hiện' : 'Tên mức độ biến đổi' }}
-            </span>
-            <input v-model="form.name" :class="fieldClass" :placeholder="props.resource === 'expression' ? 'Nhạc nền Vlog' : 'Cải biên phối khí'" :disabled="isSubmitting" />
-          </label>
-          <label class="space-y-2 sm:col-span-2">
-            <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Hệ số giá</span>
-            <input v-model.number="form.priceMultiplier" type="number" min="1" step="0.01" :class="fieldClass" :disabled="isSubmitting" />
-          </label>
+          <section :class="formSectionClass">
+            <div :class="sectionHeadingClass">
+              <span :class="sectionTitleClass">Thông tin cơ bản</span>
+              <div :class="sectionDividerClass" />
+            </div>
+            <div class="grid gap-4">
+              <label class="space-y-2">
+                <span class="text-xs font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]">
+                  {{ props.resource === 'expression' ? 'Tên hình thức biểu hiện' : 'Tên mức độ biến đổi' }}
+                </span>
+                <input v-model="form.name" :class="fieldClass" :placeholder="props.resource === 'expression' ? 'Nhạc nền Vlog' : 'Cải biên phối khí'" :disabled="isSubmitting" />
+              </label>
+              <label class="space-y-2">
+                <span class="text-xs font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]">Hệ số giá</span>
+                <input v-model.number="form.priceMultiplier" type="number" min="1" step="0.01" :class="fieldClass" :disabled="isSubmitting" />
+              </label>
+            </div>
+          </section>
         </template>
 
-        <div class="space-y-3 sm:col-span-2">
-          <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">{{ permissionsLabel }}</span>
+        <section :class="formSectionClass">
+          <div :class="sectionHeadingClass">
+            <span :class="sectionTitleClass">{{ permissionsLabel }}</span>
+            <div :class="sectionDividerClass" />
+          </div>
           <div v-if="supportsPermissionPicker" class="space-y-3">
             <div
               v-if="isPermissionOptionsLoading || mergedPermissionOptions.length === 0"
-              class="rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 px-4 py-4 dark:border-slate-700 dark:bg-slate-900/40"
+              class="rounded-2xl border border-dashed [border-color:var(--admin-border)] bg-[color:var(--admin-surface-1)] px-4 py-4"
             >
               <div v-if="isPermissionOptionsLoading" class="space-y-3">
-                <div class="h-4 w-40 animate-pulse rounded-full bg-slate-200 dark:bg-slate-800" />
+                <div class="h-4 w-40 animate-pulse rounded-full bg-[color:var(--admin-surface-1)]" />
                 <div class="grid gap-2">
                   <div
                     v-for="placeholderIndex in 3"
                     :key="`create-permission-loading-${placeholderIndex}`"
-                    class="rounded-2xl border border-slate-200/80 bg-white/70 px-4 py-4 dark:border-slate-800 dark:bg-slate-950/50"
+                    class="rounded-2xl border [border-color:var(--admin-border)] bg-[color:var(--admin-surface-0)] px-4 py-4"
                   >
-                    <div class="h-4 w-3/4 animate-pulse rounded-full bg-slate-200 dark:bg-slate-800" />
-                    <div class="mt-2 h-3 w-1/2 animate-pulse rounded-full bg-slate-200 dark:bg-slate-800" />
+                    <div class="h-4 w-3/4 animate-pulse rounded-full bg-[color:var(--admin-surface-1)]" />
+                    <div class="mt-2 h-3 w-1/2 animate-pulse rounded-full bg-[color:var(--admin-surface-1)]" />
                   </div>
                 </div>
               </div>
-              <div v-else class="text-sm text-slate-500 dark:text-slate-400">
+              <div v-else class="text-sm text-[color:var(--admin-text-muted)]">
                 {{ permissionOptionsEmptyMessage }}
               </div>
-              <div v-if="isPermissionOptionsLoading" class="mt-3 text-xs text-slate-500 dark:text-slate-400">
+              <div v-if="isPermissionOptionsLoading" class="mt-3 text-xs text-[color:var(--admin-text-muted)]">
                 {{ permissionOptionsLoadingMessage }}
               </div>
             </div>
-            <div v-else class="grid gap-2">
+            <div v-else class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
               <button
                 v-for="permission in mergedPermissionOptions"
                 :key="permission.id"
                 type="button"
-                class="flex w-full items-start gap-3 rounded-2xl border px-4 py-3 text-left transition"
-                :class="form.referencedPermissionIds.includes(permission.id)
-                  ? 'border-violet-300 bg-violet-50 text-violet-700 dark:border-violet-500/40 dark:bg-violet-500/10 dark:text-violet-200'
-                  : 'border-slate-200 bg-white text-slate-700 hover:border-violet-200 dark:border-slate-800 dark:bg-slate-950/40 dark:text-slate-200'"
+                class="flex w-full items-start justify-between gap-4 rounded-2xl border px-4 py-4 text-left transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--admin-ring)]"
+                :class="getReferencedPermissionCardClass(permission.id)"
                 :disabled="isPermissionSubmitDisabled"
+                :aria-pressed="isReferencedPermissionSelected(permission.id)"
                 @click="toggleReferencedPermission(permission.id)"
               >
-                <span
-                  class="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md border text-[11px]"
-                  :class="form.referencedPermissionIds.includes(permission.id)
-                    ? 'border-violet-400 bg-violet-500 text-white dark:border-violet-400 dark:bg-violet-500'
-                    : 'border-slate-300 bg-white text-transparent dark:border-slate-600 dark:bg-slate-950'"
-                >
-                  <i class="pi pi-check" />
+                <span class="flex min-w-0 items-start gap-3">
+                  <span
+                    class="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md border text-[11px]"
+                    :class="getReferencedPermissionCheckboxClass(permission.id)"
+                  >
+                    <i class="pi pi-check" />
+                  </span>
+                  <span class="min-w-0">
+                    <span class="block font-semibold">{{ permission.name }}</span>
+                    <span class="mt-1 block text-xs text-[color:var(--admin-text-muted)]">{{ permission.lawReference }}</span>
+                  </span>
                 </span>
-                <span class="min-w-0">
-                  <span class="block font-semibold">{{ permission.name }}</span>
-                  <span class="mt-1 block text-xs text-slate-500 dark:text-slate-400">{{ permission.lawReference }}</span>
+                <span
+                  class="inline-flex shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold"
+                  :class="getReferencedPermissionChipClass(permission.id)"
+                >
+                  {{ isReferencedPermissionSelected(permission.id) ? 'Đã chọn' : 'Chọn' }}
                 </span>
               </button>
             </div>
@@ -1572,7 +1995,7 @@ onMounted(() => {
               {{ permission.name }} - {{ permission.lawReference }}
             </option>
           </select>
-        </div>
+        </section>
       </div>
       <template #footer>
         <div class="flex w-full flex-col gap-3 sm:flex-row sm:justify-end">
@@ -1585,52 +2008,66 @@ onMounted(() => {
     <Dialog
       v-model:visible="editDialogVisible"
       modal
-      class="w-[calc(100vw-0.75rem)] sm:w-[min(860px,96vw)]"
+      :class="modalDialogClass"
       :header="editDialogTitle"
-      :pt="{ content: { class: 'max-h-[calc(100svh-0.75rem)] overflow-y-auto sm:max-h-[calc(100svh-8rem)]' } }"
+      :pt="dialogContentProps"
     >
-      <div class="grid gap-4 sm:grid-cols-2">
+      <div :class="dialogSurfaceClass">
         <template v-if="props.resource === 'digital'">
-          <label class="space-y-2">
-            <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Nền tảng áp dụng</span>
-            <div class="relative">
-              <select v-model="form.targetPlatform" :class="selectFieldClass" :disabled="isSubmitting">
-                <option value="YOUTUBE">YOUTUBE</option>
-                <option value="TIKTOK">TIKTOK</option>
-                <option value="FACEBOOK">FACEBOOK</option>
-              </select>
-              <i class="pi pi-chevron-down" :class="selectChevronClass" />
+          <section :class="formSectionClass">
+            <div :class="sectionHeadingClass">
+              <span :class="sectionTitleClass">Thông tin cơ bản</span>
+              <div :class="sectionDividerClass" />
             </div>
-          </label>
-          <label class="space-y-2">
-            <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Thời hạn áp dụng</span>
-            <div class="relative">
-              <select v-model="form.durationType" :class="selectFieldClass" :disabled="isSubmitting">
-                <option value="ONE_YEAR">1 năm</option>
-                <option value="PERPETUAL">Vĩnh viễn</option>
-              </select>
-              <i class="pi pi-chevron-down" :class="selectChevronClass" />
+            <div class="grid gap-4 sm:grid-cols-2">
+              <label class="space-y-2">
+                <span class="text-xs font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]">Nền tảng áp dụng</span>
+                <div class="relative">
+                  <select v-model="form.targetPlatform" :class="selectFieldClass" :disabled="isSubmitting">
+                    <option value="YOUTUBE">YouTube</option>
+                    <option value="TIKTOK">TikTok</option>
+                    <option value="FACEBOOK">Facebook</option>
+                  </select>
+                  <i class="pi pi-chevron-down" :class="selectChevronClass" />
+                </div>
+              </label>
+              <label class="space-y-2">
+                <span class="text-xs font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]">Thời hạn áp dụng</span>
+                <div class="relative">
+                  <select v-model="form.durationType" :class="selectFieldClass" :disabled="isSubmitting">
+                    <option value="ONE_YEAR">1 năm</option>
+                    <option value="PERPETUAL">Vĩnh viễn</option>
+                  </select>
+                  <i class="pi pi-chevron-down" :class="selectChevronClass" />
+                </div>
+              </label>
+              <label class="space-y-2 sm:col-span-2">
+                <span class="text-xs font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]">Hệ số giá cơ sở</span>
+                <input v-model.number="form.basePriceMultiplier" type="number" min="1" step="0.01" :class="fieldClass" :disabled="isSubmitting" />
+              </label>
             </div>
-          </label>
-          <label class="space-y-2 sm:col-span-2">
-            <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Hệ số giá cơ sở</span>
-            <input v-model.number="form.basePriceMultiplier" type="number" min="1" step="0.01" :class="fieldClass" :disabled="isSubmitting" />
-          </label>
-          <div class="space-y-4 sm:col-span-2">
-            <div class="space-y-1">
-              <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
-                Yếu tố phụ thuộc
-              </span>
-              <p class="text-sm text-slate-500 dark:text-slate-400">
-                Chọn thuộc tính cần áp dụng cho gói. Với Đối tượng, Thời hạn, Phạm vi bạn chỉnh hệ số trực tiếp; với Hình thức biểu hiện và Mức độ biến đổi hệ số lấy từ màn hình quản lý riêng.
-              </p>
+          </section>
+          <section :class="formSectionClass">
+            <div :class="sectionHeadingClass">
+              <div class="flex items-center gap-2">
+                <span :class="sectionTitleClass">Yếu tố phụ thuộc</span>
+                <button
+                  type="button"
+                  class="inline-flex h-6 w-6 items-center justify-center rounded-full border bg-[color:var(--admin-surface-1)] text-[color:var(--admin-text-muted)] transition [border-color:var(--admin-border)] hover:text-[color:var(--admin-primary-700)]"
+                  :title="dependencyHelpText"
+                  :aria-label="dependencyHelpText"
+                >
+                  <i class="pi pi-question-circle text-xs" />
+                </button>
+              </div>
+              <div :class="sectionDividerClass" />
             </div>
-            <div class="grid gap-3 lg:grid-cols-2">
+            <div class="grid gap-3 xl:grid-cols-2">
               <button
                 v-for="group in availablePricingModifierGroups"
                 :key="`edit-digital-available-group-${group.id}`"
                 type="button"
-                class="rounded-2xl border border-slate-200/80 bg-white/80 p-4 text-left transition hover:border-violet-300 hover:bg-violet-50/60 dark:border-slate-800 dark:bg-slate-950/40 dark:hover:border-violet-500/50 dark:hover:bg-violet-500/10"
+                class="rounded-2xl border [border-color:var(--admin-border)] bg-[color:var(--admin-surface-0)] p-4 text-left transition hover:border-[color:rgb(var(--admin-primary-rgb)/0.28)] hover:bg-[linear-gradient(135deg,var(--admin-primary-50),var(--admin-accent-50))] dark:hover:border-[color:rgb(var(--admin-primary-rgb)/0.38)] dark:hover:bg-[color:var(--admin-primary-50)]"
                 :disabled="isSubmitting"
                 @click="addPriceModifierGroup(group.id)"
               >
@@ -1643,42 +2080,40 @@ onMounted(() => {
                       <i class="pi text-sm" :class="getPricingModifierGroupIcon(group)" />
                     </span>
                     <div>
-                      <div class="text-sm font-semibold text-slate-800 dark:text-slate-100">{{ group.label }}</div>
-                      <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                      <div class="text-sm font-semibold text-[color:var(--admin-text)]">{{ group.label }}</div>
+                      <div class="mt-1 text-xs text-[color:var(--admin-text-muted)]">
                         {{ getPricingModifierGroupDescription(group) }}
                       </div>
                     </div>
                   </div>
                   <span
                     class="inline-flex shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold"
-                    :class="group.kind === 'flag'
-                      ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300'
-                      : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300'"
+                    :class="getPricingModifierGroupBadgeClass(group)"
                   >
                     {{ getPricingModifierGroupBadgeLabel(group) }}
                   </span>
                 </div>
                 <div class="mt-4">
-                  <span class="inline-flex items-center gap-2 text-sm font-semibold text-violet-600 dark:text-violet-300">
+                  <span class="inline-flex items-center gap-2 text-sm font-semibold text-[color:var(--admin-primary-700)] dark:text-[color:var(--admin-primary-700)]">
                     <i class="pi pi-plus-circle text-xs" />
                     Thêm thuộc tính
                   </span>
                 </div>
               </button>
             </div>
-            <div v-if="availablePricingModifierGroups.length === 0" class="rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 px-4 py-3 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-400">
+            <div v-if="availablePricingModifierGroups.length === 0" class="rounded-2xl border border-dashed [border-color:var(--admin-border)] bg-[color:var(--admin-surface-1)] px-4 py-3 text-sm text-[color:var(--admin-text-muted)]">
               Tất cả thuộc tính hiện có đã được thêm vào gói này.
             </div>
-            <div v-if="activePricingModifierGroups.length === 0" class="text-sm text-slate-500 dark:text-slate-400">
+            <div v-if="activePricingModifierGroups.length === 0" class="text-sm text-[color:var(--admin-text-muted)]">
               Chưa cấu hình yếu tố phụ thuộc.
             </div>
-            <div v-else class="space-y-3">
+            <div v-else class="grid gap-3 xl:grid-cols-2">
               <div
                 v-for="group in activePricingModifierGroups"
                 :key="`edit-digital-active-group-${group.id}`"
-                class="rounded-2xl border border-slate-200/80 bg-white/70 px-4 py-3 dark:border-slate-800 dark:bg-slate-950/40"
+                :class="modifierGroupCardClass"
               >
-                <div class="flex items-center justify-between gap-3">
+                <div :class="modifierGroupHeaderClass">
                   <div class="flex min-w-0 items-start gap-3">
                     <span
                       class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl"
@@ -1687,8 +2122,8 @@ onMounted(() => {
                       <i class="pi text-sm" :class="getPricingModifierGroupIcon(group)" />
                     </span>
                     <div>
-                      <div class="text-sm font-semibold text-slate-700 dark:text-slate-200">{{ group.label }}</div>
-                      <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                      <div class="text-sm font-semibold text-[color:var(--admin-text)]">{{ group.label }}</div>
+                      <div class="mt-1 text-xs text-[color:var(--admin-text-muted)]">
                         {{ getPricingModifierGroupDescription(group) }}
                       </div>
                     </div>
@@ -1697,58 +2132,124 @@ onMounted(() => {
                     <i class="pi pi-times" />
                   </button>
                 </div>
-                <div class="mt-3 space-y-2">
-                  <div v-if="group.kind === 'flag'" class="text-sm text-slate-500 dark:text-slate-400">
-                    Hệ số được quản lý ở màn hình riêng. Chỉ cần bật thuộc tính này để áp dụng vào công thức tính giá.
+                <div :class="modifierGroupBodyClass">
+                  <div v-if="group.kind === 'flag'" class="text-sm text-[color:var(--admin-text-muted)]">
+                    <div class="text-sm text-[color:var(--admin-text-muted)]">
+                      Hệ số được quản lý ở màn hình riêng. Chỉ cần bật thuộc tính này để áp dụng vào công thức tính giá.
+                    </div>
+                    <div class="mt-3">
+                      <div
+                        v-if="isDependencyConfigOptionsLoading"
+                        class="rounded-2xl border border-dashed [border-color:var(--admin-border)] bg-[color:var(--admin-surface-1)] px-4 py-3 text-sm"
+                      >
+                        Đang tải danh sách {{ group.label.toLowerCase() }}...
+                      </div>
+                      <div
+                        v-else-if="getDependencyConfigsForGroup(group).length === 0"
+                        class="rounded-2xl border border-dashed [border-color:var(--admin-border)] bg-[color:var(--admin-surface-1)] px-4 py-3 text-sm"
+                      >
+                        Chưa có {{ group.label.toLowerCase() }} nào đang hoạt động.
+                      </div>
+                      <div v-else class="space-y-2">
+                        <div class="text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]">
+                          Danh sách đang áp dụng
+                        </div>
+                        <div class="space-y-2">
+                          <div
+                            v-for="dependencyItem in getDependencyConfigsForGroup(group)"
+                            :key="dependencyItem.id"
+                            class="flex items-start justify-between gap-3 rounded-2xl border [border-color:var(--admin-border)] bg-[color:var(--admin-surface-1)] px-3 py-3"
+                          >
+                            <div class="min-w-0">
+                              <div class="text-sm font-semibold text-[color:var(--admin-text)]">
+                                {{ dependencyItem.name }}
+                              </div>
+                              <div class="mt-1 text-xs text-[color:var(--admin-text-muted)]">
+                                {{ dependencyItem.referencedPermissions.length }} quyền tham chiếu
+                              </div>
+                            </div>
+                            <span class="inline-flex shrink-0 rounded-full bg-[color:var(--admin-surface-0)] px-2.5 py-1 text-[11px] font-semibold text-[color:var(--admin-text-muted)]">
+                              x{{ dependencyItem.priceMultiplier }}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div v-else>
+                  <div v-else class="space-y-3">
                     <div
                       v-for="item in group.items"
                       :key="`edit-digital-modifier-${item.key}`"
-                      class="grid gap-2 rounded-2xl border border-slate-200/70 bg-slate-50/80 p-3 dark:border-slate-800 dark:bg-slate-900/40 sm:grid-cols-[minmax(96px,max-content)_minmax(0,1fr)] sm:items-center sm:gap-3"
+                      :class="modifierItemCardClass"
                     >
-                      <div class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ item.label }}</div>
-                      <input
-                        type="number"
-                        min="1"
-                        step="0.01"
-                        :class="fieldClass"
-                        :disabled="isSubmitting"
-                        :value="getPriceModifierMultiplier(item.key)"
-                        @input="setPriceModifierMultiplier(item.key, Number(($event.target as HTMLInputElement).value))"
-                      />
+                      <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between lg:gap-4">
+                        <div class="min-w-0 lg:max-w-[240px]">
+                          <div class="inline-flex items-center rounded-full bg-[color:var(--admin-surface-1)] px-3 py-1 text-sm font-semibold text-[color:var(--admin-text)]">
+                            {{ item.label }}
+                          </div>
+                          <div class="mt-2 text-xs leading-5 text-[color:var(--admin-text-muted)]">
+                            {{ getPricingModifierItemDescription(item.key) }}
+                          </div>
+                        </div>
+                        <label class="block w-full lg:max-w-[240px]">
+                          <span :class="modifierInputLabelClass">Hệ số áp dụng</span>
+                          <input
+                            type="number"
+                            min="1"
+                            step="0.01"
+                            :class="fieldClass"
+                            :disabled="isSubmitting"
+                            :value="getPriceModifierMultiplier(item.key)"
+                            @input="setPriceModifierMultiplier(item.key, Number(($event.target as HTMLInputElement).value))"
+                          />
+                        </label>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
+          </section>
         </template>
 
         <template v-if="props.resource === 'physical'">
-          <label class="space-y-2 sm:col-span-2">
-            <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Bối cảnh / địa điểm sử dụng</span>
-            <input v-model="form.venueUsageType" :class="fieldClass" :disabled="isSubmitting" />
-          </label>
-          <label class="space-y-2 sm:col-span-2">
-            <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Hệ số giá cơ sở</span>
-            <input v-model.number="form.basePriceMultiplier" type="number" min="1" step="0.01" :class="fieldClass" :disabled="isSubmitting" />
-          </label>
-          <div class="space-y-4 sm:col-span-2">
-            <div class="space-y-1">
-              <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
-                Yếu tố phụ thuộc
-              </span>
-              <p class="text-sm text-slate-500 dark:text-slate-400">
-                Chọn thuộc tính cần áp dụng cho gói. Với Đối tượng, Thời hạn, Phạm vi bạn chỉnh hệ số trực tiếp; với Hình thức biểu hiện và Mức độ biến đổi hệ số lấy từ màn hình quản lý riêng.
-              </p>
+          <section :class="formSectionClass">
+            <div :class="sectionHeadingClass">
+              <span :class="sectionTitleClass">Thông tin cơ bản</span>
+              <div :class="sectionDividerClass" />
             </div>
-            <div class="grid gap-3 lg:grid-cols-2">
+            <div class="grid gap-4 sm:grid-cols-2">
+              <label class="space-y-2 sm:col-span-2">
+                <span class="text-xs font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]">Bối cảnh / địa điểm sử dụng</span>
+                <input v-model="form.venueUsageType" :class="fieldClass" :disabled="isSubmitting" />
+              </label>
+              <label class="space-y-2 sm:col-span-2">
+                <span class="text-xs font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]">Hệ số giá cơ sở</span>
+                <input v-model.number="form.basePriceMultiplier" type="number" min="1" step="0.01" :class="fieldClass" :disabled="isSubmitting" />
+              </label>
+            </div>
+          </section>
+          <section :class="formSectionClass">
+            <div :class="sectionHeadingClass">
+              <div class="flex items-center gap-2">
+                <span :class="sectionTitleClass">Yếu tố phụ thuộc</span>
+                <button
+                  type="button"
+                  class="inline-flex h-6 w-6 items-center justify-center rounded-full border bg-[color:var(--admin-surface-1)] text-[color:var(--admin-text-muted)] transition [border-color:var(--admin-border)] hover:text-[color:var(--admin-primary-700)]"
+                  :title="dependencyHelpText"
+                  :aria-label="dependencyHelpText"
+                >
+                  <i class="pi pi-question-circle text-xs" />
+                </button>
+              </div>
+              <div :class="sectionDividerClass" />
+            </div>
+            <div class="grid gap-3 xl:grid-cols-2">
               <button
                 v-for="group in availablePricingModifierGroups"
                 :key="`edit-physical-available-group-${group.id}`"
                 type="button"
-                class="rounded-2xl border border-slate-200/80 bg-white/80 p-4 text-left transition hover:border-violet-300 hover:bg-violet-50/60 dark:border-slate-800 dark:bg-slate-950/40 dark:hover:border-violet-500/50 dark:hover:bg-violet-500/10"
+                class="rounded-2xl border [border-color:var(--admin-border)] bg-[color:var(--admin-surface-0)] p-4 text-left transition hover:border-[color:rgb(var(--admin-primary-rgb)/0.28)] hover:bg-[linear-gradient(135deg,var(--admin-primary-50),var(--admin-accent-50))] dark:hover:border-[color:rgb(var(--admin-primary-rgb)/0.38)] dark:hover:bg-[color:var(--admin-primary-50)]"
                 :disabled="isSubmitting"
                 @click="addPriceModifierGroup(group.id)"
               >
@@ -1761,42 +2262,40 @@ onMounted(() => {
                       <i class="pi text-sm" :class="getPricingModifierGroupIcon(group)" />
                     </span>
                     <div>
-                      <div class="text-sm font-semibold text-slate-800 dark:text-slate-100">{{ group.label }}</div>
-                      <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                      <div class="text-sm font-semibold text-[color:var(--admin-text)]">{{ group.label }}</div>
+                      <div class="mt-1 text-xs text-[color:var(--admin-text-muted)]">
                         {{ getPricingModifierGroupDescription(group) }}
                       </div>
                     </div>
                   </div>
                   <span
                     class="inline-flex shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold"
-                    :class="group.kind === 'flag'
-                      ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300'
-                      : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300'"
+                    :class="getPricingModifierGroupBadgeClass(group)"
                   >
                     {{ getPricingModifierGroupBadgeLabel(group) }}
                   </span>
                 </div>
                 <div class="mt-4">
-                  <span class="inline-flex items-center gap-2 text-sm font-semibold text-violet-600 dark:text-violet-300">
+                  <span class="inline-flex items-center gap-2 text-sm font-semibold text-[color:var(--admin-primary-700)] dark:text-[color:var(--admin-primary-700)]">
                     <i class="pi pi-plus-circle text-xs" />
                     Thêm thuộc tính
                   </span>
                 </div>
               </button>
             </div>
-            <div v-if="availablePricingModifierGroups.length === 0" class="rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 px-4 py-3 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-400">
+            <div v-if="availablePricingModifierGroups.length === 0" class="rounded-2xl border border-dashed [border-color:var(--admin-border)] bg-[color:var(--admin-surface-1)] px-4 py-3 text-sm text-[color:var(--admin-text-muted)]">
               Tất cả thuộc tính hiện có đã được thêm vào gói này.
             </div>
-            <div v-if="activePricingModifierGroups.length === 0" class="text-sm text-slate-500 dark:text-slate-400">
+            <div v-if="activePricingModifierGroups.length === 0" class="text-sm text-[color:var(--admin-text-muted)]">
               Chưa cấu hình yếu tố phụ thuộc.
             </div>
-            <div v-else class="space-y-3">
+            <div v-else class="grid gap-3 xl:grid-cols-2">
               <div
                 v-for="group in activePricingModifierGroups"
                 :key="`edit-physical-active-group-${group.id}`"
-                class="rounded-2xl border border-slate-200/80 bg-white/70 px-4 py-3 dark:border-slate-800 dark:bg-slate-950/40"
+                :class="modifierGroupCardClass"
               >
-                <div class="flex items-center justify-between gap-3">
+                <div :class="modifierGroupHeaderClass">
                   <div class="flex min-w-0 items-start gap-3">
                     <span
                       class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl"
@@ -1805,8 +2304,8 @@ onMounted(() => {
                       <i class="pi text-sm" :class="getPricingModifierGroupIcon(group)" />
                     </span>
                     <div>
-                      <div class="text-sm font-semibold text-slate-700 dark:text-slate-200">{{ group.label }}</div>
-                      <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                      <div class="text-sm font-semibold text-[color:var(--admin-text)]">{{ group.label }}</div>
+                      <div class="mt-1 text-xs text-[color:var(--admin-text-muted)]">
                         {{ getPricingModifierGroupDescription(group) }}
                       </div>
                     </div>
@@ -1815,97 +2314,165 @@ onMounted(() => {
                     <i class="pi pi-times" />
                   </button>
                 </div>
-                <div class="mt-3 space-y-2">
-                  <div v-if="group.kind === 'flag'" class="text-sm text-slate-500 dark:text-slate-400">
-                    Hệ số được quản lý ở màn hình riêng. Chỉ cần bật thuộc tính này để áp dụng vào công thức tính giá.
+                <div :class="modifierGroupBodyClass">
+                  <div v-if="group.kind === 'flag'" class="text-sm text-[color:var(--admin-text-muted)]">
+                    <div class="text-sm text-[color:var(--admin-text-muted)]">
+                      Hệ số được quản lý ở màn hình riêng. Chỉ cần bật thuộc tính này để áp dụng vào công thức tính giá.
+                    </div>
+                    <div class="mt-3">
+                      <div
+                        v-if="isDependencyConfigOptionsLoading"
+                        class="rounded-2xl border border-dashed [border-color:var(--admin-border)] bg-[color:var(--admin-surface-1)] px-4 py-3 text-sm"
+                      >
+                        Đang tải danh sách {{ group.label.toLowerCase() }}...
+                      </div>
+                      <div
+                        v-else-if="getDependencyConfigsForGroup(group).length === 0"
+                        class="rounded-2xl border border-dashed [border-color:var(--admin-border)] bg-[color:var(--admin-surface-1)] px-4 py-3 text-sm"
+                      >
+                        Chưa có {{ group.label.toLowerCase() }} nào đang hoạt động.
+                      </div>
+                      <div v-else class="space-y-2">
+                        <div class="text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]">
+                          Danh sách đang áp dụng
+                        </div>
+                        <div class="space-y-2">
+                          <div
+                            v-for="dependencyItem in getDependencyConfigsForGroup(group)"
+                            :key="dependencyItem.id"
+                            class="flex items-start justify-between gap-3 rounded-2xl border [border-color:var(--admin-border)] bg-[color:var(--admin-surface-1)] px-3 py-3"
+                          >
+                            <div class="min-w-0">
+                              <div class="text-sm font-semibold text-[color:var(--admin-text)]">
+                                {{ dependencyItem.name }}
+                              </div>
+                              <div class="mt-1 text-xs text-[color:var(--admin-text-muted)]">
+                                {{ dependencyItem.referencedPermissions.length }} quyền tham chiếu
+                              </div>
+                            </div>
+                            <span class="inline-flex shrink-0 rounded-full bg-[color:var(--admin-surface-0)] px-2.5 py-1 text-[11px] font-semibold text-[color:var(--admin-text-muted)]">
+                              x{{ dependencyItem.priceMultiplier }}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div v-else>
+                  <div v-else class="space-y-3">
                     <div
                       v-for="item in group.items"
                       :key="`edit-physical-modifier-${item.key}`"
-                      class="grid gap-2 rounded-2xl border border-slate-200/70 bg-slate-50/80 p-3 dark:border-slate-800 dark:bg-slate-900/40 sm:grid-cols-[minmax(96px,max-content)_minmax(0,1fr)] sm:items-center sm:gap-3"
+                      :class="modifierItemCardClass"
                     >
-                      <div class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ item.label }}</div>
-                      <input
-                        type="number"
-                        min="1"
-                        step="0.01"
-                        :class="fieldClass"
-                        :disabled="isSubmitting"
-                        :value="getPriceModifierMultiplier(item.key)"
-                        @input="setPriceModifierMultiplier(item.key, Number(($event.target as HTMLInputElement).value))"
-                      />
+                      <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between lg:gap-4">
+                        <div class="min-w-0 lg:max-w-[240px]">
+                          <div class="inline-flex items-center rounded-full bg-[color:var(--admin-surface-1)] px-3 py-1 text-sm font-semibold text-[color:var(--admin-text)]">
+                            {{ item.label }}
+                          </div>
+                          <div class="mt-2 text-xs leading-5 text-[color:var(--admin-text-muted)]">
+                            {{ getPricingModifierItemDescription(item.key) }}
+                          </div>
+                        </div>
+                        <label class="block w-full lg:max-w-[240px]">
+                          <span :class="modifierInputLabelClass">Hệ số áp dụng</span>
+                          <input
+                            type="number"
+                            min="1"
+                            step="0.01"
+                            :class="fieldClass"
+                            :disabled="isSubmitting"
+                            :value="getPriceModifierMultiplier(item.key)"
+                            @input="setPriceModifierMultiplier(item.key, Number(($event.target as HTMLInputElement).value))"
+                          />
+                        </label>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
+          </section>
         </template>
 
         <template v-if="props.resource === 'expression' || props.resource === 'modification'">
-          <label class="space-y-2 sm:col-span-2">
-            <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
-              {{ props.resource === 'expression' ? 'Tên hình thức biểu hiện' : 'Tên mức độ biến đổi' }}
-            </span>
-            <input v-model="form.name" :class="fieldClass" :disabled="isSubmitting" />
-          </label>
-          <label class="space-y-2 sm:col-span-2">
-            <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Hệ số giá</span>
-            <input v-model.number="form.priceMultiplier" type="number" min="1" step="0.01" :class="fieldClass" :disabled="isSubmitting" />
-          </label>
+          <section :class="formSectionClass">
+            <div :class="sectionHeadingClass">
+              <span :class="sectionTitleClass">Thông tin cơ bản</span>
+              <div :class="sectionDividerClass" />
+            </div>
+            <div class="grid gap-4">
+              <label class="space-y-2">
+                <span class="text-xs font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]">
+                  {{ props.resource === 'expression' ? 'Tên hình thức biểu hiện' : 'Tên mức độ biến đổi' }}
+                </span>
+                <input v-model="form.name" :class="fieldClass" :disabled="isSubmitting" />
+              </label>
+              <label class="space-y-2">
+                <span class="text-xs font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]">Hệ số giá</span>
+                <input v-model.number="form.priceMultiplier" type="number" min="1" step="0.01" :class="fieldClass" :disabled="isSubmitting" />
+              </label>
+            </div>
+          </section>
         </template>
 
-        <div class="space-y-3 sm:col-span-2">
-          <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">{{ permissionsLabel }}</span>
+        <section :class="formSectionClass">
+          <div :class="sectionHeadingClass">
+            <span :class="sectionTitleClass">{{ permissionsLabel }}</span>
+            <div :class="sectionDividerClass" />
+          </div>
           <div v-if="supportsPermissionPicker" class="space-y-3">
             <div
               v-if="isPermissionOptionsLoading || mergedPermissionOptions.length === 0"
-              class="rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 px-4 py-4 dark:border-slate-700 dark:bg-slate-900/40"
+              class="rounded-2xl border border-dashed [border-color:var(--admin-border)] bg-[color:var(--admin-surface-1)] px-4 py-4"
             >
               <div v-if="isPermissionOptionsLoading" class="space-y-3">
-                <div class="h-4 w-40 animate-pulse rounded-full bg-slate-200 dark:bg-slate-800" />
+                <div class="h-4 w-40 animate-pulse rounded-full bg-[color:var(--admin-surface-1)]" />
                 <div class="grid gap-2">
                   <div
                     v-for="placeholderIndex in 3"
                     :key="`edit-permission-loading-${placeholderIndex}`"
-                    class="rounded-2xl border border-slate-200/80 bg-white/70 px-4 py-4 dark:border-slate-800 dark:bg-slate-950/50"
+                    class="rounded-2xl border [border-color:var(--admin-border)] bg-[color:var(--admin-surface-0)] px-4 py-4"
                   >
-                    <div class="h-4 w-3/4 animate-pulse rounded-full bg-slate-200 dark:bg-slate-800" />
-                    <div class="mt-2 h-3 w-1/2 animate-pulse rounded-full bg-slate-200 dark:bg-slate-800" />
+                    <div class="h-4 w-3/4 animate-pulse rounded-full bg-[color:var(--admin-surface-1)]" />
+                    <div class="mt-2 h-3 w-1/2 animate-pulse rounded-full bg-[color:var(--admin-surface-1)]" />
                   </div>
                 </div>
               </div>
-              <div v-else class="text-sm text-slate-500 dark:text-slate-400">
+              <div v-else class="text-sm text-[color:var(--admin-text-muted)]">
                 {{ permissionOptionsEmptyMessage }}
               </div>
-              <div v-if="isPermissionOptionsLoading" class="mt-3 text-xs text-slate-500 dark:text-slate-400">
+              <div v-if="isPermissionOptionsLoading" class="mt-3 text-xs text-[color:var(--admin-text-muted)]">
                 {{ permissionOptionsLoadingMessage }}
               </div>
             </div>
-            <div v-else class="grid gap-2">
+            <div v-else class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
               <button
                 v-for="permission in mergedPermissionOptions"
                 :key="permission.id"
                 type="button"
-                class="flex w-full items-start gap-3 rounded-2xl border px-4 py-3 text-left transition"
-                :class="form.referencedPermissionIds.includes(permission.id)
-                  ? 'border-violet-300 bg-violet-50 text-violet-700 dark:border-violet-500/40 dark:bg-violet-500/10 dark:text-violet-200'
-                  : 'border-slate-200 bg-white text-slate-700 hover:border-violet-200 dark:border-slate-800 dark:bg-slate-950/40 dark:text-slate-200'"
+                class="flex w-full items-start justify-between gap-4 rounded-2xl border px-4 py-4 text-left transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--admin-ring)]"
+                :class="getReferencedPermissionCardClass(permission.id)"
                 :disabled="isPermissionSubmitDisabled"
+                :aria-pressed="isReferencedPermissionSelected(permission.id)"
                 @click="toggleReferencedPermission(permission.id)"
               >
-                <span
-                  class="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md border text-[11px]"
-                  :class="form.referencedPermissionIds.includes(permission.id)
-                    ? 'border-violet-400 bg-violet-500 text-white dark:border-violet-400 dark:bg-violet-500'
-                    : 'border-slate-300 bg-white text-transparent dark:border-slate-600 dark:bg-slate-950'"
-                >
-                  <i class="pi pi-check" />
+                <span class="flex min-w-0 items-start gap-3">
+                  <span
+                    class="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md border text-[11px]"
+                    :class="getReferencedPermissionCheckboxClass(permission.id)"
+                  >
+                    <i class="pi pi-check" />
+                  </span>
+                  <span class="min-w-0">
+                    <span class="block font-semibold">{{ permission.name }}</span>
+                    <span class="mt-1 block text-xs text-[color:var(--admin-text-muted)]">{{ permission.lawReference }}</span>
+                  </span>
                 </span>
-                <span class="min-w-0">
-                  <span class="block font-semibold">{{ permission.name }}</span>
-                  <span class="mt-1 block text-xs text-slate-500 dark:text-slate-400">{{ permission.lawReference }}</span>
+                <span
+                  class="inline-flex shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold"
+                  :class="getReferencedPermissionChipClass(permission.id)"
+                >
+                  {{ isReferencedPermissionSelected(permission.id) ? 'Đã chọn' : 'Chọn' }}
                 </span>
               </button>
             </div>
@@ -1915,7 +2482,7 @@ onMounted(() => {
               {{ permission.name }} - {{ permission.lawReference }}
             </option>
           </select>
-        </div>
+        </section>
       </div>
       <template #footer>
         <div class="flex w-full flex-col gap-3 sm:flex-row sm:justify-end">
@@ -1932,17 +2499,55 @@ onMounted(() => {
       :header="permissionsDialogTitle"
       :pt="{ content: { class: 'max-h-[calc(100svh-0.75rem)] overflow-y-auto sm:max-h-[calc(100svh-10rem)]' } }"
     >
-      <div v-if="permissionsDialogPermissions.length === 0" class="text-sm text-slate-500 dark:text-slate-400">
+      <div v-if="permissionsDialogPermissions.length === 0" class="rounded-[24px] border border-dashed [border-color:var(--admin-border)] bg-[color:var(--admin-surface-1)] px-5 py-6 text-sm text-[color:var(--admin-text-muted)]">
         {{ permissionsDialogEmptyState }}
       </div>
-      <div v-else class="space-y-2">
-        <div
-          v-for="permission in permissionsDialogPermissions"
-          :key="permission.id"
-          class="rounded-2xl border border-slate-200/80 bg-white/90 px-4 py-3 text-sm text-slate-700 shadow-sm dark:border-slate-800 dark:bg-slate-950/50 dark:text-slate-200"
-        >
-          <div class="font-semibold">{{ permission.name }}</div>
-          <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ permission.lawReference }}</div>
+      <div v-else class="space-y-4">
+        <section class="rounded-[24px] border [border-color:var(--admin-border)] bg-[linear-gradient(135deg,var(--admin-primary-50),var(--admin-accent-50))] px-5 py-4 shadow-sm dark:bg-[color:var(--admin-primary-50)]">
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex min-w-0 items-start gap-3">
+              <span class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[color:var(--admin-surface-0)] text-[color:var(--admin-primary-700)] shadow-sm">
+                <i class="pi pi-shield text-base" />
+              </span>
+              <div class="min-w-0">
+                <div class="text-sm font-semibold text-[color:var(--admin-text)]">
+                  Bộ quyền cần có để cấu hình này hoạt động đúng
+                </div>
+                <div class="mt-1 text-xs leading-5 text-[color:var(--admin-text-muted)]">
+                  Danh sách đã bao gồm quyền gốc và quyền phát sinh từ các thuộc tính phụ thuộc đang bật.
+                </div>
+              </div>
+            </div>
+            <span class="inline-flex shrink-0 items-center rounded-full bg-[color:var(--admin-surface-0)] px-3 py-1.5 text-xs font-semibold text-[color:var(--admin-primary-800)] shadow-sm">
+              {{ permissionsDialogPermissions.length }} quyền
+            </span>
+          </div>
+        </section>
+        <div class="grid gap-3 sm:grid-cols-2">
+          <article
+            v-for="permission in permissionsDialogPermissions"
+            :key="permission.id"
+            class="group rounded-[24px] border [border-color:var(--admin-border)] bg-[linear-gradient(180deg,var(--admin-surface-0),var(--admin-surface-1))] px-4 py-4 text-sm text-[color:var(--admin-text)] shadow-sm transition hover:-translate-y-0.5 hover:border-[color:rgb(var(--admin-primary-rgb)/0.24)] hover:shadow-[0_18px_38px_-28px_rgba(15,23,42,0.45)]"
+          >
+            <div class="flex items-start gap-3">
+              <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[color:var(--admin-surface-0)] text-[color:var(--admin-primary-700)] shadow-sm">
+                <i class="pi pi-book text-sm" />
+              </span>
+              <div class="min-w-0 flex-1">
+                <div class="font-semibold leading-6 text-[color:var(--admin-text)]">
+                  {{ permission.name }}
+                </div>
+                <div class="mt-3 flex flex-wrap items-center gap-2">
+                  <span class="inline-flex items-center rounded-full bg-[color:var(--admin-surface-0)] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-[color:var(--admin-text-muted)]">
+                    Căn cứ pháp lý
+                  </span>
+                  <span class="text-xs leading-5 text-[color:var(--admin-text-muted)]">
+                    {{ permission.lawReference }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </article>
         </div>
       </div>
       <template #footer>
@@ -1960,25 +2565,25 @@ onMounted(() => {
       :pt="{ content: { class: 'max-h-[calc(100svh-0.75rem)] overflow-y-auto sm:max-h-[calc(100svh-10rem)]' } }"
     >
       <div v-if="packageProductsLoading" class="space-y-3">
-        <div v-for="index in 3" :key="`package-product-loading-${index}`" class="h-20 animate-pulse rounded-2xl border border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900/40" />
+        <div v-for="index in 3" :key="`package-product-loading-${index}`" class="h-20 animate-pulse rounded-2xl border [border-color:var(--admin-border)] bg-[color:var(--admin-surface-1)]" />
       </div>
-      <div v-else-if="packageProducts.length === 0" class="text-sm text-slate-500 dark:text-slate-400">
+      <div v-else-if="packageProducts.length === 0" class="text-sm text-[color:var(--admin-text-muted)]">
         Chưa có sản phẩm nào đang tham gia gói này.
       </div>
       <div v-else class="space-y-3">
         <article
           v-for="registration in packageProducts"
           :key="registration.registrationId"
-          class="rounded-2xl border border-slate-200/80 bg-white/90 px-4 py-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/50"
+          class="rounded-2xl border [border-color:var(--admin-border)] bg-[color:var(--admin-surface-0)] px-4 py-4 shadow-sm"
         >
           <div class="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <div class="font-semibold text-slate-900 dark:text-white">{{ registration.productTitle }}</div>
-              <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+              <div class="font-semibold text-[color:var(--admin-text)]">{{ registration.productTitle }}</div>
+              <div class="mt-1 text-xs text-[color:var(--admin-text-muted)]">
                 {{ registration.title }} · {{ registration.configType === 'DIGITAL' ? 'Digital package' : 'Physical package' }} · {{ registration.configStatus === 'ACTIVE' ? 'Đang hoạt động' : 'Tạm ngừng' }}
               </div>
             </div>
-            <span class="inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-violet-300">
+            <span class="inline-flex items-center rounded-full px-3 py-1 text-[11px] font-semibold bg-[linear-gradient(135deg,var(--admin-primary-50),var(--admin-accent-50))] text-[color:var(--admin-primary-800)] dark:bg-[color:var(--admin-primary-50)] dark:text-[color:var(--admin-primary-800)]">
               Đã đăng ký
             </span>
           </div>

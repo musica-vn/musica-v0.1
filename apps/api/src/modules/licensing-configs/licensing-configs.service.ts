@@ -4,6 +4,12 @@ import type { ApiEnvelopePayload } from '../../common/interceptors/api-response.
 import { buildPaginationMeta } from '../../common/base/pagination-meta'
 import { ApiHttpException } from '../../common/errors/api-http.exception'
 import { SupabaseService } from '../../database/supabase.service'
+import { assertSupportedDigitalPriceModifiers } from './licensing-config-price-modifiers'
+import {
+  buildRequiredPermissionsFromDependencies,
+  dedupeRequiredPermissions,
+  mapRequiredPermissionSummary,
+} from './licensing-required-permissions'
 import {
   VARIANT_PRICING_MODIFIER_KEYS,
   type VariantPricingModifierKey,
@@ -87,6 +93,11 @@ type DbModificationConfigRow = {
   status: ConfigStatus
   created_at: string
   updated_at: string
+  modification_config_permissions?: DbConfigPermissionRelationRow[]
+}
+
+type DbDependencyPermissionsRow = {
+  expression_config_permissions?: DbConfigPermissionRelationRow[]
   modification_config_permissions?: DbConfigPermissionRelationRow[]
 }
 
@@ -207,6 +218,8 @@ const mapDigitalRightConfig = (row: DbDigitalRightConfigRow): DigitalRightConfig
     priceModifiers: mapPriceModifiers(row.digital_right_config_price_modifiers),
     referencedPermissionIds: permissionData.referencedPermissionIds,
     referencedPermissions: permissionData.referencedPermissions,
+    effectiveReferencedPermissionIds: permissionData.referencedPermissionIds,
+    effectiveReferencedPermissions: permissionData.referencedPermissions,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
@@ -223,6 +236,8 @@ const mapPhysicalRightConfig = (row: DbPhysicalRightConfigRow): PhysicalRightCon
     priceModifiers: mapPriceModifiers(row.physical_right_config_price_modifiers),
     referencedPermissionIds: permissionData.referencedPermissionIds,
     referencedPermissions: permissionData.referencedPermissions,
+    effectiveReferencedPermissionIds: permissionData.referencedPermissionIds,
+    effectiveReferencedPermissions: permissionData.referencedPermissions,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
@@ -261,6 +276,16 @@ const mapModificationConfig = (row: DbModificationConfigRow): ModificationConfig
 @Injectable()
 export class LicensingConfigsService {
   constructor(private readonly supabaseService: SupabaseService) {}
+
+  private dependencyPermissionsCache:
+    | {
+        value: {
+          expressionPermissions: ConfigPermissionSummaryDto[]
+          modificationPermissions: ConfigPermissionSummaryDto[]
+        }
+        expiresAt: number
+      }
+    | null = null
 
   private throwSupabaseError(code: string, error: unknown): never {
     const supabaseCode = readStringField(error, 'code')
@@ -394,8 +419,157 @@ export class LicensingConfigsService {
     }
   }
 
+  private async loadActiveExpressionPermissions(): Promise<
+    ConfigPermissionSummaryDto[]
+  > {
+    const { data, error } = await this.supabaseService.client
+      .from(expressionConfigResource.tableName)
+      .select(
+        'expression_config_permissions(core_permission_id, core_permissions(id, name, law_reference))',
+      )
+      .eq('status', 'ACTIVE')
+      .returns<DbDependencyPermissionsRow[]>()
+
+    if (error) {
+      this.throwSupabaseError('EXPRESSION_CONFIG_LIST_FAILED', error)
+    }
+
+    return dedupeRequiredPermissions(
+      (data ?? []).flatMap((config) =>
+        (config.expression_config_permissions ?? []).map((permissionRow) =>
+          mapRequiredPermissionSummary(
+            permissionRow.core_permission_id,
+            permissionRow.core_permissions,
+          ),
+        ),
+      ),
+    )
+  }
+
+  private async loadActiveModificationPermissions(): Promise<
+    ConfigPermissionSummaryDto[]
+  > {
+    const { data, error } = await this.supabaseService.client
+      .from(modificationConfigResource.tableName)
+      .select(
+        'modification_config_permissions(core_permission_id, core_permissions(id, name, law_reference))',
+      )
+      .eq('status', 'ACTIVE')
+      .returns<DbDependencyPermissionsRow[]>()
+
+    if (error) {
+      this.throwSupabaseError('MODIFICATION_CONFIG_LIST_FAILED', error)
+    }
+
+    return dedupeRequiredPermissions(
+      (data ?? []).flatMap((config) =>
+        (config.modification_config_permissions ?? []).map((permissionRow) =>
+          mapRequiredPermissionSummary(
+            permissionRow.core_permission_id,
+            permissionRow.core_permissions,
+          ),
+        ),
+      ),
+    )
+  }
+
+  private async loadDependencyPermissions(): Promise<{
+    expressionPermissions: ConfigPermissionSummaryDto[]
+    modificationPermissions: ConfigPermissionSummaryDto[]
+  }> {
+    const [expressionPermissions, modificationPermissions] = await Promise.all([
+      this.loadActiveExpressionPermissions(),
+      this.loadActiveModificationPermissions(),
+    ])
+
+    return { expressionPermissions, modificationPermissions }
+  }
+
+  private async loadDependencyPermissionsCached(): Promise<{
+    expressionPermissions: ConfigPermissionSummaryDto[]
+    modificationPermissions: ConfigPermissionSummaryDto[]
+  }> {
+    const now = Date.now()
+    if (this.dependencyPermissionsCache && this.dependencyPermissionsCache.expiresAt > now) {
+      return this.dependencyPermissionsCache.value
+    }
+
+    const value = await this.loadDependencyPermissions()
+    this.dependencyPermissionsCache = {
+      value,
+      expiresAt: now + 60_000,
+    }
+
+    return value
+  }
+
+  private buildEffectiveReferencedPermissionData(
+    baseReferencedPermissions: ConfigPermissionSummaryDto[],
+    priceModifiers: ConfigPriceModifierDto[],
+    dependencyPermissions: {
+      expressionPermissions: ConfigPermissionSummaryDto[]
+      modificationPermissions: ConfigPermissionSummaryDto[]
+    },
+  ): {
+    effectiveReferencedPermissionIds: string[]
+    effectiveReferencedPermissions: ConfigPermissionSummaryDto[]
+  } {
+    const effectiveReferencedPermissions =
+      buildRequiredPermissionsFromDependencies({
+        basePermissions: baseReferencedPermissions,
+        priceModifierKeys: priceModifiers.map((modifier) => modifier.key),
+        expressionPermissions: dependencyPermissions.expressionPermissions,
+        modificationPermissions: dependencyPermissions.modificationPermissions,
+      })
+
+    return {
+      effectiveReferencedPermissionIds: effectiveReferencedPermissions.map(
+        (permission) => permission.id,
+      ),
+      effectiveReferencedPermissions,
+    }
+  }
+
+  private async enrichDigitalRightConfig(
+    config: DigitalRightConfigDto,
+    dependencyPermissions?: {
+      expressionPermissions: ConfigPermissionSummaryDto[]
+      modificationPermissions: ConfigPermissionSummaryDto[]
+    },
+  ): Promise<DigitalRightConfigDto> {
+    const effectivePermissionData = this.buildEffectiveReferencedPermissionData(
+      config.referencedPermissions,
+      config.priceModifiers,
+      dependencyPermissions ?? (await this.loadDependencyPermissionsCached()),
+    )
+
+    return {
+      ...config,
+      ...effectivePermissionData,
+    }
+  }
+
+  private async enrichPhysicalRightConfig(
+    config: PhysicalRightConfigDto,
+    dependencyPermissions?: {
+      expressionPermissions: ConfigPermissionSummaryDto[]
+      modificationPermissions: ConfigPermissionSummaryDto[]
+    },
+  ): Promise<PhysicalRightConfigDto> {
+    const effectivePermissionData = this.buildEffectiveReferencedPermissionData(
+      config.referencedPermissions,
+      config.priceModifiers,
+      dependencyPermissions ?? (await this.loadDependencyPermissionsCached()),
+    )
+
+    return {
+      ...config,
+      ...effectivePermissionData,
+    }
+  }
+
   private async getDigitalRightConfigById(configId: string): Promise<DigitalRightConfigDto> {
-    return this.getConfigById(
+    const config = await this.getConfigById(
       {
         tableName: digitalRightConfigResource.tableName,
         select:
@@ -406,10 +580,12 @@ export class LicensingConfigsService {
       },
       configId,
     )
+
+    return this.enrichDigitalRightConfig(config)
   }
 
   private async getPhysicalRightConfigById(configId: string): Promise<PhysicalRightConfigDto> {
-    return this.getConfigById(
+    const config = await this.getConfigById(
       {
         tableName: physicalRightConfigResource.tableName,
         select:
@@ -420,6 +596,8 @@ export class LicensingConfigsService {
       },
       configId,
     )
+
+    return this.enrichPhysicalRightConfig(config)
   }
 
   private async getExpressionConfigById(configId: string): Promise<ExpressionConfigDto> {
@@ -481,8 +659,19 @@ export class LicensingConfigsService {
       this.throwSupabaseError('DIGITAL_RIGHT_CONFIG_LIST_FAILED', error)
     }
 
+    const dependencyPermissions = await this.loadDependencyPermissionsCached()
+
     return {
-      data: { items: (data ?? []).map(mapDigitalRightConfig) },
+      data: {
+        items: await Promise.all(
+          (data ?? []).map((item) =>
+            this.enrichDigitalRightConfig(
+              mapDigitalRightConfig(item),
+              dependencyPermissions,
+            ),
+          ),
+        ),
+      },
       meta: buildPaginationMeta(query.page, query.pageSize, typeof count === 'number' ? count : 0),
     }
   }
@@ -492,6 +681,8 @@ export class LicensingConfigsService {
   }
 
   async createDigitalRightConfig(payload: CreateDigitalRightConfigRequestDto): Promise<DigitalRightConfigDto> {
+    assertSupportedDigitalPriceModifiers(payload.priceModifiers ?? [])
+
     const { data, error } = await this.supabaseService.client
       .from(digitalRightConfigResource.tableName)
       .insert({
@@ -533,6 +724,10 @@ export class LicensingConfigsService {
     configId: string,
     payload: UpdateDigitalRightConfigRequestDto,
   ): Promise<DigitalRightConfigDto> {
+    if (payload.priceModifiers !== undefined) {
+      assertSupportedDigitalPriceModifiers(payload.priceModifiers)
+    }
+
     const updatePayload: Record<string, unknown> = {}
     if (payload.targetPlatform !== undefined) updatePayload.target_platform = payload.targetPlatform
     if (payload.durationType !== undefined) updatePayload.duration_type = payload.durationType
@@ -619,8 +814,19 @@ export class LicensingConfigsService {
       this.throwSupabaseError('PHYSICAL_RIGHT_CONFIG_LIST_FAILED', error)
     }
 
+    const dependencyPermissions = await this.loadDependencyPermissionsCached()
+
     return {
-      data: { items: (data ?? []).map(mapPhysicalRightConfig) },
+      data: {
+        items: await Promise.all(
+          (data ?? []).map((item) =>
+            this.enrichPhysicalRightConfig(
+              mapPhysicalRightConfig(item),
+              dependencyPermissions,
+            ),
+          ),
+        ),
+      },
       meta: buildPaginationMeta(query.page, query.pageSize, typeof count === 'number' ? count : 0),
     }
   }

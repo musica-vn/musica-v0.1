@@ -49,7 +49,7 @@ const emit = defineEmits<{
 
     <div
       v-if="!isLoading && rows.length === 0"
-      class="rounded-[28px] border border-dashed border-slate-200/80 bg-white/70 px-4 py-10 text-center text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-400"
+      class="rounded-[28px] border border-dashed bg-[color:var(--admin-surface-0)] px-4 py-10 text-center text-sm text-[color:var(--admin-text-muted)] [border-color:var(--admin-border)]"
     >
       {{ emptyMessage }}
     </div>

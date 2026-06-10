@@ -9,6 +9,13 @@ import {
   applyProductPriorityOrdering,
   PRODUCT_PRIORITY_SELECT,
 } from '../product-priorities/product-priority-ordering';
+import {
+  buildRequiredPermissionsFromDependencies,
+  dedupeRequiredPermissions,
+  mapRequiredPermissionSummary,
+  type RawPermissionSummary,
+} from '../licensing-configs/licensing-required-permissions';
+import type { VariantPricingModifierKey } from '../pricing/variant-pricing.enums';
 import type {
   ProductPackageRegistrationEligibilityStatus,
   ProductPackageRegistrationItemDto,
@@ -34,11 +41,15 @@ type DbCorePermissionRow = {
   id: string;
   name: string;
   law_reference: string;
-};
+} & RawPermissionSummary;
 
 type DbConfigPermissionRow = {
   core_permission_id: string;
   core_permissions?: DbCorePermissionRow | null;
+};
+
+type DbConfigPriceModifierRow = {
+  modifier_key: VariantPricingModifierKey;
 };
 
 type DbDigitalConfigRow = {
@@ -47,6 +58,7 @@ type DbDigitalConfigRow = {
   target_platform: 'YOUTUBE' | 'TIKTOK' | 'FACEBOOK';
   duration_type: 'ONE_YEAR' | 'PERPETUAL';
   digital_right_config_permissions?: DbConfigPermissionRow[] | null;
+  digital_right_config_price_modifiers?: DbConfigPriceModifierRow[] | null;
 };
 
 type DbPhysicalConfigRow = {
@@ -54,6 +66,7 @@ type DbPhysicalConfigRow = {
   status: 'ACTIVE' | 'INACTIVE';
   venue_usage_type: string;
   physical_right_config_permissions?: DbConfigPermissionRow[] | null;
+  physical_right_config_price_modifiers?: DbConfigPriceModifierRow[] | null;
 };
 
 type DbDigitalRegistrationRow = {
@@ -72,11 +85,7 @@ type DbPhysicalRegistrationRow = DbDigitalRegistrationRow;
 const mapPermission = (
   permissionId: string,
   permission: DbCorePermissionRow | null | undefined,
-): PermissionSummary => ({
-  id: permission?.id ?? permissionId,
-  name: permission?.name ?? permissionId,
-  lawReference: permission?.law_reference ?? '',
-});
+): PermissionSummary => mapRequiredPermissionSummary(permissionId, permission);
 
 const formatDigitalTitle = (
   platform: DbDigitalConfigRow['target_platform'],
@@ -86,6 +95,78 @@ const formatDigitalTitle = (
 @Injectable()
 export class ProductPackageRegistrationsService {
   constructor(private readonly supabaseService: SupabaseService) {}
+
+  private async loadActiveExpressionPermissions(): Promise<PermissionSummary[]> {
+    const { data, error } = await this.supabaseService.client
+      .from('expression_configs')
+      .select(
+        'expression_config_permissions(core_permission_id, core_permissions(id,name,law_reference))',
+      )
+      .eq('status', 'ACTIVE')
+      .returns<
+        Array<{
+          expression_config_permissions?: DbConfigPermissionRow[] | null;
+        }>
+      >();
+
+    if (error) {
+      throwSupabaseError(
+        'EXPRESSION_CONFIGS_LOAD_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
+    }
+
+    return dedupeRequiredPermissions(
+      (data ?? []).flatMap((config) =>
+        (config.expression_config_permissions ?? []).map((permissionRow) =>
+          mapPermission(permissionRow.core_permission_id, permissionRow.core_permissions),
+        ),
+      ),
+    );
+  }
+
+  private async loadActiveModificationPermissions(): Promise<PermissionSummary[]> {
+    const { data, error } = await this.supabaseService.client
+      .from('modification_configs')
+      .select(
+        'modification_config_permissions(core_permission_id, core_permissions(id,name,law_reference))',
+      )
+      .eq('status', 'ACTIVE')
+      .returns<
+        Array<{
+          modification_config_permissions?: DbConfigPermissionRow[] | null;
+        }>
+      >();
+
+    if (error) {
+      throwSupabaseError(
+        'MODIFICATION_CONFIGS_LOAD_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
+    }
+
+    return dedupeRequiredPermissions(
+      (data ?? []).flatMap((config) =>
+        (config.modification_config_permissions ?? []).map((permissionRow) =>
+          mapPermission(permissionRow.core_permission_id, permissionRow.core_permissions),
+        ),
+      ),
+    );
+  }
+
+  private async loadDependentPermissions(): Promise<{
+    expressionPermissions: PermissionSummary[];
+    modificationPermissions: PermissionSummary[];
+  }> {
+    const [expressionPermissions, modificationPermissions] = await Promise.all([
+      this.loadActiveExpressionPermissions(),
+      this.loadActiveModificationPermissions(),
+    ]);
+
+    return { expressionPermissions, modificationPermissions };
+  }
 
   private async getProductEligibilityContext(
     productId: string,
@@ -151,11 +232,22 @@ export class ProductPackageRegistrationsService {
     registration: DbDigitalRegistrationRow,
     config: DbDigitalConfigRow,
     product: ProductEligibilityContext,
+    dependencyPermissions: {
+      expressionPermissions: PermissionSummary[];
+      modificationPermissions: PermissionSummary[];
+    },
   ): ProductPackageRegistrationItemDto {
-    const referencedPermissions = (config.digital_right_config_permissions ?? []).map(
-      (permissionRow) =>
-        mapPermission(permissionRow.core_permission_id, permissionRow.core_permissions),
-    );
+    const referencedPermissions = buildRequiredPermissionsFromDependencies({
+      basePermissions: (config.digital_right_config_permissions ?? []).map(
+        (permissionRow) =>
+          mapPermission(permissionRow.core_permission_id, permissionRow.core_permissions),
+      ),
+      priceModifierKeys: (config.digital_right_config_price_modifiers ?? []).map(
+        (modifier) => modifier.modifier_key,
+      ),
+      expressionPermissions: dependencyPermissions.expressionPermissions,
+      modificationPermissions: dependencyPermissions.modificationPermissions,
+    });
     const { eligibilityStatus, missingPermissions } = this.computeEligibility(
       product.allowedPermissionIds,
       referencedPermissions,
@@ -184,11 +276,22 @@ export class ProductPackageRegistrationsService {
     registration: DbPhysicalRegistrationRow,
     config: DbPhysicalConfigRow,
     product: ProductEligibilityContext,
+    dependencyPermissions: {
+      expressionPermissions: PermissionSummary[];
+      modificationPermissions: PermissionSummary[];
+    },
   ): ProductPackageRegistrationItemDto {
-    const referencedPermissions = (config.physical_right_config_permissions ?? []).map(
-      (permissionRow) =>
-        mapPermission(permissionRow.core_permission_id, permissionRow.core_permissions),
-    );
+    const referencedPermissions = buildRequiredPermissionsFromDependencies({
+      basePermissions: (config.physical_right_config_permissions ?? []).map(
+        (permissionRow) =>
+          mapPermission(permissionRow.core_permission_id, permissionRow.core_permissions),
+      ),
+      priceModifierKeys: (config.physical_right_config_price_modifiers ?? []).map(
+        (modifier) => modifier.modifier_key,
+      ),
+      expressionPermissions: dependencyPermissions.expressionPermissions,
+      modificationPermissions: dependencyPermissions.modificationPermissions,
+    });
     const { eligibilityStatus, missingPermissions } = this.computeEligibility(
       product.allowedPermissionIds,
       referencedPermissions,
@@ -217,7 +320,7 @@ export class ProductPackageRegistrationsService {
     const { data, error } = await this.supabaseService.client
       .from('digital_right_configs')
       .select(
-        'id,status,target_platform,duration_type,digital_right_config_permissions(core_permission_id, core_permissions(id,name,law_reference))',
+        'id,status,target_platform,duration_type,digital_right_config_permissions(core_permission_id, core_permissions(id,name,law_reference)),digital_right_config_price_modifiers(modifier_key)',
       )
       .eq('id', configId)
       .maybeSingle<DbDigitalConfigRow>();
@@ -241,7 +344,7 @@ export class ProductPackageRegistrationsService {
     const { data, error } = await this.supabaseService.client
       .from('physical_right_configs')
       .select(
-        'id,status,venue_usage_type,physical_right_config_permissions(core_permission_id, core_permissions(id,name,law_reference))',
+        'id,status,venue_usage_type,physical_right_config_permissions(core_permission_id, core_permissions(id,name,law_reference)),physical_right_config_price_modifiers(modifier_key)',
       )
       .eq('id', configId)
       .maybeSingle<DbPhysicalConfigRow>();
@@ -266,6 +369,7 @@ export class ProductPackageRegistrationsService {
     configId: string,
   ): Promise<DbDigitalConfigRow> {
     const config = await this.getDigitalConfig(configId);
+    const dependencyPermissions = await this.loadDependentPermissions();
     if (config.status !== 'ACTIVE') {
       throw new HttpException('PACKAGE_IS_INACTIVE', HttpStatus.BAD_REQUEST);
     }
@@ -277,10 +381,17 @@ export class ProductPackageRegistrationsService {
       );
     }
 
-    const referencedPermissions = (config.digital_right_config_permissions ?? []).map(
-      (permissionRow) =>
-        mapPermission(permissionRow.core_permission_id, permissionRow.core_permissions),
-    );
+    const referencedPermissions = buildRequiredPermissionsFromDependencies({
+      basePermissions: (config.digital_right_config_permissions ?? []).map(
+        (permissionRow) =>
+          mapPermission(permissionRow.core_permission_id, permissionRow.core_permissions),
+      ),
+      priceModifierKeys: (config.digital_right_config_price_modifiers ?? []).map(
+        (modifier) => modifier.modifier_key,
+      ),
+      expressionPermissions: dependencyPermissions.expressionPermissions,
+      modificationPermissions: dependencyPermissions.modificationPermissions,
+    });
     const eligibility = this.computeEligibility(
       product.allowedPermissionIds,
       referencedPermissions,
@@ -304,6 +415,7 @@ export class ProductPackageRegistrationsService {
     configId: string,
   ): Promise<DbPhysicalConfigRow> {
     const config = await this.getPhysicalConfig(configId);
+    const dependencyPermissions = await this.loadDependentPermissions();
     if (config.status !== 'ACTIVE') {
       throw new HttpException('PACKAGE_IS_INACTIVE', HttpStatus.BAD_REQUEST);
     }
@@ -315,10 +427,17 @@ export class ProductPackageRegistrationsService {
       );
     }
 
-    const referencedPermissions = (config.physical_right_config_permissions ?? []).map(
-      (permissionRow) =>
-        mapPermission(permissionRow.core_permission_id, permissionRow.core_permissions),
-    );
+    const referencedPermissions = buildRequiredPermissionsFromDependencies({
+      basePermissions: (config.physical_right_config_permissions ?? []).map(
+        (permissionRow) =>
+          mapPermission(permissionRow.core_permission_id, permissionRow.core_permissions),
+      ),
+      priceModifierKeys: (config.physical_right_config_price_modifiers ?? []).map(
+        (modifier) => modifier.modifier_key,
+      ),
+      expressionPermissions: dependencyPermissions.expressionPermissions,
+      modificationPermissions: dependencyPermissions.modificationPermissions,
+    });
     const eligibility = this.computeEligibility(
       product.allowedPermissionIds,
       referencedPermissions,
@@ -344,6 +463,7 @@ export class ProductPackageRegistrationsService {
   ): Promise<ProductPackageRegistrationItemDto> {
     const product = await this.getProductEligibilityContext(productId);
     const config = await this.assertCanJoinDigital(product, configId);
+    const dependencyPermissions = await this.loadDependentPermissions();
 
     const { data, error } = await this.supabaseService.client
       .from('product_digital_right_registrations')
@@ -374,7 +494,12 @@ export class ProductPackageRegistrationsService {
       );
     }
 
-    return this.mapDigitalRegistrationItem(data, config, product);
+    return this.mapDigitalRegistrationItem(
+      data,
+      config,
+      product,
+      dependencyPermissions,
+    );
   }
 
   async createPhysicalRegistration(
@@ -384,6 +509,7 @@ export class ProductPackageRegistrationsService {
   ): Promise<ProductPackageRegistrationItemDto> {
     const product = await this.getProductEligibilityContext(productId);
     const config = await this.assertCanJoinPhysical(product, configId);
+    const dependencyPermissions = await this.loadDependentPermissions();
 
     const { data, error } = await this.supabaseService.client
       .from('product_physical_right_registrations')
@@ -414,7 +540,12 @@ export class ProductPackageRegistrationsService {
       );
     }
 
-    return this.mapPhysicalRegistrationItem(data, config, product);
+    return this.mapPhysicalRegistrationItem(
+      data,
+      config,
+      product,
+      dependencyPermissions,
+    );
   }
 
   async removeDigitalRegistration(
@@ -450,7 +581,12 @@ export class ProductPackageRegistrationsService {
     }
 
     const config = await this.getDigitalConfig(data.right_config_id);
-    return this.mapDigitalRegistrationItem(data, config, product);
+    return this.mapDigitalRegistrationItem(
+      data,
+      config,
+      product,
+      await this.loadDependentPermissions(),
+    );
   }
 
   async removePhysicalRegistration(
@@ -486,7 +622,12 @@ export class ProductPackageRegistrationsService {
     }
 
     const config = await this.getPhysicalConfig(data.right_config_id);
-    return this.mapPhysicalRegistrationItem(data, config, product);
+    return this.mapPhysicalRegistrationItem(
+      data,
+      config,
+      product,
+      await this.loadDependentPermissions(),
+    );
   }
 
   async creatorCreateDigitalRegistration(
@@ -557,14 +698,16 @@ export class ProductPackageRegistrationsService {
 
     const items = await Promise.all(
       (data ?? []).map(async (registration) => {
-        const [config, product] = await Promise.all([
+        const [config, product, dependencyPermissions] = await Promise.all([
           this.getDigitalConfig(registration.right_config_id),
           this.getProductEligibilityContext(registration.product_id),
+          this.loadDependentPermissions(),
         ]);
         return this.mapDigitalRegistrationItem(
           registration,
           config,
           product,
+          dependencyPermissions,
         );
       }),
     );
@@ -614,14 +757,16 @@ export class ProductPackageRegistrationsService {
 
     const items = await Promise.all(
       (data ?? []).map(async (registration) => {
-        const [config, product] = await Promise.all([
+        const [config, product, dependencyPermissions] = await Promise.all([
           this.getPhysicalConfig(registration.right_config_id),
           this.getProductEligibilityContext(registration.product_id),
+          this.loadDependentPermissions(),
         ]);
         return this.mapPhysicalRegistrationItem(
           registration,
           config,
           product,
+          dependencyPermissions,
         );
       }),
     );

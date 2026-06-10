@@ -98,24 +98,24 @@ const updateReviewStatus = (value: string) => {
         />
       </div>
 
-      <div class="rounded-[24px] border border-slate-200/80 bg-slate-50/80 p-4 dark:border-slate-800 dark:bg-slate-900/50">
+      <div class="rounded-[24px] border border-[color:var(--admin-border)] bg-[color:var(--admin-surface-1)] p-4">
         <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <div class="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400">
+            <div class="text-[11px] font-bold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]">
               Quyền sẽ được cấp
             </div>
-            <div class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            <div class="mt-1 text-sm text-[color:var(--admin-text-muted)]">
               Chọn các quyền admin muốn cấp cho sản phẩm trên nền tảng.
             </div>
           </div>
 
           <div class="flex flex-wrap items-center gap-2">
-            <span class="rounded-full bg-violet-100 px-3 py-1 text-xs font-bold text-violet-700 dark:bg-violet-500/15 dark:text-violet-300">
+            <span class="rounded-full bg-[linear-gradient(135deg,var(--admin-primary-100),var(--admin-accent-50))] px-3 py-1 text-xs font-bold text-[color:var(--admin-primary-800)]">
               Đã chọn: {{ selectedCount }}
             </span>
             <button
               type="button"
-              class="inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-violet-300 hover:text-violet-600 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300 dark:hover:border-violet-500 dark:hover:text-violet-300"
+              class="inline-flex items-center rounded-full border bg-[color:var(--admin-surface-0)] px-3 py-1.5 text-xs font-semibold text-[color:var(--admin-text-muted)] transition [border-color:var(--admin-border)] hover:border-[color:rgb(var(--admin-primary-rgb)/0.24)] hover:text-[color:var(--admin-primary-700)] disabled:cursor-not-allowed disabled:opacity-60"
               :disabled="isSubmittingDecision || approvedPermissionIds.length === 0"
               @click="emit('clear-permissions')"
             >
@@ -126,10 +126,10 @@ const updateReviewStatus = (value: string) => {
 
         <div class="mt-4">
           <div class="relative">
-            <i class="pi pi-search pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-xs text-slate-400 dark:text-slate-500" />
+            <i class="pi pi-search pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-xs text-[color:var(--admin-text-muted)]" />
             <input
               v-model="permissionQuery"
-              class="h-12 w-full rounded-2xl border border-slate-200/80 bg-white/90 px-4 pl-10 text-sm text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-violet-400 focus:ring-4 focus:ring-violet-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-800 dark:bg-slate-950/70 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-violet-500 dark:focus:ring-violet-500/20"
+              class="h-12 w-full rounded-2xl border bg-[color:var(--admin-surface-0)] px-4 pl-10 text-sm text-[color:var(--admin-text)] shadow-sm outline-none transition placeholder:text-[color:var(--admin-text-muted)] [border-color:var(--admin-border)] focus:[border-color:var(--admin-primary-500)] focus:ring-4 focus:ring-[color:var(--admin-ring)] disabled:cursor-not-allowed disabled:opacity-60"
               :disabled="isSubmittingDecision"
               placeholder="Tìm quyền theo tên hoặc điều luật"
             >
@@ -141,11 +141,11 @@ const updateReviewStatus = (value: string) => {
             v-for="permission in selectedPermissions"
             :key="permission.id"
             type="button"
-            class="inline-flex items-center gap-2 rounded-full border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-700 transition hover:border-violet-300 hover:bg-violet-100 dark:border-violet-500/30 dark:bg-violet-950/20 dark:text-violet-300 dark:hover:border-violet-500/40 dark:hover:bg-violet-950/30"
+            class="inline-flex items-center gap-2 rounded-2xl border border-[color:rgb(var(--admin-primary-rgb)/0.18)] bg-[linear-gradient(135deg,var(--admin-primary-50),var(--admin-accent-50))] px-3 py-2 text-xs font-semibold text-[color:var(--admin-primary-800)] transition hover:border-[color:rgb(var(--admin-primary-rgb)/0.28)] hover:bg-[linear-gradient(135deg,var(--admin-primary-100),var(--admin-accent-50))]"
             :disabled="isSubmittingDecision"
             @click="emit('toggle-permission', permission.id)"
           >
-            <span class="truncate max-w-[180px]">{{ permission.name }}</span>
+            <span class="max-w-[240px] break-words text-left leading-5">{{ permission.name }}</span>
             <i class="pi pi-times text-[10px]" />
           </button>
         </div>
@@ -171,20 +171,20 @@ const updateReviewStatus = (value: string) => {
         />
       </div>
 
-      <div class="sticky bottom-0 -mx-5 mt-2 border-t border-slate-200 bg-white/95 px-5 pt-4 backdrop-blur dark:border-slate-800 dark:bg-slate-950/90">
+      <div class="mt-2 border-t border-[color:var(--admin-border)] pt-4">
         <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
-            <div class="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400">
+            <div class="text-[11px] font-bold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]">
               Tóm tắt quyết định
             </div>
-            <div class="mt-1 text-sm font-semibold text-slate-700 dark:text-slate-200">
+            <div class="mt-1 text-sm font-semibold text-[color:var(--admin-text)]">
               {{ decisionSummaryText }}
             </div>
           </div>
 
           <button
             type="button"
-            class="inline-flex items-center justify-center rounded-2xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-600 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-violet-500 dark:hover:bg-violet-400"
+            class="inline-flex items-center justify-center rounded-2xl bg-[color:var(--admin-primary-button-bg)] px-4 py-2.5 text-sm font-semibold text-[color:var(--admin-primary-button-text)] transition hover:bg-[color:var(--admin-primary-button-hover)] active:bg-[color:var(--admin-primary-button-active)] disabled:cursor-not-allowed disabled:opacity-60"
             :disabled="isSubmittingDecision"
             @click="emit('submit')"
           >

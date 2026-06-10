@@ -16,14 +16,91 @@
     rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
 
   --admin-surface-0: #ffffff;
-  --admin-surface-1: #fbfbff;
-  --admin-surface-2: #f5f3ff;
-  --admin-border: rgba(17, 24, 39, 0.1);
-  --admin-muted: rgba(107, 114, 128, 0.92);
-  --admin-elev-1: 0 18px 38px rgba(17, 24, 39, 0.08);
-  --admin-elev-2: 0 22px 60px rgba(17, 24, 39, 0.12);
-  --admin-glow: 0 0 0 1px rgba(124, 92, 255, 0.18),
-    0 0 44px rgba(124, 92, 255, 0.18);
+  --admin-surface-1: #f5f8fc;
+  --admin-surface-2: #ebf1f7;
+  --admin-surface-3: #dce7f1;
+  --admin-text: #16283b;
+  --admin-text-muted: #5d6f83;
+  --admin-border: rgba(22, 40, 59, 0.12);
+  --admin-border-strong: rgba(22, 40, 59, 0.2);
+  --admin-ring: rgba(24, 95, 165, 0.24);
+
+  --admin-primary-rgb: 24 95 165;
+  --admin-accent-rgb: 55 138 221;
+  --admin-success-rgb: 80 176 112;
+  --admin-warning-rgb: 208 145 56;
+  --admin-danger-rgb: 208 92 116;
+
+  --admin-neutral-900: #16283b;
+  --admin-neutral-800: #304356;
+  --admin-neutral-700: #5d6f83;
+  --admin-neutral-200: #d8e2ee;
+  --admin-neutral-100: #f3f7fb;
+  --admin-slate-rgb: 91 103 126;
+  --admin-slate-50: #eef2f8;
+  --admin-slate-100: #dfe6f1;
+  --admin-slate-700: #4b5c72;
+
+  --admin-primary-core: #185fa5;
+  --admin-primary-50: #eef5fc;
+  --admin-primary-100: #dbe8f6;
+  --admin-primary-200: #bdd3ec;
+  --admin-primary-300: #8fb5db;
+  --admin-primary-400: #5f93c6;
+  --admin-primary-500: #185fa5;
+  --admin-primary-600: #14528e;
+  --admin-primary-700: #0c447c;
+  --admin-primary-800: #09345f;
+  --admin-primary-900: #072746;
+  --admin-primary-contrast: #ffffff;
+  --admin-primary-soft: rgb(var(--admin-primary-rgb) / 0.1);
+  --admin-primary-button-bg: var(--admin-primary-500);
+  --admin-primary-button-hover: var(--admin-primary-700);
+  --admin-primary-button-active: var(--admin-primary-800);
+  --admin-primary-button-text: var(--admin-primary-contrast);
+
+  --admin-accent-core: #378add;
+  --admin-accent-50: #eff6fd;
+  --admin-accent-100: #d8e9fa;
+  --admin-accent-200: #bbd8f4;
+  --admin-accent-300: #8ebce9;
+  --admin-accent-400: #5f9fe2;
+  --admin-accent-500: #378add;
+  --admin-accent-600: #276fb7;
+  --admin-accent-700: #1c5388;
+  --admin-accent-soft: rgb(var(--admin-accent-rgb) / 0.16);
+  --admin-success-500: #50b070;
+  --admin-success-700: #1f6f42;
+  --admin-success-50: #eef8f1;
+  --admin-info-500: var(--admin-primary-500);
+  --admin-info-700: var(--admin-primary-800);
+  --admin-info-50: var(--admin-primary-50);
+  --admin-warning-500: #d09138;
+  --admin-warning-700: #8c5710;
+  --admin-warning-50: #fdf4e8;
+  --admin-danger-500: #d05c74;
+  --admin-danger-700: #8f2944;
+  --admin-danger-50: #fbecef;
+
+  --admin-brand-gradient-start: #185fa5;
+  --admin-brand-gradient-end: #378add;
+  --admin-brand-contrast: #f5fbff;
+  --admin-shell-bg-start: #f4f7fb;
+  --admin-shell-bg-end: #edf2f8;
+  --admin-shell-spotlight-primary: rgb(var(--admin-primary-rgb) / 0.12);
+  --admin-shell-spotlight-accent: rgb(var(--admin-accent-rgb) / 0.14);
+  --admin-sidebar-bg: #f0f5fb;
+  --admin-sidebar-surface: rgb(255 255 255 / 0.72);
+  --admin-sidebar-border: rgba(24, 95, 165, 0.16);
+  --admin-sidebar-text: #17324d;
+  --admin-sidebar-text-muted: #5a7189;
+  --admin-sidebar-active-bg: #185fa5;
+  --admin-sidebar-hover-bg: rgb(24 95 165 / 0.08);
+
+  --admin-elev-1: 0 16px 40px rgba(12, 34, 60, 0.08);
+  --admin-elev-2: 0 28px 60px rgba(12, 34, 60, 0.14);
+  --admin-glow: 0 0 0 1px rgb(var(--admin-primary-rgb) / 0.12),
+    0 16px 40px rgb(var(--admin-primary-rgb) / 0.18);
 
   --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
   --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
@@ -31,7 +108,7 @@
 
   font: 18px/145% var(--sans);
   letter-spacing: 0.18px;
-  color-scheme: light dark;
+  color-scheme: light;
   color: var(--text);
   background: var(--bg);
   font-synthesis: none;
@@ -44,34 +121,109 @@
   }
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
+:root.app-dark {
     --text: #9ca3af;
     --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
+    --bg: #121619;
+    --border: #2a3238;
+    --code-bg: #1b2328;
     --accent: #c084fc;
     --accent-bg: rgba(192, 132, 252, 0.15);
     --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
+    --social-bg: rgba(34, 41, 45, 0.55);
     --shadow:
       rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
 
-    --admin-surface-0: rgba(20, 22, 30, 0.96);
-    --admin-surface-1: rgba(12, 13, 18, 0.94);
-    --admin-surface-2: rgba(22, 24, 33, 0.96);
-    --admin-border: rgba(148, 163, 184, 0.16);
-    --admin-muted: rgba(148, 163, 184, 0.86);
+    --admin-surface-0: #263744;
+    --admin-surface-1: #314350;
+    --admin-surface-2: #3d5160;
+    --admin-surface-3: #4d6476;
+    --admin-text: rgba(247, 250, 251, 0.98);
+    --admin-text-muted: rgba(231, 238, 243, 0.92);
+    --admin-border: rgba(220, 231, 241, 0.28);
+    --admin-border-strong: rgba(220, 231, 241, 0.46);
+    --admin-ring: rgba(55, 138, 221, 0.42);
+
+    --admin-primary-rgb: 55 138 221;
+    --admin-accent-rgb: 74 161 233;
+    --admin-success-rgb: 110 208 139;
+    --admin-warning-rgb: 235 185 98;
+    --admin-danger-rgb: 237 132 152;
+
+    --admin-neutral-900: #f4f8f9;
+    --admin-neutral-800: rgba(247, 250, 251, 0.9);
+    --admin-neutral-700: rgba(213, 222, 226, 0.86);
+    --admin-neutral-200: rgba(244, 248, 249, 0.16);
+    --admin-neutral-100: rgba(244, 248, 249, 0.08);
+    --admin-slate-rgb: 186 198 216;
+    --admin-slate-50: rgba(214, 225, 241, 0.18);
+    --admin-slate-100: rgba(214, 225, 241, 0.26);
+    --admin-slate-700: #e4edf7;
+
+    --admin-primary-core: #378add;
+    --admin-primary-50: rgb(var(--admin-primary-rgb) / 0.18);
+    --admin-primary-100: rgb(var(--admin-primary-rgb) / 0.26);
+    --admin-primary-200: rgb(var(--admin-primary-rgb) / 0.34);
+    --admin-primary-300: #378add;
+    --admin-primary-400: #60a5e5;
+    --admin-primary-500: #82bdec;
+    --admin-primary-600: #a8d3f4;
+    --admin-primary-700: #cae6fa;
+    --admin-primary-800: #e1f0fb;
+    --admin-primary-900: #eff8fe;
+    --admin-primary-contrast: #0f212b;
+    --admin-primary-soft: rgb(var(--admin-primary-rgb) / 0.22);
+    --admin-primary-button-bg: var(--admin-primary-500);
+    --admin-primary-button-hover: var(--admin-primary-600);
+    --admin-primary-button-active: var(--admin-primary-400);
+    --admin-primary-button-text: var(--admin-primary-contrast);
+
+    --admin-accent-core: #4aa1e9;
+    --admin-accent-50: rgb(var(--admin-accent-rgb) / 0.1);
+    --admin-accent-100: rgb(var(--admin-accent-rgb) / 0.18);
+    --admin-accent-200: rgb(var(--admin-accent-rgb) / 0.26);
+    --admin-accent-300: #4aa1e9;
+    --admin-accent-400: #72b7ed;
+    --admin-accent-500: #5f9bd5;
+    --admin-accent-600: #9accf3;
+    --admin-accent-700: #ddeefe;
+    --admin-accent-soft: rgb(var(--admin-accent-rgb) / 0.24);
+    --admin-success-500: #7ad395;
+    --admin-success-700: #dff9e7;
+    --admin-success-50: rgba(122, 211, 149, 0.22);
+    --admin-info-500: var(--admin-primary-500);
+    --admin-info-700: var(--admin-primary-800);
+    --admin-info-50: rgba(76, 169, 223, 0.2);
+    --admin-warning-500: #f0bb59;
+    --admin-warning-700: #fff1cf;
+    --admin-warning-50: rgba(240, 187, 89, 0.22);
+    --admin-danger-500: #f394a7;
+    --admin-danger-700: #ffe2e8;
+    --admin-danger-50: rgba(243, 148, 167, 0.22);
+
+    --admin-brand-gradient-start: #378add;
+    --admin-brand-gradient-end: #4aa1e9;
+    --admin-brand-contrast: #0f212b;
+    --admin-shell-bg-start: #1c2938;
+    --admin-shell-bg-end: #2d3d4f;
+    --admin-shell-spotlight-primary: rgb(var(--admin-primary-rgb) / 0.26);
+    --admin-shell-spotlight-accent: rgb(var(--admin-accent-rgb) / 0.18);
+    --admin-sidebar-bg: #1d3146;
+    --admin-sidebar-surface: #294257;
+    --admin-sidebar-border: rgba(220, 231, 241, 0.18);
+    --admin-sidebar-text: rgba(248, 251, 255, 0.96);
+    --admin-sidebar-text-muted: rgba(232, 239, 244, 0.88);
+    --admin-sidebar-active-bg: rgb(55 138 221 / 0.34);
+    --admin-sidebar-hover-bg: rgb(255 255 255 / 0.14);
+
     --admin-elev-1: 0 18px 48px rgba(0, 0, 0, 0.46);
     --admin-elev-2: 0 28px 78px rgba(0, 0, 0, 0.52);
-    --admin-glow: 0 0 0 1px rgba(192, 132, 252, 0.18),
-      0 0 46px rgba(192, 132, 252, 0.14);
-  }
+    --admin-glow: 0 0 0 1px rgb(var(--admin-primary-rgb) / 0.18),
+      0 12px 54px rgb(var(--admin-primary-rgb) / 0.2);
+}
 
-  #social .button-icon {
-    filter: invert(1) brightness(2);
-  }
+.app-dark #social .button-icon {
+  filter: invert(1) brightness(2);
 }
 
 body {
@@ -207,6 +359,509 @@ body.app-dark {
 
 .no-scrollbar::-webkit-scrollbar {
   display: none;
+}
+
+.admin-shell {
+  background:
+    radial-gradient(circle at top left, var(--admin-shell-spotlight-primary), transparent 30%),
+    radial-gradient(circle at top right, var(--admin-shell-spotlight-accent), transparent 24%),
+    linear-gradient(180deg, var(--admin-shell-bg-start) 0%, var(--admin-shell-bg-end) 100%);
+  color: var(--admin-text);
+}
+
+.app-dark .admin-shell {
+  background:
+    radial-gradient(circle at top left, var(--admin-shell-spotlight-primary), transparent 28%),
+    radial-gradient(circle at top right, var(--admin-shell-spotlight-accent), transparent 22%),
+    linear-gradient(180deg, var(--admin-shell-bg-start) 0%, var(--admin-shell-bg-end) 100%);
+}
+
+.admin-shell [class*='bg-white'],
+.admin-shell [class*='bg-slate-50'],
+.admin-shell [class*='bg-slate-100'] {
+  background-color: var(--admin-surface-0) !important;
+}
+
+.admin-shell [class*='bg-slate-50'],
+.admin-shell [class*='bg-slate-100'] {
+  background-color: var(--admin-surface-1) !important;
+}
+
+.app-dark .admin-shell [class*='dark:bg-slate-950'],
+.app-dark .admin-shell [class*='dark:bg-slate-900'] {
+  background-color: var(--admin-surface-1) !important;
+}
+
+.app-dark .admin-shell [class*='dark:bg-slate-900/60'],
+.app-dark .admin-shell [class*='dark:bg-slate-900/70'],
+.app-dark .admin-shell [class*='dark:bg-slate-900/80'],
+.app-dark .admin-shell [class*='dark:bg-slate-950/40'],
+.app-dark .admin-shell [class*='dark:bg-slate-950/50'],
+.app-dark .admin-shell [class*='dark:bg-slate-950/60'],
+.app-dark .admin-shell [class*='dark:bg-slate-950/70'],
+.app-dark .admin-shell [class*='dark:bg-slate-950/80'],
+.app-dark .admin-shell [class*='dark:bg-slate-950/90'] {
+  background-color: var(--admin-surface-1) !important;
+}
+
+.admin-shell [class*='border-slate-100'],
+.admin-shell [class*='border-slate-200'],
+.admin-shell [class*='border-slate-300'] {
+  border-color: var(--admin-border) !important;
+}
+
+.app-dark .admin-shell [class*='dark:border-slate-700'],
+.app-dark .admin-shell [class*='dark:border-slate-800'] {
+  border-color: var(--admin-border) !important;
+}
+
+.admin-shell [class*='text-slate-950'],
+.admin-shell [class*='text-slate-900'],
+.admin-shell [class*='text-slate-800'],
+.admin-shell [class*='text-slate-700'] {
+  color: var(--admin-text) !important;
+}
+
+.admin-shell [class*='text-slate-600'],
+.admin-shell [class*='text-slate-500'],
+.admin-shell [class*='text-slate-400'] {
+  color: var(--admin-text-muted) !important;
+}
+
+.app-dark .admin-shell [class*='dark:text-white'],
+.app-dark .admin-shell [class*='dark:text-slate-100'],
+.app-dark .admin-shell [class*='dark:text-slate-200'] {
+  color: var(--admin-text) !important;
+}
+
+.app-dark .admin-shell [class*='dark:text-slate-300'],
+.app-dark .admin-shell [class*='dark:text-slate-400'],
+.app-dark .admin-shell [class*='dark:text-slate-500'] {
+  color: var(--admin-text-muted) !important;
+}
+
+.admin-shell [class*='bg-violet-50'],
+.admin-shell [class*='bg-violet-100'],
+.admin-shell [class*='bg-sky-100'] {
+  background-color: var(--admin-primary-100) !important;
+}
+
+.admin-shell [class*='text-violet-700'],
+.admin-shell [class*='text-violet-600'],
+.admin-shell [class*='text-sky-700'],
+.admin-shell [class*='text-sky-600'] {
+  color: var(--admin-primary-700) !important;
+}
+
+.admin-shell [class*='border-violet-200'],
+.admin-shell [class*='border-violet-300'],
+.admin-shell [class*='border-sky-200'] {
+  border-color: rgb(var(--admin-primary-rgb) / 0.28) !important;
+}
+
+.app-dark .admin-shell [class*='dark:text-violet-200'],
+.app-dark .admin-shell [class*='dark:text-violet-300'],
+.app-dark .admin-shell [class*='dark:text-sky-200'],
+.app-dark .admin-shell [class*='dark:text-sky-300'] {
+  color: var(--admin-primary-700) !important;
+}
+
+.app-dark .admin-shell [class*='dark:bg-violet-500/10'],
+.app-dark .admin-shell [class*='dark:bg-violet-500/15'],
+.app-dark .admin-shell [class*='dark:bg-violet-500/20'],
+.app-dark .admin-shell [class*='dark:bg-sky-500/15'] {
+  background-color: var(--admin-primary-100) !important;
+}
+
+.app-dark .admin-shell [class*='dark:border-violet-500'],
+.app-dark .admin-shell [class*='dark:border-violet-500/20'],
+.app-dark .admin-shell [class*='dark:border-violet-500/30'],
+.app-dark .admin-shell [class*='dark:border-violet-500/40'],
+.app-dark .admin-shell [class*='dark:border-sky-500/20'] {
+  border-color: rgb(var(--admin-primary-rgb) / 0.3) !important;
+}
+
+.admin-shell [class*='bg-emerald-50'],
+.admin-shell [class*='bg-emerald-100'] {
+  background-color: var(--admin-success-50) !important;
+}
+
+.admin-shell [class*='text-emerald-700'],
+.admin-shell [class*='text-emerald-600'] {
+  color: var(--admin-success-700) !important;
+}
+
+.admin-shell [class*='border-emerald-200'] {
+  border-color: rgb(var(--admin-success-rgb) / 0.28) !important;
+}
+
+.app-dark .admin-shell [class*='dark:bg-emerald-500/10'],
+.app-dark .admin-shell [class*='dark:bg-emerald-500/15'] {
+  background-color: var(--admin-success-50) !important;
+}
+
+.app-dark .admin-shell [class*='dark:text-emerald-300'] {
+  color: var(--admin-success-700) !important;
+}
+
+.app-dark .admin-shell [class*='dark:border-emerald-500/20'],
+.app-dark .admin-shell [class*='dark:border-emerald-500/30'] {
+  border-color: rgb(var(--admin-success-rgb) / 0.28) !important;
+}
+
+.admin-shell [class*='bg-amber-50'],
+.admin-shell [class*='bg-amber-100'] {
+  background-color: var(--admin-warning-50) !important;
+}
+
+.admin-shell [class*='text-amber-700'],
+.admin-shell [class*='text-amber-600'] {
+  color: var(--admin-warning-700) !important;
+}
+
+.admin-shell [class*='border-amber-200'] {
+  border-color: rgb(var(--admin-warning-rgb) / 0.3) !important;
+}
+
+.app-dark .admin-shell [class*='dark:bg-amber-500/15'] {
+  background-color: var(--admin-warning-50) !important;
+}
+
+.app-dark .admin-shell [class*='dark:text-amber-300'] {
+  color: var(--admin-warning-700) !important;
+}
+
+.admin-shell [class*='bg-rose-50'],
+.admin-shell [class*='bg-rose-100'] {
+  background-color: var(--admin-danger-50) !important;
+}
+
+.admin-shell [class*='text-rose-700'],
+.admin-shell [class*='text-rose-600'] {
+  color: var(--admin-danger-700) !important;
+}
+
+.admin-shell [class*='border-rose-100'],
+.admin-shell [class*='border-rose-200'] {
+  border-color: rgb(var(--admin-danger-rgb) / 0.28) !important;
+}
+
+.app-dark .admin-shell [class*='dark:bg-rose-950/10'],
+.app-dark .admin-shell [class*='dark:bg-rose-500/15'] {
+  background-color: var(--admin-danger-50) !important;
+}
+
+.app-dark .admin-shell [class*='dark:text-rose-200'],
+.app-dark .admin-shell [class*='dark:text-rose-300'] {
+  color: var(--admin-danger-700) !important;
+}
+
+.app-dark .admin-shell [class*='dark:border-rose-500/30'],
+.app-dark .admin-shell [class*='dark:border-rose-900/60'] {
+  border-color: rgb(var(--admin-danger-rgb) / 0.28) !important;
+}
+
+.admin-shell [class*='bg-slate-950'],
+.admin-shell [class*='hover:bg-violet-600']:hover {
+  background-color: var(--admin-primary-button-bg) !important;
+  color: var(--admin-primary-button-text) !important;
+}
+
+.app-dark .admin-shell [class*='dark:bg-violet-500'],
+.app-dark .admin-shell [class*='dark:hover:bg-violet-400']:hover {
+  background-color: var(--admin-primary-button-bg) !important;
+  color: var(--admin-primary-button-text) !important;
+}
+
+.admin-shell [class*='hover:border-violet-300']:hover,
+.admin-shell [class*='hover:border-violet-200']:hover {
+  border-color: var(--admin-primary-500) !important;
+}
+
+.admin-shell [class*='hover:text-violet-600']:hover,
+.admin-shell [class*='hover:text-violet-700']:hover {
+  color: var(--admin-primary-700) !important;
+}
+
+.app-dark .admin-shell [class*='dark:hover:border-violet-500']:hover,
+.app-dark .admin-shell [class*='dark:hover:border-violet-500/30']:hover,
+.app-dark .admin-shell [class*='dark:hover:border-violet-500/40']:hover {
+  border-color: rgb(var(--admin-primary-rgb) / 0.34) !important;
+}
+
+.app-dark .admin-shell [class*='dark:hover:text-violet-200']:hover,
+.app-dark .admin-shell [class*='dark:hover:text-violet-300']:hover {
+  color: var(--admin-primary-700) !important;
+}
+
+.admin-shell .p-inputtext,
+.admin-shell .p-select,
+.admin-shell .p-dropdown,
+.admin-shell .p-multiselect,
+.admin-shell .p-password-input,
+.admin-shell textarea,
+.admin-shell select,
+.admin-shell input {
+  color: var(--admin-text);
+}
+
+.admin-shell .p-button,
+.admin-shell .p-component {
+  --p-focus-ring-color: var(--admin-ring);
+}
+
+.admin-shell .p-dialog,
+.admin-shell .p-confirmdialog,
+.admin-shell .p-datatable,
+.admin-shell .p-paginator,
+.admin-shell .p-dropdown-panel,
+.admin-shell .p-select-overlay {
+  color: var(--admin-text);
+}
+
+.admin-shell .p-dialog,
+.admin-shell .p-confirmdialog {
+  background: var(--admin-surface-0);
+  border: 1px solid var(--admin-border);
+  box-shadow: var(--admin-elev-2);
+}
+
+.admin-shell .p-dialog .p-dialog-header,
+.admin-shell .p-dialog .p-dialog-content,
+.admin-shell .p-dialog .p-dialog-footer,
+.admin-shell .p-confirmdialog .p-dialog-header,
+.admin-shell .p-confirmdialog .p-dialog-content,
+.admin-shell .p-confirmdialog .p-dialog-footer {
+  background: var(--admin-surface-0);
+  color: var(--admin-text);
+  border-color: var(--admin-border);
+}
+
+.admin-shell .p-dialog .p-dialog-title,
+.admin-shell .p-confirmdialog .p-dialog-title {
+  color: var(--admin-text);
+}
+
+.admin-shell .p-dialog .p-dialog-header-icon,
+.admin-shell .p-confirmdialog .p-dialog-header-icon {
+  color: var(--admin-text-muted);
+}
+
+.admin-shell .p-dialog .p-dialog-header-icon:hover,
+.admin-shell .p-confirmdialog .p-dialog-header-icon:hover {
+  background: var(--admin-surface-1);
+  color: var(--admin-text);
+}
+
+.admin-shell .p-dialog-mask,
+.admin-shell .p-component-overlay {
+  background: rgb(10 20 35 / 0.42);
+  backdrop-filter: blur(4px);
+}
+
+.admin-shell .p-dropdown,
+.admin-shell .p-select,
+.admin-shell .p-multiselect,
+.admin-shell .p-inputtext,
+.admin-shell .p-password-input,
+.admin-shell textarea,
+.admin-shell select,
+.admin-shell input {
+  background: var(--admin-surface-0);
+  border-color: var(--admin-border);
+}
+
+.admin-shell .p-dropdown:not(.p-disabled):hover,
+.admin-shell .p-select:not(.p-disabled):hover,
+.admin-shell .p-multiselect:not(.p-disabled):hover,
+.admin-shell .p-inputtext:hover,
+.admin-shell .p-password-input:hover,
+.admin-shell textarea:hover,
+.admin-shell select:hover,
+.admin-shell input:hover {
+  border-color: var(--admin-border-strong);
+}
+
+.admin-shell .p-dropdown.p-focus,
+.admin-shell .p-select.p-focus,
+.admin-shell .p-multiselect.p-focus,
+.admin-shell .p-inputtext:focus,
+.admin-shell .p-password-input:focus,
+.admin-shell textarea:focus,
+.admin-shell select:focus,
+.admin-shell input:focus {
+  border-color: var(--admin-primary-500);
+  box-shadow: 0 0 0 4px var(--admin-ring);
+  outline: none;
+}
+
+.admin-shell .p-inputtext::placeholder,
+.admin-shell textarea::placeholder,
+.admin-shell input::placeholder {
+  color: var(--admin-text-muted);
+}
+
+.admin-shell .p-dropdown.p-disabled,
+.admin-shell .p-select.p-disabled,
+.admin-shell .p-multiselect.p-disabled,
+.admin-shell .p-inputtext:disabled,
+.admin-shell .p-password-input:disabled,
+.admin-shell textarea:disabled,
+.admin-shell select:disabled,
+.admin-shell input:disabled {
+  background: var(--admin-surface-1);
+  color: var(--admin-text-muted);
+  opacity: 0.7;
+}
+
+.admin-shell .p-dropdown .p-dropdown-label,
+.admin-shell .p-select .p-select-label,
+.admin-shell .p-multiselect .p-multiselect-label {
+  color: var(--admin-text);
+}
+
+.admin-shell .p-dropdown .p-dropdown-trigger,
+.admin-shell .p-select .p-select-dropdown,
+.admin-shell .p-multiselect .p-multiselect-dropdown {
+  color: var(--admin-text-muted);
+}
+
+.admin-shell .p-dropdown-panel,
+.admin-shell .p-select-overlay,
+.admin-shell .p-multiselect-overlay {
+  background: var(--admin-surface-0);
+  border: 1px solid var(--admin-border);
+  box-shadow: var(--admin-elev-1);
+}
+
+.admin-shell .p-dropdown-panel .p-dropdown-item,
+.admin-shell .p-select-overlay .p-select-option,
+.admin-shell .p-multiselect-overlay .p-multiselect-option {
+  color: var(--admin-text);
+}
+
+.admin-shell .p-dropdown-panel .p-dropdown-item:hover,
+.admin-shell .p-dropdown-panel .p-dropdown-item.p-focus,
+.admin-shell .p-select-overlay .p-select-option:hover,
+.admin-shell .p-select-overlay .p-select-option.p-focus,
+.admin-shell .p-multiselect-overlay .p-multiselect-option:hover,
+.admin-shell .p-multiselect-overlay .p-multiselect-option.p-focus {
+  background: var(--admin-surface-1);
+}
+
+.admin-shell .p-dropdown-panel .p-dropdown-item.p-highlight,
+.admin-shell .p-select-overlay .p-select-option.p-select-option-selected,
+.admin-shell .p-multiselect-overlay .p-multiselect-option.p-multiselect-option-selected {
+  background: var(--admin-primary-50);
+  color: var(--admin-primary-800);
+}
+
+.admin-shell .p-dropdown-panel .p-dropdown-item.p-highlight:hover,
+.admin-shell .p-select-overlay .p-select-option.p-select-option-selected:hover,
+.admin-shell .p-multiselect-overlay .p-multiselect-option.p-multiselect-option-selected:hover {
+  background: var(--admin-primary-100);
+}
+
+.admin-shell .p-datatable .p-datatable-header,
+.admin-shell .p-datatable .p-datatable-thead > tr > th {
+  background: linear-gradient(180deg, var(--admin-surface-2), var(--admin-surface-1));
+  color: var(--admin-text);
+  border-color: var(--admin-border);
+}
+
+.admin-shell .p-datatable .p-datatable-tbody > tr > td {
+  background: var(--admin-surface-0);
+  color: var(--admin-text);
+  border-color: var(--admin-border);
+}
+
+.admin-shell .p-datatable .p-datatable-tbody > tr:nth-child(even) > td {
+  background: var(--admin-surface-1);
+}
+
+.admin-shell .p-datatable .p-datatable-tbody > tr:hover > td {
+  background: var(--admin-surface-2);
+}
+
+.admin-shell .p-paginator {
+  background: transparent;
+  border: 0;
+}
+
+.admin-shell .p-paginator .p-paginator-page,
+.admin-shell .p-paginator .p-paginator-prev,
+.admin-shell .p-paginator .p-paginator-next,
+.admin-shell .p-paginator .p-paginator-first,
+.admin-shell .p-paginator .p-paginator-last {
+  color: var(--admin-text);
+  border-radius: 14px;
+}
+
+.admin-shell .p-paginator .p-paginator-page:hover,
+.admin-shell .p-paginator .p-paginator-prev:hover,
+.admin-shell .p-paginator .p-paginator-next:hover,
+.admin-shell .p-paginator .p-paginator-first:hover,
+.admin-shell .p-paginator .p-paginator-last:hover {
+  background: var(--admin-surface-1);
+}
+
+.admin-shell .p-paginator .p-paginator-page.p-highlight {
+  background: var(--admin-primary-50);
+  color: var(--admin-primary-800);
+}
+
+.admin-shell .p-tag {
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+.admin-shell .p-tag.p-tag-success {
+  background: var(--admin-success-50);
+  color: var(--admin-success-700);
+}
+
+.admin-shell .p-tag.p-tag-warn {
+  background: var(--admin-warning-50);
+  color: var(--admin-warning-700);
+}
+
+.admin-shell .p-tag.p-tag-danger {
+  background: var(--admin-danger-50);
+  color: var(--admin-danger-700);
+}
+
+.admin-shell .p-tag.p-tag-secondary {
+  background: var(--admin-surface-2);
+  color: var(--admin-text-muted);
+}
+
+.admin-shell .p-message {
+  border-radius: 20px;
+  border-width: 1px;
+}
+
+.admin-shell .p-message.p-message-success {
+  background: var(--admin-success-50);
+  border-color: rgb(var(--admin-success-rgb) / 0.28);
+  color: var(--admin-success-700);
+}
+
+.admin-shell .p-message.p-message-error {
+  background: var(--admin-danger-50);
+  border-color: rgb(var(--admin-danger-rgb) / 0.28);
+  color: var(--admin-danger-700);
+}
+
+.admin-shell .p-message.p-message-warn {
+  background: var(--admin-warning-50);
+  border-color: rgb(var(--admin-warning-rgb) / 0.3);
+  color: var(--admin-warning-700);
+}
+
+.admin-shell .p-message.p-message-info {
+  background: var(--admin-primary-50);
+  border-color: rgb(var(--admin-primary-rgb) / 0.28);
+  color: var(--admin-primary-800);
 }
 
 #center {

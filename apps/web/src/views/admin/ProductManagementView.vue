@@ -2,9 +2,10 @@
 import Dialog from 'primevue/dialog'
 import Message from 'primevue/message'
 import { useConfirm } from 'primevue/useconfirm'
-import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ApiClientError } from '../../api/axios'
+import { useDebouncedWatch } from '../../composables/useDebouncedWatch'
 import type { ComplianceDetail } from '../../types/compliance.types'
 import { getAdminComplianceDetail } from '../../services/compliance.service'
 import { listManagedUsers } from '../../services/managed-users.service'
@@ -46,11 +47,17 @@ import {
   replaceAdminProductAllowedPermissions,
   updateAdminProduct,
 } from '../../services/products.service'
-import ProductFilterInput from '../../components/features/products/ProductFilterInput.vue'
-import ProductFilterSelect from '../../components/features/products/ProductFilterSelect.vue'
 import ProductWavePreview from '../../components/features/products/ProductWavePreview.vue'
+import AdminProductUpsertDialog from '../../components/features/products/AdminProductUpsertDialog.vue'
 import ProductManagementActionMenu from '../../components/features/admin-shell/ProductManagementActionMenu.vue'
 import ProductManagementMobileCardList from '../../components/features/admin-shell/ProductManagementMobileCardList.vue'
+import AdminStatCard from '../../components/features/admin-shell/AdminStatCard.vue'
+import AdminButton from '../../components/shared/admin/AdminButton.vue'
+import AdminFilterInput from '../../components/shared/admin/AdminFilterInput.vue'
+import AdminFilterSelect from '../../components/shared/admin/AdminFilterSelect.vue'
+import AdminPageHeader from '../../components/shared/admin/AdminPageHeader.vue'
+import AdminPanel from '../../components/shared/admin/AdminPanel.vue'
+import AdminPaginationBar from '../../components/shared/admin/AdminPaginationBar.vue'
 
 type ProductForm = {
   title: string
@@ -63,21 +70,16 @@ type ProductForm = {
 
 const defaultSort: ProductSortValue = 'updatedAt:desc'
 const fieldClass =
-  'h-12 w-full rounded-2xl border border-slate-200/80 bg-white/90 px-4 text-sm text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-violet-400 focus:ring-4 focus:ring-violet-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-800 dark:bg-slate-950/70 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-violet-500 dark:focus:ring-violet-500/20'
+  'h-12 w-full rounded-2xl border bg-[color:var(--admin-surface-0)] px-4 text-sm text-[color:var(--admin-text)] shadow-sm outline-none transition placeholder:text-[color:var(--admin-text-muted)] [border-color:var(--admin-border)] focus:[border-color:var(--admin-primary-500)] focus:ring-4 focus:ring-[color:var(--admin-ring)] disabled:cursor-not-allowed disabled:opacity-60'
 const selectFieldClass =
-  'h-12 w-full appearance-none rounded-2xl border border-slate-200/80 bg-white/90 px-4 pr-11 text-sm text-slate-700 shadow-sm outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-800 dark:bg-slate-950/70 dark:text-slate-100 dark:focus:border-violet-500 dark:focus:ring-violet-500/20'
+  'h-12 w-full appearance-none rounded-2xl border bg-[color:var(--admin-surface-0)] px-4 pr-11 text-sm text-[color:var(--admin-text)] shadow-sm outline-none transition [border-color:var(--admin-border)] focus:[border-color:var(--admin-primary-500)] focus:ring-4 focus:ring-[color:var(--admin-ring)] disabled:cursor-not-allowed disabled:opacity-60'
 const fileInputClass =
-  'block w-full text-sm text-slate-500 file:mr-4 file:rounded-2xl file:border-0 file:bg-violet-100 file:px-4 file:py-2.5 file:text-sm file:font-semibold file:text-violet-700 hover:file:bg-violet-200 dark:text-slate-400 dark:file:bg-violet-500/20 dark:file:text-violet-200'
+  'block w-full text-sm text-[color:var(--admin-text-muted)] file:mr-4 file:rounded-2xl file:border-0 file:bg-[color:var(--admin-primary-50)] file:px-4 file:py-2.5 file:text-sm file:font-semibold file:text-[color:var(--admin-text)] hover:file:bg-[color:var(--admin-surface-2)]'
 const primaryButtonClass =
-  'inline-flex items-center justify-center rounded-2xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-600 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-violet-500 dark:hover:bg-violet-400'
+  'inline-flex items-center justify-center rounded-2xl bg-[color:var(--admin-primary-500)] px-4 py-2.5 text-sm font-semibold text-[color:var(--admin-primary-contrast)] transition hover:bg-[color:var(--admin-primary-600)] disabled:cursor-not-allowed disabled:opacity-60'
 const secondaryButtonClass =
-  'inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-violet-300 hover:text-violet-600 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-violet-500 dark:hover:text-violet-300'
+  'inline-flex items-center justify-center rounded-2xl border bg-[color:var(--admin-surface-0)] px-4 py-2.5 text-sm font-semibold text-[color:var(--admin-text)] transition [border-color:var(--admin-border)] hover:bg-[color:var(--admin-surface-1)] disabled:cursor-not-allowed disabled:opacity-60'
 const detailDialogClass = 'w-[calc(100vw-0.75rem)] sm:w-[min(1180px,96vw)] lg:w-[min(1280px,96vw)]'
-const summaryToneClassMap = {
-  primary: 'from-violet-500/15 to-fuchsia-500/10 border-violet-200/60 dark:border-violet-500/20',
-  success: 'from-emerald-500/15 to-teal-500/10 border-emerald-200/60 dark:border-emerald-500/20',
-  warning: 'from-amber-500/15 to-orange-500/10 border-amber-200/60 dark:border-amber-500/20',
-} as const
 
 const confirm = useConfirm()
 const router = useRouter()
@@ -97,6 +99,7 @@ const summaryCounts = reactive({
   pending: 0,
 })
 
+const maxPageSize = 10
 const pagination = reactive({
   page: 1,
   pageSize: 10,
@@ -145,7 +148,7 @@ const packageActionTarget = ref<string | null>(null)
 const detailActiveTab = ref<'info' | 'licensing'>('info')
 
 const detailTabs = [
-  { key: 'info' as const, label: 'Thông tin', icon: 'pi pi-file-edit' },
+  { key: 'info' as const, label: 'Thông tin chung', icon: 'pi pi-file-edit' },
   { key: 'licensing' as const, label: 'Quyền & Licensing', icon: 'pi pi-book' },
 ]
 
@@ -213,36 +216,59 @@ const selectedCreateArtistOption = computed(() =>
 const selectedEditArtistOption = computed(() =>
   artistOptions.value.find((option) => option.value === editForm.artistId) ?? null,
 )
+const pendingProductsDescription = computed(() =>
+  summaryCounts.pending === 0
+    ? 'Khong co gi can duyet - tuyet voi!'
+    : `${summaryCounts.pending} sản phẩm mới hoặc chưa duyệt`,
+)
 const summaryCards = computed(() => [
   {
     title: 'Tổng số sản phẩm',
     value: summaryCounts.total,
     description: 'Toàn bộ dữ liệu theo bộ lọc',
     icon: 'pi pi-wave-pulse',
-    tone: 'primary' as const,
+    tone: 'slate' as const,
   },
   {
     title: 'Chờ kiểm duyệt',
     value: summaryCounts.pending,
-    description: 'Sản phẩm mới hoặc chưa duyệt',
+    description: pendingProductsDescription.value,
     icon: 'pi pi-clock',
-    tone: 'warning' as const,
+    tone: 'amber' as const,
   },
   {
     title: 'Đang phát hành',
     value: summaryCounts.published,
     description: 'Tổng số track đang hiển thị',
     icon: 'pi pi-check-circle',
-    tone: 'success' as const,
+    tone: 'emerald' as const,
   },
   {
     title: 'Đang ẩn',
     value: summaryCounts.hidden,
     description: 'Tổng số track đang ẩn',
     icon: 'pi pi-eye-slash',
-    tone: 'primary' as const,
+    tone: 'sky' as const,
   },
 ])
+const activeFilterChips = computed(() => {
+  const chips: string[] = []
+  const keyword = filters.keyword.trim()
+  const genre = filters.genre.trim()
+
+  if (keyword.length > 0) chips.push(`Từ khoá: ${keyword}`)
+  if (genre.length > 0) chips.push(`Thể loại: ${genre}`)
+  if (filters.status) {
+    const statusLabel = statusOptions.find((option) => option.value === filters.status)?.label
+    if (statusLabel) chips.push(`Trạng thái: ${statusLabel}`)
+  }
+  if (filters.sort !== defaultSort) {
+    const sortLabel = sortOptions.find((option) => option.value === filters.sort)?.label
+    if (sortLabel) chips.push(`Sắp xếp: ${sortLabel}`)
+  }
+
+  return chips
+})
 const getEligibilityTotal = (track: Product, type: 'digital' | 'physical') =>
   type === 'digital'
     ? track.licensingEligibility.summary.eligibleDigitalCount + track.licensingEligibility.summary.ineligibleDigitalCount
@@ -251,17 +277,35 @@ const formatEligibilityStatusLabel = (status: ProductLicensingEligibilityConfig[
   status === 'ELIGIBLE' ? 'Đủ điều kiện' : 'Không đủ điều kiện'
 const getEligibilityStatusClass = (status: ProductLicensingEligibilityConfig['status']) =>
   status === 'ELIGIBLE'
-    ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300'
-    : 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300'
-const getEligibilityMissingSummary = (config: ProductLicensingEligibilityConfig) =>
-  config.missingPermissions.map((permission) => permission.name).join(', ')
+    ? 'border border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-400/30 dark:bg-emerald-500/10 dark:text-emerald-200'
+    : 'border border-rose-200 bg-rose-50 text-rose-800 dark:border-rose-400/30 dark:bg-rose-500/10 dark:text-rose-200'
+const getEligibilitySectionClass = (type: 'digital' | 'physical') =>
+  type === 'digital'
+    ? 'rounded-[24px] border border-sky-200/80 bg-[linear-gradient(180deg,rgba(14,165,233,0.07),var(--admin-surface-1))] p-4 shadow-sm dark:border-sky-400/20 dark:bg-[linear-gradient(180deg,rgba(56,189,248,0.08),var(--admin-surface-1))]'
+    : 'rounded-[24px] border border-violet-200/80 bg-[linear-gradient(180deg,rgba(139,92,246,0.07),var(--admin-surface-1))] p-4 shadow-sm dark:border-violet-400/20 dark:bg-[linear-gradient(180deg,rgba(167,139,250,0.08),var(--admin-surface-1))]'
+const getEligibilitySectionIconClass = (type: 'digital' | 'physical') =>
+  type === 'digital'
+    ? 'text-sky-700 dark:text-sky-300'
+    : 'text-violet-700 dark:text-violet-300'
+const getEligibilitySectionCountClass = (type: 'digital' | 'physical') =>
+  type === 'digital'
+    ? 'rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-800 dark:border-sky-400/20 dark:bg-sky-500/10 dark:text-sky-200'
+    : 'rounded-full border border-violet-200 bg-violet-50 px-3 py-1 text-xs font-semibold text-violet-800 dark:border-violet-400/20 dark:bg-violet-500/10 dark:text-violet-200'
+const getEligibilityConfigCardClass = (type: 'digital' | 'physical') =>
+  type === 'digital'
+    ? 'rounded-2xl border border-sky-100 bg-[color:var(--admin-surface-0)] p-4 shadow-sm dark:border-sky-400/10'
+    : 'rounded-2xl border border-violet-100 bg-[color:var(--admin-surface-0)] p-4 shadow-sm dark:border-violet-400/10'
 const isConfigJoined = (config: ProductLicensingEligibilityConfig) => config.registrationStatus === 'JOINED'
 const getRegistrationStatusLabel = (config: ProductLicensingEligibilityConfig) =>
   isConfigJoined(config) ? 'Đã đăng ký' : 'Chưa đăng ký'
 const getRegistrationStatusClass = (config: ProductLicensingEligibilityConfig) =>
   isConfigJoined(config)
-    ? 'border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-violet-300'
-    : 'border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300'
+    ? 'border border-sky-200 bg-sky-50 text-sky-800 dark:border-sky-400/30 dark:bg-sky-500/10 dark:text-sky-200'
+    : 'border border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-400/20 dark:bg-slate-500/10 dark:text-slate-200'
+const getMissingPermissionsSummaryClass = () =>
+  'rounded-2xl border border-amber-200 bg-amber-50/80 px-3.5 py-3 text-xs font-semibold text-amber-900 shadow-sm dark:border-amber-400/30 dark:bg-amber-500/10 dark:text-amber-100'
+const getMissingPermissionItemClass = () =>
+  'rounded-2xl border border-amber-200/80 bg-[color:var(--admin-surface-0)] px-3 py-3 text-sm text-[color:var(--admin-text)] shadow-sm dark:border-amber-400/20 dark:bg-[color:var(--admin-surface-0)]'
 const getPackageActionKey = (trackId: string, configId: string) => `${trackId}:${configId}`
 const isPackageActionLoading = (trackId: string, configId: string) =>
   packageActionTarget.value === getPackageActionKey(trackId, configId)
@@ -333,6 +377,10 @@ const createDurationDisplay = computed(() => {
   const parsed = parseDuration(createForm.duration)
   return parsed === undefined ? null : formatDuration(Math.max(0, Math.round(parsed)))
 })
+const editDurationDisplay = computed(() => {
+  const parsed = parseDuration(editForm.duration)
+  return parsed === undefined ? null : formatDuration(Math.max(0, Math.round(parsed)))
+})
 type TrackAttributeItem = { label: string; value: string; mono?: boolean }
 const selectedTrackAttributeItems = computed<TrackAttributeItem[]>(() => {
   if (!selectedTrack.value) return []
@@ -340,14 +388,6 @@ const selectedTrackAttributeItems = computed<TrackAttributeItem[]>(() => {
   const track = selectedTrack.value
 
   return [
-    {
-      label: 'Nghệ sĩ',
-      value: resolveArtistDisplay(track.artistId),
-    },
-    {
-      label: 'Thể loại',
-      value: formatTrackGenresDisplay(track),
-    },
     {
       label: 'Thời lượng',
       value: formatDuration(track.duration),
@@ -357,19 +397,13 @@ const selectedTrackAttributeItems = computed<TrackAttributeItem[]>(() => {
       value: formatTrackUseCasesDisplay(track),
     },
     {
-      label: 'Trạng thái',
-      value: formatProductStatusLabel(track.status),
-    },
-    {
-      label: 'Tạo lúc',
-      value: formatDateTime(track.createdAt),
-    },
-    {
-      label: 'Cập nhật lúc',
-      value: formatDateTime(track.updatedAt),
+      label: 'Mã sản phẩm',
+      value: track.id,
+      mono: true,
     },
   ]
 })
+
 const formatProductStatusLabel = (value: ProductStatus) => {
   if (value === 'PUBLISHED') return 'Đang phát hành'
   if (value === 'PENDING') return 'Chờ kiểm duyệt'
@@ -377,12 +411,12 @@ const formatProductStatusLabel = (value: ProductStatus) => {
 }
 const getProductStatusClass = (value: ProductStatus) => {
   if (value === 'PUBLISHED') {
-    return 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300'
+    return 'border-[color:rgb(var(--admin-success-rgb)/0.24)] bg-[color:var(--admin-success-50)] text-[color:var(--admin-success-700)]'
   }
   if (value === 'PENDING') {
-    return 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300'
+    return 'border-[color:rgb(var(--admin-primary-rgb)/0.22)] bg-[color:var(--admin-primary-50)] text-[color:var(--admin-primary-800)]'
   }
-  return 'border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300'
+  return 'border-[color:var(--admin-border)] bg-[color:var(--admin-surface-1)] text-[color:var(--admin-text-muted)]'
 }
 const formatComplianceLegalStatusLabel = (value: Product['complianceLegalStatus']) => {
   if (value === 'SUFFICIENT') return 'Đã duyệt'
@@ -459,8 +493,6 @@ const fetchArtistOptions = async () => {
   }
 }
 
-const summaryCardToneClass = (tone: keyof typeof summaryToneClassMap) => summaryToneClassMap[tone]
-
 const exportCurrentTracksCsv = () => {
   const headers = [
     'title',
@@ -503,6 +535,15 @@ const exportCurrentTracksCsv = () => {
   link.download = `products_page_${pagination.page}.csv`
   link.click()
   URL.revokeObjectURL(url)
+}
+
+const resetProductFilters = async () => {
+  filters.keyword = ''
+  filters.sort = defaultSort
+  filters.status = ''
+  filters.genre = ''
+  pagination.page = 1
+  await refreshTrackDashboard()
 }
 
 const extractValidationDetailsMessage = (details: unknown) => {
@@ -759,22 +800,22 @@ const formatProductComplianceReviewStatusLabel = (value: ComplianceDetail['revie
 
 const getProductComplianceLegalStatusClass = (value: ComplianceDetail['legalStatus']) => {
   if (value === 'SUFFICIENT') {
-    return 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300'
+    return 'border-[color:rgb(var(--admin-success-rgb)/0.24)] bg-[color:var(--admin-success-50)] text-[color:var(--admin-success-700)]'
   }
   if (value === 'INSUFFICIENT') {
-    return 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300'
+    return 'border-[color:rgb(var(--admin-warning-rgb)/0.22)] bg-[color:var(--admin-warning-50)] text-[color:var(--admin-warning-700)]'
   }
-  return 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300'
+  return 'border-[color:rgb(var(--admin-primary-rgb)/0.22)] bg-[color:var(--admin-primary-50)] text-[color:var(--admin-primary-800)]'
 }
 
 const getProductComplianceReviewStatusClass = (value: ComplianceDetail['reviewStatus']) => {
   if (value === 'APPROVED') {
-    return 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300'
+    return 'border-[color:rgb(var(--admin-success-rgb)/0.24)] bg-[color:var(--admin-success-50)] text-[color:var(--admin-success-700)]'
   }
   if (value === 'REJECTED') {
-    return 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300'
+    return 'border-[color:rgb(var(--admin-danger-rgb)/0.22)] bg-[color:var(--admin-danger-50)] text-[color:var(--admin-danger-700)]'
   }
-  return 'border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300'
+  return 'border-[color:rgb(var(--admin-primary-rgb)/0.22)] bg-[color:var(--admin-primary-50)] text-[color:var(--admin-primary-800)]'
 }
 
 const getProductComplianceLegalStatusClassSafe = (value: Product['complianceLegalStatus']) =>
@@ -1564,34 +1605,39 @@ const goToPage = async (page: number) => {
   await fetchTracks()
 }
 
+const handlePageChange = (nextPage: number) => {
+  void goToPage(nextPage)
+}
+
+const handlePageSizeChange = (nextPageSize: number) => {
+  const clampedPageSize = Math.min(nextPageSize, maxPageSize)
+  if (clampedPageSize === pagination.pageSize) return
+  pagination.pageSize = clampedPageSize
+  pagination.page = 1
+  void fetchTracks()
+}
+
 onMounted(() => {
   void fetchArtistOptions()
   void refreshTrackDashboard()
 })
 
-let keywordDebounceTimer: number | null = null
-let filtersDebounceTimer: number | null = null
-
-watch(
+useDebouncedWatch(
   () => filters.keyword,
   () => {
-    if (keywordDebounceTimer) window.clearTimeout(keywordDebounceTimer)
-    keywordDebounceTimer = window.setTimeout(() => {
-      pagination.page = 1
-      void refreshTrackDashboard()
-    }, 450)
+    pagination.page = 1
+    void refreshTrackDashboard()
   },
+  420,
 )
 
-watch(
+useDebouncedWatch(
   () => [filters.sort, filters.status, filters.genre] as const,
   () => {
-    if (filtersDebounceTimer) window.clearTimeout(filtersDebounceTimer)
-    filtersDebounceTimer = window.setTimeout(() => {
-      pagination.page = 1
-      void refreshTrackDashboard()
-    }, 180)
+    pagination.page = 1
+    void refreshTrackDashboard()
   },
+  420,
 )
 
 onBeforeUnmount(() => {
@@ -1603,75 +1649,67 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="flex min-w-0 flex-col gap-4 pb-8 sm:gap-5 lg:gap-6">
-    <section
-      class="flex flex-col gap-4 rounded-[32px] border border-slate-200/80 bg-[radial-gradient(circle_at_top_left,rgba(109,74,255,0.22),transparent_38%),radial-gradient(circle_at_60%_120%,rgba(192,132,252,0.14),transparent_44%),linear-gradient(135deg,rgba(255,255,255,0.96),rgba(245,243,255,0.92))] p-5 shadow-2xl shadow-slate-200/40 dark:border-slate-800 dark:bg-[radial-gradient(circle_at_top_left,rgba(124,58,237,0.25),transparent_32%),radial-gradient(circle_at_60%_120%,rgba(168,85,247,0.18),transparent_44%),linear-gradient(135deg,rgba(15,23,42,0.92),rgba(2,6,23,0.96))] dark:shadow-black/20 sm:p-6 lg:flex-row lg:items-start lg:justify-between"
-    >
-      <div class="min-w-0 space-y-3">
-        <div class="inline-flex items-center rounded-full bg-violet-100 px-3 py-1 text-xs font-bold uppercase tracking-[0.24em] text-violet-700 dark:bg-violet-500/20 dark:text-violet-200">
-          Quản trị viên
-        </div>
-        <div>
-          <h1 class="m-0 text-2xl font-semibold tracking-tight text-slate-950 sm:text-3xl dark:text-white">Quản lý sản phẩm</h1>
-        </div>
-      </div>
+    <AdminPageHeader title="Quản lý sản phẩm" description="Theo dõi, kiểm duyệt và cập nhật thông tin sản phẩm trên nền tảng." icon-class="pi pi-wave-pulse">
+      <template #actions>
+        <AdminButton variant="primary" class="w-full sm:w-auto" :loading="isLoading" @click="openCreateDialog">
+          <i class="pi pi-plus" />
+          Thêm sản phẩm
+        </AdminButton>
+      </template>
+    </AdminPageHeader>
 
-      <button type="button" :class="[primaryButtonClass, 'w-full sm:w-auto']" :disabled="isLoading" @click="openCreateDialog">
-        <i class="pi pi-plus mr-2" />
-        Thêm sản phẩm
-      </button>
-    </section>
-
-    <section class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-      <article
+    <section class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <AdminStatCard
         v-for="card in summaryCards"
         :key="card.title"
-        class="rounded-[28px] border bg-gradient-to-br p-5 shadow-sm backdrop-blur"
-        :class="summaryCardToneClass(card.tone)"
-      >
-        <div class="flex items-start justify-between gap-3">
-          <div>
-            <div class="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">{{ card.title }}</div>
-            <div class="mt-3 text-3xl font-semibold tracking-tight text-slate-950 dark:text-white">{{ card.value }}</div>
-          </div>
-          <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/80 text-violet-600 shadow-sm dark:bg-slate-950/60 dark:text-violet-300">
-            <i :class="card.icon" />
-          </div>
-        </div>
-        <p class="mt-3 text-sm text-slate-500 dark:text-slate-400">{{ card.description }}</p>
-      </article>
+        :title="card.title"
+        :value="card.value"
+        :description="card.description"
+        :icon="card.icon"
+        :tone="card.tone"
+      />
     </section>
 
-    <section class="rounded-[32px] border border-slate-200/80 bg-white/85 p-5 shadow-xl shadow-slate-200/40 backdrop-blur dark:border-slate-800 dark:bg-slate-950/70 dark:shadow-black/20">
-      <div class="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-        <div>
-          <div class="text-xl font-semibold text-slate-950 dark:text-white">Danh sách sản phẩm</div>
-          <div class="mt-2 text-sm text-slate-500 dark:text-slate-400">
-            Theo dõi, kiểm duyệt và cập nhật thông tin sản phẩm trên nền tảng.
+    <AdminPanel title="Danh sách sản phẩm">
+      <div class="grid gap-3">
+        <div class="w-full">
+          <AdminFilterInput v-model="filters.keyword" icon-class="pi pi-search" placeholder="Tìm theo tên, tác giả hoặc thể loại" :disabled="isLoading" />
+        </div>
+
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <AdminFilterInput v-model="filters.genre" icon-class="pi pi-sliders-h" placeholder="Thể loại" :disabled="isLoading" />
+          <AdminFilterSelect v-model="filters.status" icon-class="pi pi-tag" :options="statusOptions" :disabled="isLoading" />
+          <AdminFilterSelect v-model="filters.sort" icon-class="pi pi-sort-alt" :options="sortOptions" :disabled="isLoading" />
+        </div>
+
+        <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+          <div class="inline-flex w-fit items-center rounded-full bg-[color:var(--admin-surface-1)] px-3 py-1.5 text-sm font-medium text-[color:var(--admin-text-muted)]">
+            {{ pageStart }}-{{ pageEnd }} / {{ totalItems }} sản phẩm
+          </div>
+          <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
+            <AdminButton class="w-full sm:w-auto" :loading="isLoading" @click="refreshTrackDashboard">
+              <i class="pi pi-filter" />
+              Lọc
+            </AdminButton>
+            <AdminButton class="w-full sm:w-auto" :disabled="isLoading" @click="resetProductFilters">
+              <i class="pi pi-refresh" />
+              Đặt lại
+            </AdminButton>
+            <AdminButton class="w-full sm:w-auto" :disabled="rows.length === 0" @click="exportCurrentTracksCsv">
+              <i class="pi pi-download" />
+              Xuất dữ liệu
+            </AdminButton>
           </div>
         </div>
 
-        <div class="flex min-w-0 flex-col gap-3 xl:min-w-0 xl:max-w-[980px] xl:flex-1">
-          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <ProductFilterInput v-model="filters.keyword" icon-class="pi pi-search" placeholder="Tìm theo tên, tác giả hoặc thể loại" :disabled="isLoading" />
-            <ProductFilterInput v-model="filters.genre" icon-class="pi pi-sliders-h" placeholder="Thể loại" :disabled="isLoading" />
-            <ProductFilterSelect v-model="filters.status" icon-class="pi pi-tag" :options="statusOptions" :disabled="isLoading" />
-            <ProductFilterSelect v-model="filters.sort" icon-class="pi pi-sort-alt" :options="sortOptions" :disabled="isLoading" />
-          </div>
-
-          <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
-            <button type="button" :class="[secondaryButtonClass, 'w-full sm:w-auto']" :disabled="isLoading" @click="refreshTrackDashboard">
-              <i class="pi pi-filter mr-2" />
-              Lọc
-            </button>
-            <button type="button" :class="[secondaryButtonClass, 'w-full sm:w-auto']" :disabled="rows.length === 0" @click="exportCurrentTracksCsv">
-              <i class="pi pi-download mr-2" />
-              Xuất dữ liệu
-            </button>
-            <button type="button" :class="[primaryButtonClass, 'w-full sm:w-auto']" :disabled="isLoading" @click="openCreateDialog">
-              <i class="pi pi-plus mr-2" />
-              Thêm sản phẩm
-            </button>
-          </div>
+        <div v-if="activeFilterChips.length > 0" class="flex flex-wrap gap-2">
+          <span
+            v-for="chip in activeFilterChips"
+            :key="chip"
+            class="inline-flex items-center rounded-full border bg-[color:var(--admin-surface-1)] px-3 py-1 text-xs font-semibold text-[color:var(--admin-text)] [border-color:var(--admin-border)]"
+          >
+            {{ chip }}
+          </span>
         </div>
       </div>
 
@@ -1681,7 +1719,7 @@ onBeforeUnmount(() => {
       </div>
 
       <ProductManagementMobileCardList
-        class="mt-6"
+        class="mt-4"
         :rows="rows"
         :is-loading="isLoading"
         empty-message="Không có sản phẩm phù hợp. Thử đổi keyword, status hoặc genre để mở rộng kết quả tìm kiếm."
@@ -1700,56 +1738,59 @@ onBeforeUnmount(() => {
         @more="openMobileActionMenu"
       />
 
-      <div class="mt-6 hidden overflow-hidden rounded-[24px] border border-slate-200/80 bg-white dark:border-slate-800 dark:bg-slate-950/40 sm:block">
+      <div class="mt-4 hidden overflow-hidden rounded-[28px] border bg-[color:var(--admin-surface-1)] shadow-[var(--admin-elev-1)] sm:block [border-color:var(--admin-border-strong)]">
         <div class="overflow-x-auto">
           <table class="min-w-[1180px] table-fixed border-separate border-spacing-0 text-left text-sm">
-            <thead class="bg-slate-50 text-xs uppercase tracking-[0.18em] text-slate-500 dark:bg-slate-950/60 dark:text-slate-300">
+            <thead class="bg-[linear-gradient(180deg,var(--admin-surface-3),var(--admin-surface-2))] text-xs uppercase tracking-[0.18em] text-[color:var(--admin-text)]">
               <tr>
-                <th class="w-20 px-3 py-4 font-semibold">Ảnh</th>
-                <th class="w-[20%] px-3 py-4 font-semibold">Sản phẩm</th>
-                <th class="w-32 px-3 py-4 font-semibold">Quyền bán</th>
-                <th class="w-40 px-3 py-4 font-semibold">Pháp lý</th>
-                <th class="w-[46%] px-3 py-4 font-semibold">Waveform</th>
-                <th class="w-36 px-3 py-4 font-semibold">Trạng thái</th>
-                <th class="w-28 px-3 py-4 text-right font-semibold">Thao tác</th>
+                <th class="w-20 px-3 py-3 font-semibold">Ảnh</th>
+                <th class="w-[20%] px-3 py-3 font-semibold">Sản phẩm</th>
+                <th class="w-32 px-3 py-3 font-semibold">Quyền bán</th>
+                <th class="w-40 px-3 py-3 font-semibold">Pháp lý</th>
+                <th class="w-[46%] px-3 py-3 font-semibold">Waveform</th>
+                <th class="w-36 px-3 py-3 font-semibold">Trạng thái</th>
+                <th class="w-28 px-3 py-3 text-right font-semibold">Thao tác</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-slate-200/70 dark:divide-slate-800">
+            <tbody class="divide-y [divide-color:var(--admin-border)]">
               <tr
-                v-for="track in rows"
+                v-for="(track, index) in rows"
                 :key="track.id"
-                class="bg-white transition hover:bg-slate-50/70 dark:bg-transparent dark:hover:bg-slate-900/30"
+                class="transition"
+                :class="index % 2 === 0
+                  ? 'bg-[color:var(--admin-surface-0)] hover:bg-[color:var(--admin-surface-2)]'
+                  : 'bg-[color:var(--admin-surface-1)] hover:bg-[color:var(--admin-surface-3)]'"
                 @mouseenter="preloadTrackAssets(track)"
               >
-                <td class="px-3 py-4">
-                  <div class="h-12 w-12 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-950/60">
+                <td class="px-3 py-3">
+                  <div class="h-10 w-10 overflow-hidden rounded-xl border bg-[color:var(--admin-surface-1)] [border-color:var(--admin-border)]">
                     <img
                       v-if="thumbnailUrls[track.id]"
                       :src="thumbnailUrls[track.id]"
                       alt=""
                       class="h-full w-full object-cover"
                     />
-                    <div v-else class="flex h-full w-full items-center justify-center bg-gradient-to-br from-violet-600/30 to-fuchsia-500/20 text-sm font-semibold text-violet-700 dark:text-violet-200">
+                    <div v-else class="flex h-full w-full items-center justify-center bg-[color:var(--admin-primary-50)] text-sm font-semibold text-[color:var(--admin-text)]">
                       {{ track.title.slice(0, 1).toUpperCase() }}
                     </div>
                   </div>
                 </td>
-                <td class="px-3 py-4">
+                <td class="px-3 py-3">
                   <div class="min-w-0">
-                    <div class="truncate font-semibold text-slate-900 dark:text-white">
+                    <div class="truncate font-semibold text-[color:var(--admin-text)]">
                       {{ track.title }}
                     </div>
-                    <div class="mt-1 line-clamp-1 text-xs text-slate-500 dark:text-slate-400">
+                    <div class="mt-1 line-clamp-1 text-xs text-[color:var(--admin-text-muted)]">
                       {{ resolveArtistDisplay(track.artistId) }} · {{ formatTrackGenresDisplay(track) }} · {{ formatDuration(track.duration) }} ·
                       {{ formatDateTime(track.updatedAt) }}
                     </div>
                   </div>
                 </td>
-                <td class="px-3 py-4">
+                <td class="px-3 py-3">
                   <div class="space-y-2">
                     <button
                       type="button"
-                      class="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-violet-300 hover:text-violet-700 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:border-violet-500/40 dark:hover:text-violet-200"
+                      class="inline-flex items-center gap-2 rounded-xl border bg-[color:var(--admin-surface-0)] px-3 py-1.5 text-xs font-semibold text-[color:var(--admin-text)] transition [border-color:var(--admin-border)] hover:bg-[color:var(--admin-surface-1)] disabled:opacity-60"
                       :disabled="isLoading"
                       @click="openApprovedPermissionsDialog(track)"
                     >
@@ -1758,17 +1799,11 @@ onBeforeUnmount(() => {
                     </button>
                   </div>
                 </td>
-                <td class="px-3 py-4">
+                <td class="px-3 py-3">
                   <button
                     type="button"
-                    class="inline-flex items-center gap-2 whitespace-nowrap rounded-full border px-3 py-1.5 text-[11px] font-semibold transition hover:border-violet-300 hover:text-violet-700 disabled:opacity-60"
-                    :class="
-                      track.complianceLegalStatus === 'SUFFICIENT'
-                        ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300'
-                        : track.complianceLegalStatus === 'INSUFFICIENT'
-                          ? 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300'
-                          : 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300'
-                    "
+                    class="inline-flex items-center gap-2 whitespace-nowrap rounded-full border px-3 py-1.5 text-[11px] font-semibold transition hover:bg-[color:var(--admin-surface-2)] disabled:opacity-60"
+                    :class="getProductComplianceLegalStatusClassSafe(track.complianceLegalStatus)"
                     :disabled="isLoading"
                     @click="openComplianceDashboard(track)"
                   >
@@ -1776,16 +1811,21 @@ onBeforeUnmount(() => {
                     {{ formatComplianceLegalStatusLabel(track.complianceLegalStatus) }}
                   </button>
                 </td>
-                <td class="px-3 py-4">
+                <td class="px-3 py-3">
                   <div class="min-w-0">
                     <div v-if="track.originalAudioKey" class="min-w-0">
                       <div v-if="originalAudioUrls[track.id]" class="min-w-0">
-                        <ProductWavePreview :audio-url="originalAudioUrls[track.id] ?? null" :disabled="!track.originalAudioKey" :right-label="formatDuration(track.duration)" />
+                        <ProductWavePreview
+                          :audio-url="originalAudioUrls[track.id] ?? null"
+                          :disabled="!track.originalAudioKey"
+                          :right-label="formatDuration(track.duration)"
+                          :track-status="track.status"
+                        />
                       </div>
                       <button
                         v-else
                         type="button"
-                        class="inline-flex items-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-violet-300 hover:text-violet-700 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:border-violet-500/40 dark:hover:text-violet-200"
+                        class="inline-flex items-center rounded-xl border bg-[color:var(--admin-surface-0)] px-3 py-2 text-sm font-semibold text-[color:var(--admin-text)] transition [border-color:var(--admin-border)] hover:bg-[color:var(--admin-surface-1)] disabled:opacity-60"
                         :disabled="originalAudioLoading[track.id] || isLoading"
                         @click="() => void ensureOriginalAudioUrl(track)"
                       >
@@ -1794,22 +1834,16 @@ onBeforeUnmount(() => {
                       </button>
                     </div>
 
-                    <div v-else class="text-sm text-slate-500 dark:text-slate-400">
+                    <div v-else class="text-sm text-[color:var(--admin-text-muted)]">
                       Chưa có audio gốc
                     </div>
                   </div>
                 </td>
-                <td class="px-3 py-4">
+                <td class="px-3 py-3">
                   <button
                     type="button"
                     class="inline-flex items-center gap-2 whitespace-nowrap rounded-full border px-3 py-1.5 text-[11px] font-semibold transition"
-                    :class="
-                      track.status === 'PUBLISHED'
-                        ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300'
-                        : track.status === 'PENDING'
-                          ? 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300'
-                          : 'border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300'
-                    "
+                    :class="getProductStatusClass(track.status)"
                     :disabled="isLoading"
                     @click="confirmTogglePublish(track)"
                   >
@@ -1817,10 +1851,10 @@ onBeforeUnmount(() => {
                       class="h-2.5 w-2.5 rounded-full"
                       :class="
                         track.status === 'PUBLISHED'
-                          ? 'bg-emerald-500'
+                          ? 'bg-[color:var(--admin-accent-500)]'
                           : track.status === 'PENDING'
-                            ? 'bg-amber-500'
-                            : 'bg-slate-400'
+                            ? 'bg-[color:var(--admin-primary-500)]'
+                            : 'bg-[color:var(--admin-neutral-200)]'
                       "
                     />
                     {{
@@ -1832,12 +1866,12 @@ onBeforeUnmount(() => {
                     }}
                   </button>
                 </td>
-                <td class="px-3 py-4">
+                <td class="px-3 py-3">
                   <div class="flex justify-end gap-2">
-                    <button type="button" class="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 transition hover:border-slate-300 hover:text-slate-900 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:text-white" :disabled="isLoading" @click="openDetailDialog(track)">
+                    <button type="button" class="inline-flex h-9 w-9 items-center justify-center rounded-xl border bg-[color:var(--admin-surface-0)] text-[color:var(--admin-text-muted)] transition [border-color:var(--admin-border)] hover:bg-[color:var(--admin-surface-1)] disabled:opacity-60" :disabled="isLoading" @click="openDetailDialog(track)">
                       <i class="pi pi-eye" />
                     </button>
-                    <button type="button" class="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 transition hover:border-slate-300 hover:text-slate-900 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:text-white" :disabled="isLoading" @click="openEditDialog(track)">
+                    <button type="button" class="inline-flex h-9 w-9 items-center justify-center rounded-xl border bg-[color:var(--admin-surface-0)] text-[color:var(--admin-text-muted)] transition [border-color:var(--admin-border)] hover:bg-[color:var(--admin-surface-1)] disabled:opacity-60" :disabled="isLoading" @click="openEditDialog(track)">
                       <i class="pi pi-pencil" />
                     </button>
                   </div>
@@ -1845,7 +1879,7 @@ onBeforeUnmount(() => {
               </tr>
 
               <tr v-if="!isLoading && rows.length === 0">
-                <td colspan="7" class="px-6 py-12 text-center text-sm text-slate-500 dark:text-slate-400">
+                <td colspan="7" class="px-6 py-12 text-center text-sm text-[color:var(--admin-text-muted)]">
                   Không có sản phẩm phù hợp. Thử đổi keyword, status hoặc genre để mở rộng kết quả tìm kiếm.
                 </td>
               </tr>
@@ -1853,383 +1887,60 @@ onBeforeUnmount(() => {
           </table>
         </div>
       </div>
+      <AdminPaginationBar class="mt-4" :page="pagination.page" :page-size="pagination.pageSize" :page-size-options="[10]" :total-items="totalItems" :disabled="isLoading" @update:page="handlePageChange" @update:page-size="handlePageSizeChange" />
+    </AdminPanel>
 
-      <div class="mt-6 flex flex-col gap-4 border-t border-slate-200 pt-4 dark:border-slate-800 md:flex-row md:items-center md:justify-between">
-        <div class="text-sm text-slate-500 dark:text-slate-400">
-          Hiển thị {{ pageStart }}-{{ pageEnd }} / {{ totalItems }} sản phẩm
-        </div>
-        <div class="flex flex-wrap items-center justify-end gap-2">
-          <label
-            class="flex h-12 items-center overflow-hidden rounded-2xl border border-slate-200 bg-white px-3 shadow-sm transition focus-within:border-violet-300 focus-within:ring-4 focus-within:ring-violet-100 dark:border-slate-700 dark:bg-slate-950 dark:focus-within:border-violet-500 dark:focus-within:ring-violet-500/20"
-          >
-            <span class="mr-2 text-slate-400 dark:text-slate-500">
-              <i class="pi pi-list" />
-            </span>
-            <select
-              :value="String(pagination.pageSize)"
-              :disabled="isLoading"
-              class="h-full bg-transparent text-sm font-semibold text-slate-700 outline-none disabled:cursor-not-allowed disabled:opacity-60 dark:text-slate-100"
-              @change="
-                (event) => {
-                  pagination.pageSize = Number((event.target as HTMLSelectElement).value)
-                  pagination.page = 1
-                  void refreshTrackDashboard()
-                }
-              "
-            >
-              <option value="10">10 / trang</option>
-              <option value="20">20 / trang</option>
-              <option value="50">50 / trang</option>
-            </select>
-            <span class="ml-2 text-xs text-slate-400 dark:text-slate-500">
-              <i class="pi pi-chevron-down" />
-            </span>
-          </label>
-
-          <button type="button" :class="secondaryButtonClass" :disabled="isLoading || pagination.page <= 1" @click="() => void goToPage(pagination.page - 1)">
-            <i class="pi pi-angle-left mr-2" />
-            Trước
-          </button>
-
-          <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
-            {{ pagination.page }} / {{ totalPages }}
-          </div>
-
-          <button type="button" :class="secondaryButtonClass" :disabled="isLoading || pagination.page >= totalPages" @click="() => void goToPage(pagination.page + 1)">
-            Sau
-            <i class="pi pi-angle-right ml-2" />
-          </button>
-        </div>
-      </div>
-    </section>
-
-    <Dialog
+    <AdminProductUpsertDialog
       v-model:visible="createDialogVisible"
-      modal
-      class="w-[calc(100vw-0.75rem)] sm:w-[min(1040px,96vw)]"
-      :pt="{ content: { class: 'max-h-[calc(100svh-0.75rem)] overflow-y-auto sm:max-h-[calc(100svh-8rem)]' } }"
+      mode="create"
+      :is-loading="isLoading"
+      :is-artists-loading="isArtistsLoading"
+      :artist-options="artistOptions"
+      :error-message="createDialogErrorMessage"
+      :form="createForm"
+      :field-class="fieldClass"
+      :select-field-class="selectFieldClass"
+      :file-input-class="fileInputClass"
+      :duration-display="createDurationDisplay"
+      :audio-url="createOriginalAudioUrl"
+      :thumbnail-url="createThumbnailUrl"
+      :audio-file="createOriginalFile"
+      :thumbnail-file="createThumbnailFile"
+      :sheet-music-file="createSheetMusicFile"
+      @thumbnail-change="handleCreateThumbnailFileChange"
+      @audio-change="handleCreateAudioFileChange"
+      @sheet-music-change="handleCreateSheetMusicFileChange"
+      @submit="submitCreate"
     >
-      <template #header>
-        <div class="flex w-full items-center justify-between gap-4">
-          <div>
-            <div class="text-lg font-semibold text-slate-950 dark:text-white">Thêm track</div>
-          </div>
-          <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-200">
-            <i class="pi pi-wave-pulse" />
-          </div>
-        </div>
+      <template #wavePreview="{ audioUrl }">
+        <ProductWavePreview :audio-url="audioUrl" :disabled="!audioUrl" track-status="PENDING" />
       </template>
+    </AdminProductUpsertDialog>
 
-      <Message v-if="createDialogErrorMessage" severity="error" class="mb-4">{{ createDialogErrorMessage }}</Message>
-
-      <div class="grid grid-cols-1 gap-4 lg:grid-cols-[0.95fr_1.05fr]">
-        <section class="space-y-4 rounded-[28px] border border-slate-200/80 bg-slate-50/80 p-4 sm:p-5 dark:border-slate-800 dark:bg-slate-900/50">
-          <div class="flex items-center gap-3 text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-            <i class="pi pi-align-left text-violet-500" />
-            Thông tin chung
-          </div>
-          <div class="grid gap-4 md:grid-cols-2">
-            <label class="space-y-2">
-              <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Tên track</span>
-              <input v-model="createForm.title" :class="fieldClass" placeholder="Nhập tên track" />
-            </label>
-            <label class="space-y-2">
-              <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Nghệ sĩ</span>
-              <div class="relative">
-                <select v-model="createForm.artistId" :class="selectFieldClass" :disabled="isArtistsLoading">
-                  <option value="">Chọn nghệ sĩ</option>
-                  <option v-for="artist in artistOptions" :key="artist.value" :value="artist.value">
-                    {{ artist.label }}
-                  </option>
-                </select>
-                <i class="pi pi-chevron-down pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs text-slate-400 dark:text-slate-500" />
-              </div>
-              <span class="text-xs text-slate-500 dark:text-slate-400">
-                {{
-                  isArtistsLoading
-                    ? 'Đang tải danh sách nghệ sĩ...'
-                    : selectedCreateArtistOption?.email || 'Chọn nghệ sĩ active để gắn cho sản phẩm'
-                }}
-              </span>
-            </label>
-            <div class="space-y-2 sm:col-span-2">
-              <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Thể loại</span>
-              <div class="flex flex-wrap gap-2">
-                <button
-                  v-for="option in PRODUCT_GENRE_OPTIONS"
-                  :key="`create-genre-${option.value}`"
-                  type="button"
-                  class="rounded-full border px-3 py-1 text-xs font-semibold transition"
-                  :class="createForm.genres.includes(option.value)
-                    ? 'border-violet-300 bg-violet-100 text-violet-700 dark:border-violet-500/40 dark:bg-violet-500/20 dark:text-violet-200'
-                    : 'border-slate-200 bg-white text-slate-600 hover:border-violet-200 hover:text-violet-700 dark:border-slate-700 dark:bg-slate-950/40 dark:text-slate-300 dark:hover:border-violet-500/30 dark:hover:text-violet-200'"
-                  @click="createForm.genres = toggleSelection(createForm.genres, option.value)"
-                >
-                  {{ option.label }}
-                </button>
-              </div>
-            </div>
-            <div class="space-y-2 sm:col-span-2">
-              <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Use-case</span>
-              <div class="flex flex-wrap gap-2">
-                <button
-                  v-for="option in PRODUCT_USE_CASE_OPTIONS"
-                  :key="`create-usecase-${option.value}`"
-                  type="button"
-                  class="rounded-full border px-3 py-1 text-xs font-semibold transition"
-                  :class="createForm.useCases.includes(option.value)
-                    ? 'border-violet-300 bg-violet-100 text-violet-700 dark:border-violet-500/40 dark:bg-violet-500/20 dark:text-violet-200'
-                    : 'border-slate-200 bg-white text-slate-600 hover:border-violet-200 hover:text-violet-700 dark:border-slate-700 dark:bg-slate-950/40 dark:text-slate-300 dark:hover:border-violet-500/30 dark:hover:text-violet-200'"
-                  @click="createForm.useCases = toggleSelection(createForm.useCases, option.value)"
-                >
-                  {{ option.label }}
-                </button>
-              </div>
-            </div>
-            <label class="space-y-2 sm:col-span-2">
-              <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Mô tả sản phẩm</span>
-              <textarea v-model="createForm.description" class="min-h-[120px] w-full rounded-2xl border border-slate-200/80 bg-white/90 px-4 py-3 text-sm text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-violet-400 focus:ring-4 focus:ring-violet-100 dark:border-slate-800 dark:bg-slate-950/70 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-violet-500 dark:focus:ring-violet-500/20" placeholder="Nhập mô tả chi tiết cho sản phẩm" />
-            </label>
-          </div>
-
-        </section>
-
-        <section class="space-y-4 rounded-[28px] border border-slate-200/80 bg-slate-50/80 p-4 sm:p-5 dark:border-slate-800 dark:bg-slate-900/50">
-          <div class="flex items-center gap-3 text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-            <i class="pi pi-image text-violet-500" />
-            Thumbnail
-          </div>
-
-          <article class="rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/70">
-            <div class="flex items-center justify-between gap-3">
-              <div class="text-sm font-semibold text-slate-900 dark:text-white">Ảnh đại diện</div>
-              <span v-if="createThumbnailFile" class="rounded-full bg-violet-100 px-3 py-1 text-xs font-medium text-violet-700 dark:bg-violet-500/20 dark:text-violet-200">
-                {{ createThumbnailFile.name }}
-              </span>
-            </div>
-            <div class="mt-4">
-              <input type="file" accept="image/*,.png,.jpg,.jpeg,.webp" :class="fileInputClass" @change="handleCreateThumbnailFileChange" />
-            </div>
-            <div class="mt-4 overflow-hidden rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 p-4 dark:border-slate-700 dark:bg-slate-900/60">
-              <img v-if="createThumbnailUrl" :src="createThumbnailUrl" alt="" class="h-40 w-full rounded-2xl object-cover" />
-              <div v-else class="flex h-40 items-center justify-center text-sm text-slate-500 dark:text-slate-400">Chưa chọn thumbnail</div>
-            </div>
-          </article>
-
-          <div class="flex items-center gap-3 pt-2 text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-            <i class="pi pi-volume-up text-violet-500" />
-            Audio gốc
-          </div>
-
-          <article class="mt-4 rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/70">
-            <div class="flex items-center justify-between gap-3">
-              <div class="text-sm font-semibold text-slate-900 dark:text-white">File MP3 gốc</div>
-              <span v-if="createOriginalFile" class="rounded-full bg-violet-100 px-3 py-1 text-xs font-medium text-violet-700 dark:bg-violet-500/20 dark:text-violet-200">
-                {{ createOriginalFile.name }}
-              </span>
-            </div>
-            <div class="mt-4">
-              <input type="file" accept=".mp3,audio/*" :class="fileInputClass" @change="handleCreateAudioFileChange" />
-            </div>
-            <div class="mt-4">
-              <ProductWavePreview :audio-url="createOriginalAudioUrl" :disabled="!createOriginalAudioUrl" />
-            </div>
-          </article>
-
-          <div class="flex items-center gap-3 pt-2 text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-            <i class="pi pi-file-pdf text-violet-500" />
-            Khuông nhạc (PDF)
-          </div>
-
-          <article class="rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/70">
-            <div class="flex items-center justify-between gap-3">
-              <div class="text-sm font-semibold text-slate-900 dark:text-white">File PDF</div>
-              <span v-if="createSheetMusicFile" class="rounded-full bg-violet-100 px-3 py-1 text-xs font-medium text-violet-700 dark:bg-violet-500/20 dark:text-violet-200">
-                {{ createSheetMusicFile.name }}
-              </span>
-            </div>
-            <div class="mt-4">
-              <input type="file" accept=".pdf,application/pdf" :class="fileInputClass" @change="handleCreateSheetMusicFileChange" />
-            </div>
-          </article>
-
-          <label class="mt-4 block space-y-2">
-            <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Thời lượng (giây)</span>
-            <input v-model="createForm.duration" :class="fieldClass" readonly />
-            <span class="text-xs text-slate-500 dark:text-slate-400">
-              {{ createDurationDisplay ? `≈ ${createDurationDisplay}` : 'Chọn file audio để tự đọc thời lượng.' }}
-            </span>
-          </label>
-        </section>
-      </div>
-
-      <template #footer>
-        <div class="flex w-full flex-col gap-3 sm:flex-row sm:justify-end">
-          <button type="button" :class="[secondaryButtonClass, 'w-full sm:w-auto']" @click="createDialogVisible = false">Huỷ</button>
-          <button type="button" :class="[primaryButtonClass, 'w-full sm:w-auto']" :disabled="isLoading" @click="submitCreate">Tạo track</button>
-        </div>
-      </template>
-    </Dialog>
-
-    <Dialog
+    <AdminProductUpsertDialog
       v-model:visible="editDialogVisible"
-      modal
-      class="w-[calc(100vw-0.75rem)] sm:w-[min(1040px,96vw)]"
-      :pt="{ content: { class: 'max-h-[calc(100svh-0.75rem)] overflow-y-auto sm:max-h-[calc(100svh-8rem)]' } }"
-    >
-      <template #header>
-        <div class="flex w-full items-center justify-between gap-4">
-          <div>
-            <div class="text-lg font-semibold text-slate-950 dark:text-white">Chỉnh sửa track</div>
-          </div>
-          <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-200">
-            <i class="pi pi-pencil" />
-          </div>
-        </div>
-      </template>
-
-      <Message v-if="editDialogErrorMessage" severity="error" class="mb-4">{{ editDialogErrorMessage }}</Message>
-
-      <div v-if="selectedTrack" class="grid grid-cols-1 gap-4 lg:grid-cols-[0.95fr_1.05fr]">
-        <section class="space-y-4 rounded-[28px] border border-slate-200/80 bg-slate-50/80 p-4 sm:p-5 dark:border-slate-800 dark:bg-slate-900/50">
-          <div class="flex items-center gap-3 text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-            <i class="pi pi-align-left text-violet-500" />
-            Thông tin chung
-          </div>
-          <div class="grid gap-4 md:grid-cols-2">
-            <label class="space-y-2">
-              <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Tên track</span>
-              <input v-model="editForm.title" :class="fieldClass" placeholder="Nhập tên track" />
-            </label>
-            <label class="space-y-2">
-              <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Nghệ sĩ</span>
-              <div class="relative">
-                <select v-model="editForm.artistId" :class="selectFieldClass" disabled>
-                  <option :value="editForm.artistId">{{ selectedEditArtistOption?.label ?? editForm.artistId }}</option>
-                </select>
-                <i class="pi pi-chevron-down pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs text-slate-400 dark:text-slate-500" />
-              </div>
-            </label>
-            <div class="space-y-2 sm:col-span-2">
-              <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Thể loại</span>
-              <div class="flex flex-wrap gap-2">
-                <button
-                  v-for="option in PRODUCT_GENRE_OPTIONS"
-                  :key="`edit-genre-${option.value}`"
-                  type="button"
-                  class="rounded-full border px-3 py-1 text-xs font-semibold transition"
-                  :class="editForm.genres.includes(option.value)
-                    ? 'border-violet-300 bg-violet-100 text-violet-700 dark:border-violet-500/40 dark:bg-violet-500/20 dark:text-violet-200'
-                    : 'border-slate-200 bg-white text-slate-600 hover:border-violet-200 hover:text-violet-700 dark:border-slate-700 dark:bg-slate-950/40 dark:text-slate-300 dark:hover:border-violet-500/30 dark:hover:text-violet-200'"
-                  @click="editForm.genres = toggleSelection(editForm.genres, option.value)"
-                >
-                  {{ option.label }}
-                </button>
-              </div>
-            </div>
-            <div class="space-y-2 sm:col-span-2">
-              <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Use-case</span>
-              <div class="flex flex-wrap gap-2">
-                <button
-                  v-for="option in PRODUCT_USE_CASE_OPTIONS"
-                  :key="`edit-usecase-${option.value}`"
-                  type="button"
-                  class="rounded-full border px-3 py-1 text-xs font-semibold transition"
-                  :class="editForm.useCases.includes(option.value)
-                    ? 'border-violet-300 bg-violet-100 text-violet-700 dark:border-violet-500/40 dark:bg-violet-500/20 dark:text-violet-200'
-                    : 'border-slate-200 bg-white text-slate-600 hover:border-violet-200 hover:text-violet-700 dark:border-slate-700 dark:bg-slate-950/40 dark:text-slate-300 dark:hover:border-violet-500/30 dark:hover:text-violet-200'"
-                  @click="editForm.useCases = toggleSelection(editForm.useCases, option.value)"
-                >
-                  {{ option.label }}
-                </button>
-              </div>
-            </div>
-            <label class="space-y-2 sm:col-span-2">
-              <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Mô tả sản phẩm</span>
-              <textarea v-model="editForm.description" class="min-h-[120px] w-full rounded-2xl border border-slate-200/80 bg-white/90 px-4 py-3 text-sm text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-violet-400 focus:ring-4 focus:ring-violet-100 dark:border-slate-800 dark:bg-slate-950/70 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-violet-500 dark:focus:ring-violet-500/20" placeholder="Nhập mô tả chi tiết cho sản phẩm" />
-            </label>
-          </div>
-        </section>
-
-        <section class="space-y-4 rounded-[28px] border border-slate-200/80 bg-slate-50/80 p-4 sm:p-5 dark:border-slate-800 dark:bg-slate-900/50">
-          <div class="flex items-center gap-3 text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-            <i class="pi pi-image text-violet-500" />
-            Thumbnail
-          </div>
-
-          <article class="rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/70">
-            <div class="flex items-center justify-between gap-3">
-              <div class="text-sm font-semibold text-slate-900 dark:text-white">Ảnh đại diện</div>
-              <span v-if="editThumbnailFile" class="rounded-full bg-violet-100 px-3 py-1 text-xs font-medium text-violet-700 dark:bg-violet-500/20 dark:text-violet-200">
-                {{ editThumbnailFile.name }}
-              </span>
-            </div>
-            <div class="mt-4">
-              <input type="file" accept="image/*,.png,.jpg,.jpeg,.webp" :class="fileInputClass" @change="handleEditThumbnailFileChange" />
-            </div>
-            <div class="mt-4 overflow-hidden rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 p-4 dark:border-slate-700 dark:bg-slate-900/60">
-              <img v-if="editThumbnailUrl || thumbnailUrls[selectedTrack.id]" :src="editThumbnailUrl || thumbnailUrls[selectedTrack.id]" alt="" class="h-40 w-full rounded-2xl object-cover" />
-              <div v-else class="flex h-40 items-center justify-center text-sm text-slate-500 dark:text-slate-400">Chưa có thumbnail</div>
-            </div>
-          </article>
-
-          <div class="flex items-center gap-3 pt-2 text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-            <i class="pi pi-volume-up text-violet-500" />
-            Audio gốc
-          </div>
-
-          <article class="rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/70">
-            <div class="flex items-center justify-between gap-3">
-              <div class="text-sm font-semibold text-slate-900 dark:text-white">Thay file MP3</div>
-              <span v-if="editOriginalFile" class="rounded-full bg-violet-100 px-3 py-1 text-xs font-medium text-violet-700 dark:bg-violet-500/20 dark:text-violet-200">
-                {{ editOriginalFile.name }}
-              </span>
-            </div>
-            <div class="mt-4">
-              <input type="file" accept=".mp3,audio/*" :class="fileInputClass" @change="handleEditAudioFileChange" />
-            </div>
-            <div class="mt-4">
-              <label class="block space-y-2">
-                <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Thời lượng (giây)</span>
-                <input v-model="editForm.duration" :class="fieldClass" readonly />
-              </label>
-            </div>
-          </article>
-
-          <div class="flex items-center gap-3 pt-2 text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-            <i class="pi pi-file-pdf text-violet-500" />
-            Khuông nhạc (PDF)
-          </div>
-
-          <article class="rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/70">
-            <div class="flex flex-wrap items-center justify-between gap-3">
-              <div class="text-sm font-semibold text-slate-900 dark:text-white">
-                {{ selectedTrack.sheetMusicPdfKey ? 'Đã có PDF' : 'Chưa có PDF' }}
-              </div>
-              <button type="button" :class="secondaryButtonClass" :disabled="!selectedTrack.sheetMusicPdfKey" @click="openSheetMusicPdf(selectedTrack)">
-                Mở PDF
-              </button>
-            </div>
-            <div class="mt-4 flex items-center justify-between gap-3">
-              <div class="text-sm font-semibold text-slate-900 dark:text-white">Thay file PDF</div>
-              <span v-if="editSheetMusicFile" class="rounded-full bg-violet-100 px-3 py-1 text-xs font-medium text-violet-700 dark:bg-violet-500/20 dark:text-violet-200">
-                {{ editSheetMusicFile.name }}
-              </span>
-            </div>
-            <div class="mt-4">
-              <input type="file" accept=".pdf,application/pdf" :class="fileInputClass" @change="handleEditSheetMusicFileChange" />
-            </div>
-          </article>
-        </section>
-      </div>
-
-      <template #footer>
-        <div class="flex w-full flex-col gap-3 sm:flex-row sm:justify-end">
-          <button type="button" :class="[secondaryButtonClass, 'w-full sm:w-auto']" @click="editDialogVisible = false">Huỷ</button>
-          <button type="button" :class="[primaryButtonClass, 'w-full sm:w-auto']" :disabled="isLoading" @click="confirmSubmitEdit">Lưu thay đổi</button>
-        </div>
-      </template>
-    </Dialog>
+      mode="edit"
+      :is-loading="isLoading"
+      :is-artists-loading="isArtistsLoading"
+      :artist-options="artistOptions"
+      :error-message="editDialogErrorMessage"
+      :form="editForm"
+      :field-class="fieldClass"
+      :select-field-class="selectFieldClass"
+      :file-input-class="fileInputClass"
+      :duration-display="editDurationDisplay"
+      :audio-url="selectedTrack ? (originalAudioUrls[selectedTrack.id] ?? null) : null"
+      :thumbnail-url="editThumbnailUrl || (selectedTrack ? (thumbnailUrls[selectedTrack.id] ?? null) : null)"
+      :audio-file="editOriginalFile"
+      :thumbnail-file="editThumbnailFile"
+      :sheet-music-file="editSheetMusicFile"
+      :can-open-sheet-music-pdf="Boolean(selectedTrack?.sheetMusicPdfKey)"
+      @thumbnail-change="handleEditThumbnailFileChange"
+      @audio-change="handleEditAudioFileChange"
+      @sheet-music-change="handleEditSheetMusicFileChange"
+      @open-sheet-music-pdf="selectedTrack && openSheetMusicPdf(selectedTrack)"
+      @submit="confirmSubmitEdit"
+    />
 
     <Dialog
       v-model:visible="detailDialogVisible"
@@ -2238,154 +1949,188 @@ onBeforeUnmount(() => {
       :class="detailDialogClass"
       :pt="{
         header: { class: 'px-0 pb-0 pt-0' },
-        content: { class: 'max-h-[calc(100svh-0.75rem)] overflow-y-auto px-0 pb-0 sm:max-h-[calc(100svh-4rem)]' },
-        footer: { class: 'border-t border-slate-200/80 px-4 py-5 dark:border-slate-800 sm:px-6 sm:py-6' },
+        content: { class: 'max-h-[calc(100svh-0.75rem)] overflow-y-auto px-0 pb-6 sm:max-h-[calc(100svh-4rem)]' },
+        footer: { class: 'hidden' },
       }"
     >
       <template #header>
         <div
           v-if="selectedTrack"
-          class="sticky top-0 z-10 border-b border-slate-200/80 bg-white/95 px-4 pb-4 pt-4 backdrop-blur dark:border-slate-800 dark:bg-slate-950/95 sm:px-6 sm:pb-5 sm:pt-5"
+          class="sticky top-0 z-10 w-full border-b bg-[color:var(--admin-surface-0)] px-4 py-3 backdrop-blur sm:px-5 [border-color:var(--admin-border)]"
         >
-          <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
-            <div class="min-w-0">
-              <div class="flex items-start gap-4">
-                <div
-                  class="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-violet-600 to-fuchsia-500 text-lg font-semibold text-white shadow-lg shadow-violet-500/20"
-                >
-                  <img
-                    v-if="thumbnailUrls[selectedTrack.id]"
-                    :src="thumbnailUrls[selectedTrack.id]"
-                    alt=""
-                    class="h-full w-full object-cover"
-                  />
-                  <span v-else>{{ selectedTrack.title.slice(0, 1).toUpperCase() }}</span>
-                </div>
-
-                <div class="min-w-0">
-                  <div class="flex flex-wrap items-center gap-2">
-                    <span
-                      class="inline-flex items-center rounded-full border border-violet-200 bg-violet-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-violet-700 dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-violet-200"
-                    >
-                      Sản phẩm
-                    </span>
-                    <span class="hidden max-w-[220px] truncate font-mono text-[11px] text-slate-400 dark:text-slate-500 sm:inline">
-                      {{ selectedTrack.id }}
-                    </span>
-                  </div>
-
-                  <div class="mt-1 line-clamp-2 text-lg font-semibold leading-snug text-slate-950 dark:text-white sm:text-xl">
-                    {{ selectedTrack.title }}
-                  </div>
-
-                  <div class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
-                    <span class="font-medium text-slate-700 dark:text-slate-200">{{ resolveArtistDisplay(selectedTrack.artistId) }}</span>
-                    <span class="text-slate-300 dark:text-slate-700">·</span>
-                    <span>{{ formatTrackGenresDisplay(selectedTrack) }}</span>
-                  </div>
-
-                  <div class="mt-3 flex flex-wrap items-center gap-2">
-                    <span
-                      class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold"
-                      :class="getProductStatusClass(selectedTrack.status)"
-                    >
-                      <i class="pi pi-music text-[12px]" />
-                      Product: {{ formatProductStatusLabel(selectedTrack.status) }}
-                    </span>
-                    <span
-                      class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold"
-                      :class="getProductComplianceLegalStatusClassSafe(selectedTrack.complianceLegalStatus)"
-                    >
-                      <i class="pi pi-file text-[12px]" />
-                      Legal: {{ formatComplianceLegalStatusLabel(selectedTrack.complianceLegalStatus) }}
-                    </span>
-                    <span
-                      class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold"
-                      :class="getProductComplianceReviewStatusClassSafe(selectedTrack.complianceReviewStatus)"
-                    >
-                      <i class="pi pi-check-circle text-[12px]" />
-                      Review: {{ formatProductComplianceReviewStatusLabelSafe(selectedTrack.complianceReviewStatus) }}
-                    </span>
-                  </div>
-                </div>
+          <div class="grid w-full grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
+            <div class="min-w-0 max-w-[320px] sm:max-w-[420px]">
+              <div class="text-[10px] font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]">
+                Chi tiết sản phẩm
+              </div>
+              <div class="mt-1 truncate text-base font-bold text-[color:var(--admin-text)] sm:text-lg">
+                {{ selectedTrack.title }}
               </div>
             </div>
-
-            <div class="flex flex-wrap items-center justify-start gap-2 lg:justify-end">
-              <button
-                type="button"
-                :class="[secondaryButtonClass, 'gap-2 px-3 py-2']"
-                :disabled="isLoading"
-                @click="confirmTogglePublish(selectedTrack)"
-              >
-                <i :class="selectedTrack.status === 'PUBLISHED' ? 'pi pi-eye-slash' : 'pi pi-eye'" class="text-sm" />
-                <span class="hidden sm:inline">
-                  {{ selectedTrack.status === 'PUBLISHED' ? 'Ẩn track' : 'Phát hành track' }}
-                </span>
-              </button>
-              <button type="button" :class="[secondaryButtonClass, 'gap-2 px-3 py-2']" @click="openEditDialog(selectedTrack)">
-                <i class="pi pi-pencil text-sm" />
-                <span class="hidden sm:inline">Chỉnh sửa</span>
-              </button>
-              <button type="button" :class="[primaryButtonClass, 'gap-2 px-3 py-2']" @click="openUploadDialog(selectedTrack)">
-                <i class="pi pi-upload text-sm" />
-                <span class="hidden sm:inline">Tải audio gốc</span>
-              </button>
-            </div>
+            <button
+              type="button"
+              class="inline-flex h-10 w-10 shrink-0 items-center justify-center justify-self-end rounded-full border bg-[color:var(--admin-surface-0)] text-[color:var(--admin-text-muted)] shadow-sm transition hover:bg-[color:var(--admin-surface-1)] hover:text-[color:var(--admin-text)] focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 [border-color:var(--admin-border)] [--tw-ring-color:var(--admin-ring)] [--tw-ring-offset-color:var(--admin-surface-0)]"
+              aria-label="Đóng"
+              @click="detailDialogVisible = false"
+            >
+              <i class="pi pi-times text-sm" />
+            </button>
           </div>
-
-          <nav class="mt-4 flex flex-nowrap gap-2 overflow-x-auto pb-1 no-scrollbar">
+          <nav class="relative top-[1px] mt-3 flex w-full gap-3 overflow-x-auto border-b border-transparent pb-0 no-scrollbar">
             <button
               v-for="tab in detailTabs"
               :key="tab.key"
               type="button"
-              class="inline-flex shrink-0 items-center gap-2 rounded-2xl px-4 py-2 text-sm font-semibold transition"
+              class="group relative inline-flex shrink-0 items-center gap-2 pb-3 pt-1.5 text-[13px] font-bold transition-colors"
               :class="detailActiveTab === tab.key
-                ? 'bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-200'
-                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-900/60 dark:hover:text-white'"
+                ? 'text-[color:var(--admin-primary-600)]'
+                : 'text-[color:var(--admin-text-muted)] hover:text-[color:var(--admin-text)]'"
               @click="detailActiveTab = tab.key"
             >
-              <i :class="tab.icon" />
+              <i :class="tab.icon" class="transition-transform group-hover:scale-110" />
               {{ tab.label }}
+              <span
+                v-if="detailActiveTab === tab.key"
+                class="absolute bottom-0 left-0 right-0 h-[3px] rounded-t-full bg-[color:var(--admin-primary-600)]"
+              />
             </button>
           </nav>
         </div>
       </template>
 
-      <div v-if="selectedTrack" class="space-y-4 px-4 py-4 sm:px-6 sm:py-5">
+      <div v-if="selectedTrack" class="space-y-5 px-4 py-4 sm:px-6 sm:py-5">
         <div class="space-y-3">
           <Message v-if="errorMessage" severity="error">{{ errorMessage }}</Message>
           <Message v-if="successMessage" severity="success">{{ successMessage }}</Message>
         </div>
-          <div v-if="detailActiveTab === 'info'" class="space-y-4">
-            <section class="rounded-[28px] border border-slate-200/80 bg-slate-50/80 p-4 sm:p-5 dark:border-slate-800 dark:bg-slate-900/50">
-              <ProductWavePreview
-                :audio-url="originalAudioUrls[selectedTrack.id] ?? null"
-                :disabled="!selectedTrack.originalAudioKey"
-              />
-              <div class="mt-3 flex flex-wrap gap-2 text-sm text-slate-500 dark:text-slate-400">
-                <span>{{ formatDuration(selectedTrack.duration) }}</span>
-                <span>·</span>
-                <span>{{ formatTrackGenresDisplay(selectedTrack) }}</span>
-                <span>·</span>
-                <span>{{ resolvePermissionCount(selectedTrack) }} quyền</span>
-              </div>
-            </section>
 
-            <section class="grid grid-cols-1 gap-4 lg:grid-cols-[1.05fr_0.95fr]">
-              <article class="rounded-[28px] border border-slate-200/80 bg-white/80 p-4 sm:p-5 dark:border-slate-800 dark:bg-slate-950/60">
-                <div class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Thông tin chung</div>
+        <section
+          v-if="detailActiveTab === 'info'"
+          class="rounded-[28px] border bg-[color:var(--admin-surface-0)] p-4 sm:p-5 [border-color:var(--admin-border)]"
+        >
+          <div class="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-[color:var(--admin-text-muted)]">
+            <i class="pi pi-file-edit text-[12px] text-[color:var(--admin-primary-500)]" />
+            Thông tin chung
+          </div>
+
+          <div class="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)]">
+            <div class="space-y-4">
+              <article class="rounded-[24px] border bg-[linear-gradient(135deg,var(--admin-surface-1),var(--admin-surface-0))] p-4 [border-color:var(--admin-border)]">
+                <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div class="flex items-start gap-4">
+                    <div
+                      class="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-[1.25rem] bg-gradient-to-br from-[color:var(--admin-primary-400)] to-[color:var(--admin-primary-600)] text-2xl font-bold text-white shadow-lg ring-4 ring-[color:var(--admin-primary-50)]"
+                    >
+                      <img
+                        v-if="thumbnailUrls[selectedTrack.id]"
+                        :src="thumbnailUrls[selectedTrack.id]"
+                        alt=""
+                        class="h-full w-full object-cover"
+                      />
+                      <span v-else>{{ selectedTrack.title.slice(0, 1).toUpperCase() }}</span>
+                    </div>
+                    <div class="min-w-0">
+                      <div class="flex flex-wrap items-center gap-2">
+                        <span class="inline-flex items-center rounded-full bg-[color:var(--admin-primary-600)] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white shadow-sm">
+                          Sản phẩm
+                        </span>
+                        <span class="max-w-[220px] truncate font-mono text-[11px] text-[color:var(--admin-text-muted)]">
+                          {{ selectedTrack.id }}
+                        </span>
+                      </div>
+                      <h2 class="mt-3 text-xl font-bold tracking-tight text-[color:var(--admin-text)] sm:text-2xl">
+                        {{ selectedTrack.title }}
+                      </h2>
+                      <div class="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-[color:var(--admin-text-muted)]">
+                        <span class="font-semibold text-[color:var(--admin-text)]">{{ resolveArtistDisplay(selectedTrack.artistId) }}</span>
+                        <span class="text-[color:var(--admin-border)]">•</span>
+                        <span>{{ formatTrackGenresDisplay(selectedTrack) }}</span>
+                      </div>
+                      <div class="mt-4 flex flex-wrap items-center gap-2.5">
+                        <span
+                          class="inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-xs shadow-sm"
+                          :class="getProductStatusClass(selectedTrack.status)"
+                        >
+                          <i class="pi pi-music text-[11px]" />
+                          <span class="uppercase tracking-[0.14em] opacity-70">Product</span>
+                          <span class="font-semibold">{{ formatProductStatusLabel(selectedTrack.status) }}</span>
+                        </span>
+                        <span
+                          class="inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-xs shadow-sm"
+                          :class="getProductComplianceLegalStatusClassSafe(selectedTrack.complianceLegalStatus)"
+                        >
+                          <i class="pi pi-file text-[11px]" />
+                          <span class="uppercase tracking-[0.14em] opacity-70">Legal</span>
+                          <span class="font-semibold">{{ formatComplianceLegalStatusLabel(selectedTrack.complianceLegalStatus) }}</span>
+                        </span>
+                        <span
+                          class="inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-xs shadow-sm"
+                          :class="getProductComplianceReviewStatusClassSafe(selectedTrack.complianceReviewStatus)"
+                        >
+                          <i class="pi pi-check-circle text-[11px]" />
+                          <span class="uppercase tracking-[0.14em] opacity-70">Review</span>
+                          <span class="font-semibold">{{ formatProductComplianceReviewStatusLabelSafe(selectedTrack.complianceReviewStatus) }}</span>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="flex flex-wrap gap-2 sm:max-w-[260px] sm:justify-end">
+                    <button
+                      type="button"
+                      :class="[secondaryButtonClass, 'gap-2 px-4 py-2.5 shadow-sm']"
+                      :disabled="isLoading"
+                      @click="confirmTogglePublish(selectedTrack)"
+                    >
+                      <i :class="selectedTrack.status === 'PUBLISHED' ? 'pi pi-eye-slash' : 'pi pi-eye'" class="text-sm" />
+                      {{ selectedTrack.status === 'PUBLISHED' ? 'Ẩn track' : 'Phát hành track' }}
+                    </button>
+                    <button type="button" :class="[primaryButtonClass, 'gap-2 px-4 py-2.5 shadow-md']" @click="openUploadDialog(selectedTrack)">
+                      <i class="pi pi-upload text-sm" />
+                      Tải bản gốc
+                    </button>
+                    <button
+                      type="button"
+                      :class="[secondaryButtonClass, 'gap-2 px-4 py-2.5']"
+                      :disabled="!selectedTrack.sheetMusicPdfKey"
+                      @click="openSheetMusicPdf(selectedTrack)"
+                    >
+                      <i class="pi pi-file-pdf text-sm" />
+                      Mở PDF
+                    </button>
+                  </div>
+                </div>
+              </article>
+
+              <article class="rounded-[24px] border bg-[color:var(--admin-surface-1)] p-4 [border-color:var(--admin-border)]">
+                <ProductWavePreview
+                  :audio-url="originalAudioUrls[selectedTrack.id] ?? null"
+                  :disabled="!selectedTrack.originalAudioKey"
+                  :track-status="selectedTrack.status"
+                />
+              </article>
+
+              <article class="rounded-[24px] border bg-[color:var(--admin-surface-0)] p-4 [border-color:var(--admin-border)]">
+                <div class="text-sm font-semibold uppercase tracking-[0.18em] text-[color:var(--admin-text-muted)]">Mô tả sản phẩm</div>
+                <p class="mt-4 text-sm leading-7 text-[color:var(--admin-text)]">
+                  {{ selectedTrack.description || 'Chưa có mô tả riêng cho sản phẩm.' }}
+                </p>
+              </article>
+            </div>
+
+            <div class="space-y-4">
+              <article class="rounded-[24px] border bg-[color:var(--admin-surface-0)] p-4 [border-color:var(--admin-border)]">
+                <div class="text-sm font-semibold uppercase tracking-[0.18em] text-[color:var(--admin-text-muted)]">Thông tin chi tiết</div>
                 <div class="mt-4 grid gap-3 sm:grid-cols-2">
                   <div
                     v-for="item in selectedTrackAttributeItems"
                     :key="`${selectedTrack.id}-${item.label}`"
-                    class="rounded-2xl border border-slate-200/80 bg-slate-50/80 px-4 py-3 dark:border-slate-800 dark:bg-slate-900/60"
+                    class="rounded-2xl border bg-[color:var(--admin-surface-1)] px-4 py-3 [border-color:var(--admin-border)]"
                   >
-                    <div class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                    <div class="text-[11px] font-semibold uppercase tracking-[0.18em] text-[color:var(--admin-text-muted)]">
                       {{ item.label }}
                     </div>
                     <div
-                      class="mt-2 break-words text-sm font-medium text-slate-700 dark:text-slate-200"
+                      class="mt-2 break-words text-sm font-medium text-[color:var(--admin-text)]"
                       :class="item.mono ? 'font-mono text-xs sm:text-sm' : ''"
                     >
                       {{ item.value }}
@@ -2394,81 +2139,78 @@ onBeforeUnmount(() => {
                 </div>
               </article>
 
-              <div class="space-y-4">
-                <article class="rounded-[28px] border border-slate-200/80 bg-white/80 p-4 sm:p-5 dark:border-slate-800 dark:bg-slate-950/60">
-                  <div class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Khuông nhạc (PDF)</div>
-                  <div class="mt-4 flex flex-col gap-3 text-sm text-slate-600 dark:text-slate-300 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      {{ selectedTrack.sheetMusicPdfKey ? 'Đã có file PDF.' : 'Chưa upload file PDF.' }}
-                    </div>
-                    <button type="button" :class="[secondaryButtonClass, 'w-full sm:w-auto']" :disabled="!selectedTrack.sheetMusicPdfKey" @click="openSheetMusicPdf(selectedTrack)">
-                      Mở PDF
-                    </button>
+              <article class="rounded-[24px] border bg-[color:var(--admin-surface-0)] p-4 [border-color:var(--admin-border)]">
+                <div class="text-sm font-semibold uppercase tracking-[0.18em] text-[color:var(--admin-text-muted)]">Tài liệu đính kèm</div>
+                <div class="mt-4 rounded-2xl border bg-[color:var(--admin-surface-1)] px-4 py-4 [border-color:var(--admin-border)]">
+                  <div class="text-sm font-medium text-[color:var(--admin-text)]">
+                    {{ selectedTrack.sheetMusicPdfKey ? 'Đã có file khuông nhạc PDF.' : 'Chưa upload file khuông nhạc PDF.' }}
                   </div>
-                </article>
+                  <div class="mt-2 text-xs text-[color:var(--admin-text-muted)]">
+                    File PDF được mở trực tiếp trong phần thông tin chung khi sản phẩm đã upload khuông nhạc.
+                  </div>
+                </div>
+              </article>
+            </div>
+          </div>
+        </section>
 
-                <article class="rounded-[28px] border border-slate-200/80 bg-white/80 p-4 sm:p-5 dark:border-slate-800 dark:bg-slate-950/60">
-                  <div class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Mô tả sản phẩm</div>
-                  <p class="mt-4 text-sm leading-7 text-slate-600 dark:text-slate-300">
-                    {{ selectedTrack.description || 'Chưa có mô tả riêng cho sản phẩm.' }}
-                  </p>
-                </article>
-              </div>
-            </section>
+        <section v-else-if="detailActiveTab === 'licensing'" class="space-y-5 sm:space-y-6">
+          <div class="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-[color:var(--admin-text-muted)]">
+            <i class="pi pi-book text-[12px] text-[color:var(--admin-primary-500)]" />
+            Quyền & Licensing
           </div>
 
-          <div v-else-if="detailActiveTab === 'licensing'" class="space-y-5 sm:space-y-6">
-            <article class="rounded-[28px] border border-slate-200/80 bg-white/80 p-4 sm:p-5 dark:border-slate-800 dark:bg-slate-950/60">
-              <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div class="min-w-0">
-                  <div class="flex flex-wrap items-center gap-2">
-                    <div class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Quyền bán đã chọn</div>
-                    <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-900 dark:text-slate-300">
-                      {{ selectedTrack.allowedPermissions.length }} quyền
-                    </span>
-                  </div>
-                  <div class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                    Chọn tập quyền bán cuối cùng theo hồ sơ Pháp lý của sản phẩm.
-                  </div>
+          <article class="rounded-[28px] border bg-[color:var(--admin-surface-0)] p-4 sm:p-5 [border-color:var(--admin-border)]">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div class="min-w-0">
+                <div class="flex flex-wrap items-center gap-2">
+                  <div class="text-sm font-semibold uppercase tracking-[0.18em] text-[color:var(--admin-text-muted)]">Quyền bán đã chọn</div>
+                  <span class="rounded-full bg-[color:var(--admin-surface-1)] px-3 py-1 text-xs font-semibold text-[color:var(--admin-text)]">
+                    {{ selectedTrack.allowedPermissions.length }} quyền
+                  </span>
                 </div>
-                <button type="button" :class="[secondaryButtonClass, 'gap-2 w-full sm:w-auto']" @click="openApprovedPermissionsDialog(selectedTrack)">
-                  <i class="pi pi-sliders-h text-sm" />
-                  Chọn quyền bán
-                </button>
+                <div class="mt-1 text-sm text-[color:var(--admin-text-muted)]">
+                  Chọn tập quyền bán cuối cùng theo hồ sơ Pháp lý của sản phẩm.
+                </div>
               </div>
-              <div
-                v-if="selectedTrack.allowedPermissions.length === 0"
-                class="mt-4 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-400"
+              <button type="button" :class="[secondaryButtonClass, 'gap-2 w-full sm:w-auto']" @click="openApprovedPermissionsDialog(selectedTrack)">
+                <i class="pi pi-sliders-h text-sm" />
+                Chọn quyền bán
+              </button>
+            </div>
+            <div
+              v-if="selectedTrack.allowedPermissions.length === 0"
+              class="mt-4 rounded-2xl border border-dashed bg-[color:var(--admin-surface-1)] px-4 py-4 text-sm text-[color:var(--admin-text-muted)] [border-color:var(--admin-border)]"
+            >
+              Chưa chọn quyền bán cho sản phẩm. Nhấn “Chọn quyền bán” để bắt đầu.
+            </div>
+            <div v-else class="mt-4 flex flex-wrap gap-2">
+              <span
+                v-for="permission in selectedTrack.allowedPermissions"
+                :key="`${selectedTrack.id}-detail-allowed-${permission.name}-${permission.lawReference}`"
+                class="inline-flex items-center rounded-full border bg-[color:var(--admin-primary-50)] px-3 py-1 text-xs font-semibold text-[color:var(--admin-text)] [border-color:var(--admin-primary-500)]"
               >
-                Chưa chọn quyền bán cho sản phẩm. Nhấn “Chọn quyền bán” để bắt đầu.
-              </div>
-              <div v-else class="mt-4 flex flex-wrap gap-2">
-                <span
-                  v-for="permission in selectedTrack.allowedPermissions"
-                  :key="`${selectedTrack.id}-detail-allowed-${permission.name}-${permission.lawReference}`"
-                  class="inline-flex items-center rounded-full border border-violet-200 bg-violet-50 px-3 py-1 text-xs font-semibold text-violet-700 dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-violet-200"
-                >
-                  {{ permission.name }}
-                </span>
-              </div>
-            </article>
+                {{ permission.name }}
+              </span>
+            </div>
+          </article>
 
-            <article class="rounded-[28px] border border-slate-200/80 bg-white/80 p-4 sm:p-5 dark:border-slate-800 dark:bg-slate-950/60">
-              <div class="flex flex-col gap-2">
-                <div class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Đối chiếu Digital / Physical Rights</div>
-                <div class="text-sm text-slate-500 dark:text-slate-400">
-                  Hệ thống kiểm tra điều kiện tham gia gói quyền dựa trên tập quyền bán đã chọn.
-                </div>
+          <article class="rounded-[28px] border bg-[color:var(--admin-surface-0)] p-4 sm:p-5 [border-color:var(--admin-border)]">
+            <div class="flex flex-col gap-2">
+              <div class="text-sm font-semibold uppercase tracking-[0.18em] text-[color:var(--admin-text-muted)]">Đối chiếu Digital / Physical Rights</div>
+              <div class="text-sm text-[color:var(--admin-text-muted)]">
+                Hệ thống kiểm tra điều kiện tham gia gói quyền dựa trên tập quyền bán đã chọn.
               </div>
+            </div>
 
-              <div v-if="!hasSelectedTrackEligibility" class="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-300">
+              <div v-if="!hasSelectedTrackEligibility" class="mt-4 rounded-2xl border bg-[color:var(--admin-surface-1)] px-4 py-4 text-sm text-[color:var(--admin-text)] [border-color:var(--admin-border)]">
                 <div class="flex items-start gap-3">
-                  <div class="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300">
+                  <div class="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border bg-[color:var(--admin-surface-0)] text-[color:var(--admin-text-muted)] [border-color:var(--admin-border)]">
                     <i class="pi pi-info-circle text-sm" />
                   </div>
                   <div class="min-w-0">
-                    <div class="font-semibold text-slate-900 dark:text-white">Chưa có dữ liệu để đối chiếu</div>
-                    <div class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                    <div class="font-semibold text-[color:var(--admin-text)]">Chưa có dữ liệu để đối chiếu</div>
+                    <div class="mt-1 text-sm text-[color:var(--admin-text-muted)]">
                       Chưa có cấu hình digital hoặc physical nào đang `ACTIVE` để hệ thống đối chiếu.
                     </div>
                   </div>
@@ -2476,18 +2218,18 @@ onBeforeUnmount(() => {
               </div>
 
               <div v-else class="mt-4 grid gap-4 lg:grid-cols-2">
-                <section class="rounded-[24px] border border-slate-200/80 bg-slate-50/80 p-4 dark:border-slate-800 dark:bg-slate-900/50">
+                <section :class="getEligibilitySectionClass('digital')">
                   <div class="flex items-center justify-between gap-3">
-                    <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
-                      <i class="pi pi-desktop text-[12px] text-violet-500" />
+                    <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]">
+                      <i class="pi pi-desktop text-[12px]" :class="getEligibilitySectionIconClass('digital')" />
                       Digital Platform Rights
                     </div>
-                    <div class="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-950 dark:text-slate-300">
+                    <div :class="getEligibilitySectionCountClass('digital')">
                       {{ selectedTrack.licensingEligibility.summary.eligibleDigitalCount }}/{{ getEligibilityTotal(selectedTrack, 'digital') }} đủ điều kiện
                     </div>
                   </div>
 
-                  <div v-if="selectedTrack.licensingEligibility.digitalConfigs.length === 0" class="mt-3 text-sm text-slate-500 dark:text-slate-400">
+                  <div v-if="selectedTrack.licensingEligibility.digitalConfigs.length === 0" class="mt-3 text-sm text-[color:var(--admin-text-muted)]">
                     Chưa có gói quyền số nào đang `ACTIVE`.
                   </div>
 
@@ -2495,12 +2237,12 @@ onBeforeUnmount(() => {
                     <article
                       v-for="config in selectedTrack.licensingEligibility.digitalConfigs"
                       :key="`${selectedTrack.id}-digital-${config.configId}`"
-                      class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-950"
+                      :class="getEligibilityConfigCardClass('digital')"
                     >
                       <div class="flex items-start justify-between gap-3">
                         <div class="min-w-0">
-                          <div class="font-semibold text-slate-900 dark:text-white">{{ config.title }}</div>
-                          <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                          <div class="font-semibold text-[color:var(--admin-text)]">{{ config.title }}</div>
+                          <div class="mt-1 text-xs text-[color:var(--admin-text-muted)]">
                             {{ config.referencedPermissions.length }} quyền tham chiếu
                           </div>
                         </div>
@@ -2528,17 +2270,36 @@ onBeforeUnmount(() => {
                       <div v-if="config.status === 'INELIGIBLE' && config.missingPermissions.length > 0" class="mt-3">
                         <details class="group">
                           <summary
-                            class="flex cursor-pointer list-none items-center justify-between gap-3 rounded-2xl border border-rose-200 bg-rose-50/80 px-3 py-2 text-xs font-semibold text-rose-800 transition hover:bg-rose-50 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-200 dark:hover:bg-rose-500/15"
+                            :class="getMissingPermissionsSummaryClass()"
+                            class="flex cursor-pointer list-none items-center justify-between gap-3 transition hover:-translate-y-0.5"
                           >
                             <span class="inline-flex items-center gap-2">
                               <i class="pi pi-exclamation-triangle text-[12px]" />
                               Thiếu {{ config.missingPermissions.length }} quyền tham chiếu
                             </span>
-                            <span class="text-rose-700/80 dark:text-rose-200/80 group-open:hidden">Xem chi tiết</span>
-                            <span class="hidden text-rose-700/80 dark:text-rose-200/80 group-open:inline">Ẩn</span>
+                            <span class="text-[color:var(--admin-text-muted)] group-open:hidden">Xem chi tiết</span>
+                            <span class="hidden text-[color:var(--admin-text-muted)] group-open:inline">Ẩn</span>
                           </summary>
-                          <div class="mt-2 rounded-2xl border border-slate-200 bg-white px-3 py-3 text-xs leading-6 text-slate-600 dark:border-slate-800 dark:bg-slate-950/60 dark:text-slate-300">
-                            {{ getEligibilityMissingSummary(config) }}
+                          <div class="mt-3 grid gap-3 sm:grid-cols-2">
+                            <article
+                              v-for="permission in config.missingPermissions"
+                              :key="`${config.configId}-digital-missing-${permission.id}`"
+                              :class="getMissingPermissionItemClass()"
+                            >
+                              <div class="flex items-start gap-3">
+                                <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-200">
+                                  <i class="pi pi-shield text-sm" />
+                                </span>
+                                <div class="min-w-0">
+                                  <div class="font-semibold leading-5 text-[color:var(--admin-text)]">
+                                    {{ permission.name }}
+                                  </div>
+                                  <div class="mt-2 text-xs leading-5 text-[color:var(--admin-text-muted)]">
+                                    {{ permission.lawReference }}
+                                  </div>
+                                </div>
+                              </div>
+                            </article>
                           </div>
                         </details>
                       </div>
@@ -2558,18 +2319,18 @@ onBeforeUnmount(() => {
                   </div>
                 </section>
 
-                <section class="rounded-[24px] border border-slate-200/80 bg-slate-50/80 p-4 dark:border-slate-800 dark:bg-slate-900/50">
+                <section :class="getEligibilitySectionClass('physical')">
                   <div class="flex items-center justify-between gap-3">
-                    <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
-                      <i class="pi pi-box text-[12px] text-violet-500" />
+                    <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]">
+                      <i class="pi pi-box text-[12px]" :class="getEligibilitySectionIconClass('physical')" />
                       Physical Usage Rights
                     </div>
-                    <div class="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-950 dark:text-slate-300">
+                    <div :class="getEligibilitySectionCountClass('physical')">
                       {{ selectedTrack.licensingEligibility.summary.eligiblePhysicalCount }}/{{ getEligibilityTotal(selectedTrack, 'physical') }} đủ điều kiện
                     </div>
                   </div>
 
-                  <div v-if="selectedTrack.licensingEligibility.physicalConfigs.length === 0" class="mt-3 text-sm text-slate-500 dark:text-slate-400">
+                  <div v-if="selectedTrack.licensingEligibility.physicalConfigs.length === 0" class="mt-3 text-sm text-[color:var(--admin-text-muted)]">
                     Chưa có cấu hình quyền vật lý nào đang `ACTIVE`.
                   </div>
 
@@ -2577,12 +2338,12 @@ onBeforeUnmount(() => {
                     <article
                       v-for="config in selectedTrack.licensingEligibility.physicalConfigs"
                       :key="`${selectedTrack.id}-physical-${config.configId}`"
-                      class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-950"
+                      :class="getEligibilityConfigCardClass('physical')"
                     >
                       <div class="flex items-start justify-between gap-3">
                         <div class="min-w-0">
-                          <div class="font-semibold text-slate-900 dark:text-white">{{ config.title }}</div>
-                          <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                          <div class="font-semibold text-[color:var(--admin-text)]">{{ config.title }}</div>
+                          <div class="mt-1 text-xs text-[color:var(--admin-text-muted)]">
                             {{ config.referencedPermissions.length }} quyền tham chiếu
                           </div>
                         </div>
@@ -2610,17 +2371,36 @@ onBeforeUnmount(() => {
                       <div v-if="config.status === 'INELIGIBLE' && config.missingPermissions.length > 0" class="mt-3">
                         <details class="group">
                           <summary
-                            class="flex cursor-pointer list-none items-center justify-between gap-3 rounded-2xl border border-rose-200 bg-rose-50/80 px-3 py-2 text-xs font-semibold text-rose-800 transition hover:bg-rose-50 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-200 dark:hover:bg-rose-500/15"
+                            :class="getMissingPermissionsSummaryClass()"
+                            class="flex cursor-pointer list-none items-center justify-between gap-3 transition hover:-translate-y-0.5"
                           >
                             <span class="inline-flex items-center gap-2">
                               <i class="pi pi-exclamation-triangle text-[12px]" />
                               Thiếu {{ config.missingPermissions.length }} quyền tham chiếu
                             </span>
-                            <span class="text-rose-700/80 dark:text-rose-200/80 group-open:hidden">Xem chi tiết</span>
-                            <span class="hidden text-rose-700/80 dark:text-rose-200/80 group-open:inline">Ẩn</span>
+                            <span class="text-[color:var(--admin-text-muted)] group-open:hidden">Xem chi tiết</span>
+                            <span class="hidden text-[color:var(--admin-text-muted)] group-open:inline">Ẩn</span>
                           </summary>
-                          <div class="mt-2 rounded-2xl border border-slate-200 bg-white px-3 py-3 text-xs leading-6 text-slate-600 dark:border-slate-800 dark:bg-slate-950/60 dark:text-slate-300">
-                            {{ getEligibilityMissingSummary(config) }}
+                          <div class="mt-3 grid gap-3 sm:grid-cols-2">
+                            <article
+                              v-for="permission in config.missingPermissions"
+                              :key="`${config.configId}-physical-missing-${permission.id}`"
+                              :class="getMissingPermissionItemClass()"
+                            >
+                              <div class="flex items-start gap-3">
+                                <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-200">
+                                  <i class="pi pi-shield text-sm" />
+                                </span>
+                                <div class="min-w-0">
+                                  <div class="font-semibold leading-5 text-[color:var(--admin-text)]">
+                                    {{ permission.name }}
+                                  </div>
+                                  <div class="mt-2 text-xs leading-5 text-[color:var(--admin-text-muted)]">
+                                    {{ permission.lawReference }}
+                                  </div>
+                                </div>
+                              </div>
+                            </article>
                           </div>
                         </details>
                       </div>
@@ -2641,50 +2421,44 @@ onBeforeUnmount(() => {
                 </section>
               </div>
 
-              <article
-                v-if="selectedTrack && (selectedTrack.digitalPackageRegistrations.length > 0 || selectedTrack.physicalPackageRegistrations.length > 0)"
-                class="mt-4 rounded-[24px] border border-slate-200/80 bg-slate-50/80 p-4 dark:border-slate-800 dark:bg-slate-900/50"
-              >
-                <div class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Lịch sử đăng ký gói</div>
-                <div class="mt-3 space-y-3">
-                  <article
-                    v-for="registration in [...selectedTrack.digitalPackageRegistrations, ...selectedTrack.physicalPackageRegistrations]"
-                    :key="registration.registrationId"
-                    class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-950"
-                  >
-                    <div class="flex flex-wrap items-center justify-between gap-3">
-                      <div>
-                        <div class="font-semibold text-slate-900 dark:text-white">{{ registration.title }}</div>
-                        <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                          {{ registration.configType === 'DIGITAL' ? 'Digital package' : 'Physical package' }} · {{ registration.configStatus === 'ACTIVE' ? 'Đang hoạt động' : 'Tạm ngừng' }}
-                        </div>
+            <article
+              v-if="selectedTrack && (selectedTrack.digitalPackageRegistrations.length > 0 || selectedTrack.physicalPackageRegistrations.length > 0)"
+              class="mt-4 rounded-[24px] border bg-[color:var(--admin-surface-1)] p-4 [border-color:var(--admin-border)]"
+            >
+              <div class="text-xs font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]">Lịch sử đăng ký gói</div>
+              <div class="mt-3 space-y-3">
+                <article
+                  v-for="registration in [...selectedTrack.digitalPackageRegistrations, ...selectedTrack.physicalPackageRegistrations]"
+                  :key="registration.registrationId"
+                  class="rounded-2xl border bg-[color:var(--admin-surface-0)] p-4 [border-color:var(--admin-border)]"
+                >
+                  <div class="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <div class="font-semibold text-[color:var(--admin-text)]">{{ registration.title }}</div>
+                      <div class="mt-1 text-xs text-[color:var(--admin-text-muted)]">
+                        {{ registration.configType === 'DIGITAL' ? 'Digital package' : 'Physical package' }} · {{ registration.configStatus === 'ACTIVE' ? 'Đang hoạt động' : 'Tạm ngừng' }}
                       </div>
-                      <span
-                        class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold"
-                        :class="registration.registrationStatus === 'JOINED'
-                          ? 'border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-violet-300'
-                          : 'border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300'"
-                      >
-                        <i :class="registration.registrationStatus === 'JOINED' ? 'pi pi-check-circle' : 'pi pi-times-circle'" class="text-[12px]" />
-                        {{ registration.registrationStatus === 'JOINED' ? 'Đã đăng ký' : 'Đã gỡ' }}
-                      </span>
                     </div>
-                  </article>
-                </div>
-              </article>
+                    <span
+                      class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold"
+                      :class="registration.registrationStatus === 'JOINED'
+                        ? 'bg-[color:var(--admin-primary-50)] text-[color:var(--admin-text)] [border-color:var(--admin-primary-500)]'
+                        : 'bg-[color:var(--admin-surface-1)] text-[color:var(--admin-text-muted)] [border-color:var(--admin-border)]'"
+                    >
+                      <i :class="registration.registrationStatus === 'JOINED' ? 'pi pi-check-circle' : 'pi pi-times-circle'" class="text-[12px]" />
+                      {{ registration.registrationStatus === 'JOINED' ? 'Đã đăng ký' : 'Đã gỡ' }}
+                    </span>
+                  </div>
+                </article>
+              </div>
             </article>
-          </div>
+          </article>
+        </section>
 
-        </div>
+      </div>
 
-      <template #footer>
-        <div class="flex w-full flex-col gap-3 sm:flex-row sm:justify-end">
-          <button type="button" :class="[secondaryButtonClass, 'w-full sm:w-auto']" @click="detailDialogVisible = false">Đóng</button>
-          <button v-if="selectedTrack" type="button" :class="[secondaryButtonClass, 'w-full sm:w-auto']" @click="openEditDialog(selectedTrack)">Chỉnh sửa</button>
-          <button v-if="selectedTrack" type="button" :class="[primaryButtonClass, 'w-full sm:w-auto']" @click="openUploadDialog(selectedTrack)">Tải audio gốc</button>
-        </div>
-      </template>
     </Dialog>
+
 
     <ProductManagementActionMenu
       :visible="Boolean(mobileActionTrack)"
@@ -2704,14 +2478,14 @@ onBeforeUnmount(() => {
       class="w-[calc(100vw-0.75rem)] sm:w-[min(860px,96vw)]"
       :pt="{
         content: { class: 'max-h-[calc(100svh-0.75rem)] overflow-y-auto sm:max-h-[calc(100svh-8rem)]' },
-        footer: { class: 'border-t border-slate-200/80 px-4 py-4 dark:border-slate-800 sm:px-6' },
+        footer: { class: 'border-t px-4 py-4 sm:px-6 [border-color:var(--admin-border)]' },
       }"
     >
       <template #header>
         <div class="w-full" v-if="approvedPermissionsTrack">
-          <div class="text-lg font-semibold text-slate-950 dark:text-white">Chọn quyền bán theo hồ sơ Pháp lý</div>
-          <div class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            Tinh chỉnh subset quyền bán cuối cùng cho <span class="font-semibold text-slate-700 dark:text-slate-200">{{ approvedPermissionsTrack.title }}</span>.
+          <div class="text-lg font-semibold text-[color:var(--admin-text)]">Chọn quyền bán theo hồ sơ Pháp lý</div>
+          <div class="mt-1 text-sm text-[color:var(--admin-text-muted)]">
+            Tinh chỉnh subset quyền bán cuối cùng cho <span class="font-semibold text-[color:var(--admin-text)]">{{ approvedPermissionsTrack.title }}</span>.
           </div>
         </div>
       </template>
@@ -2719,30 +2493,25 @@ onBeforeUnmount(() => {
       <div class="space-y-5">
         <section
           v-if="approvedPermissionsTrack"
-          class="rounded-[24px] border border-slate-200/80 bg-[linear-gradient(135deg,rgba(255,255,255,0.95),rgba(245,243,255,0.92))] p-4 dark:border-slate-800 dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.92),rgba(30,27,75,0.88))]"
+          class="rounded-[24px] border bg-[color:var(--admin-surface-1)] p-4 [border-color:var(--admin-border)]"
         >
           <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
             <div class="min-w-0">
-              <div class="font-semibold text-slate-950 dark:text-white">{{ approvedPermissionsTrack.title }}</div>
-              <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+              <div class="font-semibold text-[color:var(--admin-text)]">{{ approvedPermissionsTrack.title }}</div>
+              <div class="mt-1 text-xs text-[color:var(--admin-text-muted)]">
                 Chọn quyền bán trong đúng tập được Pháp lý cấp cho sản phẩm này.
               </div>
             </div>
-            <span class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold" :class="approvedPermissionsTrack.status === 'PUBLISHED'
-              ? 'border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-violet-300'
-              : approvedPermissionsTrack.status === 'HIDDEN'
-                ? 'border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300'
-                : 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300'"
-            >
+            <span class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold" :class="getProductStatusClass(approvedPermissionsTrack.status)">
               {{ formatProductStatusLabel(approvedPermissionsTrack.status) }}
             </span>
           </div>
         </section>
 
-        <section class="rounded-[24px] border border-slate-200/80 bg-white/80 p-4 dark:border-slate-800 dark:bg-slate-950/60">
-          <div class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Trạng thái hồ sơ Pháp lý</div>
+        <section class="rounded-[24px] border bg-[color:var(--admin-surface-0)] p-4 [border-color:var(--admin-border)]">
+          <div class="text-xs font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]">Trạng thái hồ sơ Pháp lý</div>
 
-          <div v-if="approvedPermissionsLoading" class="mt-3 rounded-2xl border border-slate-200/80 bg-slate-50 px-4 py-4 text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-400">
+          <div v-if="approvedPermissionsLoading" class="mt-3 rounded-2xl border bg-[color:var(--admin-surface-1)] px-4 py-4 text-sm text-[color:var(--admin-text-muted)] [border-color:var(--admin-border)]">
             Đang tải thông tin hồ sơ Pháp lý...
           </div>
 
@@ -2756,23 +2525,23 @@ onBeforeUnmount(() => {
               </span>
             </div>
 
-            <div v-if="!canChooseAllowedPermissions" class="rounded-2xl border border-amber-200 bg-amber-50/80 px-4 py-3 text-sm text-amber-800 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-200">
+            <div v-if="!canChooseAllowedPermissions" class="rounded-2xl border bg-[color:var(--admin-primary-50)] px-4 py-3 text-sm text-[color:var(--admin-text)] [border-color:var(--admin-primary-500)]">
               Chỉ có thể chọn quyền bán khi hồ sơ đang ở trạng thái `SUFFICIENT` và `APPROVED`.
             </div>
 
-            <div v-else-if="approvedPermissionOptions.length === 0" class="rounded-2xl border border-amber-200 bg-amber-50/80 px-4 py-3 text-sm text-amber-800 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-200">
+            <div v-else-if="approvedPermissionOptions.length === 0" class="rounded-2xl border bg-[color:var(--admin-primary-50)] px-4 py-3 text-sm text-[color:var(--admin-text)] [border-color:var(--admin-primary-500)]">
               Hồ sơ đã đủ điều kiện nhưng hiện chưa có quyền nào trong tập `Approved permissions`.
             </div>
 
             <div v-else class="grid gap-4">
               <div class="flex items-center justify-between gap-3">
                 <div>
-                  <div class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Approved permissions do Pháp lý cấp</div>
-                  <div class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                  <div class="text-xs font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]">Approved permissions do Pháp lý cấp</div>
+                  <div class="mt-1 text-sm text-[color:var(--admin-text-muted)]">
                     Chọn trực tiếp các quyền bán bạn muốn áp dụng cho Product.
                   </div>
                 </div>
-                <div class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-900 dark:text-slate-300">
+                <div class="rounded-full bg-[color:var(--admin-surface-1)] px-3 py-1 text-xs font-semibold text-[color:var(--admin-text)]">
                   {{ selectedApprovedPermissionCount }}/{{ approvedPermissionOptions.length }} đã chọn
                 </div>
               </div>
@@ -2784,26 +2553,26 @@ onBeforeUnmount(() => {
                   type="button"
                   class="w-full rounded-[24px] border px-4 py-4 text-left text-sm transition"
                   :class="selectedAllowedPermissionIds.includes(permission.id)
-                    ? 'border-violet-300 bg-violet-100 text-violet-700 shadow-sm dark:border-violet-500/40 dark:bg-violet-500/15 dark:text-violet-200'
-                    : 'border-slate-200 bg-white text-slate-700 hover:border-violet-200 hover:bg-violet-50/40 dark:border-slate-800 dark:bg-slate-950/40 dark:text-slate-200 dark:hover:border-violet-500/30 dark:hover:bg-slate-900/70'"
+                    ? 'bg-[color:var(--admin-primary-50)] text-[color:var(--admin-text)] shadow-sm [border-color:var(--admin-primary-500)]'
+                    : 'bg-[color:var(--admin-surface-0)] text-[color:var(--admin-text)] hover:bg-[color:var(--admin-surface-1)] [border-color:var(--admin-border)]'"
                   :disabled="approvedPermissionsSaving"
                   @click="toggleAllowedPermissionSelection(permission.id)"
                 >
                   <div class="flex items-start justify-between gap-3">
                     <div class="min-w-0">
                       <div class="font-semibold">{{ permission.name }}</div>
-                      <div class="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">{{ permission.lawReference }}</div>
+                      <div class="mt-1 text-xs leading-5 text-[color:var(--admin-text-muted)]">{{ permission.lawReference }}</div>
                     </div>
                     <div
                       class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-xs"
                       :class="selectedAllowedPermissionIds.includes(permission.id)
-                        ? 'border-violet-300 bg-white/80 text-violet-600 dark:border-violet-400/50 dark:bg-violet-500/10 dark:text-violet-200'
-                        : 'border-slate-200 bg-slate-50 text-slate-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-500'"
+                        ? 'bg-[color:var(--admin-surface-0)] text-[color:var(--admin-primary-500)] [border-color:var(--admin-primary-500)]'
+                        : 'bg-[color:var(--admin-surface-1)] text-[color:var(--admin-text-muted)] [border-color:var(--admin-border)]'"
                     >
                       <i :class="selectedAllowedPermissionIds.includes(permission.id) ? 'pi pi-check' : 'pi pi-plus'" />
                     </div>
                   </div>
-                  <div class="mt-3 text-[11px] font-semibold uppercase tracking-[0.16em]" :class="selectedAllowedPermissionIds.includes(permission.id) ? 'text-violet-600 dark:text-violet-300' : 'text-slate-400 dark:text-slate-500'">
+                  <div class="mt-3 text-[11px] font-semibold uppercase tracking-[0.16em]" :class="selectedAllowedPermissionIds.includes(permission.id) ? 'text-[color:var(--admin-primary-500)]' : 'text-[color:var(--admin-text-muted)]'">
                     {{ formatApprovedPermissionSelectionState(selectedAllowedPermissionIds.includes(permission.id)) }}
                   </div>
                 </button>
@@ -2816,26 +2585,26 @@ onBeforeUnmount(() => {
                   type="button"
                   class="rounded-[24px] border px-4 py-4 text-left text-sm transition"
                   :class="selectedAllowedPermissionIds.includes(permission.id)
-                    ? 'border-violet-300 bg-violet-100 text-violet-700 shadow-sm dark:border-violet-500/40 dark:bg-violet-500/15 dark:text-violet-200'
-                    : 'border-slate-200 bg-white text-slate-700 hover:border-violet-200 hover:bg-violet-50/40 dark:border-slate-800 dark:bg-slate-950/40 dark:text-slate-200 dark:hover:border-violet-500/30 dark:hover:bg-slate-900/70'"
+                    ? 'bg-[color:var(--admin-primary-50)] text-[color:var(--admin-text)] shadow-sm [border-color:var(--admin-primary-500)]'
+                    : 'bg-[color:var(--admin-surface-0)] text-[color:var(--admin-text)] hover:bg-[color:var(--admin-surface-1)] [border-color:var(--admin-border)]'"
                   :disabled="approvedPermissionsSaving"
                   @click="toggleAllowedPermissionSelection(permission.id)"
                 >
                   <div class="flex items-start justify-between gap-3">
                     <div class="min-w-0">
                       <div class="truncate font-semibold">{{ permission.name }}</div>
-                      <div class="mt-1 line-clamp-2 text-xs text-slate-500 dark:text-slate-400">{{ permission.lawReference }}</div>
+                      <div class="mt-1 line-clamp-2 text-xs text-[color:var(--admin-text-muted)]">{{ permission.lawReference }}</div>
                     </div>
                     <div
                       class="inline-flex h-8 w-8 items-center justify-center rounded-full border text-xs"
                       :class="selectedAllowedPermissionIds.includes(permission.id)
-                        ? 'border-violet-300 bg-white/80 text-violet-600 dark:border-violet-400/50 dark:bg-violet-500/10 dark:text-violet-200'
-                        : 'border-slate-200 bg-slate-50 text-slate-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-500'"
+                        ? 'bg-[color:var(--admin-surface-0)] text-[color:var(--admin-primary-500)] [border-color:var(--admin-primary-500)]'
+                        : 'bg-[color:var(--admin-surface-1)] text-[color:var(--admin-text-muted)] [border-color:var(--admin-border)]'"
                     >
                       <i :class="selectedAllowedPermissionIds.includes(permission.id) ? 'pi pi-check' : 'pi pi-plus'" />
                     </div>
                   </div>
-                  <div class="mt-3 text-[11px] font-semibold uppercase tracking-[0.16em]" :class="selectedAllowedPermissionIds.includes(permission.id) ? 'text-violet-600 dark:text-violet-300' : 'text-slate-400 dark:text-slate-500'">
+                  <div class="mt-3 text-[11px] font-semibold uppercase tracking-[0.16em]" :class="selectedAllowedPermissionIds.includes(permission.id) ? 'text-[color:var(--admin-primary-500)]' : 'text-[color:var(--admin-text-muted)]'">
                     {{ formatApprovedPermissionSelectionState(selectedAllowedPermissionIds.includes(permission.id)) }}
                   </div>
                 </button>
@@ -2847,7 +2616,7 @@ onBeforeUnmount(() => {
 
       <template #footer>
         <div class="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div class="text-sm text-slate-500 dark:text-slate-400">
+          <div class="text-sm text-[color:var(--admin-text-muted)]">
             Đã chọn {{ selectedApprovedPermissionCount }} / {{ approvedPermissionOptions.length }} quyền
           </div>
           <div class="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
@@ -2867,36 +2636,36 @@ onBeforeUnmount(() => {
       header="Tải audio gốc"
       :pt="{
         content: { class: 'max-h-[calc(100svh-0.75rem)] overflow-y-auto sm:max-h-[calc(100svh-10rem)]' },
-        footer: { class: 'border-t border-slate-200/80 px-4 py-4 dark:border-slate-800 sm:px-6' },
+        footer: { class: 'border-t px-4 py-4 sm:px-6 [border-color:var(--admin-border)]' },
       }"
     >
       <div class="space-y-4">
         <div
           v-if="selectedTrack"
-          class="rounded-[24px] border border-slate-200/80 bg-[linear-gradient(135deg,rgba(255,255,255,0.95),rgba(245,243,255,0.92))] p-4 dark:border-slate-800 dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.92),rgba(30,27,75,0.88))]"
+          class="rounded-[24px] border bg-[color:var(--admin-surface-1)] p-4 [border-color:var(--admin-border)]"
         >
-          <div class="text-sm font-semibold text-slate-950 dark:text-white">{{ selectedTrack.title }}</div>
-          <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+          <div class="text-sm font-semibold text-[color:var(--admin-text)]">{{ selectedTrack.title }}</div>
+          <div class="mt-1 text-xs text-[color:var(--admin-text-muted)]">
             Upload file MP3 gốc mới hoặc gắn nhanh file demo để kiểm tra flow publish.
           </div>
         </div>
 
-        <label class="block space-y-2 rounded-[24px] border border-slate-200/80 bg-white/80 p-4 dark:border-slate-800 dark:bg-slate-950/60">
-          <span class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Tệp</span>
+        <label class="block space-y-2 rounded-[24px] border bg-[color:var(--admin-surface-0)] p-4 [border-color:var(--admin-border)]">
+          <span class="text-xs font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]">Tệp</span>
           <input type="file" accept=".mp3,audio/*" :class="fileInputClass" :disabled="uploadStatus === 'requesting' || uploadStatus === 'uploading'" @change="onUploadFileChange" />
-          <span class="text-sm text-slate-500 dark:text-slate-400">File key sẽ được cấp tự động dạng `N.mp3` sau khi bấm tải lên.</span>
+          <span class="text-sm text-[color:var(--admin-text-muted)]">File key sẽ được cấp tự động dạng `N.mp3` sau khi bấm tải lên.</span>
         </label>
 
         <div class="flex flex-wrap items-center gap-2">
-          <span v-if="uploadFile" class="rounded-full bg-violet-100 px-3 py-1 text-xs font-medium text-violet-700 dark:bg-violet-500/20 dark:text-violet-200">{{ uploadFile.name }}</span>
+          <span v-if="uploadFile" class="rounded-full bg-[color:var(--admin-primary-50)] px-3 py-1 text-xs font-medium text-[color:var(--admin-text)]">{{ uploadFile.name }}</span>
           <span
             v-if="uploadStatus !== 'idle'"
-            class="rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em]"
+            class="rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] [border-color:var(--admin-border)]"
             :class="uploadStatus === 'done'
-              ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300'
+              ? 'bg-[color:var(--admin-accent-50)] text-[color:var(--admin-text)]'
               : uploadStatus === 'error'
-                ? 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300'
-                : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'"
+                ? 'bg-[color:var(--admin-surface-1)] text-[color:var(--admin-text)]'
+                : 'bg-[color:var(--admin-primary-50)] text-[color:var(--admin-text)]'"
           >
             {{ formatUploadStatusLabel(uploadStatus) }}
           </span>
@@ -2905,13 +2674,13 @@ onBeforeUnmount(() => {
         <Message v-if="uploadError" severity="error">{{ uploadError }}</Message>
         <Message v-if="uploadStatus === 'done'" severity="success">Tải file lên thành công</Message>
 
-        <div v-if="uploadResult" class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
-          <strong class="text-slate-900 dark:text-white">File key:</strong> {{ uploadResult.fileKey }}
+        <div v-if="uploadResult" class="rounded-2xl border bg-[color:var(--admin-surface-1)] p-4 text-sm text-[color:var(--admin-text)] [border-color:var(--admin-border)]">
+          <strong class="text-[color:var(--admin-text)]">File key:</strong> {{ uploadResult.fileKey }}
         </div>
       </div>
 
       <template #footer>
-        <div class="flex w-full flex-col gap-3 sm:flex-row sm:justify-end">
+        <div class="flex w-full flex-col gap-3 sm:flex-row sm:justify-end sm:gap-4">
           <button type="button" :class="[secondaryButtonClass, 'w-full sm:w-auto']" @click="uploadDialogVisible = false">Đóng</button>
           <button type="button" :class="[secondaryButtonClass, 'w-full sm:w-auto']" :disabled="uploadStatus === 'requesting' || uploadStatus === 'uploading'" @click="applyDemoAudioKey">
             Dùng 1.mp3

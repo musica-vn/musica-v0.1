@@ -77,6 +77,12 @@ export class DigitalRightConfigDto extends ConfigBaseDto {
     example: [{ key: 'SUBJECT_INDIVIDUAL', multiplier: 1.2 }],
   })
   priceModifiers: Array<{ key: VariantPricingModifierKey; multiplier: number }>
+
+  @ApiProperty({ type: [String] })
+  effectiveReferencedPermissionIds: string[]
+
+  @ApiProperty({ type: [ConfigPermissionSummaryDto] })
+  effectiveReferencedPermissions: ConfigPermissionSummaryDto[]
 }
 
 export class PhysicalRightConfigDto extends ConfigBaseDto {
@@ -91,6 +97,12 @@ export class PhysicalRightConfigDto extends ConfigBaseDto {
     example: [{ key: 'SCOPE_MULTI_CHANNEL', multiplier: 1.2 }],
   })
   priceModifiers: Array<{ key: VariantPricingModifierKey; multiplier: number }>
+
+  @ApiProperty({ type: [String] })
+  effectiveReferencedPermissionIds: string[]
+
+  @ApiProperty({ type: [ConfigPermissionSummaryDto] })
+  effectiveReferencedPermissions: ConfigPermissionSummaryDto[]
 }
 
 export class ExpressionConfigDto extends ConfigBaseDto {

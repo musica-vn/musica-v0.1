@@ -41,12 +41,16 @@ export type DigitalRightConfig = LicensingConfigBase & {
   durationType: DigitalDurationType
   basePriceMultiplier: number
   priceModifiers: PriceModifier[]
+  effectiveReferencedPermissionIds: string[]
+  effectiveReferencedPermissions: ReferencedPermissionSummary[]
 }
 
 export type PhysicalRightConfig = LicensingConfigBase & {
   venueUsageType: string
   basePriceMultiplier: number
   priceModifiers: PriceModifier[]
+  effectiveReferencedPermissionIds: string[]
+  effectiveReferencedPermissions: ReferencedPermissionSummary[]
 }
 
 export type ExpressionConfig = LicensingConfigBase & {

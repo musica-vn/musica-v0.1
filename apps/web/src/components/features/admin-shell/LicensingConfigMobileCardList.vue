@@ -8,6 +8,10 @@ defineProps<{
   isLoading: boolean
   emptyMessage: string
   resolveDetailText: (item: any) => string
+  resolvePlatformLabel?: (item: any) => string | null
+  resolvePlatformDotClass?: (item: any) => string | null
+  resolveDurationLabel?: (item: any) => string | null
+  resolveReferenceCode?: (item: any) => string | null
   resolvePriceValue: (item: any) => string
   resolvePermissionCountLabel: (item: any) => string
   resolveStatusLabel: (item: any) => string
@@ -32,6 +36,10 @@ const emit = defineEmits<{
       :item="item"
       :resource="resource"
       :detail-text="resolveDetailText(item)"
+      :platform-label="resolvePlatformLabel ? resolvePlatformLabel(item) : null"
+      :platform-dot-class="resolvePlatformDotClass ? resolvePlatformDotClass(item) : null"
+      :duration-label="resolveDurationLabel ? resolveDurationLabel(item) : null"
+      :reference-code="resolveReferenceCode ? resolveReferenceCode(item) : null"
       :price-value="resolvePriceValue(item)"
       :permission-count-label="resolvePermissionCountLabel(item)"
       :status-label="resolveStatusLabel(item)"

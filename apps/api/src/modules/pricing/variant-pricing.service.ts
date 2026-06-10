@@ -48,7 +48,7 @@ const roundVnd = (value: number) => Number(value.toFixed(0));
 
 @Injectable()
 export class VariantPricingService {
-  constructor(private readonly supabaseService: SupabaseService) {}
+  constructor(private readonly supabaseService: SupabaseService) { }
 
   async calculate(payload: PublicVariantPricingCalculateRequestDto): Promise<{
     totalPrice: number;
@@ -77,43 +77,43 @@ export class VariantPricingService {
     const configPromise =
       platformType === 'DIGITAL'
         ? this.supabaseService.client
-            .from('digital_right_configs')
-            .select('id,base_price_multiplier')
-            .eq('id', configId)
-            .maybeSingle<DbDigitalRightConfigRow>()
+          .from('digital_right_configs')
+          .select('id,base_price_multiplier')
+          .eq('id', configId)
+          .maybeSingle<DbDigitalRightConfigRow>()
         : this.supabaseService.client
-            .from('physical_right_configs')
-            .select('id,base_price_multiplier')
-            .eq('id', configId)
-            .maybeSingle<DbPhysicalRightConfigRow>()
+          .from('physical_right_configs')
+          .select('id,base_price_multiplier')
+          .eq('id', configId)
+          .maybeSingle<DbPhysicalRightConfigRow>()
 
     const modifiersPromise =
       platformType === 'DIGITAL'
         ? this.supabaseService.client
-            .from('digital_right_config_price_modifiers')
-            .select('modifier_key,multiplier')
-            .eq('digital_right_config_id', configId)
-            .returns<DbPriceModifierRow[]>()
+          .from('digital_right_config_price_modifiers')
+          .select('modifier_key,multiplier')
+          .eq('digital_right_config_id', configId)
+          .returns<DbPriceModifierRow[]>()
         : this.supabaseService.client
-            .from('physical_right_config_price_modifiers')
-            .select('modifier_key,multiplier')
-            .eq('physical_right_config_id', configId)
-            .returns<DbPriceModifierRow[]>();
+          .from('physical_right_config_price_modifiers')
+          .select('modifier_key,multiplier')
+          .eq('physical_right_config_id', configId)
+          .returns<DbPriceModifierRow[]>();
 
     const expressionPromise = payload.expressionConfigId
       ? this.supabaseService.client
-          .from('expression_configs')
-          .select('id,price_multiplier')
-          .eq('id', payload.expressionConfigId)
-          .maybeSingle<DbExpressionConfigRow>()
+        .from('expression_configs')
+        .select('id,price_multiplier')
+        .eq('id', payload.expressionConfigId)
+        .maybeSingle<DbExpressionConfigRow>()
       : Promise.resolve({ data: null, error: null } as const);
 
     const modificationPromise = payload.modificationConfigId
       ? this.supabaseService.client
-          .from('modification_configs')
-          .select('id,price_multiplier')
-          .eq('id', payload.modificationConfigId)
-          .maybeSingle<DbModificationConfigRow>()
+        .from('modification_configs')
+        .select('id,price_multiplier')
+        .eq('id', payload.modificationConfigId)
+        .maybeSingle<DbModificationConfigRow>()
       : Promise.resolve({ data: null, error: null } as const);
 
     const [{ data: config, error: configError }, modifiersResult, expressionResult, modificationResult] =
@@ -181,14 +181,8 @@ export class VariantPricingService {
         ]),
     );
 
-    const isSubjectEnabled =
-      modifierMap.has('SUBJECT_INDIVIDUAL') || modifierMap.has('SUBJECT_ORGANIZATION');
-    const isDurationEnabled =
-      modifierMap.has('DURATION_ONE_YEAR') || modifierMap.has('DURATION_PERPETUAL');
-    const isScopeEnabled =
-      modifierMap.has('SCOPE_SINGLE_CHANNEL') || modifierMap.has('SCOPE_MULTI_CHANNEL');
-    const isExpressionEnabled = modifierMap.has('EXPRESSION');
-    const isModificationEnabled = modifierMap.has('MODIFICATION');
+    const isExpressionEnabled = true;
+    const isModificationEnabled = true;
 
     const breakdown: VariantPricingBreakdownLineDto[] = [];
     const addBreakdownLine = (key: string, label: string) => {
@@ -205,25 +199,31 @@ export class VariantPricingService {
       platformType === 'DIGITAL' ? 'Nền tảng số' : 'Nền tảng vật lý',
     );
 
-    if (isSubjectEnabled && payload.subject) {
-      const subjectMultiplier = SUBJECT_MULTIPLIERS[payload.subject];
+    if (payload.subject) {
+      const dbMultiplier = modifierMap.get(`SUBJECT_${payload.subject}` as VariantPricingModifierKey);
+      const subjectMultiplier = dbMultiplier ?? SUBJECT_MULTIPLIERS[payload.subject];
       currentTotal *= subjectMultiplier;
       addBreakdownLine(`SUBJECT_${payload.subject}`, 'Đối tượng');
     }
 
-    if (isDurationEnabled && payload.duration) {
-      const durationMultiplier = DURATION_MULTIPLIERS[payload.duration];
+    if (payload.duration) {
+      const dbMultiplier = modifierMap.get(`DURATION_${payload.duration}` as VariantPricingModifierKey);
+      const durationMultiplier = dbMultiplier ?? DURATION_MULTIPLIERS[payload.duration];
       currentTotal *= durationMultiplier;
       addBreakdownLine(`DURATION_${payload.duration}`, 'Thời hạn');
     }
 
-    if (isScopeEnabled && payload.scope) {
-      const scopeMultiplier = SCOPE_MULTIPLIERS[payload.scope];
+    if (payload.scope) {
+      const dbMultiplier = modifierMap.get(`SCOPE_${payload.scope}` as VariantPricingModifierKey);
+      const scopeMultiplier = dbMultiplier ?? SCOPE_MULTIPLIERS[payload.scope];
       currentTotal *= scopeMultiplier;
       addBreakdownLine(`SCOPE_${payload.scope}`, 'Phạm vi');
     }
 
     selectionKeys.forEach((key) => {
+      if (key.startsWith('SUBJECT_') || key.startsWith('DURATION_') || key.startsWith('SCOPE_')) {
+        return;
+      }
       const multiplier = modifierMap.get(key);
       if (!multiplier) return;
       currentTotal *= multiplier;
