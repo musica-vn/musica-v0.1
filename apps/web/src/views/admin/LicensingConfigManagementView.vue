@@ -571,8 +571,6 @@ const currentTotalItems = computed(() => {
 })
 
 const totalPages = computed(() => currentMeta.value?.pagination.totalPages ?? 1)
-const pageStart = computed(() => (currentTotalItems.value === 0 ? 0 : (pagination.page - 1) * pagination.pageSize + 1))
-const pageEnd = computed(() => Math.min(pagination.page * pagination.pageSize, currentTotalItems.value))
 const isDigitalResource = computed(() => props.resource === 'digital')
 const isPhysicalResource = computed(() => props.resource === 'physical')
 const isDigitalOrPhysicalResource = computed(() => isDigitalResource.value || isPhysicalResource.value)
@@ -583,7 +581,6 @@ const supportsPermissionPicker = computed(
     props.resource === 'expression' ||
     props.resource === 'modification',
 )
-const keywordLabel = computed(() => 'Từ khoá')
 const keywordPlaceholder = computed(() => currentResource.value.keywordPlaceholder)
 const statusFieldLabel = computed(() => 'Trạng thái')
 const permissionsLabel = computed(() => currentResource.value.permissionLabel)
