@@ -373,3 +373,77 @@ describe('ProductsService - allowed permissions', () => {
     }
   });
 });
+
+describe('ProductsService - getMarketplaceProductById', () => {
+  const mockConfigService: Pick<ConfigService, 'get'> = {
+    get: jest.fn(),
+  };
+
+  const mockSupabaseClient = {
+    from: jest.fn(),
+    storage: { from: jest.fn() },
+  };
+
+  const mockSupabaseService: Pick<SupabaseService, 'client'> = {
+    client: mockSupabaseClient as any,
+  };
+
+  const createService = () =>
+    new ProductsService(mockSupabaseService as any, mockConfigService as any);
+
+  beforeEach(() => {
+    jest.resetAllMocks();
+  });
+
+  it('returns digitalRightConfigId and physicalRightConfigId from product details', async () => {
+    const service = createService();
+    const productId = '00000000-0000-0000-0000-000000000001';
+
+    jest.spyOn(service, 'getProductById').mockResolvedValue(
+      createMockProductDto({
+        id: productId,
+        title: 'Song A',
+        status: 'PUBLISHED',
+        digitalPackageRegistrations: [
+          {
+            registrationId: 'reg-1',
+            configId: 'digital-cfg-1',
+            configType: 'DIGITAL',
+            title: 'Digital',
+            configStatus: 'ACTIVE',
+            registrationStatus: 'JOINED',
+            referencedPermissions: [],
+            missingPermissions: [],
+            joinedAt: '2023',
+            joinedBy: null,
+            removedAt: null,
+            removedBy: null,
+          },
+        ],
+        physicalPackageRegistrations: [
+          {
+            registrationId: 'reg-2',
+            configId: 'physical-cfg-2',
+            configType: 'PHYSICAL',
+            title: 'Physical',
+            configStatus: 'ACTIVE',
+            registrationStatus: 'JOINED',
+            referencedPermissions: [],
+            missingPermissions: [],
+            joinedAt: '2023',
+            joinedBy: null,
+            removedAt: null,
+            removedBy: null,
+          },
+        ],
+      })
+    );
+
+    jest.spyOn(service as any, 'createThumbnailUrlFromKey').mockResolvedValue('https://signed');
+
+    const result = await service.getMarketplaceProductById(productId);
+
+    expect(result.digitalRightConfigId).toBe('digital-cfg-1');
+    expect(result.physicalRightConfigId).toBe('physical-cfg-2');
+  });
+});

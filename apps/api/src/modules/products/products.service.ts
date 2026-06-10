@@ -1132,7 +1132,12 @@ export class ProductsService {
     duration: row.duration,
     artistId: row.artist_id,
     thumbnailUrl: await this.createThumbnailUrlFromKey(row.thumbnail_key),
-    previewAudioUrl: null,
+    previewAudioUrl: row.original_audio_key ? await this.createSignedUrlOrThrow(
+      this.getRequiredBucket('STORAGE_BUCKET_ORIGINAL_AUDIO'),
+      row.original_audio_key,
+      'PRODUCT_AUDIO_SIGNED_URL_CREATE_FAILED',
+      'PRODUCT_AUDIO_OBJECT_NOT_FOUND',
+    ).catch(() => null) : null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   });
@@ -1154,7 +1159,7 @@ export class ProductsService {
     const { data, error } = await this.supabaseService.client
       .from('products')
       .select(
-        'id,title,artist_id,author_name,genre,genres,duration,thumbnail_key,created_at,updated_at,status',
+        'id,title,artist_id,author_name,genre,genres,duration,thumbnail_key,original_audio_key,created_at,updated_at,status',
       )
       .eq('status', 'PUBLISHED')
       .returns<DbProductRow[]>();
@@ -1243,12 +1248,27 @@ export class ProductsService {
       duration: product.duration,
       artistId: product.artistId,
       thumbnailUrl: await this.createThumbnailUrlFromKey(product.thumbnailKey),
-      previewAudioUrl: null,
+      previewAudioUrl: product.originalAudioKey ? await this.createSignedUrlOrThrow(
+        this.getRequiredBucket('STORAGE_BUCKET_ORIGINAL_AUDIO'),
+        product.originalAudioKey,
+        'PRODUCT_AUDIO_SIGNED_URL_CREATE_FAILED',
+        'PRODUCT_AUDIO_OBJECT_NOT_FOUND',
+      ).catch(() => null) : null,
       createdAt: product.createdAt,
       updatedAt: product.updatedAt,
       description: product.description,
       useCases: product.useCases,
       allowedPermissions: product.allowedPermissions,
+      digitalRightConfigId:
+        product.digitalPackageRegistrations.find(
+          (reg) =>
+            reg.registrationStatus === 'JOINED' && reg.configStatus === 'ACTIVE',
+        )?.configId ?? null,
+      physicalRightConfigId:
+        product.physicalPackageRegistrations.find(
+          (reg) =>
+            reg.registrationStatus === 'JOINED' && reg.configStatus === 'ACTIVE',
+        )?.configId ?? null,
     };
   }
 
