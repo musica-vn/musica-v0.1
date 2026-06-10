@@ -21,17 +21,17 @@ export type VariantPricingModifierKey =
   (typeof VARIANT_PRICING_MODIFIER_KEYS)[number];
 
 export const SUBJECT_MULTIPLIERS: Record<VariantSubject, number> = {
-  INDIVIDUAL: 2.0,
+  INDIVIDUAL: 1.0,
   ORGANIZATION: 2.0,
 };
 
 export const DURATION_MULTIPLIERS: Record<VariantDuration, number> = {
-  ONE_YEAR: 2.0,
+  ONE_YEAR: 1.0,
   PERPETUAL: 2.0,
 };
 
 export const SCOPE_MULTIPLIERS: Record<VariantScope, number> = {
-  SINGLE_CHANNEL: 2.0,
+  SINGLE_CHANNEL: 1.0,
   MULTI_CHANNEL: 2.0,
 };
 
