@@ -31,12 +31,14 @@ import {
   AdminReplaceProductAllowedPermissionsRequestDto,
   AdminProductsListQueryDto,
   AdminProductsSummaryQueryDto,
+  AdminUpdateProductPlatformSettingsRequestDto,
   AdminUpdateProductRequestDto,
 } from './admin-products.dto';
 import { ProductsService } from './products.service';
 import {
   AdminProductResponseDto,
   AdminProductPlaybackUrlResponseDto,
+  AdminProductPlatformSettingsResponseDto,
   AdminProductSheetMusicUrlResponseDto,
   AdminProductThumbnailUrlResponseDto,
   AdminProductsListResponseDto,
@@ -84,6 +86,15 @@ export class AdminProductsController {
     return this.productsService.getProductById(productId);
   }
 
+  @Get(':productId/platform-settings')
+  @ApiOperation({ summary: 'Get product platform settings (admin)' })
+  @ApiOkResponse({ type: AdminProductPlatformSettingsResponseDto })
+  async platformSettings(
+    @Param('productId', ParseUUIDPipe) productId: string,
+  ) {
+    return this.productsService.getProductPlatformSettings(productId);
+  }
+
   @Patch(':productId')
   @ApiOperation({ summary: 'Update product metadata (admin)' })
   @ApiOkResponse({ type: AdminProductResponseDto })
@@ -92,6 +103,22 @@ export class AdminProductsController {
     @Body() body: AdminUpdateProductRequestDto,
   ) {
     return this.productsService.updateProduct(productId, body);
+  }
+
+  @Put(':productId/platform-settings')
+  @ApiOperation({ summary: 'Update product platform settings (admin)' })
+  @ApiOkResponse({ type: AdminProductPlatformSettingsResponseDto })
+  async updatePlatformSettings(
+    @Param('productId', ParseUUIDPipe) productId: string,
+    @Body() body: AdminUpdateProductPlatformSettingsRequestDto,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    const updatedBy = req.user?.userId ?? null;
+    return this.productsService.updateProductPlatformSettings(
+      productId,
+      body,
+      updatedBy,
+    );
   }
 
   @Put(':productId/allowed-permissions')

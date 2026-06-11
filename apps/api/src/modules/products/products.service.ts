@@ -14,6 +14,7 @@ import {
   AdminConfirmProductSheetMusicUploadRequestDto,
   AdminProductsListQueryDto,
   AdminProductsSummaryQueryDto,
+  AdminUpdateProductPlatformSettingsRequestDto,
   AdminUpdateProductRequestDto,
 } from './admin-products.dto';
 import type {
@@ -22,7 +23,7 @@ import type {
   MarketplaceProductsListQueryDto,
 } from './marketplace-products.dto';
 import { PublicProductsListQueryDto } from './public-products.dto';
-import { ProductDto } from './product.dto';
+import { ProductDto, ProductPlatformSettingsDto } from './product.dto';
 import {
   applyProductPriorityOrdering,
   PRODUCT_PRIORITY_SELECT,
@@ -115,8 +116,20 @@ type DbDigitalEligibilityConfigRow = {
   status: 'ACTIVE' | 'INACTIVE';
   target_platform: 'YOUTUBE' | 'TIKTOK' | 'FACEBOOK';
   duration_type: 'ONE_YEAR' | 'PERPETUAL';
+  base_price_multiplier: number | string;
   digital_right_config_permissions?: DbLicensingConfigPermissionRow[] | null;
   digital_right_config_price_modifiers?: DbConfigPriceModifierRow[] | null;
+};
+
+type DbProductPlatformPricingConfigRow = {
+  id: string;
+  product_id: string;
+  platform_key: SupportedProductPlatformKey;
+  digital_right_config_id: string | null;
+  pricing_mode: 'GLOBAL' | 'CUSTOM';
+  custom_price_multiplier: number | string | null;
+  updated_at: string;
+  updated_by: string | null;
 };
 
 type DbPhysicalEligibilityConfigRow = {
@@ -178,6 +191,21 @@ const formatDigitalEligibilityTitle = (
   platform: DbDigitalEligibilityConfigRow['target_platform'],
   durationType: DbDigitalEligibilityConfigRow['duration_type'],
 ) => `${platform} · ${durationType === 'ONE_YEAR' ? '1 năm' : 'Vĩnh viễn'}`;
+
+const SUPPORTED_PRODUCT_PLATFORM_KEYS = ['YOUTUBE'] as const;
+type SupportedProductPlatformKey = (typeof SUPPORTED_PRODUCT_PLATFORM_KEYS)[number];
+
+const getSupportedProductPlatformLabel = (
+  platformKey: SupportedProductPlatformKey,
+): string => {
+  if (platformKey === 'YOUTUBE') return 'YouTube';
+  return platformKey;
+};
+
+const isSupportedProductPlatformKey = (
+  value: string,
+): value is SupportedProductPlatformKey =>
+  (SUPPORTED_PRODUCT_PLATFORM_KEYS as readonly string[]).includes(value);
 
 const mapReferencedPermissionSummary = (
   permissionId: string,
@@ -423,10 +451,11 @@ export class ProductsService {
     const { data, error } = await this.supabaseService.client
       .from('digital_right_configs')
       .select(
-        'id,status,target_platform,duration_type,digital_right_config_permissions(core_permission_id, core_permissions(id,name,law_reference)),digital_right_config_price_modifiers(modifier_key)',
+        'id,status,target_platform,duration_type,base_price_multiplier,digital_right_config_permissions(core_permission_id, core_permissions(id,name,law_reference)),digital_right_config_price_modifiers(modifier_key)',
       )
       .eq('status', 'ACTIVE')
       .order('target_platform', { ascending: true })
+      .order('duration_type', { ascending: true })
       .returns<DbDigitalEligibilityConfigRow[]>();
 
     if (error) {
@@ -1599,6 +1628,193 @@ export class ProductsService {
     }
 
     return this.getProductById(data.id);
+  }
+
+  private async loadProductPlatformSettings(
+    productId: string,
+  ): Promise<ProductPlatformSettingsDto> {
+    await this.ensureProductExists(productId);
+
+    const configs = (await this.loadActiveDigitalEligibilityConfigs()).filter(
+      (config) => isSupportedProductPlatformKey(config.target_platform),
+    );
+    const configIds = configs.map((config) => config.id);
+
+    const selections = configIds.length === 0
+      ? []
+      : await (async () => {
+          const { data, error } = await this.supabaseService.client
+            .from('product_platform_pricing_configs')
+            .select(
+              'id,product_id,platform_key,digital_right_config_id,pricing_mode,custom_price_multiplier,updated_at,updated_by',
+            )
+            .eq('product_id', productId)
+            .returns<DbProductPlatformPricingConfigRow[]>();
+
+          if (error) {
+            throwSupabaseError(
+              'PRODUCT_PLATFORM_SETTINGS_LOAD_FAILED',
+              HttpStatus.INTERNAL_SERVER_ERROR,
+              error,
+            );
+          }
+
+          return data ?? [];
+        })();
+
+    const selectionMap = new Map(
+      selections.map((selection) => [selection.platform_key, selection]),
+    );
+
+    return {
+      productId,
+      supportedPlatforms: SUPPORTED_PRODUCT_PLATFORM_KEYS.map((platformKey) => {
+        const availableConfigs = configs
+          .filter((config) => config.target_platform === platformKey)
+          .map((config) => ({
+            digitalRightConfigId: config.id,
+            platformKey,
+            platformLabel: getSupportedProductPlatformLabel(platformKey),
+            title: formatDigitalEligibilityTitle(
+              config.target_platform,
+              config.duration_type,
+            ),
+            durationType: config.duration_type,
+            globalBaseMultiplier: Number(config.base_price_multiplier),
+          }));
+
+        const selectedConfig = availableConfigs.find(
+          (config) =>
+            config.digitalRightConfigId ===
+            selectionMap.get(platformKey)?.digital_right_config_id,
+        );
+        const selection = selectionMap.get(platformKey);
+        const systemBaseMultiplier = selectedConfig
+          ? selectedConfig.globalBaseMultiplier
+          : null;
+        const effectiveMultiplier =
+          selection?.pricing_mode === 'CUSTOM' &&
+          selection.custom_price_multiplier !== null
+            ? Number(selection.custom_price_multiplier)
+            : systemBaseMultiplier;
+
+        return {
+          platformKey,
+          platformLabel: getSupportedProductPlatformLabel(platformKey),
+          availableConfigs,
+          selectedDigitalRightConfigId:
+            selection?.digital_right_config_id ?? null,
+          pricingMode: selection?.pricing_mode ?? 'GLOBAL',
+          customPriceMultiplier:
+            selection?.custom_price_multiplier === null ||
+            selection?.custom_price_multiplier === undefined
+              ? null
+              : Number(selection.custom_price_multiplier),
+          systemBaseMultiplier,
+          effectiveMultiplier,
+          updatedAt: selection?.updated_at ?? null,
+          updatedBy: selection?.updated_by ?? null,
+        };
+      }),
+    };
+  }
+
+  async getProductPlatformSettings(
+    productId: string,
+  ): Promise<ProductPlatformSettingsDto> {
+    return this.loadProductPlatformSettings(productId);
+  }
+
+  async updateProductPlatformSettings(
+    productId: string,
+    payload: AdminUpdateProductPlatformSettingsRequestDto,
+    updatedBy: string | null,
+  ): Promise<ProductPlatformSettingsDto> {
+    await this.ensureProductExists(productId);
+
+    if (!isSupportedProductPlatformKey(payload.platformKey)) {
+      throw new ApiHttpException(
+        { code: 'UNSUPPORTED_PRODUCT_PLATFORM' },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const configs = (await this.loadActiveDigitalEligibilityConfigs()).filter(
+      (config) => config.target_platform === payload.platformKey,
+    );
+    const configMap = new Map(configs.map((config) => [config.id, config]));
+
+    if (
+      payload.selectedDigitalRightConfigId &&
+      !configMap.has(payload.selectedDigitalRightConfigId)
+    ) {
+      throw new ApiHttpException(
+        {
+          code: 'UNSUPPORTED_PLATFORM_CONFIG_FOR_PRODUCT',
+          details: {
+            digitalRightConfigId: payload.selectedDigitalRightConfigId,
+          },
+        },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    if (
+      payload.pricingMode === 'CUSTOM' &&
+      !payload.selectedDigitalRightConfigId
+    ) {
+      throw new ApiHttpException(
+        { code: 'PRODUCT_PLATFORM_CONFIG_REQUIRED_FOR_CUSTOM_PRICING' },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    if (!payload.selectedDigitalRightConfigId) {
+      const { error } = await this.supabaseService.client
+        .from('product_platform_pricing_configs')
+        .delete()
+        .eq('product_id', productId)
+        .eq('platform_key', payload.platformKey);
+
+      if (error) {
+        throwSupabaseError(
+          'PRODUCT_PLATFORM_SETTINGS_UPDATE_FAILED',
+          HttpStatus.INTERNAL_SERVER_ERROR,
+          error,
+        );
+      }
+
+      return this.loadProductPlatformSettings(productId);
+    }
+
+    const { error } = await this.supabaseService.client
+      .from('product_platform_pricing_configs')
+      .upsert(
+        {
+          product_id: productId,
+          platform_key: payload.platformKey,
+          digital_right_config_id: payload.selectedDigitalRightConfigId,
+          pricing_mode: payload.pricingMode,
+          custom_price_multiplier:
+            payload.pricingMode === 'CUSTOM'
+              ? payload.customPriceMultiplier ?? null
+              : null,
+          updated_by: updatedBy,
+        },
+        {
+          onConflict: 'product_id,platform_key',
+        },
+      );
+
+    if (error) {
+      throwSupabaseError(
+        'PRODUCT_PLATFORM_SETTINGS_UPDATE_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
+    }
+
+    return this.loadProductPlatformSettings(productId);
   }
 
   async getProductById(productId: string): Promise<ProductDto> {

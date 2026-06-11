@@ -1,18 +1,21 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
+  ArrayMinSize,
   IsArray,
   IsIn,
   IsInt,
+  IsNumber,
   IsOptional,
   IsString,
   IsUUID,
   Matches,
   Max,
   Min,
+  ValidateNested,
 } from 'class-validator';
-import { Transform } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import { PaginationQueryDto } from '../../common/base/pagination.dto';
-import { ProductDto } from './product.dto';
+import { ProductDto, ProductPlatformSettingsDto } from './product.dto';
 import { PRODUCT_GENRES, PRODUCT_USE_CASES } from './products.enums';
 
 export class AdminProductsListQueryDto extends PaginationQueryDto {
@@ -211,6 +214,30 @@ export class AdminReplaceProductAllowedPermissionsRequestDto {
   permissionIds: string[];
 }
 
+export class AdminUpdateProductPlatformSettingsRequestDto {
+  @ApiProperty({ enum: ['YOUTUBE'] })
+  @IsIn(['YOUTUBE'])
+  platformKey: 'YOUTUBE';
+
+  @ApiPropertyOptional({ nullable: true })
+  @IsOptional()
+  @IsUUID('4')
+  selectedDigitalRightConfigId?: string | null;
+
+  @ApiProperty({ enum: ['GLOBAL', 'CUSTOM'] })
+  @IsIn(['GLOBAL', 'CUSTOM'])
+  pricingMode: 'GLOBAL' | 'CUSTOM';
+
+  @ApiPropertyOptional({ nullable: true })
+  @IsOptional()
+  @Transform(({ value }) =>
+    value === undefined || value === null || value === '' ? undefined : Number(value),
+  )
+  @IsNumber()
+  @Min(0.0001)
+  customPriceMultiplier?: number | null;
+}
+
 export class AdminProductUploadUrlResponseDataDto {
   @ApiProperty()
   uploadUrl: string;
@@ -252,6 +279,8 @@ export class AdminProductPlaybackUrlResponseDataDto {
   @ApiProperty()
   playbackUrl: string;
 }
+
+export class AdminProductPlatformSettingsDataDto extends ProductPlatformSettingsDto {}
 
 export class AdminConfirmProductSheetMusicUploadRequestDto {
   @ApiProperty({ example: '1.pdf' })

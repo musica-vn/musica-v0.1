@@ -6,7 +6,8 @@ import { pinia } from '../plugins/pinia'
 import MainLayout from '../layouts/MainLayout.vue'
 import AdminDashboardView from '../views/admin/AdminDashboardView.vue'
 import AdminListView from '../views/admin/AdminListView.vue'
-import ProductManagementView from '../views/admin/ProductManagementView.vue'
+import ProductListView from '../views/admin/ProductListView.vue'
+import ProductDetailView from '../views/admin/ProductDetailView.vue'
 import UserManagementView from '../views/admin/UserManagementView.vue'
 import CertificateManagementView from '../views/admin/CertificateManagementView.vue'
 import ComplianceManagementView from '../views/admin/ComplianceManagementView.vue'
@@ -32,7 +33,14 @@ export const router = createRouter({
           meta: { title: 'Quản trị viên', requiresSuperAdmin: true },
         },
         { path: 'tracks', redirect: '/admin/products' },
-        { path: 'products', component: ProductManagementView, meta: { title: 'Quản lý sản phẩm' } },
+        { path: 'products', component: ProductListView, meta: { title: 'Quản lý sản phẩm' } },
+        {
+          path: 'products/:productId/:section?',
+          redirect: (to) => ({
+            path: `/products/${String(to.params.productId)}/${typeof to.params.section === 'string' ? to.params.section : 'general'}`,
+            query: to.query,
+          }),
+        },
         { path: 'compliance', component: ComplianceManagementView, meta: { title: 'Kiểm duyệt & Pháp lý' } },
         { path: 'settings/permissions', component: CorePermissionSettingsView, meta: { title: 'Quyền cốt lõi' } },
         {
@@ -77,6 +85,11 @@ export const router = createRouter({
           meta: { title: 'Quản lý chứng chỉ' },
         },
       ],
+    },
+    {
+      path: '/products/:productId/:section?',
+      component: ProductDetailView,
+      meta: { requiresAdmin: true, title: 'Workspace sản phẩm' },
     },
     { path: '/:pathMatch(.*)*', redirect: '/login' },
   ],

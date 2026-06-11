@@ -14,12 +14,14 @@ import type {
   CreatorProductsListData,
   CreateThumbnailUploadUrlBody,
   Product,
+  ProductPlatformSettings,
   ProductPackageRegistration,
   ReplaceProductAllowedPermissionsBody,
   SignedPlaybackUrlData,
   SignedSheetMusicUrlData,
   SignedThumbnailUrlData,
   SignedUploadUrlData,
+  UpdateProductPlatformSettingsBody,
 } from '../types/products.types'
 
 export const listAdminProducts = async (query: AdminProductsListQuery) => {
@@ -34,8 +36,26 @@ export const createAdminProduct = async (body: AdminCreateProductBody) => {
   return apiPost<Product, AdminCreateProductBody>('/admin/products', body)
 }
 
+export const getAdminProduct = async (productId: string) => {
+  return apiGet<Product>(`/admin/products/${productId}`)
+}
+
 export const updateAdminProduct = async (productId: string, body: AdminUpdateProductBody) => {
   return apiPatch<Product, AdminUpdateProductBody>(`/admin/products/${productId}`, body)
+}
+
+export const getAdminProductPlatformSettings = async (productId: string) => {
+  return apiGet<ProductPlatformSettings>(`/admin/products/${productId}/platform-settings`)
+}
+
+export const updateAdminProductPlatformSettings = async (
+  productId: string,
+  body: UpdateProductPlatformSettingsBody,
+) => {
+  return apiPut<ProductPlatformSettings, UpdateProductPlatformSettingsBody>(
+    `/admin/products/${productId}/platform-settings`,
+    body,
+  )
 }
 
 export const replaceAdminProductAllowedPermissions = async (

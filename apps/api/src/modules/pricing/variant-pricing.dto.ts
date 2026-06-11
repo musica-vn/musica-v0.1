@@ -57,6 +57,11 @@ export class PublicVariantPricingCalculateRequestDto {
   @IsOptional()
   @IsUUID('4')
   modificationConfigId?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUUID('4')
+  productId?: string;
 }
 
 export class VariantPricingBreakdownLineDto {

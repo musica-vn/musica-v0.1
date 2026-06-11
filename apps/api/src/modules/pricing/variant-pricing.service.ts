@@ -16,6 +16,7 @@ import type {
 
 type DbDigitalRightConfigRow = {
   id: string;
+  target_platform: 'YOUTUBE' | 'TIKTOK' | 'FACEBOOK';
   base_price_multiplier: number | string;
 };
 
@@ -37,6 +38,12 @@ type DbModificationConfigRow = {
 type DbPriceModifierRow = {
   modifier_key: string;
   multiplier: number | string;
+};
+
+type DbProductPlatformPricingConfigRow = {
+  digital_right_config_id: string | null;
+  pricing_mode: 'GLOBAL' | 'CUSTOM';
+  custom_price_multiplier: number | string | null;
 };
 
 const BASE_PRICE_VND = 2_530_000;
@@ -78,7 +85,7 @@ export class VariantPricingService {
       platformType === 'DIGITAL'
         ? this.supabaseService.client
           .from('digital_right_configs')
-          .select('id,base_price_multiplier')
+          .select('id,target_platform,base_price_multiplier')
           .eq('id', configId)
           .maybeSingle<DbDigitalRightConfigRow>()
         : this.supabaseService.client
@@ -116,8 +123,17 @@ export class VariantPricingService {
         .maybeSingle<DbModificationConfigRow>()
       : Promise.resolve({ data: null, error: null } as const);
 
-    const [{ data: config, error: configError }, modifiersResult, expressionResult, modificationResult] =
-      await Promise.all([configPromise, modifiersPromise, expressionPromise, modificationPromise]);
+    const [
+      { data: config, error: configError },
+      modifiersResult,
+      expressionResult,
+      modificationResult,
+    ] = await Promise.all([
+      configPromise,
+      modifiersPromise,
+      expressionPromise,
+      modificationPromise,
+    ]);
 
     if (configError) {
       throwSupabaseError(
@@ -184,6 +200,26 @@ export class VariantPricingService {
     const isExpressionEnabled = true;
     const isModificationEnabled = true;
 
+    const productPlatformOverrideResult =
+      platformType === 'DIGITAL' &&
+      payload.productId &&
+      'target_platform' in config
+        ? await this.supabaseService.client
+          .from('product_platform_pricing_configs')
+          .select('digital_right_config_id,pricing_mode,custom_price_multiplier')
+          .eq('product_id', payload.productId)
+          .eq('platform_key', config.target_platform)
+          .maybeSingle<DbProductPlatformPricingConfigRow>()
+        : { data: null, error: null } as const;
+
+    if (productPlatformOverrideResult.error) {
+      throwSupabaseError(
+        'VARIANT_PRICING_PRODUCT_PLATFORM_OVERRIDE_LOAD_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        productPlatformOverrideResult.error,
+      );
+    }
+
     const breakdown: VariantPricingBreakdownLineDto[] = [];
     const addBreakdownLine = (key: string, label: string) => {
       breakdown.push({ key, label });
@@ -192,11 +228,25 @@ export class VariantPricingService {
 
     addBreakdownLine('BASE_PRICE', 'Giá cơ bản bản quyền');
 
-    const platformMultiplier = toNumber((config as any).base_price_multiplier);
+    const hasCustomProductPlatformPrice =
+      platformType === 'DIGITAL' &&
+      productPlatformOverrideResult.data?.digital_right_config_id === configId &&
+      productPlatformOverrideResult.data.pricing_mode === 'CUSTOM' &&
+      productPlatformOverrideResult.data.custom_price_multiplier !== null;
+
+    const platformMultiplier = hasCustomProductPlatformPrice
+      ? toNumber(productPlatformOverrideResult.data!.custom_price_multiplier!)
+      : toNumber((config as any).base_price_multiplier);
     currentTotal *= platformMultiplier;
     addBreakdownLine(
-      'PLATFORM_BASE_MULTIPLIER',
-      platformType === 'DIGITAL' ? 'Nền tảng số' : 'Nền tảng vật lý',
+      hasCustomProductPlatformPrice
+        ? 'PRODUCT_PLATFORM_OVERRIDE'
+        : 'PLATFORM_BASE_MULTIPLIER',
+      platformType === 'DIGITAL'
+        ? hasCustomProductPlatformPrice
+          ? 'Nền tảng số (riêng sản phẩm)'
+          : 'Nền tảng số'
+        : 'Nền tảng vật lý',
     );
 
     if (payload.subject) {

@@ -126,6 +126,66 @@ export class ProductPriorityDto {
   effectiveEnd: string | null;
 }
 
+export class ProductPlatformConfigOptionDto {
+  @ApiProperty()
+  digitalRightConfigId: string;
+
+  @ApiProperty({ enum: ['YOUTUBE'] })
+  platformKey: 'YOUTUBE';
+
+  @ApiProperty()
+  platformLabel: string;
+
+  @ApiProperty()
+  title: string;
+
+  @ApiProperty({ enum: ['ONE_YEAR', 'PERPETUAL'] })
+  durationType: 'ONE_YEAR' | 'PERPETUAL';
+
+  @ApiProperty()
+  globalBaseMultiplier: number;
+}
+
+export class ProductPlatformSettingGroupDto {
+  @ApiProperty({ enum: ['YOUTUBE'] })
+  platformKey: 'YOUTUBE';
+
+  @ApiProperty()
+  platformLabel: string;
+
+  @ApiProperty({ type: [ProductPlatformConfigOptionDto] })
+  availableConfigs: ProductPlatformConfigOptionDto[];
+
+  @ApiProperty({ required: false, nullable: true })
+  selectedDigitalRightConfigId: string | null;
+
+  @ApiProperty({ enum: ['GLOBAL', 'CUSTOM'] })
+  pricingMode: 'GLOBAL' | 'CUSTOM';
+
+  @ApiProperty({ required: false, nullable: true })
+  customPriceMultiplier: number | null;
+
+  @ApiProperty({ required: false, nullable: true })
+  systemBaseMultiplier: number | null;
+
+  @ApiProperty({ required: false, nullable: true })
+  effectiveMultiplier: number | null;
+
+  @ApiProperty({ required: false, nullable: true })
+  updatedAt: string | null;
+
+  @ApiProperty({ required: false, nullable: true })
+  updatedBy: string | null;
+}
+
+export class ProductPlatformSettingsDto {
+  @ApiProperty()
+  productId: string;
+
+  @ApiProperty({ type: [ProductPlatformSettingGroupDto] })
+  supportedPlatforms: ProductPlatformSettingGroupDto[];
+}
+
 export class ProductDto {
   @ApiProperty()
   id: string;

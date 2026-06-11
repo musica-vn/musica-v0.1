@@ -18,6 +18,9 @@ export type ProductAllowedPermission = {
   lawReference: string
 }
 
+export type ProductPlatformKey = 'YOUTUBE'
+export type ProductPlatformDurationType = 'ONE_YEAR' | 'PERPETUAL'
+
 export type ProductLicensingEligibilityStatus = 'ELIGIBLE' | 'INELIGIBLE'
 export type ProductPackageJoinStatus = 'NOT_JOINED' | 'JOINED'
 export type ProductPackageRegistrationStatus = 'JOINED' | 'REMOVED'
@@ -94,6 +97,35 @@ export type Product = {
   updatedAt: string
 }
 
+export type ProductPlatformPricingMode = 'GLOBAL' | 'CUSTOM'
+
+export type ProductPlatformConfigOption = {
+  digitalRightConfigId: string
+  platformKey: ProductPlatformKey
+  platformLabel: string
+  title: string
+  durationType: ProductPlatformDurationType
+  globalBaseMultiplier: number
+}
+
+export type ProductPlatformSettingGroup = {
+  platformKey: ProductPlatformKey
+  platformLabel: string
+  availableConfigs: ProductPlatformConfigOption[]
+  selectedDigitalRightConfigId: string | null
+  pricingMode: ProductPlatformPricingMode
+  customPriceMultiplier: number | null
+  systemBaseMultiplier: number | null
+  effectiveMultiplier: number | null
+  updatedAt: string | null
+  updatedBy: string | null
+}
+
+export type ProductPlatformSettings = {
+  productId: string
+  supportedPlatforms: ProductPlatformSettingGroup[]
+}
+
 export type AdminProductsListQuery = {
   page: number
   pageSize: number
@@ -141,6 +173,13 @@ export type ReplaceProductAllowedPermissionsBody = {
 
 export type CreateProductPackageRegistrationBody = {
   configId: string
+}
+
+export type UpdateProductPlatformSettingsBody = {
+  platformKey: ProductPlatformKey
+  selectedDigitalRightConfigId?: string | null
+  pricingMode: ProductPlatformPricingMode
+  customPriceMultiplier?: number | null
 }
 
 export type CreatorProductsListData = {
