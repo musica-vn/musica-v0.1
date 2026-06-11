@@ -26,6 +26,7 @@ import { ProductDto } from './product.dto';
 import {
   applyProductPriorityOrdering,
   PRODUCT_PRIORITY_SELECT,
+  filterAndSortProducts,
 } from '../product-priorities/product-priority-ordering';
 import {
   buildRequiredPermissionsFromDependencies,
@@ -1150,19 +1151,13 @@ export class ProductsService {
       PaginationMeta
     >
   > {
-    const { column, ascending } = parseSort(query.sort);
-    const keyword =
-      typeof query.keyword === 'string' && query.keyword.trim().length > 0
-        ? normalizeKeyword(query.keyword).toLowerCase()
-        : undefined;
-
     const { data, error } = await this.supabaseService.client
       .from('products')
       .select(
-        'id,title,artist_id,author_name,genre,genres,duration,thumbnail_key,original_audio_key,created_at,updated_at,status',
+        `id,title,artist_id,author_name,genre,genres,duration,thumbnail_key,original_audio_key,created_at,updated_at,status, ${PRODUCT_PRIORITY_SELECT}`,
       )
       .eq('status', 'PUBLISHED')
-      .returns<DbProductRow[]>();
+      .returns<DbProductJoinRow[]>();
 
     if (error) {
       throwSupabaseError(
@@ -1172,47 +1167,7 @@ export class ProductsService {
       );
     }
 
-    const filteredRows = (data ?? []).filter((row) => {
-      const genres = row.genres ?? (row.genre ? [row.genre] : []);
-      const searchable = [
-        row.title,
-        row.author_name ?? '',
-        row.genre ?? '',
-        ...genres,
-      ]
-        .join(' ')
-        .toLowerCase();
-
-      if (query.artistId && row.artist_id !== query.artistId) return false;
-      if (
-        query.genre &&
-        !genres.includes(query.genre) &&
-        row.genre !== query.genre
-      ) {
-        return false;
-      }
-      if (keyword && !searchable.includes(keyword)) return false;
-
-      return true;
-    });
-
-    filteredRows.sort((a, b) => {
-      const left = a[column];
-      const right = b[column];
-
-      if (left === right) return 0;
-      if (left === null || left === undefined) return ascending ? -1 : 1;
-      if (right === null || right === undefined) return ascending ? 1 : -1;
-      if (typeof left === 'number' && typeof right === 'number') {
-        return ascending ? left - right : right - left;
-      }
-
-      const leftValue = String(left).toLowerCase();
-      const rightValue = String(right).toLowerCase();
-      return ascending
-        ? leftValue.localeCompare(rightValue)
-        : rightValue.localeCompare(leftValue);
-    });
+    const filteredRows = filterAndSortProducts(data ?? [], query, parseSort);
 
     const from = (query.page - 1) * query.pageSize;
     const pageRows = filteredRows.slice(from, from + query.pageSize);
@@ -1277,87 +1232,19 @@ export class ProductsService {
   ): Promise<
     ApiEnvelopePayload<{ items: PublicProductListItem[] }, PaginationMeta>
   > {
-    const { column, ascending } = parsePublicSort(query.sort);
-    const keyword =
-      typeof query.keyword === 'string' && query.keyword.trim().length > 0
-        ? normalizeKeyword(query.keyword).toLowerCase()
-        : typeof query.q === 'string' && query.q.trim().length > 0
-          ? normalizeKeyword(query.q).toLowerCase()
-          : undefined;
-
     const { data, error } = await this.supabaseService.client
       .from('products')
       .select(
-        'id,title,author_name,genre,genres,duration,use_case,use_cases,thumbnail_key,created_at,updated_at,status',
+        `id,title,author_name,genre,genres,duration,use_case,use_cases,thumbnail_key,created_at,updated_at,status, ${PRODUCT_PRIORITY_SELECT}`,
       )
       .eq('status', 'PUBLISHED')
-      .returns<DbProductRow[]>();
+      .returns<DbProductJoinRow[]>();
 
     if (error) {
       throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
-    const filteredRows = (data ?? []).filter((row) => {
-      const genres = row.genres ?? (row.genre ? [row.genre] : []);
-      const useCases = row.use_cases ?? (row.use_case ? [row.use_case] : []);
-      const searchable = [
-        row.title,
-        row.author_name ?? '',
-        row.genre ?? '',
-        row.use_case ?? '',
-        ...genres,
-        ...useCases,
-      ]
-        .join(' ')
-        .toLowerCase();
-
-      if (keyword && !searchable.includes(keyword)) return false;
-      if (
-        query.genre &&
-        !genres.includes(query.genre) &&
-        row.genre !== query.genre
-      ) {
-        return false;
-      }
-      if (
-        query.useCase &&
-        !useCases.includes(query.useCase) &&
-        row.use_case !== query.useCase
-      ) {
-        return false;
-      }
-
-      const durationSeconds = row.duration ?? 0;
-      if (query.duration === 'lt2' && durationSeconds >= 120) return false;
-      if (
-        query.duration === '2to4' &&
-        !(durationSeconds >= 120 && durationSeconds < 240)
-      ) {
-        return false;
-      }
-      if (query.duration === 'gt4' && durationSeconds < 240) return false;
-
-      return true;
-    });
-
-    filteredRows.sort((a, b) => {
-      const left = a[column];
-      const right = b[column];
-
-      if (left === right) return 0;
-      if (left === null || left === undefined) return ascending ? -1 : 1;
-      if (right === null || right === undefined) return ascending ? 1 : -1;
-
-      if (typeof left === 'number' && typeof right === 'number') {
-        return ascending ? left - right : right - left;
-      }
-
-      const leftValue = String(left).toLowerCase();
-      const rightValue = String(right).toLowerCase();
-      return ascending
-        ? leftValue.localeCompare(rightValue)
-        : rightValue.localeCompare(leftValue);
-    });
+    const filteredRows = filterAndSortProducts(data ?? [], query, parsePublicSort);
 
     const totalItems = filteredRows.length;
     const from = (query.page - 1) * query.pageSize;
