@@ -1,6 +1,7 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ApiExceptionFilter } from './common/filters/api-exception.filter';
@@ -15,6 +16,7 @@ import { ManagedUsersModule } from './modules/managed-users/managed-users.module
 import { CorePermissionsModule } from './modules/core-permissions/core-permissions.module';
 import { ComplianceModule } from './modules/compliance/compliance.module';
 import { LicensingConfigsModule } from './modules/licensing-configs/licensing-configs.module';
+import { OrdersModule } from './modules/orders/orders.module';
 import { ProductPackageRegistrationsModule } from './modules/product-package-registrations/product-package-registrations.module';
 import { VariantPricingModule } from './modules/pricing/variant-pricing.module';
 
@@ -24,6 +26,7 @@ import { VariantPricingModule } from './modules/pricing/variant-pricing.module';
       isGlobal: true,
       envFilePath: [`.env.${process.env.NODE_ENV ?? 'development'}`, '.env'],
     }),
+    EventEmitterModule.forRoot(),
     HealthModule,
     AuthModule,
     ProductsModule,
@@ -33,6 +36,7 @@ import { VariantPricingModule } from './modules/pricing/variant-pricing.module';
     CorePermissionsModule,
     ComplianceModule,
     LicensingConfigsModule,
+    OrdersModule,
     ProductPackageRegistrationsModule,
     VariantPricingModule,
   ],
