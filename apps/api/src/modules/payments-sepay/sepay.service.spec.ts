@@ -259,4 +259,114 @@ describe('SepayService', () => {
     );
     expect(result).toEqual({ acknowledged: true });
   });
+
+  it('reconciles missing payment attempt by invoice number and completes order', async () => {
+    const mock = createMockSupabaseClient();
+    const completeExternalPayment = jest.fn().mockResolvedValue({
+      id: '00000000-0000-0000-0000-000000000001',
+      status: 'PAID',
+    });
+
+    mock.from.mockImplementation((table: string) => {
+      if (table === 'order_payments') {
+        return {
+          select: jest.fn().mockReturnValue(
+            mock.buildMaybeSingleQuery({
+              data: null,
+              error: null,
+            }),
+          ),
+          insert: jest.fn().mockReturnValue({
+            select: jest.fn().mockReturnThis(),
+            maybeSingle: jest.fn().mockResolvedValue({
+              data: {
+                id: 'payment-row-id',
+                order_id: '00000000-0000-0000-0000-000000000001',
+                invoice_number: 'INV-ORD-20260611-0001-1757058220123',
+                status: 'PENDING',
+              },
+              error: null,
+            }),
+          }),
+          update: mock.buildUpdateQuery({ error: null }).update,
+        };
+      }
+
+      if (table === 'orders') {
+        return {
+          select: jest.fn().mockReturnThis(),
+          eq: jest.fn().mockImplementation((key: string) => {
+            if (key === 'order_number') {
+              return {
+                maybeSingle: jest.fn().mockResolvedValue({
+                  data: {
+                    id: '00000000-0000-0000-0000-000000000001',
+                    status: 'PENDING_PAYMENT',
+                    currency: 'VND',
+                    total_amount: '100000',
+                  },
+                  error: null,
+                }),
+              };
+            }
+
+            return {
+              maybeSingle: jest.fn().mockResolvedValue({
+                data: {
+                  id: '00000000-0000-0000-0000-000000000001',
+                  status: 'PENDING_PAYMENT',
+                  currency: 'VND',
+                  total_amount: '100000',
+                },
+                error: null,
+              }),
+            };
+          }),
+          maybeSingle: jest.fn(),
+        };
+      }
+
+      throw new Error(`Unexpected table: ${table}`);
+    });
+
+    const service = createService(mock as any, undefined, {
+      completeExternalPayment,
+    });
+
+    const result = await service.handleIpn('secret-key', {
+      timestamp: 1757058220,
+      notification_type: 'ORDER_PAID',
+      order: {
+        id: 'provider-order-id',
+        order_id: 'NQD-...',
+        order_status: 'CAPTURED',
+        order_currency: 'VND',
+        order_amount: '100000.00',
+        order_invoice_number: 'INV-ORD-20260611-0001-1757058220123',
+        custom_data: [],
+        user_agent: 'Mozilla/5.0',
+        ip_address: '127.0.0.1',
+        order_description: 'Thanh toan',
+      },
+      transaction: {
+        id: 'provider-transaction-id',
+        payment_method: 'BANK_TRANSFER',
+        transaction_id: 'TXN-001',
+        transaction_type: 'PAYMENT',
+        transaction_date: '2025-09-29 15:31:22',
+        transaction_status: 'APPROVED',
+        transaction_amount: '100000',
+        transaction_currency: 'VND',
+      },
+    });
+
+    expect(completeExternalPayment).toHaveBeenCalledWith(
+      '00000000-0000-0000-0000-000000000001',
+      expect.objectContaining({
+        provider: 'SEPAY',
+        transactionId: 'TXN-001',
+      }),
+    );
+    expect(result).toEqual({ acknowledged: true });
+  });
 });

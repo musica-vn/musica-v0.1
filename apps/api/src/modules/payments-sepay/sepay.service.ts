@@ -156,20 +156,18 @@ export class SepayService {
       );
     }
 
-    if (!paymentAttempt) {
-      throw new ApiHttpException(
-        { code: 'SEPAY_PAYMENT_ATTEMPT_NOT_FOUND' },
-        HttpStatus.NOT_FOUND,
-      );
-    }
+    const attempt = paymentAttempt
+      ? (paymentAttempt as DbSepayPaymentAttemptRow)
+      : await this.reconcilePaymentAttemptFromInvoice(
+          payload.order.order_invoice_number,
+        );
 
-    const attempt = paymentAttempt as DbSepayPaymentAttemptRow;
-
-    const { data: orderRow, error: orderLoadError } = await this.supabaseService.client
-      .from('orders')
-      .select('id,status,currency,total_amount')
-      .eq('id', attempt.order_id)
-      .maybeSingle();
+    const { data: orderRow, error: orderLoadError } =
+      await this.supabaseService.client
+        .from('orders')
+        .select('id,status,currency,total_amount')
+        .eq('id', attempt.order_id)
+        .maybeSingle();
 
     if (orderLoadError) {
       throwSupabaseError(
@@ -272,6 +270,80 @@ export class SepayService {
     }
 
     return order;
+  }
+
+  private async reconcilePaymentAttemptFromInvoice(
+    invoiceNumber: string,
+  ): Promise<DbSepayPaymentAttemptRow> {
+    const orderNumber = this.parseOrderNumberFromInvoice(invoiceNumber);
+    if (!orderNumber) {
+      throw new ApiHttpException(
+        { code: 'SEPAY_PAYMENT_ATTEMPT_NOT_FOUND', details: { invoiceNumber } },
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    const { data: orderRow, error: orderLoadError } =
+      await this.supabaseService.client
+        .from('orders')
+        .select('id,status,currency,total_amount')
+        .eq('order_number', orderNumber)
+        .maybeSingle();
+
+    if (orderLoadError) {
+      throwSupabaseError(
+        'SEPAY_ORDER_LOAD_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        orderLoadError,
+      );
+    }
+
+    if (!orderRow) {
+      throw new ApiHttpException(
+        { code: 'SEPAY_ORDER_NOT_FOUND', details: { orderNumber, invoiceNumber } },
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    const { data: createdAttempt, error: insertError } =
+      await this.supabaseService.client
+        .from('order_payments')
+        .insert({
+          order_id: orderRow.id,
+          provider: 'SEPAY',
+          transaction_id: null,
+          status: 'PENDING',
+          amount: Number(orderRow.total_amount),
+          paid_at: null,
+          raw_payload: { stage: 'ipn_reconciled' },
+          invoice_number: invoiceNumber,
+          provider_order_id: null,
+          provider_transaction_id: null,
+        })
+        .select('id,order_id,invoice_number,status')
+        .maybeSingle();
+
+    if (insertError) {
+      throwSupabaseError(
+        'SEPAY_PAYMENT_ATTEMPT_CREATE_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        insertError,
+      );
+    }
+
+    if (!createdAttempt) {
+      throw new ApiHttpException(
+        { code: 'SEPAY_PAYMENT_ATTEMPT_CREATE_FAILED' },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+
+    return createdAttempt as DbSepayPaymentAttemptRow;
+  }
+
+  private parseOrderNumberFromInvoice(invoiceNumber: string): string | null {
+    const match = /^INV-(.+)-\d{10,13}$/.exec(invoiceNumber);
+    return match?.[1] ?? null;
   }
 
   private buildCheckoutFields(
