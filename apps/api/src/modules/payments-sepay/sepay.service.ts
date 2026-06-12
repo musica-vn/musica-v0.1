@@ -327,10 +327,10 @@ export class SepayService {
       'sandbox';
 
     if (environment === 'production') {
-      return 'https://pgapi.sepay.vn/v1/checkout/init';
+      return 'https://pay.sepay.vn/v1/checkout/init';
     }
 
-    return 'https://pgapi-sandbox.sepay.vn/v1/checkout/init';
+    return 'https://pay-sandbox.sepay.vn/v1/checkout/init';
   }
 
   buildClientResultRedirectUrl(

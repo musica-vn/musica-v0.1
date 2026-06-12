@@ -104,7 +104,7 @@ describe('SepayService', () => {
       paymentMethod: 'BANK_TRANSFER',
     });
 
-    expect(result.actionUrl).toBe('https://pgapi.sepay.vn/v1/checkout/init');
+    expect(result.actionUrl).toBe('https://pay.sepay.vn/v1/checkout/init');
     expect(result.method).toBe('POST');
     expect(result.fields.payment_method).toBe('BANK_TRANSFER');
     expect(result.fields.order_amount).toBe('100000');
@@ -142,7 +142,7 @@ describe('SepayService', () => {
     });
 
     expect(html).toContain('<form');
-    expect(html).toContain('https://pgapi.sepay.vn/v1/checkout/init');
+    expect(html).toContain('https://pay.sepay.vn/v1/checkout/init');
     expect(html).toContain('document.forms[0].submit()');
   });
 
