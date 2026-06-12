@@ -289,11 +289,12 @@ export class SepayService {
       );
     }
 
-    if ((candidates ?? []).length !== 1) {
+    const candidateList = candidates ?? [];
+    if (candidateList.length !== 1) {
       return { acknowledged: true, matched: false };
     }
 
-    const attempt = candidates[0];
+    const attempt = candidateList[0];
     const paidAt = this.parseVietnamTransactionDate(payload.transactionDate) ?? new Date().toISOString();
     const transactionId =
       (typeof payload.referenceCode === 'string' && payload.referenceCode.trim().length > 0
