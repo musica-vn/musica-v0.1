@@ -20,13 +20,16 @@ import {
   SepayCheckoutRedirectQueryDto,
   SepayCheckoutRequestDto,
   SepayCheckoutResponseDto,
+  SepayBankhubWebhookRequestDto,
   SepayIpnAcknowledgementDto,
   SepayIpnRequestDto,
+  SepayWebhookAcknowledgementDto,
 } from './sepay.dto';
 import {
   SepayCallbackLandingResponseEnvelopeDto,
   SepayCheckoutResponseEnvelopeDto,
   SepayIpnAcknowledgementResponseEnvelopeDto,
+  SepayWebhookAcknowledgementResponseEnvelopeDto,
 } from './sepay.swagger';
 import { SepayService } from './sepay.service';
 
@@ -94,5 +97,15 @@ export class SepayController {
     @Body() body: SepayIpnRequestDto,
   ): Promise<ApiEnvelopePayload<SepayIpnAcknowledgementDto>> {
     return { data: await this.sepayService.handleIpn(secretKey, body) };
+  }
+
+  @Post('webhook')
+  @ApiConsumes('application/json')
+  @ApiOkResponse({ type: SepayWebhookAcknowledgementResponseEnvelopeDto })
+  async webhook(
+    @Headers('authorization') authorization: string | undefined,
+    @Body() body: SepayBankhubWebhookRequestDto,
+  ): Promise<ApiEnvelopePayload<SepayWebhookAcknowledgementDto>> {
+    return { data: await this.sepayService.handleWebhook(authorization, body) };
   }
 }

@@ -8,6 +8,7 @@ import {
   IsOptional,
   IsString,
   IsUUID,
+  ValidateIf,
   ValidateNested,
 } from 'class-validator';
 
@@ -187,4 +188,64 @@ export class SepayIpnRequestDto {
 export class SepayIpnAcknowledgementDto {
   @ApiProperty()
   acknowledged: boolean;
+}
+
+export class SepayBankhubWebhookRequestDto {
+  @ApiProperty()
+  @IsString()
+  gateway: string;
+
+  @ApiProperty()
+  @IsString()
+  transactionDate: string;
+
+  @ApiProperty()
+  @IsString()
+  accountNumber: string;
+
+  @ApiPropertyOptional({ nullable: true })
+  @IsOptional()
+  subAccount?: string | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  @IsOptional()
+  code?: string | null;
+
+  @ApiProperty()
+  @IsString()
+  content: string;
+
+  @ApiProperty({ enum: ['in', 'out'] })
+  @IsIn(['in', 'out'])
+  transferType: 'in' | 'out';
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @ApiProperty()
+  @IsNumber()
+  transferAmount: number;
+
+  @ApiPropertyOptional({ nullable: true })
+  @IsOptional()
+  referenceCode?: string | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsNumber()
+  accumulated?: number;
+
+  @ApiProperty()
+  @IsNumber()
+  id: number;
+}
+
+export class SepayWebhookAcknowledgementDto {
+  @ApiProperty()
+  acknowledged: boolean;
+
+  @ApiProperty()
+  matched: boolean;
 }

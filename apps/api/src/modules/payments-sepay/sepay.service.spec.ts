@@ -49,6 +49,7 @@ describe('SepayService', () => {
             SEPAY_ERROR_URL: 'http://localhost:3000/payments/sepay/error',
             SEPAY_CANCEL_URL: 'http://localhost:3000/payments/sepay/cancel',
             SEPAY_IPN_SECRET_KEY: 'secret-key',
+            SEPAY_WEBHOOK_API_KEY: 'webhook-key',
             ...configOverrides,
           } as Record<string, string | undefined>
         )[key]),
@@ -189,17 +190,19 @@ describe('SepayService', () => {
     mock.from.mockImplementation((table: string) => {
       if (table === 'order_payments') {
         return {
-          select: jest.fn().mockReturnValue(
-            mock.buildMaybeSingleQuery({
-              data: {
+          select: jest.fn().mockReturnThis(),
+          eq: jest.fn().mockReturnThis(),
+          returns: jest.fn().mockResolvedValue({
+            data: [
+              {
                 id: 'payment-row-id',
                 order_id: '00000000-0000-0000-0000-000000000001',
                 invoice_number: 'INV-1',
                 status: 'PENDING',
               },
-              error: null,
-            }),
-          ),
+            ],
+            error: null,
+          }),
           update: mock.buildUpdateQuery({ error: null }).update,
         };
       }
@@ -266,28 +269,31 @@ describe('SepayService', () => {
       id: '00000000-0000-0000-0000-000000000001',
       status: 'PAID',
     });
+    let invoiceLookupCount = 0;
 
     mock.from.mockImplementation((table: string) => {
       if (table === 'order_payments') {
         return {
-          select: jest.fn().mockReturnValue(
-            mock.buildMaybeSingleQuery({
-              data: null,
+          select: jest.fn().mockReturnThis(),
+          eq: jest.fn().mockReturnThis(),
+          returns: jest.fn().mockImplementation(() => {
+            invoiceLookupCount += 1;
+            if (invoiceLookupCount === 1) {
+              return Promise.resolve({ data: [], error: null });
+            }
+            return Promise.resolve({
+              data: [
+                {
+                  id: 'payment-row-id',
+                  order_id: '00000000-0000-0000-0000-000000000001',
+                  invoice_number: 'INV-ORD-20260611-0001-1757058220123',
+                  status: 'PENDING',
+                },
+              ],
               error: null,
-            }),
-          ),
-          insert: jest.fn().mockReturnValue({
-            select: jest.fn().mockReturnThis(),
-            maybeSingle: jest.fn().mockResolvedValue({
-              data: {
-                id: 'payment-row-id',
-                order_id: '00000000-0000-0000-0000-000000000001',
-                invoice_number: 'INV-ORD-20260611-0001-1757058220123',
-                status: 'PENDING',
-              },
-              error: null,
-            }),
+            });
           }),
+          insert: jest.fn().mockResolvedValue({ error: null }),
           update: mock.buildUpdateQuery({ error: null }).update,
         };
       }
@@ -368,5 +374,42 @@ describe('SepayService', () => {
       }),
     );
     expect(result).toEqual({ acknowledged: true });
+  });
+
+  it('acknowledges BankHub webhook when api key is valid but does not match any payment', async () => {
+    const mock = createMockSupabaseClient();
+
+    mock.from.mockImplementation((table: string) => {
+      if (table === 'order_payments') {
+        return {
+          select: jest.fn().mockReturnThis(),
+          eq: jest.fn().mockReturnThis(),
+          gte: jest.fn().mockReturnThis(),
+          order: jest.fn().mockReturnThis(),
+          range: jest.fn().mockReturnThis(),
+          returns: jest.fn().mockResolvedValue({ data: [], error: null }),
+        };
+      }
+
+      throw new Error(`Unexpected table: ${table}`);
+    });
+
+    const service = createService(mock as any);
+    const result = await service.handleWebhook('Apikey webhook-key', {
+      gateway: 'MBBank',
+      transactionDate: '2026-06-12 15:12:00',
+      accountNumber: '040495',
+      subAccount: null,
+      code: 'PAYXXX',
+      content: 'PAYXXX ...',
+      transferType: 'in',
+      description: 'desc',
+      transferAmount: 83016,
+      referenceCode: 'FT...',
+      accumulated: 0,
+      id: 62983252,
+    });
+
+    expect(result).toEqual({ acknowledged: true, matched: false });
   });
 });

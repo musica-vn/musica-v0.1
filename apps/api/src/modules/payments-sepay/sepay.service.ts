@@ -2,13 +2,16 @@ import { HttpStatus, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ApiHttpException } from '../../common/errors/api-http.exception';
 import { throwSupabaseError } from '../../common/database/supabase-errors';
+import { isUniqueViolation } from '../../common/database/postgres-errors';
 import { SupabaseService } from '../../database/supabase.service';
 import { OrdersService } from '../orders/orders.service';
 import {
   type SepayCheckoutRequestDto,
   type SepayCheckoutResponseDto,
+  type SepayBankhubWebhookRequestDto,
   type SepayIpnAcknowledgementDto,
   type SepayIpnRequestDto,
+  type SepayWebhookAcknowledgementDto,
 } from './sepay.dto';
 import { buildSepaySignature, type SepaySignedFields } from './sepay.signature';
 
@@ -141,12 +144,13 @@ export class SepayService {
       return { acknowledged: true };
     }
 
-    const { data: paymentAttempt, error: paymentLoadError } =
+    const invoiceNumber = payload.order.order_invoice_number;
+    const { data: paymentAttempts, error: paymentLoadError } =
       await this.supabaseService.client
         .from('order_payments')
         .select('id,order_id,invoice_number,status')
-        .eq('invoice_number', payload.order.order_invoice_number)
-        .maybeSingle();
+        .eq('invoice_number', invoiceNumber)
+        .returns<DbSepayPaymentAttemptRow[]>();
 
     if (paymentLoadError) {
       throwSupabaseError(
@@ -156,11 +160,19 @@ export class SepayService {
       );
     }
 
-    const attempt = paymentAttempt
-      ? (paymentAttempt as DbSepayPaymentAttemptRow)
-      : await this.reconcilePaymentAttemptFromInvoice(
-          payload.order.order_invoice_number,
-        );
+    if ((paymentAttempts ?? []).length > 1) {
+      throw new ApiHttpException(
+        {
+          code: 'SEPAY_PAYMENT_ATTEMPT_DUPLICATED',
+          details: { invoiceNumber, count: (paymentAttempts ?? []).length },
+        },
+        HttpStatus.CONFLICT,
+      );
+    }
+
+    const attempt =
+      (paymentAttempts ?? [])[0] ??
+      (await this.reconcilePaymentAttemptFromInvoice(invoiceNumber));
 
     const { data: orderRow, error: orderLoadError } =
       await this.supabaseService.client
@@ -215,7 +227,7 @@ export class SepayService {
         paid_at: paidAt,
         raw_payload: payload,
       })
-      .eq('id', attempt.id);
+      .eq('invoice_number', invoiceNumber);
 
     if (updateError) {
       throwSupabaseError(
@@ -233,6 +245,89 @@ export class SepayService {
     });
 
     return { acknowledged: true };
+  }
+
+  async handleWebhook(
+    authorizationHeader: string | undefined,
+    payload: SepayBankhubWebhookRequestDto,
+  ): Promise<SepayWebhookAcknowledgementDto> {
+    const expected = this.configService.get<string>('SEPAY_WEBHOOK_API_KEY');
+    if (!expected) {
+      throw new ApiHttpException(
+        { code: 'SERVER_MISCONFIGURED', details: { missingKey: 'SEPAY_WEBHOOK_API_KEY' } },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+
+    const expectedHeader = `Apikey ${expected}`;
+    if (!authorizationHeader || authorizationHeader.trim() !== expectedHeader) {
+      throw new ApiHttpException({ code: 'SEPAY_WEBHOOK_UNAUTHORIZED' }, HttpStatus.UNAUTHORIZED);
+    }
+
+    if (payload.transferType !== 'in') {
+      return { acknowledged: true, matched: false };
+    }
+
+    const fromDate = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString();
+    const { data: candidates, error: candidatesError } =
+      await this.supabaseService.client
+        .from('order_payments')
+        .select('id,order_id,invoice_number,status,amount,created_at')
+        .eq('provider', 'SEPAY')
+        .eq('status', 'PENDING')
+        .eq('amount', payload.transferAmount)
+        .gte('created_at', fromDate)
+        .order('created_at', { ascending: false })
+        .range(0, 1)
+        .returns<Array<DbSepayPaymentAttemptRow & { amount: number | string; created_at: string }>>();
+
+    if (candidatesError) {
+      throwSupabaseError(
+        'SEPAY_WEBHOOK_CANDIDATES_LOOKUP_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        candidatesError,
+      );
+    }
+
+    if ((candidates ?? []).length !== 1) {
+      return { acknowledged: true, matched: false };
+    }
+
+    const attempt = candidates[0];
+    const paidAt = this.parseVietnamTransactionDate(payload.transactionDate) ?? new Date().toISOString();
+    const transactionId =
+      (typeof payload.referenceCode === 'string' && payload.referenceCode.trim().length > 0
+        ? payload.referenceCode.trim()
+        : String(payload.id));
+
+    const { error: updateError } = await this.supabaseService.client
+      .from('order_payments')
+      .update({
+        status: 'SUCCEEDED',
+        transaction_id: transactionId,
+        provider_order_id: payload.code ?? null,
+        provider_transaction_id: transactionId,
+        paid_at: paidAt,
+        raw_payload: payload,
+      })
+      .eq('id', attempt.id);
+
+    if (updateError) {
+      throwSupabaseError(
+        'SEPAY_WEBHOOK_PAYMENT_ATTEMPT_UPDATE_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        updateError,
+      );
+    }
+
+    await this.ordersService.completeExternalPayment(attempt.order_id, {
+      provider: 'SEPAY',
+      transactionId,
+      paidAt,
+      rawPayload: payload as unknown as Record<string, unknown>,
+    });
+
+    return { acknowledged: true, matched: true };
   }
 
   private async loadCheckoutOrder(orderId: string): Promise<DbOrderCheckoutRow> {
@@ -305,25 +400,22 @@ export class SepayService {
       );
     }
 
-    const { data: createdAttempt, error: insertError } =
-      await this.supabaseService.client
-        .from('order_payments')
-        .insert({
-          order_id: orderRow.id,
-          provider: 'SEPAY',
-          transaction_id: null,
-          status: 'PENDING',
-          amount: Number(orderRow.total_amount),
-          paid_at: null,
-          raw_payload: { stage: 'ipn_reconciled' },
-          invoice_number: invoiceNumber,
-          provider_order_id: null,
-          provider_transaction_id: null,
-        })
-        .select('id,order_id,invoice_number,status')
-        .maybeSingle();
+    const { error: insertError } = await this.supabaseService.client
+      .from('order_payments')
+      .insert({
+        order_id: orderRow.id,
+        provider: 'SEPAY',
+        transaction_id: null,
+        status: 'PENDING',
+        amount: Number(orderRow.total_amount),
+        paid_at: null,
+        raw_payload: { stage: 'ipn_reconciled' },
+        invoice_number: invoiceNumber,
+        provider_order_id: null,
+        provider_transaction_id: null,
+      });
 
-    if (insertError) {
+    if (insertError && !isUniqueViolation(insertError)) {
       throwSupabaseError(
         'SEPAY_PAYMENT_ATTEMPT_CREATE_FAILED',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -331,19 +423,46 @@ export class SepayService {
       );
     }
 
-    if (!createdAttempt) {
-      throw new ApiHttpException(
-        { code: 'SEPAY_PAYMENT_ATTEMPT_CREATE_FAILED' },
+    const { data: attempts, error: reloadError } = await this.supabaseService.client
+      .from('order_payments')
+      .select('id,order_id,invoice_number,status')
+      .eq('invoice_number', invoiceNumber)
+      .returns<DbSepayPaymentAttemptRow[]>();
+
+    if (reloadError) {
+      throwSupabaseError(
+        'SEPAY_PAYMENT_ATTEMPT_LOAD_FAILED',
         HttpStatus.INTERNAL_SERVER_ERROR,
+        reloadError,
       );
     }
 
-    return createdAttempt as DbSepayPaymentAttemptRow;
+    const attempt = (attempts ?? [])[0];
+    if (!attempt) {
+      throw new ApiHttpException(
+        { code: 'SEPAY_PAYMENT_ATTEMPT_NOT_FOUND', details: { invoiceNumber } },
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    return attempt;
   }
 
   private parseOrderNumberFromInvoice(invoiceNumber: string): string | null {
     const match = /^INV-(.+)-\d{10,13}$/.exec(invoiceNumber);
     return match?.[1] ?? null;
+  }
+
+  private parseVietnamTransactionDate(value: string): string | null {
+    const raw = typeof value === 'string' ? value.trim() : '';
+    if (!raw) return null;
+    const isoLike = raw.includes(' ') ? raw.replace(' ', 'T') : raw;
+    const withOffset =
+      isoLike.includes('Z') || isoLike.includes('+')
+        ? isoLike
+        : `${isoLike}+07:00`;
+    const date = new Date(withOffset);
+    return Number.isNaN(date.getTime()) ? null : date.toISOString();
   }
 
   private buildCheckoutFields(
