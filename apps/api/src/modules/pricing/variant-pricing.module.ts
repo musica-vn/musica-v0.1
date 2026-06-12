@@ -7,5 +7,6 @@ import { VariantPricingService } from './variant-pricing.service';
   imports: [SupabaseModule],
   controllers: [PublicVariantPricingController],
   providers: [VariantPricingService],
+  exports: [VariantPricingService],
 })
 export class VariantPricingModule {}

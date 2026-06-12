@@ -28,14 +28,14 @@ import {
 import { OrdersService } from './orders.service';
 
 @ApiTags('Orders')
-@ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
-@RequireRoles('ADMIN', 'SUPER_ADMIN')
 @Controller('orders')
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
 
   @Get()
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @RequireRoles('ADMIN', 'SUPER_ADMIN')
   @ApiOkResponse({ type: OrdersListResponseDto })
   async list(
     @Query() query: OrdersListQueryDto,
@@ -54,6 +54,9 @@ export class OrdersController {
   }
 
   @Post(':orderId/mark-paid')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @RequireRoles('ADMIN', 'SUPER_ADMIN')
   @ApiOkResponse({ type: MarkOrderPaidResponseDto })
   async markPaid(
     @Param('orderId', ParseUUIDPipe) orderId: string,

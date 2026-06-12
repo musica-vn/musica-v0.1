@@ -17,6 +17,7 @@ import { CorePermissionsModule } from './modules/core-permissions/core-permissio
 import { ComplianceModule } from './modules/compliance/compliance.module';
 import { LicensingConfigsModule } from './modules/licensing-configs/licensing-configs.module';
 import { OrdersModule } from './modules/orders/orders.module';
+import { SepayModule } from './modules/payments-sepay/sepay.module';
 import { ProductPackageRegistrationsModule } from './modules/product-package-registrations/product-package-registrations.module';
 import { VariantPricingModule } from './modules/pricing/variant-pricing.module';
 
@@ -37,6 +38,7 @@ import { VariantPricingModule } from './modules/pricing/variant-pricing.module';
     ComplianceModule,
     LicensingConfigsModule,
     OrdersModule,
+    SepayModule,
     ProductPackageRegistrationsModule,
     VariantPricingModule,
   ],

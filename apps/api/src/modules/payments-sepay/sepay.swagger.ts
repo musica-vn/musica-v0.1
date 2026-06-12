@@ -1,23 +1,19 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { PaginationMetaDto } from '../../common/base/pagination.swagger';
 import {
-  CreateCheckoutOrderResponseDto,
-  OrderDetailDto,
-  OrderListDataDto,
-} from './orders.dto';
+  SepayCallbackLandingDto,
+  SepayCheckoutResponseDto,
+  SepayIpnAcknowledgementDto,
+} from './sepay.dto';
 
-export class OrdersListResponseDto {
+export class SepayCheckoutResponseEnvelopeDto {
   @ApiProperty({ example: true })
   success: true;
 
   @ApiProperty({ example: 200 })
   statusCode: number;
 
-  @ApiProperty({ type: OrderListDataDto })
-  data: OrderListDataDto;
-
-  @ApiProperty({ type: PaginationMetaDto })
-  meta: PaginationMetaDto;
+  @ApiProperty({ type: SepayCheckoutResponseDto })
+  data: SepayCheckoutResponseDto;
 
   @ApiProperty({ example: '2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a' })
   requestId: string;
@@ -26,15 +22,15 @@ export class OrdersListResponseDto {
   timestamp: string;
 }
 
-export class OrderDetailResponseDto {
+export class SepayCallbackLandingResponseEnvelopeDto {
   @ApiProperty({ example: true })
   success: true;
 
   @ApiProperty({ example: 200 })
   statusCode: number;
 
-  @ApiProperty({ type: OrderDetailDto })
-  data: OrderDetailDto;
+  @ApiProperty({ type: SepayCallbackLandingDto })
+  data: SepayCallbackLandingDto;
 
   @ApiProperty({ example: '2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a' })
   requestId: string;
@@ -43,21 +39,24 @@ export class OrderDetailResponseDto {
   timestamp: string;
 }
 
-export class MarkOrderPaidResponseDto extends OrderDetailResponseDto {}
-
-export class CreateCheckoutOrderEnvelopeDto {
+export class SepayIpnAcknowledgementResponseEnvelopeDto {
   @ApiProperty({ example: true })
   success: true;
 
-  @ApiProperty({ example: 201 })
+  @ApiProperty({ example: 200 })
   statusCode: number;
 
-  @ApiProperty({ type: CreateCheckoutOrderResponseDto })
-  data: CreateCheckoutOrderResponseDto;
+  @ApiProperty({ type: SepayIpnAcknowledgementDto })
+  data: SepayIpnAcknowledgementDto;
 
   @ApiProperty({ example: '2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a' })
   requestId: string;
 
   @ApiProperty({ example: '2026-05-20T00:00:00.000Z' })
   timestamp: string;
+}
+
+export class SepayRedirectHtmlResponseDto {
+  @ApiProperty({ example: '<!doctype html><html>...</html>' })
+  html: string;
 }

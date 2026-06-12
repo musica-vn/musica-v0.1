@@ -10,6 +10,17 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { PaginationQueryDto } from '../../common/base/pagination.dto';
+import {
+  type VariantPricingPlatformType,
+} from '../pricing/variant-pricing.dto';
+import {
+  VARIANT_DURATION_OPTIONS,
+  VARIANT_SCOPE_OPTIONS,
+  VARIANT_SUBJECT_OPTIONS,
+  type VariantDuration,
+  type VariantScope,
+  type VariantSubject,
+} from '../pricing/variant-pricing.enums';
 
 export const ORDER_STATUS_OPTIONS = [
   'PENDING_PAYMENT',
@@ -18,7 +29,12 @@ export const ORDER_STATUS_OPTIONS = [
 ] as const;
 export type OrderStatus = (typeof ORDER_STATUS_OPTIONS)[number];
 
-export const ORDER_PAYMENT_STATUS_OPTIONS = ['SUCCEEDED', 'FAILED'] as const;
+export const ORDER_PAYMENT_STATUS_OPTIONS = [
+  'PENDING',
+  'SUCCEEDED',
+  'FAILED',
+  'VOIDED',
+] as const;
 export type OrderPaymentStatus = (typeof ORDER_PAYMENT_STATUS_OPTIONS)[number];
 
 export class OrdersListQueryDto extends PaginationQueryDto {
@@ -197,6 +213,52 @@ export class MarkOrderPaidRequestDto {
   @IsOptional()
   @IsObject()
   rawPayload?: Record<string, unknown>;
+}
+
+export class CreateCheckoutOrderRequestDto {
+  @ApiProperty()
+  @IsUUID('4')
+  productId: string;
+
+  @ApiProperty({ enum: ['DIGITAL', 'PHYSICAL'] })
+  @IsIn(['DIGITAL', 'PHYSICAL'])
+  platformType: VariantPricingPlatformType;
+
+  @ApiProperty({ enum: VARIANT_SUBJECT_OPTIONS })
+  @IsIn(VARIANT_SUBJECT_OPTIONS)
+  subject: VariantSubject;
+
+  @ApiProperty({ enum: VARIANT_DURATION_OPTIONS })
+  @IsIn(VARIANT_DURATION_OPTIONS)
+  duration: VariantDuration;
+
+  @ApiProperty({ enum: VARIANT_SCOPE_OPTIONS })
+  @IsIn(VARIANT_SCOPE_OPTIONS)
+  scope: VariantScope;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUUID('4')
+  expr?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUUID('4')
+  mod?: string;
+}
+
+export class CreateCheckoutOrderResponseDto {
+  @ApiProperty()
+  orderId: string;
+
+  @ApiProperty({ enum: ORDER_STATUS_OPTIONS })
+  status: OrderStatus;
+
+  @ApiProperty()
+  currency: string;
+
+  @ApiProperty()
+  totalAmount: number;
 }
 
 export class OrderEventPayloadOrderDto {
