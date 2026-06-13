@@ -958,6 +958,116 @@
         ]
       }
     },
+    "/products": {
+      "get": {
+        "operationId": "PublicProductsController_list",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "createdAt:desc",
+              "type": "string",
+              "enum": [
+                "createdAt:desc",
+                "createdAt:asc",
+                "updatedAt:desc",
+                "updatedAt:asc",
+                "title:asc",
+                "title:desc",
+                "genre:asc",
+                "genre:desc",
+                "duration:asc",
+                "duration:desc"
+              ]
+            }
+          },
+          {
+            "name": "keyword",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "genre",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "useCase",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "duration",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "lt2",
+                "2to4",
+                "gt4"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicProductsListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "List published products for marketplace",
+        "tags": [
+          "Public - Products"
+        ]
+      }
+    },
     "/admin/certificates": {
       "get": {
         "operationId": "AdminCertificatesController_list",
@@ -3259,6 +3369,348 @@
         ]
       }
     },
+    "/public/configs/expressions": {
+      "get": {
+        "operationId": "PublicLicensingConfigsController_listExpressions",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "createdAt:desc",
+              "type": "string"
+            }
+          },
+          {
+            "name": "keyword",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ACTIVE",
+                "INACTIVE"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminExpressionConfigsListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Public - Licensing Configs"
+        ]
+      }
+    },
+    "/public/configs/modifications": {
+      "get": {
+        "operationId": "PublicLicensingConfigsController_listModifications",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "createdAt:desc",
+              "type": "string"
+            }
+          },
+          {
+            "name": "keyword",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ACTIVE",
+                "INACTIVE"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminModificationConfigsListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Public - Licensing Configs"
+        ]
+      }
+    },
+    "/orders": {
+      "get": {
+        "operationId": "OrdersController_list",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "createdAt:desc",
+              "type": "string"
+            }
+          },
+          {
+            "name": "buyerId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PENDING_PAYMENT",
+                "PAID",
+                "CANCELLED"
+              ]
+            }
+          },
+          {
+            "name": "fromDate",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "toDate",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrdersListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Orders"
+        ]
+      }
+    },
+    "/orders/{orderId}": {
+      "get": {
+        "operationId": "OrdersController_detail",
+        "parameters": [
+          {
+            "name": "orderId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderDetailResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Orders"
+        ]
+      }
+    },
+    "/orders/{orderId}/mark-paid": {
+      "post": {
+        "operationId": "OrdersController_markPaid",
+        "parameters": [
+          {
+            "name": "orderId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MarkOrderPaidRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarkOrderPaidResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Orders"
+        ]
+      }
+    },
     "/admin/products/{productId}/digital-right-registrations": {
       "post": {
         "operationId": "AdminProductPackageRegistrationsController_createDigitalRegistration",
@@ -5088,6 +5540,14 @@
             "items": {
               "$ref": "#/components/schemas/MarketplaceAllowedPermissionDto"
             }
+          },
+          "digitalRightConfigId": {
+            "type": "object",
+            "nullable": true
+          },
+          "physicalRightConfigId": {
+            "type": "object",
+            "nullable": true
           }
         },
         "required": [
@@ -5128,6 +5588,112 @@
           "success",
           "statusCode",
           "data",
+          "requestId",
+          "timestamp"
+        ]
+      },
+      "PublicProductListItemDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "productCode": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "thumbnailUrl": {
+            "type": "object",
+            "nullable": true
+          },
+          "artistDisplayName": {
+            "type": "string"
+          },
+          "genre": {
+            "type": "object",
+            "nullable": true
+          },
+          "genres": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "durationSeconds": {
+            "type": "object",
+            "nullable": true
+          },
+          "useCases": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "productCode",
+          "title",
+          "artistDisplayName",
+          "genres",
+          "useCases",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "PublicProductsListDataDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicProductListItemDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "PublicProductsListResponseDto": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "statusCode": {
+            "type": "number",
+            "example": 200
+          },
+          "data": {
+            "$ref": "#/components/schemas/PublicProductsListDataDto"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PaginationMetaDto"
+          },
+          "requestId": {
+            "type": "string",
+            "example": "2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a"
+          },
+          "timestamp": {
+            "type": "string",
+            "example": "2026-05-20T00:00:00.000Z"
+          }
+        },
+        "required": [
+          "success",
+          "statusCode",
+          "data",
+          "meta",
           "requestId",
           "timestamp"
         ]
@@ -6365,6 +6931,18 @@
             "items": {
               "type": "object"
             }
+          },
+          "effectiveReferencedPermissionIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "effectiveReferencedPermissions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConfigPermissionSummaryDto"
+            }
           }
         },
         "required": [
@@ -6377,7 +6955,9 @@
           "targetPlatform",
           "durationType",
           "basePriceMultiplier",
-          "priceModifiers"
+          "priceModifiers",
+          "effectiveReferencedPermissionIds",
+          "effectiveReferencedPermissions"
         ]
       },
       "DigitalRightConfigsListDataDto": {
@@ -6637,6 +7217,18 @@
             "items": {
               "type": "object"
             }
+          },
+          "effectiveReferencedPermissionIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "effectiveReferencedPermissions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConfigPermissionSummaryDto"
+            }
           }
         },
         "required": [
@@ -6648,7 +7240,9 @@
           "updatedAt",
           "venueUsageType",
           "basePriceMultiplier",
-          "priceModifiers"
+          "priceModifiers",
+          "effectiveReferencedPermissionIds",
+          "effectiveReferencedPermissions"
         ]
       },
       "PhysicalRightConfigsListDataDto": {
@@ -7153,6 +7747,349 @@
             "minimum": 1
           }
         }
+      },
+      "OrderBuyerDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "fullName": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "fullName"
+        ]
+      },
+      "OrderListItemDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "orderNumber": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING_PAYMENT",
+              "PAID",
+              "CANCELLED"
+            ]
+          },
+          "currency": {
+            "type": "string"
+          },
+          "totalAmount": {
+            "type": "number"
+          },
+          "paidAt": {
+            "type": "object",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "buyer": {
+            "$ref": "#/components/schemas/OrderBuyerDto"
+          }
+        },
+        "required": [
+          "id",
+          "orderNumber",
+          "status",
+          "currency",
+          "totalAmount",
+          "paidAt",
+          "createdAt",
+          "buyer"
+        ]
+      },
+      "OrderListDataDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderListItemDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "OrdersListResponseDto": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "statusCode": {
+            "type": "number",
+            "example": 200
+          },
+          "data": {
+            "$ref": "#/components/schemas/OrderListDataDto"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PaginationMetaDto"
+          },
+          "requestId": {
+            "type": "string",
+            "example": "2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a"
+          },
+          "timestamp": {
+            "type": "string",
+            "example": "2026-05-20T00:00:00.000Z"
+          }
+        },
+        "required": [
+          "success",
+          "statusCode",
+          "data",
+          "meta",
+          "requestId",
+          "timestamp"
+        ]
+      },
+      "OrderAmountsDto": {
+        "type": "object",
+        "properties": {
+          "subtotalAmount": {
+            "type": "number"
+          },
+          "discountAmount": {
+            "type": "number"
+          },
+          "taxAmount": {
+            "type": "number"
+          },
+          "totalAmount": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "subtotalAmount",
+          "discountAmount",
+          "taxAmount",
+          "totalAmount"
+        ]
+      },
+      "OrderItemDto": {
+        "type": "object",
+        "properties": {
+          "productId": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "unitPrice": {
+            "type": "number"
+          },
+          "quantity": {
+            "type": "number"
+          },
+          "lineTotalAmount": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "productId",
+          "title",
+          "unitPrice",
+          "quantity",
+          "lineTotalAmount"
+        ]
+      },
+      "OrderPaymentDto": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string"
+          },
+          "transactionId": {
+            "type": "object",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "SUCCEEDED",
+              "FAILED"
+            ]
+          },
+          "amount": {
+            "type": "number"
+          },
+          "paidAt": {
+            "type": "object",
+            "nullable": true
+          }
+        },
+        "required": [
+          "provider",
+          "transactionId",
+          "status",
+          "amount",
+          "paidAt"
+        ]
+      },
+      "OrderDetailDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "orderNumber": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING_PAYMENT",
+              "PAID",
+              "CANCELLED"
+            ]
+          },
+          "currency": {
+            "type": "string"
+          },
+          "amounts": {
+            "$ref": "#/components/schemas/OrderAmountsDto"
+          },
+          "buyer": {
+            "$ref": "#/components/schemas/OrderBuyerDto"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderItemDto"
+            }
+          },
+          "payment": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/OrderPaymentDto"
+              }
+            ]
+          },
+          "paidAt": {
+            "type": "object",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "orderNumber",
+          "status",
+          "currency",
+          "amounts",
+          "buyer",
+          "items",
+          "payment",
+          "paidAt",
+          "createdAt"
+        ]
+      },
+      "OrderDetailResponseDto": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "statusCode": {
+            "type": "number",
+            "example": 200
+          },
+          "data": {
+            "$ref": "#/components/schemas/OrderDetailDto"
+          },
+          "requestId": {
+            "type": "string",
+            "example": "2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a"
+          },
+          "timestamp": {
+            "type": "string",
+            "example": "2026-05-20T00:00:00.000Z"
+          }
+        },
+        "required": [
+          "success",
+          "statusCode",
+          "data",
+          "requestId",
+          "timestamp"
+        ]
+      },
+      "MarkOrderPaidRequestDto": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string",
+            "example": "MANUAL"
+          },
+          "transactionId": {
+            "type": "string",
+            "example": "TXN-001"
+          },
+          "paidAt": {
+            "type": "string",
+            "example": "2026-06-11T10:00:00.000Z"
+          },
+          "rawPayload": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "provider"
+        ]
+      },
+      "MarkOrderPaidResponseDto": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "statusCode": {
+            "type": "number",
+            "example": 200
+          },
+          "data": {
+            "$ref": "#/components/schemas/OrderDetailDto"
+          },
+          "requestId": {
+            "type": "string",
+            "example": "2fefcbd8-0a70-4c9d-8e86-e88f7b0f5c5a"
+          },
+          "timestamp": {
+            "type": "string",
+            "example": "2026-05-20T00:00:00.000Z"
+          }
+        },
+        "required": [
+          "success",
+          "statusCode",
+          "data",
+          "requestId",
+          "timestamp"
+        ]
       },
       "CreateProductPackageRegistrationRequestDto": {
         "type": "object",
