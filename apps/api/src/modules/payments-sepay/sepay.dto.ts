@@ -91,21 +91,27 @@ export class SepayCallbackLandingDto {
 
 export class SepayIpnOrderDto {
   @ApiProperty()
+  @IsString()
   id: string;
 
   @ApiProperty()
+  @IsString()
   order_id: string;
 
   @ApiProperty()
+  @IsString()
   order_status: string;
 
   @ApiProperty()
+  @IsString()
   order_currency: string;
 
   @ApiProperty()
+  @IsString()
   order_amount: string;
 
   @ApiProperty()
+  @IsString()
   order_invoice_number: string;
 
   @ApiPropertyOptional({ type: [Object] })
@@ -131,27 +137,35 @@ export class SepayIpnOrderDto {
 
 export class SepayIpnTransactionDto {
   @ApiProperty()
+  @IsString()
   id: string;
 
   @ApiProperty()
+  @IsString()
   payment_method: string;
 
   @ApiProperty()
+  @IsString()
   transaction_id: string;
 
   @ApiProperty()
+  @IsString()
   transaction_type: string;
 
   @ApiProperty()
+  @IsString()
   transaction_date: string;
 
   @ApiProperty()
+  @IsString()
   transaction_status: string;
 
   @ApiProperty()
+  @IsString()
   transaction_amount: string;
 
   @ApiProperty()
+  @IsString()
   transaction_currency: string;
 }
 

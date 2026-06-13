@@ -28,6 +28,8 @@ type DbSepayPaymentAttemptRow = {
   order_id: string;
   invoice_number: string | null;
   status: string;
+  amount?: number | string;
+  created_at?: string;
 };
 
 type DbOrderPaymentValidationRow = {
@@ -144,7 +146,7 @@ export class SepayService {
       return { acknowledged: true };
     }
 
-    const invoiceNumber = payload.order.order_invoice_number;
+    const invoiceNumber = payload.order.order_invoice_number.trim();
     const { data: paymentAttempts, error: paymentLoadError } =
       await this.supabaseService.client
         .from('order_payments')
@@ -172,7 +174,7 @@ export class SepayService {
 
     const attempt =
       (paymentAttempts ?? [])[0] ??
-      (await this.reconcilePaymentAttemptFromInvoice(invoiceNumber));
+      (await this.reconcilePaymentAttemptFromIpn(invoiceNumber, payload));
 
     const { data: orderRow, error: orderLoadError } =
       await this.supabaseService.client
@@ -227,7 +229,7 @@ export class SepayService {
         paid_at: paidAt,
         raw_payload: payload,
       })
-      .eq('invoice_number', invoiceNumber);
+      .eq('id', attempt.id);
 
     if (updateError) {
       throwSupabaseError(
@@ -251,10 +253,19 @@ export class SepayService {
     authorizationHeader: string | undefined,
     payload: SepayBankhubWebhookRequestDto,
   ): Promise<SepayWebhookAcknowledgementDto> {
-    const expected = this.configService.get<string>('SEPAY_WEBHOOK_API_KEY');
+    const expected =
+      this.getOptionalConfig('SEPAY_WEBHOOK_API_KEY') ??
+      this.getOptionalConfig('SEPAY_IPN_SECRET_KEY') ??
+      this.getOptionalConfig('SEPAY_SECRET_KEY');
     if (!expected) {
       throw new ApiHttpException(
-        { code: 'SERVER_MISCONFIGURED', details: { missingKey: 'SEPAY_WEBHOOK_API_KEY' } },
+        {
+          code: 'SERVER_MISCONFIGURED',
+          details: {
+            missingKey:
+              'SEPAY_WEBHOOK_API_KEY|SEPAY_IPN_SECRET_KEY|SEPAY_SECRET_KEY',
+          },
+        },
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
@@ -368,10 +379,13 @@ export class SepayService {
     return order;
   }
 
-  private async reconcilePaymentAttemptFromInvoice(
+  private async reconcilePaymentAttemptFromIpn(
     invoiceNumber: string,
+    payload: SepayIpnRequestDto,
   ): Promise<DbSepayPaymentAttemptRow> {
-    const orderNumber = this.parseOrderNumberFromInvoice(invoiceNumber);
+    const orderNumber =
+      this.parseOrderNumberFromInvoice(invoiceNumber) ??
+      this.parseOrderNumberFromDescription(payload.order.order_description);
     if (!orderNumber) {
       throw new ApiHttpException(
         { code: 'SEPAY_PAYMENT_ATTEMPT_NOT_FOUND', details: { invoiceNumber } },
@@ -399,6 +413,34 @@ export class SepayService {
         { code: 'SEPAY_ORDER_NOT_FOUND', details: { orderNumber, invoiceNumber } },
         HttpStatus.NOT_FOUND,
       );
+    }
+
+    const existingAttempt = await this.findExistingPendingAttemptForOrder(orderRow.id);
+    if (existingAttempt) {
+      if (existingAttempt.invoice_number !== invoiceNumber) {
+        const { error: attachError } = await this.supabaseService.client
+          .from('order_payments')
+          .update({
+            invoice_number: invoiceNumber,
+            raw_payload: { stage: 'ipn_reconciled', source: 'existing_pending_attempt' },
+          })
+          .eq('id', existingAttempt.id);
+
+        if (attachError) {
+          throwSupabaseError(
+            'SEPAY_PAYMENT_ATTEMPT_UPDATE_FAILED',
+            HttpStatus.INTERNAL_SERVER_ERROR,
+            attachError,
+          );
+        }
+      }
+
+      return {
+        id: existingAttempt.id,
+        order_id: existingAttempt.order_id,
+        invoice_number: invoiceNumber,
+        status: existingAttempt.status,
+      };
     }
 
     const { error: insertError } = await this.supabaseService.client
@@ -452,6 +494,43 @@ export class SepayService {
   private parseOrderNumberFromInvoice(invoiceNumber: string): string | null {
     const match = /^INV-(.+)-\d{10,13}$/.exec(invoiceNumber);
     return match?.[1] ?? null;
+  }
+
+  private parseOrderNumberFromDescription(description?: string): string | null {
+    if (typeof description !== 'string') {
+      return null;
+    }
+
+    const match = /\b(ORD-[A-Z0-9-]+)\b/i.exec(description);
+    return match?.[1]?.toUpperCase() ?? null;
+  }
+
+  private async findExistingPendingAttemptForOrder(
+    orderId: string,
+  ): Promise<DbSepayPaymentAttemptRow | null> {
+    const { data: attempts, error } = await this.supabaseService.client
+      .from('order_payments')
+      .select('id,order_id,invoice_number,status,amount,created_at')
+      .eq('order_id', orderId)
+      .eq('provider', 'SEPAY')
+      .eq('status', 'PENDING')
+      .order('created_at', { ascending: false })
+      .returns<DbSepayPaymentAttemptRow[]>();
+
+    if (error) {
+      throwSupabaseError(
+        'SEPAY_PAYMENT_ATTEMPT_LOAD_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error,
+      );
+    }
+
+    const attemptList = attempts ?? [];
+    if (attemptList.length === 0) {
+      return null;
+    }
+
+    return attemptList[0];
   }
 
   private parseVietnamTransactionDate(value: string): string | null {
@@ -556,5 +635,10 @@ export class SepayService {
     }
 
     return value;
+  }
+
+  private getOptionalConfig(key: string): string | null {
+    const value = this.configService.get<string>(key)?.trim();
+    return value && value.length > 0 ? value : null;
   }
 }

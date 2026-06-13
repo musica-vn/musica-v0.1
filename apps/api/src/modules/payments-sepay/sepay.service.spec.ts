@@ -276,6 +276,7 @@ describe('SepayService', () => {
         return {
           select: jest.fn().mockReturnThis(),
           eq: jest.fn().mockReturnThis(),
+          order: jest.fn().mockReturnThis(),
           returns: jest.fn().mockImplementation(() => {
             invoiceLookupCount += 1;
             if (invoiceLookupCount === 1) {
@@ -376,6 +377,106 @@ describe('SepayService', () => {
     expect(result).toEqual({ acknowledged: true });
   });
 
+  it('reuses existing pending payment attempt for the order when invoice lookup misses', async () => {
+    const mock = createMockSupabaseClient();
+    const completeExternalPayment = jest.fn().mockResolvedValue({
+      id: '00000000-0000-0000-0000-000000000001',
+      status: 'PAID',
+    });
+    let invoiceLookupCount = 0;
+
+    mock.from.mockImplementation((table: string) => {
+      if (table === 'order_payments') {
+        return {
+          select: jest.fn().mockReturnThis(),
+          eq: jest.fn().mockReturnThis(),
+          order: jest.fn().mockReturnThis(),
+          returns: jest.fn().mockImplementation(() => {
+            invoiceLookupCount += 1;
+            if (invoiceLookupCount === 1) {
+              return Promise.resolve({ data: [], error: null });
+            }
+
+            return Promise.resolve({
+              data: [
+                {
+                  id: 'payment-row-id',
+                  order_id: '00000000-0000-0000-0000-000000000001',
+                  invoice_number: 'INV-OLD',
+                  status: 'PENDING',
+                },
+              ],
+              error: null,
+            });
+          }),
+          update: jest.fn().mockReturnValue({
+            eq: jest.fn().mockResolvedValue({ error: null }),
+          }),
+        };
+      }
+
+      if (table === 'orders') {
+        return {
+          select: jest.fn().mockReturnThis(),
+          eq: jest.fn().mockImplementation(() => ({
+            maybeSingle: jest.fn().mockResolvedValue({
+              data: {
+                id: '00000000-0000-0000-0000-000000000001',
+                status: 'PENDING_PAYMENT',
+                currency: 'VND',
+                total_amount: '100000',
+              },
+              error: null,
+            }),
+          })),
+          maybeSingle: jest.fn(),
+        };
+      }
+
+      throw new Error(`Unexpected table: ${table}`);
+    });
+
+    const service = createService(mock as any, undefined, {
+      completeExternalPayment,
+    });
+
+    const result = await service.handleIpn('secret-key', {
+      timestamp: 1757058220,
+      notification_type: 'ORDER_PAID',
+      order: {
+        id: 'provider-order-id',
+        order_id: 'NQD-...',
+        order_status: 'CAPTURED',
+        order_currency: 'VND',
+        order_amount: '100000.00',
+        order_invoice_number: 'INV-ORD-20260611-0001-1757058220123',
+        custom_data: [],
+        user_agent: 'Mozilla/5.0',
+        ip_address: '127.0.0.1',
+        order_description: 'Thanh toan don hang ORD-20260611-0001',
+      },
+      transaction: {
+        id: 'provider-transaction-id',
+        payment_method: 'BANK_TRANSFER',
+        transaction_id: 'TXN-001',
+        transaction_type: 'PAYMENT',
+        transaction_date: '2025-09-29 15:31:22',
+        transaction_status: 'APPROVED',
+        transaction_amount: '100000',
+        transaction_currency: 'VND',
+      },
+    });
+
+    expect(completeExternalPayment).toHaveBeenCalledWith(
+      '00000000-0000-0000-0000-000000000001',
+      expect.objectContaining({
+        provider: 'SEPAY',
+        transactionId: 'TXN-001',
+      }),
+    );
+    expect(result).toEqual({ acknowledged: true });
+  });
+
   it('acknowledges BankHub webhook when api key is valid but does not match any payment', async () => {
     const mock = createMockSupabaseClient();
 
@@ -408,6 +509,45 @@ describe('SepayService', () => {
       referenceCode: 'FT...',
       accumulated: 0,
       id: 62983252,
+    });
+
+    expect(result).toEqual({ acknowledged: true, matched: false });
+  });
+
+  it('accepts BankHub webhook api key by falling back to existing SePay secret config', async () => {
+    const mock = createMockSupabaseClient();
+
+    mock.from.mockImplementation((table: string) => {
+      if (table === 'order_payments') {
+        return {
+          select: jest.fn().mockReturnThis(),
+          eq: jest.fn().mockReturnThis(),
+          gte: jest.fn().mockReturnThis(),
+          order: jest.fn().mockReturnThis(),
+          range: jest.fn().mockReturnThis(),
+          returns: jest.fn().mockResolvedValue({ data: [], error: null }),
+        };
+      }
+
+      throw new Error(`Unexpected table: ${table}`);
+    });
+
+    const service = createService(mock as any, {
+      SEPAY_WEBHOOK_API_KEY: undefined,
+    });
+    const result = await service.handleWebhook('Apikey secret-key', {
+      gateway: 'MBBank',
+      transactionDate: '2026-06-13 08:50:00',
+      accountNumber: '040495',
+      subAccount: null,
+      code: 'PAYXXX',
+      content: 'PAYXXX ...',
+      transferType: 'in',
+      description: 'desc',
+      transferAmount: 39531,
+      referenceCode: 'FT...',
+      accumulated: 0,
+      id: 63085926,
     });
 
     expect(result).toEqual({ acknowledged: true, matched: false });
