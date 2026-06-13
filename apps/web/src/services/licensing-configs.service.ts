@@ -2,6 +2,7 @@ import { apiDelete, apiGet, apiPatch, apiPost } from '../api/axios'
 import type { PaginationMeta } from '@musica/contracts'
 import type {
   CreateDigitalRightConfigPayload,
+  DigitalPlatformDefaultTemplate,
   CreateExpressionConfigPayload,
   CreateModificationConfigPayload,
   CreatePhysicalRightConfigPayload,
@@ -19,6 +20,7 @@ import type {
   PackageRegistrationsListData,
   PackageRegistrationsListQuery,
   UpdateDigitalRightConfigPayload,
+  UpdateDigitalPlatformDefaultTemplatePayload,
   UpdateExpressionConfigPayload,
   UpdateModificationConfigPayload,
   UpdatePhysicalRightConfigPayload,
@@ -40,6 +42,16 @@ const deleteResource = async (path: string) => apiDelete<{ ok: true }>(path)
 
 export const listAdminDigitalRightConfigs = async (query: DigitalRightConfigsListQuery) =>
   listResource<DigitalRightConfigsListData, DigitalRightConfigsListQuery>('/admin/digital-right-configs', query)
+
+export const getAdminDigitalPlatformDefaultTemplate = async () =>
+  apiGet<DigitalPlatformDefaultTemplate>('/admin/digital-right-configs/default-template')
+
+export const updateAdminDigitalPlatformDefaultTemplate = async (
+  payload: UpdateDigitalPlatformDefaultTemplatePayload,
+) => updateResource<DigitalPlatformDefaultTemplate, UpdateDigitalPlatformDefaultTemplatePayload>(
+  '/admin/digital-right-configs/default-template',
+  payload,
+)
 
 export const createAdminDigitalRightConfig = async (payload: CreateDigitalRightConfigPayload) =>
   createResource<DigitalRightConfig, CreateDigitalRightConfigPayload>('/admin/digital-right-configs', payload)

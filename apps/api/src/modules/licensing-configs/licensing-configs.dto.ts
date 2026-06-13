@@ -205,6 +205,52 @@ export class ConfigPriceModifierDto {
   multiplier: number
 }
 
+export class DigitalPlatformDefaultTemplateDto {
+  @ApiProperty()
+  id: string
+
+  @ApiProperty({ enum: ['YOUTUBE'] })
+  platformKey: 'YOUTUBE'
+
+  @ApiProperty()
+  platformLabel: string
+
+  @ApiProperty()
+  name: string
+
+  @ApiProperty({ type: [String] })
+  referencedPermissionIds: string[]
+
+  @ApiProperty({ type: [ConfigPermissionSummaryDto] })
+  referencedPermissions: ConfigPermissionSummaryDto[]
+
+  @ApiProperty({ type: [ConfigPriceModifierDto] })
+  modifiers: ConfigPriceModifierDto[]
+
+  @ApiProperty({ required: false, nullable: true })
+  updatedAt: string | null
+
+  @ApiProperty({ required: false, nullable: true })
+  updatedBy: string | null
+}
+
+export class UpdateDigitalPlatformDefaultTemplateRequestDto {
+  @ApiPropertyOptional({ type: [String], default: [] })
+  @IsOptional()
+  @Transform(normalizePermissionIds)
+  @IsArray()
+  @ArrayUnique()
+  @IsUUID('4', { each: true })
+  referencedPermissionIds?: string[]
+
+  @ApiProperty({ type: [ConfigPriceModifierDto] })
+  @IsArray()
+  @ArrayUnique((item: ConfigPriceModifierDto) => item.key)
+  @ValidateNested({ each: true })
+  @Type(() => ConfigPriceModifierDto)
+  modifiers: ConfigPriceModifierDto[]
+}
+
 export class CreateDigitalRightConfigRequestDto {
   @ApiProperty({ enum: ['YOUTUBE', 'TIKTOK', 'FACEBOOK'] })
   @IsIn(['YOUTUBE', 'TIKTOK', 'FACEBOOK'])

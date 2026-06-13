@@ -22,6 +22,7 @@ import type {
   CreateExpressionConfigRequestDto,
   CreateModificationConfigRequestDto,
   CreatePhysicalRightConfigRequestDto,
+  DigitalPlatformDefaultTemplateDto,
   DigitalRightConfigDto,
   DigitalRightConfigsListQueryDto,
   ExpressionConfigDto,
@@ -29,6 +30,7 @@ import type {
   ModificationConfigDto,
   PhysicalRightConfigDto,
   UpdateConfigStatusRequestDto,
+  UpdateDigitalPlatformDefaultTemplateRequestDto,
   UpdateDigitalRightConfigRequestDto,
   UpdateExpressionConfigRequestDto,
   UpdateModificationConfigRequestDto,
@@ -75,6 +77,23 @@ type DbPriceModifierRow = {
   multiplier: number | string
   created_at: string
 }
+
+type DbPlatformDefaultPricingTemplateRow = {
+  id: string
+  platform_key: 'YOUTUBE'
+  name: string
+  updated_at: string
+  updated_by: string | null
+}
+
+type DbPlatformDefaultPricingTemplateModifierRow = {
+  id: string
+  template_id: string
+  modifier_key: string
+  multiplier: number | string
+}
+
+type DbPlatformDefaultTemplatePermissionRow = DbConfigPermissionRelationRow
 
 type DbExpressionConfigRow = {
   id: string
@@ -181,6 +200,42 @@ const mapPriceModifiers = (
       (value): value is ConfigPriceModifierDto =>
         value !== null,
     )
+
+const mapTemplateModifiers = (
+  rows: Array<Pick<DbPlatformDefaultPricingTemplateModifierRow, 'modifier_key' | 'multiplier'>> | undefined,
+): ConfigPriceModifierDto[] =>
+  (Array.isArray(rows) ? rows : [])
+    .map((item) => {
+      const key = isVariantPricingModifierKey(item.modifier_key)
+        ? item.modifier_key
+        : null
+      if (!key) return null
+      return { key, multiplier: toNumber(item.multiplier) }
+    })
+    .filter((value): value is ConfigPriceModifierDto => value !== null)
+    .sort(
+      (left, right) =>
+        VARIANT_PRICING_MODIFIER_KEYS.indexOf(left.key) -
+        VARIANT_PRICING_MODIFIER_KEYS.indexOf(right.key),
+    )
+
+const assertCompleteModifierSet = (
+  modifiers: ConfigPriceModifierDto[],
+  errorCode: string,
+) => {
+  const modifierKeys = new Set(modifiers.map((item) => item.key))
+  const missingKeys = VARIANT_PRICING_MODIFIER_KEYS.filter((key) => !modifierKeys.has(key))
+
+  if (missingKeys.length === 0) return
+
+  throw new ApiHttpException(
+    {
+      code: errorCode,
+      details: { missingModifierKeys: missingKeys },
+    },
+    HttpStatus.BAD_REQUEST,
+  )
+}
 
 const mapPermissionSummary = (row: DbConfigPermissionRelationRow): ConfigPermissionSummaryDto | null => {
   if (!row.core_permissions) return null
@@ -293,6 +348,144 @@ export class LicensingConfigsService {
       { code, details: supabaseCode ? { supabaseCode } : undefined },
       HttpStatus.INTERNAL_SERVER_ERROR,
     )
+  }
+
+  private async loadDigitalPlatformDefaultTemplateRecord(): Promise<DbPlatformDefaultPricingTemplateRow> {
+    const { data, error } = await this.supabaseService.client
+      .from('platform_default_pricing_templates')
+      .select('id,platform_key,name,updated_at,updated_by')
+      .eq('platform_key', 'YOUTUBE')
+      .maybeSingle<DbPlatformDefaultPricingTemplateRow>()
+
+    if (error) {
+      this.throwSupabaseError('DIGITAL_PLATFORM_DEFAULT_TEMPLATE_LOAD_FAILED', error)
+    }
+
+    if (!data) {
+      throw new ApiHttpException(
+        { code: 'DIGITAL_PLATFORM_DEFAULT_TEMPLATE_NOT_FOUND' },
+        HttpStatus.NOT_FOUND,
+      )
+    }
+
+    return data
+  }
+
+  private async loadDigitalPlatformDefaultTemplate(): Promise<DigitalPlatformDefaultTemplateDto> {
+    const template = await this.loadDigitalPlatformDefaultTemplateRecord()
+    const { data, error } = await this.supabaseService.client
+      .from('platform_default_pricing_template_modifiers')
+      .select('id,template_id,modifier_key,multiplier')
+      .eq('template_id', template.id)
+      .returns<DbPlatformDefaultPricingTemplateModifierRow[]>()
+
+    if (error) {
+      this.throwSupabaseError('DIGITAL_PLATFORM_DEFAULT_TEMPLATE_MODIFIERS_LOAD_FAILED', error)
+    }
+
+    const modifiers = mapTemplateModifiers(data ?? [])
+    assertCompleteModifierSet(modifiers, 'DIGITAL_PLATFORM_DEFAULT_TEMPLATE_MODIFIERS_INCOMPLETE')
+
+    const { data: permissionRows, error: permissionError } = await this.supabaseService.client
+      .from('platform_default_pricing_template_permissions')
+      .select('core_permission_id, core_permissions(id, name, law_reference)')
+      .eq('template_id', template.id)
+      .returns<DbPlatformDefaultTemplatePermissionRow[]>()
+
+    if (permissionError) {
+      this.throwSupabaseError('DIGITAL_PLATFORM_DEFAULT_TEMPLATE_PERMISSIONS_LOAD_FAILED', permissionError)
+    }
+
+    const permissionData = mapReferencedPermissions(permissionRows ?? [])
+
+    return {
+      id: template.id,
+      platformKey: 'YOUTUBE',
+      platformLabel: 'YouTube',
+      name: template.name,
+      referencedPermissionIds: permissionData.referencedPermissionIds,
+      referencedPermissions: permissionData.referencedPermissions,
+      modifiers,
+      updatedAt: template.updated_at ?? null,
+      updatedBy: template.updated_by ?? null,
+    }
+  }
+
+  async getDigitalPlatformDefaultTemplate(): Promise<DigitalPlatformDefaultTemplateDto> {
+    return this.loadDigitalPlatformDefaultTemplate()
+  }
+
+  async updateDigitalPlatformDefaultTemplate(
+    payload: UpdateDigitalPlatformDefaultTemplateRequestDto,
+  ): Promise<DigitalPlatformDefaultTemplateDto> {
+    assertCompleteModifierSet(
+      payload.modifiers,
+      'DIGITAL_PLATFORM_DEFAULT_TEMPLATE_MODIFIERS_INCOMPLETE',
+    )
+
+    const normalizedPermissionIds = await this.validateActivePermissionIds(
+      payload.referencedPermissionIds ?? [],
+    )
+
+    const template = await this.loadDigitalPlatformDefaultTemplateRecord()
+
+    const { error: deleteError } = await this.supabaseService.client
+      .from('platform_default_pricing_template_modifiers')
+      .delete()
+      .eq('template_id', template.id)
+
+    if (deleteError) {
+      this.throwSupabaseError('DIGITAL_PLATFORM_DEFAULT_TEMPLATE_UPDATE_FAILED', deleteError)
+    }
+
+    const { error: insertError } = await this.supabaseService.client
+      .from('platform_default_pricing_template_modifiers')
+      .insert(
+        payload.modifiers.map((modifier) => ({
+          template_id: template.id,
+          modifier_key: modifier.key,
+          multiplier: modifier.multiplier,
+        })),
+      )
+
+    if (insertError) {
+      this.throwSupabaseError('DIGITAL_PLATFORM_DEFAULT_TEMPLATE_UPDATE_FAILED', insertError)
+    }
+
+    const { error: deletePermissionsError } = await this.supabaseService.client
+      .from('platform_default_pricing_template_permissions')
+      .delete()
+      .eq('template_id', template.id)
+
+    if (deletePermissionsError) {
+      this.throwSupabaseError('DIGITAL_PLATFORM_DEFAULT_TEMPLATE_UPDATE_FAILED', deletePermissionsError)
+    }
+
+    if (normalizedPermissionIds.length > 0) {
+      const { error: insertPermissionsError } = await this.supabaseService.client
+        .from('platform_default_pricing_template_permissions')
+        .insert(
+          normalizedPermissionIds.map((permissionId) => ({
+            template_id: template.id,
+            core_permission_id: permissionId,
+          })),
+        )
+
+      if (insertPermissionsError) {
+        this.throwSupabaseError('DIGITAL_PLATFORM_DEFAULT_TEMPLATE_UPDATE_FAILED', insertPermissionsError)
+      }
+    }
+
+    const { error: updateTemplateError } = await this.supabaseService.client
+      .from('platform_default_pricing_templates')
+      .update({ updated_by: null })
+      .eq('id', template.id)
+
+    if (updateTemplateError) {
+      this.throwSupabaseError('DIGITAL_PLATFORM_DEFAULT_TEMPLATE_UPDATE_FAILED', updateTemplateError)
+    }
+
+    return this.loadDigitalPlatformDefaultTemplate()
   }
 
   private async getConfigById<TDbRow, TDto>(

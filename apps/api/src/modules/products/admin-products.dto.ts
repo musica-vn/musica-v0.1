@@ -17,6 +17,7 @@ import { Transform, Type } from 'class-transformer';
 import { PaginationQueryDto } from '../../common/base/pagination.dto';
 import { ProductDto, ProductPlatformSettingsDto } from './product.dto';
 import { PRODUCT_GENRES, PRODUCT_USE_CASES } from './products.enums';
+import { VARIANT_PRICING_MODIFIER_KEYS, type VariantPricingModifierKey } from '../pricing/variant-pricing.enums';
 
 export class AdminProductsListQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({ type: Number, default: 10, minimum: 1, maximum: 10 })
@@ -214,28 +215,33 @@ export class AdminReplaceProductAllowedPermissionsRequestDto {
   permissionIds: string[];
 }
 
+class AdminProductPlatformModifierValueDto {
+  @ApiProperty({ enum: VARIANT_PRICING_MODIFIER_KEYS })
+  @IsIn(VARIANT_PRICING_MODIFIER_KEYS)
+  key: VariantPricingModifierKey;
+
+  @ApiProperty({ minimum: 1 })
+  @Type(() => Number)
+  @IsNumber()
+  @Min(1)
+  multiplier: number;
+}
+
 export class AdminUpdateProductPlatformSettingsRequestDto {
   @ApiProperty({ enum: ['YOUTUBE'] })
   @IsIn(['YOUTUBE'])
   platformKey: 'YOUTUBE';
 
-  @ApiPropertyOptional({ nullable: true })
-  @IsOptional()
-  @IsUUID('4')
-  selectedDigitalRightConfigId?: string | null;
+  @ApiProperty({ enum: ['SYSTEM', 'CUSTOM'] })
+  @IsIn(['SYSTEM', 'CUSTOM'])
+  mode: 'SYSTEM' | 'CUSTOM';
 
-  @ApiProperty({ enum: ['GLOBAL', 'CUSTOM'] })
-  @IsIn(['GLOBAL', 'CUSTOM'])
-  pricingMode: 'GLOBAL' | 'CUSTOM';
-
-  @ApiPropertyOptional({ nullable: true })
+  @ApiPropertyOptional({ type: [AdminProductPlatformModifierValueDto] })
   @IsOptional()
-  @Transform(({ value }) =>
-    value === undefined || value === null || value === '' ? undefined : Number(value),
-  )
-  @IsNumber()
-  @Min(0.0001)
-  customPriceMultiplier?: number | null;
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => AdminProductPlatformModifierValueDto)
+  modifiers?: AdminProductPlatformModifierValueDto[] | null;
 }
 
 export class AdminProductUploadUrlResponseDataDto {

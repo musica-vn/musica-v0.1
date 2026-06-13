@@ -17,7 +17,6 @@ import type {
 type DbDigitalRightConfigRow = {
   id: string;
   target_platform: 'YOUTUBE' | 'TIKTOK' | 'FACEBOOK';
-  base_price_multiplier: number | string;
 };
 
 type DbPhysicalRightConfigRow = {
@@ -40,10 +39,19 @@ type DbPriceModifierRow = {
   multiplier: number | string;
 };
 
-type DbProductPlatformPricingConfigRow = {
-  digital_right_config_id: string | null;
-  pricing_mode: 'GLOBAL' | 'CUSTOM';
-  custom_price_multiplier: number | string | null;
+type DbPlatformDefaultPricingTemplateRow = {
+  id: string;
+  platform_key: 'YOUTUBE';
+};
+
+type DbPlatformModifierRow = {
+  modifier_key: VariantPricingModifierKey;
+  multiplier: number | string;
+};
+
+type DbProductPlatformPricingOverrideRow = {
+  id: string;
+  mode: 'SYSTEM' | 'CUSTOM';
 };
 
 const BASE_PRICE_VND = 2_530_000;
@@ -85,7 +93,7 @@ export class VariantPricingService {
       platformType === 'DIGITAL'
         ? this.supabaseService.client
           .from('digital_right_configs')
-          .select('id,target_platform,base_price_multiplier')
+          .select('id,target_platform')
           .eq('id', configId)
           .maybeSingle<DbDigitalRightConfigRow>()
         : this.supabaseService.client
@@ -96,11 +104,7 @@ export class VariantPricingService {
 
     const modifiersPromise =
       platformType === 'DIGITAL'
-        ? this.supabaseService.client
-          .from('digital_right_config_price_modifiers')
-          .select('modifier_key,multiplier')
-          .eq('digital_right_config_id', configId)
-          .returns<DbPriceModifierRow[]>()
+        ? Promise.resolve({ data: [] as DbPriceModifierRow[], error: null } as const)
         : this.supabaseService.client
           .from('physical_right_config_price_modifiers')
           .select('modifier_key,multiplier')
@@ -200,26 +204,6 @@ export class VariantPricingService {
     const isExpressionEnabled = true;
     const isModificationEnabled = true;
 
-    const productPlatformOverrideResult =
-      platformType === 'DIGITAL' &&
-      payload.productId &&
-      'target_platform' in config
-        ? await this.supabaseService.client
-          .from('product_platform_pricing_configs')
-          .select('digital_right_config_id,pricing_mode,custom_price_multiplier')
-          .eq('product_id', payload.productId)
-          .eq('platform_key', config.target_platform)
-          .maybeSingle<DbProductPlatformPricingConfigRow>()
-        : { data: null, error: null } as const;
-
-    if (productPlatformOverrideResult.error) {
-      throwSupabaseError(
-        'VARIANT_PRICING_PRODUCT_PLATFORM_OVERRIDE_LOAD_FAILED',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-        productPlatformOverrideResult.error,
-      );
-    }
-
     const breakdown: VariantPricingBreakdownLineDto[] = [];
     const addBreakdownLine = (key: string, label: string) => {
       breakdown.push({ key, label });
@@ -228,43 +212,127 @@ export class VariantPricingService {
 
     addBreakdownLine('BASE_PRICE', 'Giá cơ bản bản quyền');
 
-    const hasCustomProductPlatformPrice =
-      platformType === 'DIGITAL' &&
-      productPlatformOverrideResult.data?.digital_right_config_id === configId &&
-      productPlatformOverrideResult.data.pricing_mode === 'CUSTOM' &&
-      productPlatformOverrideResult.data.custom_price_multiplier !== null;
+    let activeDigitalModifierMap = modifierMap;
+    let activeDigitalMode: 'SYSTEM' | 'CUSTOM' = 'SYSTEM';
 
-    const platformMultiplier = hasCustomProductPlatformPrice
-      ? toNumber(productPlatformOverrideResult.data!.custom_price_multiplier!)
-      : toNumber((config as any).base_price_multiplier);
-    currentTotal *= platformMultiplier;
-    addBreakdownLine(
-      hasCustomProductPlatformPrice
-        ? 'PRODUCT_PLATFORM_OVERRIDE'
-        : 'PLATFORM_BASE_MULTIPLIER',
-      platformType === 'DIGITAL'
-        ? hasCustomProductPlatformPrice
-          ? 'Nền tảng số (riêng sản phẩm)'
-          : 'Nền tảng số'
-        : 'Nền tảng vật lý',
-    );
+    if (platformType === 'DIGITAL' && 'target_platform' in config) {
+      const { data: template, error: templateError } = await this.supabaseService.client
+        .from('platform_default_pricing_templates')
+        .select('id,platform_key')
+        .eq('platform_key', config.target_platform)
+        .maybeSingle<DbPlatformDefaultPricingTemplateRow>();
+
+      if (templateError) {
+        throwSupabaseError(
+          'VARIANT_PRICING_DEFAULT_TEMPLATE_LOAD_FAILED',
+          HttpStatus.INTERNAL_SERVER_ERROR,
+          templateError,
+        );
+      }
+
+      if (!template) {
+        throw new ApiHttpException(
+          { code: 'DIGITAL_PLATFORM_DEFAULT_TEMPLATE_NOT_FOUND' },
+          HttpStatus.NOT_FOUND,
+        );
+      }
+
+      const { data: templateModifiers, error: templateModifiersError } = await this.supabaseService.client
+        .from('platform_default_pricing_template_modifiers')
+        .select('modifier_key,multiplier')
+        .eq('template_id', template.id)
+        .returns<DbPlatformModifierRow[]>();
+
+      if (templateModifiersError) {
+        throwSupabaseError(
+          'VARIANT_PRICING_DEFAULT_TEMPLATE_MODIFIERS_LOAD_FAILED',
+          HttpStatus.INTERNAL_SERVER_ERROR,
+          templateModifiersError,
+        );
+      }
+
+      activeDigitalModifierMap = new Map<VariantPricingModifierKey, number>(
+        (templateModifiers ?? []).map((item) => [
+          item.modifier_key,
+          toNumber(item.multiplier),
+        ]),
+      );
+
+      if (payload.productId) {
+        const { data: override, error: overrideError } = await this.supabaseService.client
+          .from('product_platform_pricing_overrides')
+          .select('id,mode')
+          .eq('product_id', payload.productId)
+          .eq('platform_key', config.target_platform)
+          .maybeSingle<DbProductPlatformPricingOverrideRow>();
+
+        if (overrideError) {
+          throwSupabaseError(
+            'VARIANT_PRICING_PRODUCT_PLATFORM_OVERRIDE_LOAD_FAILED',
+            HttpStatus.INTERNAL_SERVER_ERROR,
+            overrideError,
+          );
+        }
+
+        if (override?.mode === 'CUSTOM') {
+          const { data: overrideModifiers, error: overrideModifiersError } = await this.supabaseService.client
+            .from('product_platform_pricing_override_modifiers')
+            .select('modifier_key,multiplier')
+            .eq('override_id', override.id)
+            .returns<DbPlatformModifierRow[]>();
+
+          if (overrideModifiersError) {
+            throwSupabaseError(
+              'VARIANT_PRICING_PRODUCT_PLATFORM_OVERRIDE_LOAD_FAILED',
+              HttpStatus.INTERNAL_SERVER_ERROR,
+              overrideModifiersError,
+            );
+          }
+
+          activeDigitalModifierMap = new Map<VariantPricingModifierKey, number>(
+            (overrideModifiers ?? []).map((item) => [
+              item.modifier_key,
+              toNumber(item.multiplier),
+            ]),
+          );
+          activeDigitalMode = 'CUSTOM';
+        }
+      }
+
+      addBreakdownLine(
+        activeDigitalMode === 'CUSTOM' ? 'PRODUCT_CUSTOM_TEMPLATE' : 'SYSTEM_TEMPLATE',
+        activeDigitalMode === 'CUSTOM' ? 'Mau gia rieng cua bai hat' : 'Mau gia mac dinh cua he thong',
+      );
+    } else {
+      currentTotal *= toNumber((config as DbPhysicalRightConfigRow).base_price_multiplier);
+      addBreakdownLine('PLATFORM_BASE_MULTIPLIER', 'Nền tảng vật lý');
+    }
 
     if (payload.subject) {
-      const dbMultiplier = modifierMap.get(`SUBJECT_${payload.subject}` as VariantPricingModifierKey);
+      const dbMultiplier =
+        platformType === 'DIGITAL'
+          ? activeDigitalModifierMap.get(`SUBJECT_${payload.subject}` as VariantPricingModifierKey)
+          : modifierMap.get(`SUBJECT_${payload.subject}` as VariantPricingModifierKey);
       const subjectMultiplier = dbMultiplier ?? SUBJECT_MULTIPLIERS[payload.subject];
       currentTotal *= subjectMultiplier;
       addBreakdownLine(`SUBJECT_${payload.subject}`, 'Đối tượng');
     }
 
     if (payload.duration) {
-      const dbMultiplier = modifierMap.get(`DURATION_${payload.duration}` as VariantPricingModifierKey);
+      const dbMultiplier =
+        platformType === 'DIGITAL'
+          ? activeDigitalModifierMap.get(`DURATION_${payload.duration}` as VariantPricingModifierKey)
+          : modifierMap.get(`DURATION_${payload.duration}` as VariantPricingModifierKey);
       const durationMultiplier = dbMultiplier ?? DURATION_MULTIPLIERS[payload.duration];
       currentTotal *= durationMultiplier;
       addBreakdownLine(`DURATION_${payload.duration}`, 'Thời hạn');
     }
 
     if (payload.scope) {
-      const dbMultiplier = modifierMap.get(`SCOPE_${payload.scope}` as VariantPricingModifierKey);
+      const dbMultiplier =
+        platformType === 'DIGITAL'
+          ? activeDigitalModifierMap.get(`SCOPE_${payload.scope}` as VariantPricingModifierKey)
+          : modifierMap.get(`SCOPE_${payload.scope}` as VariantPricingModifierKey);
       const scopeMultiplier = dbMultiplier ?? SCOPE_MULTIPLIERS[payload.scope];
       currentTotal *= scopeMultiplier;
       addBreakdownLine(`SCOPE_${payload.scope}`, 'Phạm vi');
@@ -281,12 +349,20 @@ export class VariantPricingService {
     });
 
     if (isExpressionEnabled && expressionResult.data) {
+      if (platformType === 'DIGITAL') {
+        currentTotal *= activeDigitalModifierMap.get('EXPRESSION') ?? 1;
+        addBreakdownLine('EXPRESSION_TEMPLATE', 'He so hinh thuc bieu hien');
+      }
       const multiplier = toNumber(expressionResult.data.price_multiplier);
       currentTotal *= multiplier;
       addBreakdownLine(`EXPRESSION_${expressionResult.data.id}`, 'Hình thức biểu hiện');
     }
 
     if (isModificationEnabled && modificationResult.data) {
+      if (platformType === 'DIGITAL') {
+        currentTotal *= activeDigitalModifierMap.get('MODIFICATION') ?? 1;
+        addBreakdownLine('MODIFICATION_TEMPLATE', 'He so muc do bien doi');
+      }
       const multiplier = toNumber(modificationResult.data.price_multiplier);
       currentTotal *= multiplier;
       addBreakdownLine(`MODIFICATION_${modificationResult.data.id}`, 'Mức độ biến đổi');

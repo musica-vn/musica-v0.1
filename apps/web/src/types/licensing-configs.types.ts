@@ -1,25 +1,14 @@
 import type { PaginationMeta } from '@musica/contracts'
 import type { ProductPackageRegistration } from './products.types'
+import type {
+  PlatformPricingModifierKey as VariantPricingModifierKey,
+  PlatformPricingModifierValue as PriceModifier,
+} from '../constants/platform-pricing'
 
 export type LicensingConfigStatus = 'ACTIVE' | 'INACTIVE'
 export type DigitalPlatform = 'YOUTUBE' | 'TIKTOK' | 'FACEBOOK'
 export type DigitalDurationType = 'ONE_YEAR' | 'PERPETUAL'
 export type LicensingConfigResource = 'digital' | 'physical' | 'expression' | 'modification'
-
-export type VariantPricingModifierKey =
-  | 'SUBJECT_INDIVIDUAL'
-  | 'SUBJECT_ORGANIZATION'
-  | 'DURATION_ONE_YEAR'
-  | 'DURATION_PERPETUAL'
-  | 'SCOPE_SINGLE_CHANNEL'
-  | 'SCOPE_MULTI_CHANNEL'
-  | 'EXPRESSION'
-  | 'MODIFICATION'
-
-export type PriceModifier = {
-  key: VariantPricingModifierKey
-  multiplier: number
-}
 
 export type ReferencedPermissionSummary = {
   id: string
@@ -115,6 +104,18 @@ export type ModificationConfigsListResult = {
   meta: PaginationMeta
 }
 
+export type DigitalPlatformDefaultTemplate = {
+  id: string
+  platformKey: 'YOUTUBE'
+  platformLabel: string
+  name: string
+  referencedPermissionIds: string[]
+  referencedPermissions: ReferencedPermissionSummary[]
+  modifiers: PriceModifier[]
+  updatedAt: string | null
+  updatedBy: string | null
+}
+
 export type CreateDigitalRightConfigPayload = {
   targetPlatform: DigitalPlatform
   durationType: DigitalDurationType
@@ -126,6 +127,11 @@ export type CreateDigitalRightConfigPayload = {
 export type UpdateDigitalRightConfigPayload = Partial<
   CreateDigitalRightConfigPayload
 >
+
+export type UpdateDigitalPlatformDefaultTemplatePayload = {
+  referencedPermissionIds?: string[]
+  modifiers: PriceModifier[]
+}
 
 export type CreatePhysicalRightConfigPayload = {
   venueUsageType: string

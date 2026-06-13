@@ -11,6 +11,8 @@ const props = defineProps<{
   statusLabel: string
   isLoading: boolean
   canOpenPackages: boolean
+  canManageLifecycle: boolean
+  canRemove: boolean
 }>()
 
 const resourceLabel = computed(() => {
@@ -85,6 +87,7 @@ const handleAction = (
 
     <div v-if="item" class="space-y-3">
       <button
+        v-if="canManageLifecycle"
         type="button"
         class="flex w-full items-start gap-3 rounded-[24px] border border-slate-200/80 bg-white px-4 py-4 text-left transition hover:border-[color:rgb(var(--admin-primary-rgb)/0.28)] hover:bg-[linear-gradient(135deg,var(--admin-primary-50),var(--admin-accent-50))] disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-800 dark:bg-slate-950/60 dark:hover:border-[color:rgb(var(--admin-primary-rgb)/0.38)] dark:hover:bg-[color:var(--admin-primary-50)]"
         :disabled="isLoading"
@@ -100,6 +103,7 @@ const handleAction = (
       </button>
 
       <button
+        v-if="canRemove"
         type="button"
         class="flex w-full items-start gap-3 rounded-[24px] border border-slate-200/80 bg-white px-4 py-4 text-left transition hover:border-[color:rgb(var(--admin-primary-rgb)/0.28)] hover:bg-[linear-gradient(135deg,var(--admin-primary-50),var(--admin-accent-50))] disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-800 dark:bg-slate-950/60 dark:hover:border-[color:rgb(var(--admin-primary-rgb)/0.38)] dark:hover:bg-[color:var(--admin-primary-50)]"
         :disabled="isLoading"

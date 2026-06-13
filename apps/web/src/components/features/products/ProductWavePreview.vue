@@ -7,6 +7,7 @@ const props = defineProps<{
   audioUrl: string | null
   compact?: boolean
   disabled?: boolean
+  hero?: boolean
   rightLabel?: string | null
   trackStatus?: 'PUBLISHED' | 'PENDING' | 'HIDDEN'
 }>()
@@ -16,6 +17,14 @@ const waveSurfer = ref<WaveSurfer | null>(null)
 const isReady = ref(false)
 const isPlaying = ref(false)
 const localError = ref<string | null>(null)
+const currentTime = ref(0)
+const durationTime = ref(0)
+
+const formatTime = (time: number) => {
+  const mins = Math.floor(time / 60);
+  const secs = Math.floor(time % 60);
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
 
 const getCssVarColor = (variableName: string, fallback: string) => {
   if (typeof window === 'undefined') return fallback
@@ -32,15 +41,20 @@ const resolvedWaveColor = computed(() => {
 const rootClass = computed(() =>
   props.compact
     ? 'grid grid-cols-[2.75rem_minmax(0,1fr)_3.25rem] items-center gap-2'
-    : 'grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3',
+    : props.hero
+      ? 'flex items-center gap-10 w-full'
+      : 'grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3',
 )
 const buttonClass = computed(() =>
   props.compact
-    ? 'inline-flex h-11 w-11 items-center justify-center rounded-2xl border bg-[color:var(--admin-surface-0)] text-[color:var(--admin-text-muted)] transition [border-color:var(--admin-border)] hover:bg-[color:var(--admin-surface-1)] disabled:cursor-not-allowed disabled:opacity-50'
-    : 'inline-flex h-10 w-10 items-center justify-center rounded-2xl border bg-[color:var(--admin-surface-0)] text-[color:var(--admin-text-muted)] transition [border-color:var(--admin-border)] hover:bg-[color:var(--admin-surface-1)] disabled:cursor-not-allowed disabled:opacity-50',
+    ? 'inline-flex h-11 w-11 items-center justify-center rounded-2xl border bg-[color:var(--admin-surface-0)] text-[color:var(--admin-text-muted)] transition [border-color:var(--admin-border)] hover:bg-[color:var(--admin-surface-1)] disabled:cursor-not-allowed disabled:opacity-50 shrink-0'
+    : props.hero
+      ? 'w-20 h-20 flex items-center justify-center bg-primary text-white rounded-[24px] hover:scale-110 active:scale-95 transition-all shadow-xl shadow-primary/20 shrink-0 disabled:cursor-not-allowed disabled:opacity-50'
+      : 'inline-flex h-10 w-10 items-center justify-center rounded-2xl border bg-[color:var(--admin-surface-0)] text-[color:var(--admin-text-muted)] transition [border-color:var(--admin-border)] hover:bg-[color:var(--admin-surface-1)] disabled:cursor-not-allowed disabled:opacity-50 shrink-0',
 )
 const waveformClass = computed(() => [
   'min-w-0 w-full rounded-xl',
+  props.hero ? 'flex-1 group/wave' : '',
   Boolean(props.audioUrl) && !isReady.value
     ? 'min-h-[22px] animate-pulse bg-[color:var(--admin-surface-1)]'
     : '',
@@ -73,26 +87,33 @@ const initializeWaveSurfer = async (audioUrl: string) => {
   await nextTick()
   if (!waveformContainer.value) return
 
-  const activeColor = getCssVarColor('--admin-accent-500', '#378ADD')
-  const cursorColor = getCssVarColor('--admin-border-strong', '#64748B')
-  const waveColor = resolvedWaveColor.value
+  const activeColor = props.hero ? '#00365a' : getCssVarColor('--admin-accent-500', '#378ADD')
+  const cursorColor = props.hero ? 'transparent' : getCssVarColor('--admin-border-strong', '#64748B')
+  const waveColor = props.hero ? '#CBD5E1' : resolvedWaveColor.value
 
   const instance = WaveSurfer.create({
     container: waveformContainer.value,
     waveColor,
     progressColor: activeColor,
     cursorColor,
-    cursorWidth: 2,
-    barWidth: props.compact ? 1.5 : 3,
-    barGap: props.compact ? 1 : 2,
+    cursorWidth: props.hero ? 0 : 2,
+    barWidth: props.compact ? 1.5 : props.hero ? 5 : 3,
+    barGap: props.compact ? 1 : props.hero ? 4 : 2,
     barRadius: 999,
-    height: props.compact ? 64 : 72,
+    height: props.compact ? 64 : props.hero ? 80 : 72,
     normalize: true,
     dragToSeek: true,
   })
 
   instance.on('ready', () => {
     isReady.value = true
+    durationTime.value = instance.getDuration()
+  })
+  instance.on('audioprocess', (time) => {
+    currentTime.value = time
+  })
+  instance.on('seek', (time) => {
+    currentTime.value = time
   })
   instance.on('play', () => {
     isPlaying.value = true
@@ -168,7 +189,25 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div :class="rootClass">
+  <div v-if="hero" class="w-full">
+    <div class="flex items-center gap-10 w-full">
+      <button v-if="hero" :class="buttonClass" :disabled="disabled || !audioUrl || !isReady" @click="togglePlayback">
+        <i :class="iconClass" class="text-3xl text-white"></i>
+      </button>
+      <Button v-else rounded text severity="secondary" :class="buttonClass" :icon="iconClass" :disabled="disabled || !audioUrl || !isReady" @click="togglePlayback" />
+      <div class="flex-1">
+        <div ref="waveformContainer" :class="waveformClass" />
+        <div class="flex justify-between items-center mt-4 font-code-mono text-xs font-bold tracking-widest text-text-tertiary">
+          <span class="text-primary">{{ formatTime(currentTime) }}</span>
+          <div class="flex-1 mx-6 h-[1px] bg-border-subtle/30"></div>
+          <span>{{ formatTime(durationTime) }}</span>
+        </div>
+      </div>
+    </div>
+    <div v-if="localError" class="mt-2 text-xs text-danger-text text-center">{{ localError }}</div>
+  </div>
+  
+  <div v-else :class="rootClass">
     <Button rounded text severity="secondary" :class="buttonClass" :icon="iconClass" :disabled="disabled || !audioUrl || !isReady" @click="togglePlayback" />
     <div ref="waveformContainer" :class="waveformClass" />
     <span
@@ -177,6 +216,6 @@ onBeforeUnmount(() => {
     >
       {{ rightLabel }}
     </span>
-    <div v-if="localError" class="col-span-full text-xs text-[color:var(--admin-text)]">{{ localError }}</div>
+    <div v-if="localError" class="col-span-full text-xs text-danger-text">{{ localError }}</div>
   </div>
 </template>

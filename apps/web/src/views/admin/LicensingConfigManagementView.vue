@@ -9,8 +9,10 @@ import AdminFilterSelect from '../../components/shared/admin/AdminFilterSelect.v
 import AdminPageHeader from '../../components/shared/admin/AdminPageHeader.vue'
 import AdminPaginationBar from '../../components/shared/admin/AdminPaginationBar.vue'
 import {
+  getAdminDigitalPlatformDefaultTemplate,
   listAdminDigitalRightConfigProducts,
   listAdminPhysicalRightConfigProducts,
+  updateAdminDigitalPlatformDefaultTemplate,
 } from '../../services/licensing-configs.service'
 import { useCorePermissionsStore } from '../../stores/core-permissions.store'
 import {
@@ -26,6 +28,7 @@ import type {
   CreateExpressionConfigPayload,
   CreateModificationConfigPayload,
   CreatePhysicalRightConfigPayload,
+  DigitalPlatformDefaultTemplate,
   DigitalDurationType,
   DigitalPlatform,
   DigitalRightConfig,
@@ -46,6 +49,7 @@ import type {
 import type { ProductPackageRegistration } from '../../types/products.types'
 
 type AnyLicensingConfig = DigitalRightConfig | PhysicalRightConfig | ExpressionConfig | ModificationConfig
+type DigitalTemplateListItem = DigitalRightConfig
 
 const props = defineProps<{
   resource: LicensingConfigResource
@@ -89,7 +93,7 @@ const modifierItemCardClass =
 const modifierInputLabelClass =
   'mb-2 block text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]'
 const dependencyHelpText =
-  'Đối tượng, Thời hạn, Phạm vi chỉnh hệ số trực tiếp tại đây. Hình thức biểu hiện và Mức độ biến đổi lấy hệ số từ màn hình quản lý riêng.'
+  'Tất cả thuộc tính giá của nền tảng được chỉnh trực tiếp tại đây, bao gồm đối tượng, thời hạn, phạm vi, hình thức biểu hiện và mức độ biến đổi.'
 
 const resourceConfigMap: Record<
   LicensingConfigResource,
@@ -117,14 +121,14 @@ const resourceConfigMap: Record<
   digital: {
     title: 'Quản lý nền tảng số',
     description:
-      'Thiết lập cấu hình thương mại cho nền tảng số, chọn bộ quyền cốt lõi bắt buộc và quản lý vòng đời bản nháp hoặc xuất bản.',
-    createLabel: 'Tạo cấu hình nền tảng',
+      'Quản lý bảng cấu hình nền tảng số theo hướng đa nền tảng. Hiện tại YouTube dùng mẫu mặc định với đầy đủ thuộc tính giá và quyền cốt lõi.',
+    createLabel: 'Mở cấu hình nền tảng',
     editLabel: 'Cập nhật cấu hình nền tảng',
     detailColumnLabel: 'Nền tảng',
     detailPlaceholder: 'Nền tảng thương mại áp dụng',
-    priceLabel: 'Giá cơ sở / hệ số',
-    emptyState: 'Chưa có cấu hình nền tảng số nào.',
-    keywordPlaceholder: 'Tìm theo nền tảng, thời hạn hoặc mã cấu hình',
+    priceLabel: 'Bộ hệ số giá',
+    emptyState: 'Chưa có dữ liệu nền tảng số mặc định.',
+    keywordPlaceholder: 'Tìm theo nền tảng hoặc mã cấu hình',
     permissionLabel: 'Quyền cốt lõi bắt buộc',
     emptyPermissionsText: 'Chưa chọn quyền cốt lõi bắt buộc',
     permissionLoadingMessage: 'Đang tải bộ quyền cốt lõi bắt buộc...',
@@ -132,7 +136,7 @@ const resourceConfigMap: Record<
     updateSuccessMessage: 'Đã cập nhật cấu hình nền tảng.',
     deleteSuccessMessage: 'Đã xoá cấu hình nền tảng.',
     permissionsDialogEmptyState: 'Chưa cấu hình quyền cốt lõi bắt buộc.',
-    draftNotice: 'Bản ghi mới sẽ được tạo ở trạng thái Bản nháp. Dùng thao tác Xuất bản sau khi hoàn tất cấu hình.',
+    draftNotice: 'Nền tảng số hiện dùng mẫu mặc định. Bạn chỉnh trực tiếp đầy đủ quyền cốt lõi và các thuộc tính giá trong cùng một modal.',
     supportsDigitalFilters: true,
   },
   physical: {
@@ -236,6 +240,8 @@ const packageProductsDialogVisible = ref(false)
 const packageProductsDialogTitle = ref('')
 const packageProductsLoading = ref(false)
 const packageProducts = ref<ProductPackageRegistration[]>([])
+const digitalDefaultTemplate = ref<DigitalPlatformDefaultTemplate | null>(null)
+const digitalTemplateLoading = ref(false)
 
 const form = reactive<{
   targetPlatform: DigitalPlatform
@@ -320,11 +326,6 @@ const pricingModifierGroups: PricingModifierGroup[] = [
   },
 ]
 
-const digitalDisallowedModifierKeys = new Set<VariantPricingModifierKey>([
-  'DURATION_ONE_YEAR',
-  'DURATION_PERPETUAL',
-])
-
 const normalizePriceModifiers = (
   modifiers: PriceModifier[],
 ) =>
@@ -332,22 +333,11 @@ const normalizePriceModifiers = (
     new Map(
       modifiers
         .filter((item) => !!item && typeof item === 'object')
-        .filter(
-          (item) =>
-            !(
-              props.resource === 'digital'
-              && digitalDisallowedModifierKeys.has(item.key)
-            ),
-        )
         .map((item) => [item.key, { key: item.key, multiplier: Number(item.multiplier) }]),
     ).values(),
   )
 
-const selectablePricingModifierGroups = computed(() =>
-  pricingModifierGroups.filter(
-    (group) => !(props.resource === 'digital' && group.id === 'DURATION'),
-  ),
-)
+const selectablePricingModifierGroups = computed(() => pricingModifierGroups)
 
 const getPriceModifierMultiplier = (key: VariantPricingModifierKey) =>
   form.priceModifiers.find((item) => item.key === key)?.multiplier ?? 1
@@ -407,7 +397,9 @@ const activePricingModifierGroups = computed(() =>
 )
 
 const availablePricingModifierGroups = computed(() =>
-  selectablePricingModifierGroups.value.filter((group) => !hasPriceModifierGroup(group.id)),
+  props.resource === 'digital'
+    ? []
+    : selectablePricingModifierGroups.value.filter((group) => !hasPriceModifierGroup(group.id)),
 )
 
 const getPricingModifierGroupDescription = (
@@ -490,11 +482,35 @@ const getPricingModifierItemDescription = (key: VariantPricingModifierKey) => {
     case 'SCOPE_MULTI_CHANNEL':
       return 'Áp dụng cho phạm vi đa kênh.'
     case 'EXPRESSION':
-      return 'Lấy hệ số từ màn hình hình thức biểu hiện.'
+      return 'Áp dụng hệ số cho nhóm hình thức biểu hiện.'
     case 'MODIFICATION':
-      return 'Lấy hệ số từ màn hình mức độ biến đổi.'
+      return 'Áp dụng hệ số cho nhóm mức độ biến đổi.'
   }
 }
+
+const buildDefaultDigitalPriceModifiers = (): PriceModifier[] =>
+  pricingModifierGroups.flatMap((group) =>
+    group.kind === 'flag'
+      ? [{ key: group.flagKey, multiplier: 1 }]
+      : group.items.map((item) => ({ key: item.key, multiplier: 1 })),
+  )
+
+const mapDigitalDefaultTemplateToListItem = (
+  template: DigitalPlatformDefaultTemplate,
+): DigitalTemplateListItem => ({
+  id: template.id,
+  status: 'ACTIVE',
+  targetPlatform: template.platformKey,
+  durationType: 'ONE_YEAR',
+  basePriceMultiplier: template.modifiers.length,
+  priceModifiers: normalizePriceModifiers(template.modifiers),
+  referencedPermissionIds: [...template.referencedPermissionIds],
+  referencedPermissions: [...template.referencedPermissions],
+  effectiveReferencedPermissionIds: [...template.referencedPermissionIds],
+  effectiveReferencedPermissions: [...template.referencedPermissions],
+  createdAt: template.updatedAt ?? new Date().toISOString(),
+  updatedAt: template.updatedAt ?? new Date().toISOString(),
+})
 
 const isReferencedPermissionSelected = (permissionId: string) =>
   form.referencedPermissionIds.includes(permissionId)
@@ -521,7 +537,9 @@ const isNameValid = computed(() => {
 const currentItems = computed<AnyLicensingConfig[]>(() => {
   switch (props.resource) {
     case 'digital':
-      return digitalStore.items
+      return digitalDefaultTemplate.value
+        ? [mapDigitalDefaultTemplateToListItem(digitalDefaultTemplate.value)]
+        : []
     case 'physical':
       return physicalStore.items
     case 'expression':
@@ -534,7 +552,16 @@ const currentItems = computed<AnyLicensingConfig[]>(() => {
 const currentMeta = computed(() => {
   switch (props.resource) {
     case 'digital':
-      return digitalStore.meta
+      return {
+        pagination: {
+          page: 1,
+          pageSize: 20,
+          totalItems: currentItems.value.length,
+          totalPages: 1,
+          hasNextPage: false,
+          hasPrevPage: false,
+        },
+      }
     case 'physical':
       return physicalStore.meta
     case 'expression':
@@ -547,7 +574,7 @@ const currentMeta = computed(() => {
 const currentIsLoading = computed(() => {
   switch (props.resource) {
     case 'digital':
-      return digitalStore.isLoading
+      return digitalTemplateLoading.value
     case 'physical':
       return physicalStore.isLoading
     case 'expression':
@@ -560,7 +587,7 @@ const currentIsLoading = computed(() => {
 const currentTotalItems = computed(() => {
   switch (props.resource) {
     case 'digital':
-      return digitalStore.totalItems
+      return currentItems.value.length
     case 'physical':
       return physicalStore.totalItems
     case 'expression':
@@ -624,7 +651,13 @@ const isPermissionSubmitDisabled = computed(
 const permissionOptionsLoadingMessage = computed(() => currentResource.value.permissionLoadingMessage)
 const permissionOptionsEmptyMessage = computed(() => 'Hiện chưa có quyền cốt lõi đang hoạt động để lựa chọn.')
 const permissionsDialogEmptyState = computed(() => currentResource.value.permissionsDialogEmptyState)
-const createActionLabel = computed(() => (isDraftManagedResource.value ? 'Tạo bản nháp' : 'Tạo'))
+const createActionLabel = computed(() =>
+  props.resource === 'digital'
+    ? 'Lưu cấu hình'
+    : isDraftManagedResource.value
+      ? 'Tạo bản nháp'
+      : 'Tạo',
+)
 
 const mergedPermissionOptions = computed<ReferencedPermissionSummary[]>(() => {
   const activePermissions = corePermissionsStore.activeItems.map((item) => ({
@@ -665,6 +698,14 @@ const getDisplayReferencedPermissions = (
 
 const getPermissionCount = (item: AnyLicensingConfig) =>
   getDisplayReferencedPermissions(item).length
+
+const canOpenPackages = computed(
+  () => isDigitalOrPhysicalResource.value && props.resource !== 'digital',
+)
+
+const canManageLifecycle = computed(() => props.resource !== 'digital')
+
+const canRemoveConfig = computed(() => props.resource !== 'digital')
 
 const toggleReferencedPermission = (permissionId: string) => {
   form.referencedPermissionIds = form.referencedPermissionIds.includes(permissionId)
@@ -816,7 +857,7 @@ const resetForm = () => {
   form.name = ''
   form.priceMultiplier = 1
   form.referencedPermissionIds = []
-  form.priceModifiers = []
+  form.priceModifiers = isDigitalResource.value ? buildDefaultDigitalPriceModifiers() : []
 }
 
 const fillFormFromItem = (item: AnyLicensingConfig) => {
@@ -827,9 +868,12 @@ const fillFormFromItem = (item: AnyLicensingConfig) => {
     case 'digital': {
       const digitalItem = item as DigitalRightConfig
       form.targetPlatform = digitalItem.targetPlatform
-      form.durationType = digitalItem.durationType
-      form.basePriceMultiplier = digitalItem.basePriceMultiplier
-      form.priceModifiers = normalizePriceModifiers(digitalItem.priceModifiers ?? [])
+      form.basePriceMultiplier = 1
+      form.priceModifiers = normalizePriceModifiers(
+        digitalItem.priceModifiers?.length
+          ? digitalItem.priceModifiers
+          : buildDefaultDigitalPriceModifiers(),
+      )
       break
     }
     case 'physical': {
@@ -861,16 +905,23 @@ const fetchList = async () => {
   const status = filters.status || undefined
 
   switch (props.resource) {
-    case 'digital':
-      await digitalStore.fetchItems({
-        page: pagination.page,
-        pageSize: pagination.pageSize,
-        keyword,
-        status,
-        targetPlatform: filters.targetPlatform || undefined,
-        durationType: filters.durationType || undefined,
-      })
+    case 'digital': {
+      digitalTemplateLoading.value = true
+      try {
+        const { data } = await getAdminDigitalPlatformDefaultTemplate()
+        const matchesKeyword = !keyword || [
+          data.platformLabel,
+          data.name,
+          data.id,
+        ].some((value) => value.toLowerCase().includes(keyword.toLowerCase()))
+        const matchesPlatform = !filters.targetPlatform || data.platformKey === filters.targetPlatform
+
+        digitalDefaultTemplate.value = matchesKeyword && matchesPlatform ? data : null
+      } finally {
+        digitalTemplateLoading.value = false
+      }
       break
+    }
     case 'physical':
       await physicalStore.fetchItems({ page: pagination.page, pageSize: pagination.pageSize, keyword, status })
       break
@@ -886,8 +937,14 @@ const fetchList = async () => {
 const openCreate = () => {
   clearMessages()
   closeMobileActionMenu()
-  selectedItem.value = null
+  selectedItem.value =
+    props.resource === 'digital' && digitalDefaultTemplate.value
+      ? mapDigitalDefaultTemplateToListItem(digitalDefaultTemplate.value)
+      : null
   resetForm()
+  if (props.resource === 'digital' && digitalDefaultTemplate.value) {
+    fillFormFromItem(mapDigitalDefaultTemplateToListItem(digitalDefaultTemplate.value))
+  }
   if (supportsPermissionPicker.value && !hasLoadedPermissionOptions.value && !corePermissionsStore.isLoading) {
     void fetchPermissionOptions()
   }
@@ -916,12 +973,9 @@ const buildCreatePayload = () => {
   switch (props.resource) {
     case 'digital':
       return {
-        targetPlatform: form.targetPlatform,
-        durationType: form.durationType,
-        basePriceMultiplier: Number(form.basePriceMultiplier),
         referencedPermissionIds,
-        priceModifiers,
-      } satisfies CreateDigitalRightConfigPayload
+        modifiers: priceModifiers,
+      }
     case 'physical':
       return {
         venueUsageType: form.venueUsageType.trim(),
@@ -953,12 +1007,9 @@ const buildUpdatePayload = () => {
   switch (props.resource) {
     case 'digital':
       return {
-        targetPlatform: form.targetPlatform,
-        durationType: form.durationType,
-        basePriceMultiplier: Number(form.basePriceMultiplier),
         referencedPermissionIds,
-        priceModifiers,
-      } satisfies UpdateDigitalRightConfigPayload
+        modifiers: priceModifiers,
+      }
     case 'physical':
       return {
         venueUsageType: form.venueUsageType.trim(),
@@ -992,7 +1043,10 @@ const submitCreate = async () => {
   try {
     switch (props.resource) {
       case 'digital':
-        await digitalStore.createOne(buildCreatePayload() as CreateDigitalRightConfigPayload)
+        await updateAdminDigitalPlatformDefaultTemplate(buildCreatePayload() as {
+          referencedPermissionIds?: string[]
+          modifiers: PriceModifier[]
+        })
         break
       case 'physical':
         await physicalStore.createOne(buildCreatePayload() as CreatePhysicalRightConfigPayload)
@@ -1028,7 +1082,10 @@ const submitEdit = async () => {
   try {
     switch (props.resource) {
       case 'digital':
-        await digitalStore.updateOne(selectedItem.value.id, buildUpdatePayload() as UpdateDigitalRightConfigPayload)
+        await updateAdminDigitalPlatformDefaultTemplate(buildUpdatePayload() as {
+          referencedPermissionIds?: string[]
+          modifiers: PriceModifier[]
+        })
         break
       case 'physical':
         await physicalStore.updateOne(selectedItem.value.id, buildUpdatePayload() as UpdatePhysicalRightConfigPayload)
@@ -1052,6 +1109,7 @@ const submitEdit = async () => {
 }
 
 const performToggleStatus = async (item: AnyLicensingConfig) => {
+  if (props.resource === 'digital') return
   clearMessages()
   const nextStatus: LicensingConfigStatus = item.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE'
 
@@ -1083,6 +1141,7 @@ const performToggleStatus = async (item: AnyLicensingConfig) => {
 }
 
 const performRemoveOne = async (item: AnyLicensingConfig) => {
+  if (props.resource === 'digital') return
   clearMessages()
 
   try {
@@ -1131,7 +1190,7 @@ const getDetailText = (item: AnyLicensingConfig) => {
   switch (props.resource) {
     case 'digital': {
       const digitalItem = item as DigitalRightConfig
-      return `${formatDigitalPlatformLabel(digitalItem.targetPlatform)} · ${formatDurationTypeLabel(digitalItem.durationType)}`
+      return `${formatDigitalPlatformLabel(digitalItem.targetPlatform)} · Mẫu mặc định`
     }
     case 'physical':
       return (item as PhysicalRightConfig).venueUsageType
@@ -1166,6 +1225,7 @@ const closeMobileActionMenu = () => {
 }
 
 const confirmToggleStatus = (item: AnyLicensingConfig) => {
+  if (props.resource === 'digital') return
   closeMobileActionMenu()
   const nextStatus: LicensingConfigStatus = item.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE'
   const title = getItemDisplayTitle(item)
@@ -1204,6 +1264,7 @@ const confirmToggleStatus = (item: AnyLicensingConfig) => {
 }
 
 const confirmRemoveOne = (item: AnyLicensingConfig) => {
+  if (props.resource === 'digital') return
   closeMobileActionMenu()
   const title = getItemDisplayTitle(item)
 
@@ -1221,7 +1282,7 @@ const confirmRemoveOne = (item: AnyLicensingConfig) => {
 const getPriceValue = (item: AnyLicensingConfig) => {
   switch (props.resource) {
     case 'digital':
-      return (item as DigitalRightConfig).basePriceMultiplier
+      return `${(item as DigitalRightConfig).priceModifiers.length} thuộc tính`
     case 'physical':
       return (item as PhysicalRightConfig).basePriceMultiplier
     case 'expression':
@@ -1347,12 +1408,14 @@ onMounted(() => {
           :options="platformFilterOptions"
           :disabled="currentIsLoading"
         />
-        <AdminFilterSelect
-          v-model="filters.durationType"
-          icon-class="pi pi-clock"
-          :options="durationFilterOptions"
-          :disabled="currentIsLoading"
-        />
+        <div v-if="props.resource !== 'digital'">
+          <AdminFilterSelect
+            v-model="filters.durationType"
+            icon-class="pi pi-clock"
+            :options="durationFilterOptions"
+            :disabled="currentIsLoading"
+          />
+        </div>
       </div>
 
       <div class="mt-4 space-y-3">
@@ -1369,13 +1432,13 @@ onMounted(() => {
         :resolve-detail-text="getDetailText"
         :resolve-platform-label="(item) => isDigitalResource ? formatDigitalPlatformLabel(getDigitalPlatform(item)!) : null"
         :resolve-platform-dot-class="(item) => isDigitalResource ? getDigitalPlatformMeta(getDigitalPlatform(item)!).dotClass : null"
-        :resolve-duration-label="(item) => isDigitalResource ? formatDurationTypeLabel(getDigitalDurationType(item)!) : null"
+        :resolve-duration-label="() => isDigitalResource ? 'Tất cả thuộc tính' : null"
         :resolve-reference-code="(item) => isDigitalResource ? getConfigReferenceCode(item) : null"
         :resolve-price-value="resolveMobilePriceValue"
         :resolve-permission-count-label="resolveMobilePermissionCountLabel"
         :resolve-status-label="resolveMobileStatusLabel"
         :resolve-status-class="resolveMobileStatusClass"
-        :can-open-packages="isDigitalOrPhysicalResource"
+        :can-open-packages="canOpenPackages"
         @edit="openEdit"
         @toggle="confirmToggleStatus"
         @permissions="openPermissionsDialog"
@@ -1389,7 +1452,7 @@ onMounted(() => {
             <thead class="bg-[linear-gradient(180deg,var(--admin-surface-3),var(--admin-surface-2))] text-xs uppercase tracking-[0.18em] text-[color:var(--admin-text)]">
               <tr>
                 <th v-if="isDigitalResource" class="px-4 py-4 font-semibold">Nền tảng</th>
-                <th v-if="isDigitalResource" class="px-4 py-4 font-semibold">Thời hạn</th>
+                <th v-if="isDigitalResource" class="px-4 py-4 font-semibold">Thuộc tính</th>
                 <th v-else class="px-4 py-4 font-semibold">{{ currentResource.detailColumnLabel }}</th>
                 <th class="px-4 py-4 font-semibold">{{ currentResource.priceLabel }}</th>
                 <th class="px-4 py-4 font-semibold">{{ permissionsLabel }}</th>
@@ -1424,7 +1487,7 @@ onMounted(() => {
                 </td>
                 <td v-if="isDigitalResource" class="px-4 py-4">
                   <span class="inline-flex items-center rounded-full border bg-[color:var(--admin-surface-1)] px-3 py-1 text-xs font-semibold text-[color:var(--admin-text)] [border-color:var(--admin-border)]">
-                    {{ formatDurationTypeLabel(getDigitalDurationType(item)!) }}
+                    Tất cả thuộc tính
                   </span>
                 </td>
                 <td v-else class="px-4 py-4">
@@ -1461,7 +1524,7 @@ onMounted(() => {
                 <td class="px-4 py-4">
                   <div class="flex justify-end gap-2">
                     <button
-                      v-if="isDigitalOrPhysicalResource"
+                      v-if="canOpenPackages"
                       type="button"
                       :class="iconButtonClass"
                       :disabled="currentIsLoading"
@@ -1472,14 +1535,15 @@ onMounted(() => {
                     <button type="button" :class="iconButtonClass" :disabled="currentIsLoading" @click="openEdit(item)">
                       <i class="pi pi-pencil" />
                     </button>
-                    <button type="button" :class="iconButtonClass" :disabled="currentIsLoading" @click="confirmToggleStatus(item)">
+                    <button v-if="canManageLifecycle" type="button" :class="iconButtonClass" :disabled="currentIsLoading" @click="confirmToggleStatus(item)">
                       <i :class="item.status === 'ACTIVE' ? 'pi pi-ban' : 'pi pi-check'" />
                     </button>
                     <button
+                      v-if="canRemoveConfig"
                       type="button"
                       class="inline-flex h-10 w-10 items-center justify-center rounded-2xl border bg-[color:var(--admin-surface-0)] text-rose-600 transition [border-color:var(--admin-border)] hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700 disabled:opacity-60 dark:hover:bg-rose-500/10"
                       :disabled="currentIsLoading"
-                      @click="confirmRemoveOne(item)"
+                    @click="confirmRemoveOne(item)"
                     >
                       <i class="pi pi-trash" />
                     </button>
@@ -1529,28 +1593,11 @@ onMounted(() => {
             <div class="grid gap-4 sm:grid-cols-2">
               <label class="space-y-2">
                 <span class="text-xs font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]">Nền tảng áp dụng</span>
-                <div class="relative">
-                  <select v-model="form.targetPlatform" :class="selectFieldClass" :disabled="isSubmitting">
-                    <option value="YOUTUBE">YouTube</option>
-                    <option value="TIKTOK">TikTok</option>
-                    <option value="FACEBOOK">Facebook</option>
-                  </select>
-                  <i class="pi pi-chevron-down" :class="selectChevronClass" />
-                </div>
+                <input :value="formatDigitalPlatformLabel(form.targetPlatform)" :class="fieldClass" disabled />
               </label>
               <label class="space-y-2">
-                <span class="text-xs font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]">Thời hạn áp dụng</span>
-                <div class="relative">
-                  <select v-model="form.durationType" :class="selectFieldClass" :disabled="isSubmitting">
-                    <option value="ONE_YEAR">1 năm</option>
-                    <option value="PERPETUAL">Vĩnh viễn</option>
-                  </select>
-                  <i class="pi pi-chevron-down" :class="selectChevronClass" />
-                </div>
-              </label>
-              <label class="space-y-2 sm:col-span-2">
-                <span class="text-xs font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]">Hệ số giá cơ sở</span>
-                <input v-model.number="form.basePriceMultiplier" type="number" min="1" step="0.01" :class="fieldClass" :disabled="isSubmitting" />
+                <span class="text-xs font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]">Phạm vi cấu hình</span>
+                <input value="Mặc định toàn bộ thuộc tính" :class="fieldClass" disabled />
               </label>
             </div>
           </section>
@@ -1635,7 +1682,7 @@ onMounted(() => {
                       </div>
                     </div>
                   </div>
-                  <button type="button" :class="iconButtonClass" :disabled="isSubmitting" @click="removePriceModifierGroup(group.id)">
+                  <button v-if="props.resource !== 'digital'" type="button" :class="iconButtonClass" :disabled="isSubmitting" @click="removePriceModifierGroup(group.id)">
                     <i class="pi pi-times" />
                   </button>
                 </div>
@@ -2019,28 +2066,11 @@ onMounted(() => {
             <div class="grid gap-4 sm:grid-cols-2">
               <label class="space-y-2">
                 <span class="text-xs font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]">Nền tảng áp dụng</span>
-                <div class="relative">
-                  <select v-model="form.targetPlatform" :class="selectFieldClass" :disabled="isSubmitting">
-                    <option value="YOUTUBE">YouTube</option>
-                    <option value="TIKTOK">TikTok</option>
-                    <option value="FACEBOOK">Facebook</option>
-                  </select>
-                  <i class="pi pi-chevron-down" :class="selectChevronClass" />
-                </div>
+                <input :value="formatDigitalPlatformLabel(form.targetPlatform)" :class="fieldClass" disabled />
               </label>
               <label class="space-y-2">
-                <span class="text-xs font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]">Thời hạn áp dụng</span>
-                <div class="relative">
-                  <select v-model="form.durationType" :class="selectFieldClass" :disabled="isSubmitting">
-                    <option value="ONE_YEAR">1 năm</option>
-                    <option value="PERPETUAL">Vĩnh viễn</option>
-                  </select>
-                  <i class="pi pi-chevron-down" :class="selectChevronClass" />
-                </div>
-              </label>
-              <label class="space-y-2 sm:col-span-2">
-                <span class="text-xs font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]">Hệ số giá cơ sở</span>
-                <input v-model.number="form.basePriceMultiplier" type="number" min="1" step="0.01" :class="fieldClass" :disabled="isSubmitting" />
+                <span class="text-xs font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]">Phạm vi cấu hình</span>
+                <input value="Mặc định toàn bộ thuộc tính" :class="fieldClass" disabled />
               </label>
             </div>
           </section>
@@ -2125,7 +2155,7 @@ onMounted(() => {
                       </div>
                     </div>
                   </div>
-                  <button type="button" :class="iconButtonClass" :disabled="isSubmitting" @click="removePriceModifierGroup(group.id)">
+                  <button v-if="props.resource !== 'digital'" type="button" :class="iconButtonClass" :disabled="isSubmitting" @click="removePriceModifierGroup(group.id)">
                     <i class="pi pi-times" />
                   </button>
                 </div>
@@ -2600,7 +2630,9 @@ onMounted(() => {
       :detail-text="mobileActionItem ? getDetailText(mobileActionItem) : ''"
       :status-label="mobileActionItem ? resolveMobileStatusLabel(mobileActionItem) : ''"
       :is-loading="currentIsLoading"
-      :can-open-packages="isDigitalOrPhysicalResource"
+      :can-open-packages="canOpenPackages"
+      :can-manage-lifecycle="canManageLifecycle"
+      :can-remove="canRemoveConfig"
       @close="closeMobileActionMenu"
       @edit="openEdit"
       @toggle="confirmToggleStatus"

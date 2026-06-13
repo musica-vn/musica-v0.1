@@ -35,7 +35,10 @@ import {
   type RawPermissionSummary,
   type RequiredPermissionSummary,
 } from '../licensing-configs/licensing-required-permissions';
-import type { VariantPricingModifierKey } from '../pricing/variant-pricing.enums';
+import {
+  VARIANT_PRICING_MODIFIER_KEYS,
+  type VariantPricingModifierKey,
+} from '../pricing/variant-pricing.enums';
 
 type DbProductRow = {
   id: string;
@@ -121,15 +124,35 @@ type DbDigitalEligibilityConfigRow = {
   digital_right_config_price_modifiers?: DbConfigPriceModifierRow[] | null;
 };
 
-type DbProductPlatformPricingConfigRow = {
+type DbPlatformDefaultPricingTemplateRow = {
+  id: string;
+  platform_key: SupportedProductPlatformKey;
+  name: string;
+  updated_at: string;
+  updated_by: string | null;
+};
+
+type DbPlatformDefaultPricingTemplateModifierRow = {
+  id: string;
+  template_id: string;
+  modifier_key: VariantPricingModifierKey;
+  multiplier: number | string;
+};
+
+type DbProductPlatformPricingOverrideRow = {
   id: string;
   product_id: string;
   platform_key: SupportedProductPlatformKey;
-  digital_right_config_id: string | null;
-  pricing_mode: 'GLOBAL' | 'CUSTOM';
-  custom_price_multiplier: number | string | null;
+  mode: 'SYSTEM' | 'CUSTOM';
   updated_at: string;
   updated_by: string | null;
+};
+
+type DbProductPlatformPricingOverrideModifierRow = {
+  id: string;
+  override_id: string;
+  modifier_key: VariantPricingModifierKey;
+  multiplier: number | string;
 };
 
 type DbPhysicalEligibilityConfigRow = {
@@ -211,6 +234,26 @@ const mapReferencedPermissionSummary = (
   permissionId: string,
   permission: DbCorePermissionJoinRow | null | undefined,
 ) => mapRequiredPermissionSummary(permissionId, permission);
+
+const mapPlatformModifierValues = (
+  rows:
+    | Array<{
+      modifier_key: VariantPricingModifierKey;
+      multiplier: number | string;
+    }>
+    | null
+    | undefined,
+): Array<{ key: VariantPricingModifierKey; multiplier: number }> =>
+  (rows ?? [])
+    .map((row) => ({
+      key: row.modifier_key,
+      multiplier: Number(row.multiplier),
+    }))
+    .sort(
+      (left, right) =>
+        VARIANT_PRICING_MODIFIER_KEYS.indexOf(left.key) -
+        VARIANT_PRICING_MODIFIER_KEYS.indexOf(right.key),
+    );
 
 const mapProductRowToDto = (row: DbProductJoinRow): ProductDto => {
   const allowedPermissionRows = (row.track_allowed_permissions ?? []).filter(
@@ -1630,92 +1673,152 @@ export class ProductsService {
     return this.getProductById(data.id);
   }
 
+  private assertCompletePlatformModifiers(
+    modifiers: Array<{ key: VariantPricingModifierKey; multiplier: number }>,
+  ) {
+    const modifierKeys = new Set(modifiers.map((item) => item.key));
+    const missingModifierKeys = VARIANT_PRICING_MODIFIER_KEYS.filter(
+      (key) => !modifierKeys.has(key),
+    );
+
+    if (missingModifierKeys.length === 0) return;
+
+    throw new ApiHttpException(
+      {
+        code: 'PRODUCT_PLATFORM_MODIFIERS_INCOMPLETE',
+        details: { missingModifierKeys },
+      },
+      HttpStatus.BAD_REQUEST,
+    );
+  }
+
+  private async loadDefaultPlatformTemplate(
+    platformKey: SupportedProductPlatformKey,
+  ): Promise<{
+    templateId: string;
+    name: string;
+    modifiers: Array<{ key: VariantPricingModifierKey; multiplier: number }>;
+    updatedAt: string | null;
+    updatedBy: string | null;
+  }> {
+    const { data: template, error: templateError } = await this.supabaseService.client
+      .from('platform_default_pricing_templates')
+      .select('id,platform_key,name,updated_at,updated_by')
+      .eq('platform_key', platformKey)
+      .maybeSingle<DbPlatformDefaultPricingTemplateRow>();
+
+    if (templateError) {
+      throwSupabaseError(
+        'PRODUCT_PLATFORM_DEFAULT_TEMPLATE_LOAD_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        templateError,
+      );
+    }
+
+    if (!template) {
+      throw new ApiHttpException(
+        { code: 'PRODUCT_PLATFORM_DEFAULT_TEMPLATE_NOT_FOUND' },
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    const { data: modifiers, error: modifiersError } = await this.supabaseService.client
+      .from('platform_default_pricing_template_modifiers')
+      .select('id,template_id,modifier_key,multiplier')
+      .eq('template_id', template.id)
+      .returns<DbPlatformDefaultPricingTemplateModifierRow[]>();
+
+    if (modifiersError) {
+      throwSupabaseError(
+        'PRODUCT_PLATFORM_DEFAULT_TEMPLATE_MODIFIERS_LOAD_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        modifiersError,
+      );
+    }
+
+    const normalizedModifiers = mapPlatformModifierValues(modifiers ?? []);
+    this.assertCompletePlatformModifiers(normalizedModifiers);
+
+    return {
+      templateId: template.id,
+      name: template.name,
+      modifiers: normalizedModifiers,
+      updatedAt: template.updated_at ?? null,
+      updatedBy: template.updated_by ?? null,
+    };
+  }
+
   private async loadProductPlatformSettings(
     productId: string,
   ): Promise<ProductPlatformSettingsDto> {
     await this.ensureProductExists(productId);
 
-    const configs = (await this.loadActiveDigitalEligibilityConfigs()).filter(
-      (config) => isSupportedProductPlatformKey(config.target_platform),
-    );
-    const configIds = configs.map((config) => config.id);
+    return {
+      productId,
+      supportedPlatforms: await Promise.all(
+        SUPPORTED_PRODUCT_PLATFORM_KEYS.map(async (platformKey) => {
+          const defaultTemplate = await this.loadDefaultPlatformTemplate(platformKey);
 
-    const selections = configIds.length === 0
-      ? []
-      : await (async () => {
-          const { data, error } = await this.supabaseService.client
-            .from('product_platform_pricing_configs')
-            .select(
-              'id,product_id,platform_key,digital_right_config_id,pricing_mode,custom_price_multiplier,updated_at,updated_by',
-            )
+          const { data: override, error: overrideError } = await this.supabaseService.client
+            .from('product_platform_pricing_overrides')
+            .select('id,product_id,platform_key,mode,updated_at,updated_by')
             .eq('product_id', productId)
-            .returns<DbProductPlatformPricingConfigRow[]>();
+            .eq('platform_key', platformKey)
+            .maybeSingle<DbProductPlatformPricingOverrideRow>();
 
-          if (error) {
+          if (overrideError) {
             throwSupabaseError(
               'PRODUCT_PLATFORM_SETTINGS_LOAD_FAILED',
               HttpStatus.INTERNAL_SERVER_ERROR,
-              error,
+              overrideError,
             );
           }
 
-          return data ?? [];
-        })();
+          const customTemplate = override?.mode === 'CUSTOM'
+            ? await (async () => {
+                const { data: modifierRows, error: modifierError } =
+                  await this.supabaseService.client
+                    .from('product_platform_pricing_override_modifiers')
+                    .select('id,override_id,modifier_key,multiplier')
+                    .eq('override_id', override.id)
+                    .returns<DbProductPlatformPricingOverrideModifierRow[]>();
 
-    const selectionMap = new Map(
-      selections.map((selection) => [selection.platform_key, selection]),
-    );
+                if (modifierError) {
+                  throwSupabaseError(
+                    'PRODUCT_PLATFORM_SETTINGS_LOAD_FAILED',
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    modifierError,
+                  );
+                }
 
-    return {
-      productId,
-      supportedPlatforms: SUPPORTED_PRODUCT_PLATFORM_KEYS.map((platformKey) => {
-        const availableConfigs = configs
-          .filter((config) => config.target_platform === platformKey)
-          .map((config) => ({
-            digitalRightConfigId: config.id,
+                const modifiers = mapPlatformModifierValues(modifierRows ?? []);
+                this.assertCompletePlatformModifiers(modifiers);
+
+                return {
+                  platformKey,
+                  platformLabel: getSupportedProductPlatformLabel(platformKey),
+                  name: `${getSupportedProductPlatformLabel(platformKey)} custom pricing`,
+                  modifiers,
+                };
+              })()
+            : null;
+
+          return {
             platformKey,
             platformLabel: getSupportedProductPlatformLabel(platformKey),
-            title: formatDigitalEligibilityTitle(
-              config.target_platform,
-              config.duration_type,
-            ),
-            durationType: config.duration_type,
-            globalBaseMultiplier: Number(config.base_price_multiplier),
-          }));
-
-        const selectedConfig = availableConfigs.find(
-          (config) =>
-            config.digitalRightConfigId ===
-            selectionMap.get(platformKey)?.digital_right_config_id,
-        );
-        const selection = selectionMap.get(platformKey);
-        const systemBaseMultiplier = selectedConfig
-          ? selectedConfig.globalBaseMultiplier
-          : null;
-        const effectiveMultiplier =
-          selection?.pricing_mode === 'CUSTOM' &&
-          selection.custom_price_multiplier !== null
-            ? Number(selection.custom_price_multiplier)
-            : systemBaseMultiplier;
-
-        return {
-          platformKey,
-          platformLabel: getSupportedProductPlatformLabel(platformKey),
-          availableConfigs,
-          selectedDigitalRightConfigId:
-            selection?.digital_right_config_id ?? null,
-          pricingMode: selection?.pricing_mode ?? 'GLOBAL',
-          customPriceMultiplier:
-            selection?.custom_price_multiplier === null ||
-            selection?.custom_price_multiplier === undefined
-              ? null
-              : Number(selection.custom_price_multiplier),
-          systemBaseMultiplier,
-          effectiveMultiplier,
-          updatedAt: selection?.updated_at ?? null,
-          updatedBy: selection?.updated_by ?? null,
-        };
-      }),
+            mode: override?.mode ?? 'SYSTEM',
+            defaultTemplate: {
+              platformKey,
+              platformLabel: getSupportedProductPlatformLabel(platformKey),
+              name: defaultTemplate.name,
+              modifiers: defaultTemplate.modifiers,
+            },
+            customTemplate,
+            updatedAt: override?.updated_at ?? defaultTemplate.updatedAt,
+            updatedBy: override?.updated_by ?? defaultTemplate.updatedBy,
+          };
+        }),
+      ),
     };
   }
 
@@ -1739,78 +1842,122 @@ export class ProductsService {
       );
     }
 
-    const configs = (await this.loadActiveDigitalEligibilityConfigs()).filter(
-      (config) => config.target_platform === payload.platformKey,
-    );
-    const configMap = new Map(configs.map((config) => [config.id, config]));
+    if (payload.mode === 'SYSTEM') {
+      const { data: existingOverride, error: existingOverrideError } = await this.supabaseService.client
+        .from('product_platform_pricing_overrides')
+        .select('id')
+        .eq('product_id', productId)
+        .eq('platform_key', payload.platformKey)
+        .maybeSingle<{ id: string }>();
 
-    if (
-      payload.selectedDigitalRightConfigId &&
-      !configMap.has(payload.selectedDigitalRightConfigId)
-    ) {
-      throw new ApiHttpException(
-        {
-          code: 'UNSUPPORTED_PLATFORM_CONFIG_FOR_PRODUCT',
-          details: {
-            digitalRightConfigId: payload.selectedDigitalRightConfigId,
-          },
-        },
-        HttpStatus.BAD_REQUEST,
-      );
-    }
+      if (existingOverrideError) {
+        throwSupabaseError(
+          'PRODUCT_PLATFORM_SETTINGS_UPDATE_FAILED',
+          HttpStatus.INTERNAL_SERVER_ERROR,
+          existingOverrideError,
+        );
+      }
 
-    if (
-      payload.pricingMode === 'CUSTOM' &&
-      !payload.selectedDigitalRightConfigId
-    ) {
-      throw new ApiHttpException(
-        { code: 'PRODUCT_PLATFORM_CONFIG_REQUIRED_FOR_CUSTOM_PRICING' },
-        HttpStatus.BAD_REQUEST,
-      );
-    }
+      if (existingOverride?.id) {
+        const { error: deleteModifierError } = await this.supabaseService.client
+          .from('product_platform_pricing_override_modifiers')
+          .delete()
+          .eq('override_id', existingOverride.id);
 
-    if (!payload.selectedDigitalRightConfigId) {
-      const { error } = await this.supabaseService.client
-        .from('product_platform_pricing_configs')
+        if (deleteModifierError) {
+          throwSupabaseError(
+            'PRODUCT_PLATFORM_SETTINGS_UPDATE_FAILED',
+            HttpStatus.INTERNAL_SERVER_ERROR,
+            deleteModifierError,
+          );
+        }
+      }
+
+      const { error: deleteOverrideError } = await this.supabaseService.client
+        .from('product_platform_pricing_overrides')
         .delete()
         .eq('product_id', productId)
         .eq('platform_key', payload.platformKey);
 
-      if (error) {
+      if (deleteOverrideError) {
         throwSupabaseError(
           'PRODUCT_PLATFORM_SETTINGS_UPDATE_FAILED',
           HttpStatus.INTERNAL_SERVER_ERROR,
-          error,
+          deleteOverrideError,
         );
       }
 
       return this.loadProductPlatformSettings(productId);
     }
 
-    const { error } = await this.supabaseService.client
-      .from('product_platform_pricing_configs')
+    const normalizedModifiers = (payload.modifiers ?? []).map((modifier) => ({
+      key: modifier.key,
+      multiplier: Number(modifier.multiplier),
+    }));
+
+    this.assertCompletePlatformModifiers(normalizedModifiers);
+
+    const { data: override, error: overrideError } = await this.supabaseService.client
+      .from('product_platform_pricing_overrides')
       .upsert(
         {
           product_id: productId,
           platform_key: payload.platformKey,
-          digital_right_config_id: payload.selectedDigitalRightConfigId,
-          pricing_mode: payload.pricingMode,
-          custom_price_multiplier:
-            payload.pricingMode === 'CUSTOM'
-              ? payload.customPriceMultiplier ?? null
-              : null,
+          mode: 'CUSTOM',
           updated_by: updatedBy,
         },
         {
           onConflict: 'product_id,platform_key',
         },
-      );
+      )
+      .select('id')
+      .single<{ id: string }>();
 
-    if (error) {
+    if (overrideError) {
       throwSupabaseError(
         'PRODUCT_PLATFORM_SETTINGS_UPDATE_FAILED',
         HttpStatus.INTERNAL_SERVER_ERROR,
-        error,
+        overrideError,
+      );
+    }
+
+    if (!override) {
+      throw new ApiHttpException(
+        { code: 'PRODUCT_PLATFORM_SETTINGS_UPDATE_FAILED' },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+
+    const overrideId = override.id;
+
+    const { error: deleteModifierError } = await this.supabaseService.client
+      .from('product_platform_pricing_override_modifiers')
+      .delete()
+      .eq('override_id', overrideId);
+
+    if (deleteModifierError) {
+      throwSupabaseError(
+        'PRODUCT_PLATFORM_SETTINGS_UPDATE_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        deleteModifierError,
+      );
+    }
+
+    const { error: insertModifierError } = await this.supabaseService.client
+      .from('product_platform_pricing_override_modifiers')
+      .insert(
+        normalizedModifiers.map((modifier) => ({
+          override_id: overrideId,
+          modifier_key: modifier.key,
+          multiplier: modifier.multiplier,
+        })),
+      );
+
+    if (insertModifierError) {
+      throwSupabaseError(
+        'PRODUCT_PLATFORM_SETTINGS_UPDATE_FAILED',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        insertModifierError,
       );
     }
 

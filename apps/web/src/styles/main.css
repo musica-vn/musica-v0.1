@@ -1,5 +1,98 @@
 @import 'tailwindcss';
 
+@theme {
+  --color-tertiary-fixed: #d4e3ff;
+  --color-on-tertiary-fixed-variant: #004883;
+  --color-success-text: #3B6D11;
+  --color-inverse-surface: #313030;
+  --color-on-tertiary: #ffffff;
+  --color-surface-container-highest: #e5e2e1;
+  --color-primary: #00365a;
+  --color-error-container: #ffdad6;
+  --color-text-secondary: #6B6B6B;
+  --color-warning-bg: #FAEEDA;
+  --color-secondary: #5d5f5d;
+  --color-on-tertiary-container: #8cbcff;
+  --color-surface-container-high: #eae7e7;
+  --color-danger-text: #A32D2D;
+  --color-secondary-container: #e2e3e1;
+  --color-surface-container: #f0eded;
+  --color-surface-tint: #2d6290;
+  --color-success-bg: #EAF3DE;
+  --color-background: #fcf9f8;
+  --color-tertiary: #003462;
+  --color-danger-bg: #FCEBEB;
+  --color-on-secondary-fixed-variant: #454746;
+  --color-primary-container: #0f4d7a;
+  --color-info-bg: #E6F1FB;
+  --color-surface-container-lowest: #ffffff;
+  --color-inverse-primary: #9acbff;
+  --color-on-surface-variant: #42474f;
+  --color-primary-fixed: #cfe5ff;
+  --color-on-primary: #ffffff;
+  --color-tertiary-container: #004b89;
+  --color-surface-container-low: #f6f3f2;
+  --color-on-primary-fixed-variant: #084a77;
+  --color-on-secondary-fixed: #1a1c1b;
+  --color-on-secondary: #ffffff;
+  --color-surface-dim: #dcd9d9;
+  --color-secondary-fixed-dim: #c6c7c5;
+  --color-surface: #fcf9f8;
+  --color-surface-bright: #fcf9f8;
+  --color-border-subtle: rgba(0,0,0,0.12);
+  --color-info-text: #185FA5;
+  --color-primary-fixed-dim: #9acbff;
+  --color-on-primary-fixed: #001d34;
+  --color-warning-text: #854F0B;
+  --color-error: #ba1a1a;
+  --color-text-tertiary: #9B9B9B;
+  --color-surface-variant: #e5e2e1;
+  --color-on-surface: #1c1b1b;
+  --color-on-tertiary-fixed: #001c39;
+  --color-on-secondary-container: #636563;
+  --color-on-error-container: #93000a;
+  --color-secondary-fixed: #e2e3e1;
+  --color-on-error: #ffffff;
+  --color-tertiary-fixed-dim: #a4c9ff;
+  --color-outline-variant: #c1c7d0;
+  --color-outline: #727780;
+  --color-inverse-on-surface: #f3f0ef;
+  --color-on-primary-container: #8dbef1;
+  --color-on-background: #1c1b1b;
+
+  --font-section-heading: Inter;
+  --font-code-mono: JetBrains Mono;
+  --font-caption: Inter;
+  --font-body-sm: Inter;
+  --font-body-md: Inter;
+  --font-metadata: Inter;
+  --font-page-title: Inter;
+
+  --text-section-heading: 10px;
+  --text-section-heading--line-height: 16px;
+  --text-section-heading--letter-spacing: 0.07em;
+  --text-section-heading--font-weight: 500;
+
+  --text-code-mono: 12px;
+  --text-code-mono--line-height: 16px;
+
+  --text-caption: 12px;
+  --text-caption--line-height: 16px;
+
+  --text-body-sm: 13px;
+  --text-body-sm--line-height: 18px;
+
+  --text-body-md: 14px;
+  --text-body-md--line-height: 20px;
+
+  --text-metadata: 11px;
+  --text-metadata--line-height: 14px;
+
+  --text-page-title: 20px;
+  --text-page-title--line-height: 28px;
+  --text-page-title--font-weight: 500;
+}
+
 @custom-variant dark (&:where(.app-dark, .app-dark *));
 
 :root {

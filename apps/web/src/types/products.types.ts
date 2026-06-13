@@ -1,3 +1,5 @@
+import type { PlatformPricingModifierValue } from '../constants/platform-pricing'
+
 export type ProductStatus = 'PENDING' | 'HIDDEN' | 'PUBLISHED'
 
 export type ProductSortValue =
@@ -97,26 +99,21 @@ export type Product = {
   updatedAt: string
 }
 
-export type ProductPlatformPricingMode = 'GLOBAL' | 'CUSTOM'
+export type ProductPlatformPricingMode = 'SYSTEM' | 'CUSTOM'
 
-export type ProductPlatformConfigOption = {
-  digitalRightConfigId: string
+export type ProductPlatformTemplate = {
   platformKey: ProductPlatformKey
   platformLabel: string
-  title: string
-  durationType: ProductPlatformDurationType
-  globalBaseMultiplier: number
+  name: string
+  modifiers: PlatformPricingModifierValue[]
 }
 
 export type ProductPlatformSettingGroup = {
   platformKey: ProductPlatformKey
   platformLabel: string
-  availableConfigs: ProductPlatformConfigOption[]
-  selectedDigitalRightConfigId: string | null
-  pricingMode: ProductPlatformPricingMode
-  customPriceMultiplier: number | null
-  systemBaseMultiplier: number | null
-  effectiveMultiplier: number | null
+  mode: ProductPlatformPricingMode
+  defaultTemplate: ProductPlatformTemplate
+  customTemplate: ProductPlatformTemplate | null
   updatedAt: string | null
   updatedBy: string | null
 }
@@ -177,9 +174,8 @@ export type CreateProductPackageRegistrationBody = {
 
 export type UpdateProductPlatformSettingsBody = {
   platformKey: ProductPlatformKey
-  selectedDigitalRightConfigId?: string | null
-  pricingMode: ProductPlatformPricingMode
-  customPriceMultiplier?: number | null
+  mode: ProductPlatformPricingMode
+  modifiers?: PlatformPricingModifierValue[] | null
 }
 
 export type CreatorProductsListData = {

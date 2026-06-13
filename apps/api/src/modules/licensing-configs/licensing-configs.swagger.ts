@@ -2,6 +2,7 @@ import { ApiProperty } from '@nestjs/swagger'
 import { PaginationMetaDto } from '../../common/base/pagination.swagger'
 import {
   DigitalRightConfigDto,
+  DigitalPlatformDefaultTemplateDto,
   DigitalRightConfigsListDataDto,
   ExpressionConfigDto,
   ExpressionConfigsListDataDto,
@@ -36,6 +37,11 @@ export class AdminDigitalRightConfigsListResponseDto extends BaseResponseEnvelop
 
   @ApiProperty({ type: PaginationMetaDto })
   meta: PaginationMetaDto
+}
+
+export class AdminDigitalPlatformDefaultTemplateResponseDto extends BaseResponseEnvelopeDto {
+  @ApiProperty({ type: DigitalPlatformDefaultTemplateDto })
+  data: DigitalPlatformDefaultTemplateDto
 }
 
 export class AdminPhysicalRightConfigResponseDto extends BaseResponseEnvelopeDto {

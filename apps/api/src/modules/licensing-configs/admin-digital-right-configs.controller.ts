@@ -7,9 +7,11 @@ import {
   CreateDigitalRightConfigRequestDto,
   DigitalRightConfigsListQueryDto,
   UpdateConfigStatusRequestDto,
+  UpdateDigitalPlatformDefaultTemplateRequestDto,
   UpdateDigitalRightConfigRequestDto,
 } from './licensing-configs.dto'
 import {
+  AdminDigitalPlatformDefaultTemplateResponseDto,
   AdminDigitalRightConfigResponseDto,
   AdminDigitalRightConfigsListResponseDto,
 } from './licensing-configs.swagger'
@@ -22,6 +24,18 @@ import { LicensingConfigsService } from './licensing-configs.service'
 @Controller('admin/digital-right-configs')
 export class AdminDigitalRightConfigsController {
   constructor(private readonly licensingConfigsService: LicensingConfigsService) {}
+
+  @Get('default-template')
+  @ApiOkResponse({ type: AdminDigitalPlatformDefaultTemplateResponseDto })
+  async getDefaultTemplate() {
+    return this.licensingConfigsService.getDigitalPlatformDefaultTemplate()
+  }
+
+  @Patch('default-template')
+  @ApiOkResponse({ type: AdminDigitalPlatformDefaultTemplateResponseDto })
+  async updateDefaultTemplate(@Body() body: UpdateDigitalPlatformDefaultTemplateRequestDto) {
+    return this.licensingConfigsService.updateDigitalPlatformDefaultTemplate(body)
+  }
 
   @Get()
   @ApiOkResponse({ type: AdminDigitalRightConfigsListResponseDto })

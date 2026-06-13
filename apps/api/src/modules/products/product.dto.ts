@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { VARIANT_PRICING_MODIFIER_KEYS, type VariantPricingModifierKey } from '../pricing/variant-pricing.enums';
 
 export class ProductAllowedPermissionDto {
   @ApiProperty()
@@ -126,10 +127,15 @@ export class ProductPriorityDto {
   effectiveEnd: string | null;
 }
 
-export class ProductPlatformConfigOptionDto {
-  @ApiProperty()
-  digitalRightConfigId: string;
+export class ProductPlatformModifierValueDto {
+  @ApiProperty({ enum: VARIANT_PRICING_MODIFIER_KEYS })
+  key: VariantPricingModifierKey;
 
+  @ApiProperty()
+  multiplier: number;
+}
+
+export class ProductPlatformTemplateDto {
   @ApiProperty({ enum: ['YOUTUBE'] })
   platformKey: 'YOUTUBE';
 
@@ -137,13 +143,10 @@ export class ProductPlatformConfigOptionDto {
   platformLabel: string;
 
   @ApiProperty()
-  title: string;
+  name: string;
 
-  @ApiProperty({ enum: ['ONE_YEAR', 'PERPETUAL'] })
-  durationType: 'ONE_YEAR' | 'PERPETUAL';
-
-  @ApiProperty()
-  globalBaseMultiplier: number;
+  @ApiProperty({ type: [ProductPlatformModifierValueDto] })
+  modifiers: ProductPlatformModifierValueDto[];
 }
 
 export class ProductPlatformSettingGroupDto {
@@ -153,23 +156,14 @@ export class ProductPlatformSettingGroupDto {
   @ApiProperty()
   platformLabel: string;
 
-  @ApiProperty({ type: [ProductPlatformConfigOptionDto] })
-  availableConfigs: ProductPlatformConfigOptionDto[];
+  @ApiProperty({ enum: ['SYSTEM', 'CUSTOM'] })
+  mode: 'SYSTEM' | 'CUSTOM';
 
-  @ApiProperty({ required: false, nullable: true })
-  selectedDigitalRightConfigId: string | null;
+  @ApiProperty({ type: ProductPlatformTemplateDto })
+  defaultTemplate: ProductPlatformTemplateDto;
 
-  @ApiProperty({ enum: ['GLOBAL', 'CUSTOM'] })
-  pricingMode: 'GLOBAL' | 'CUSTOM';
-
-  @ApiProperty({ required: false, nullable: true })
-  customPriceMultiplier: number | null;
-
-  @ApiProperty({ required: false, nullable: true })
-  systemBaseMultiplier: number | null;
-
-  @ApiProperty({ required: false, nullable: true })
-  effectiveMultiplier: number | null;
+  @ApiProperty({ type: ProductPlatformTemplateDto, required: false, nullable: true })
+  customTemplate: ProductPlatformTemplateDto | null;
 
   @ApiProperty({ required: false, nullable: true })
   updatedAt: string | null;

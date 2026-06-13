@@ -12,6 +12,7 @@ import type {
   Product,
   ProductLicensingEligibilityConfig,
   ProductPlatformKey,
+  ProductPlatformPricingMode,
   ProductPlatformSettings,
   ProductStatus,
   ProductThumbnailExtension,
@@ -24,6 +25,11 @@ import {
   type ProductGenre,
   type ProductUseCase,
 } from '../../constants/products.enums'
+import {
+  buildCompletePlatformPricingModifiers,
+  resolvePlatformPricingModifierLabel,
+  type PlatformPricingModifierValue,
+} from '../../constants/platform-pricing'
 import type { ComplianceDetail } from '../../types/compliance.types'
 import { getAdminComplianceDetail } from '../../services/compliance.service'
 import {
@@ -51,6 +57,7 @@ import {
 import ProductWavePreview from '../../components/features/products/ProductWavePreview.vue'
 import AdminProductUpsertDialog from '../../components/features/products/AdminProductUpsertDialog.vue'
 import ProductWorkspaceSidebar from '../../components/features/products/detail/ProductWorkspaceSidebar.vue'
+import PlatformPricingModifierEditor from '../../components/features/platform-pricing/PlatformPricingModifierEditor.vue'
 
 type ProductForm = {
   title: string
@@ -96,8 +103,7 @@ const primaryButtonClass =
   'inline-flex items-center justify-center rounded-2xl bg-[color:var(--admin-primary-600)] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[color:var(--admin-primary-700)] disabled:cursor-not-allowed disabled:opacity-60'
 const secondaryButtonClass =
   'inline-flex items-center justify-center rounded-2xl border bg-[color:var(--admin-surface-0)] px-4 py-2.5 text-sm font-semibold text-[color:var(--admin-text)] transition [border-color:var(--admin-border)] hover:bg-[color:var(--admin-surface-1)] disabled:cursor-not-allowed disabled:opacity-60'
-const metadataButtonClass =
-  'inline-flex items-center justify-center gap-2 rounded-2xl border bg-[color:var(--admin-accent-50)] px-4 py-2.5 text-sm font-semibold text-[color:var(--admin-primary-800)] transition [border-color:rgb(var(--admin-primary-rgb)/0.18)] hover:bg-[linear-gradient(135deg,var(--admin-accent-50),var(--admin-primary-100))] hover:text-[color:var(--admin-primary-900)] disabled:cursor-not-allowed disabled:opacity-60'
+
 
 const selectedTrack = ref<Product | null>(null)
 const isLoading = ref(false)
@@ -143,9 +149,8 @@ const productPlatformLoading = ref(false)
 const productPlatformSaving = ref(false)
 const productPlatformError = ref<string | null>(null)
 const selectedPlatformKey = ref<ProductPlatformKey>('YOUTUBE')
-const selectedPlatformConfigId = ref<string | null>(null)
-const selectedPlatformPricingMode = ref<'GLOBAL' | 'CUSTOM'>('GLOBAL')
-const customPlatformMultiplier = ref('')
+const selectedPlatformMode = ref<ProductPlatformPricingMode>('SYSTEM')
+const editablePlatformModifiers = ref<PlatformPricingModifierValue[]>([])
 
 const validSections: ProductDetailSectionKey[] = ['general', 'rights-license', 'platforms']
 const productId = computed(() => (typeof route.params.productId === 'string' ? route.params.productId : ''))
@@ -168,15 +173,35 @@ const backToListQuery = computed(() => {
   }, {})
 })
 
-const selectedTrackAttributeItems = computed<TrackAttributeItem[]>(() => {
+
+
+const joinedPackageRegistrations = computed(() => {
   if (!selectedTrack.value) return []
-  const track = selectedTrack.value
 
   return [
-    { label: 'Thời lượng', value: formatDuration(track.duration) },
-    { label: 'Use-case', value: formatTrackUseCasesDisplay(track) },
-    { label: 'Mã sản phẩm', value: track.id, mono: true },
-  ]
+    ...selectedTrack.value.digitalPackageRegistrations,
+    ...selectedTrack.value.physicalPackageRegistrations,
+  ].filter((registration) => registration.registrationStatus === 'JOINED')
+})
+
+const joinedPackageRegistrationPreview = computed(() =>
+  joinedPackageRegistrations.value.slice(0, 3),
+)
+
+const digitalEligibilityProgress = computed(() => {
+  if (!selectedTrack.value) return '0/0'
+  return `${selectedTrack.value.licensingEligibility.summary.eligibleDigitalCount}/${getEligibilityTotal(selectedTrack.value, 'digital')}`
+})
+
+const digitalEligibilityDescription = computed(() => {
+  if (!selectedTrack.value) return 'Chưa có dữ liệu quyền số'
+
+  const joinedCount = joinedPackageRegistrations.value.length
+  if (joinedCount > 0) {
+    return `${joinedCount} gói đang tham gia`
+  }
+
+  return 'Chưa tham gia gói quyền nào'
 })
 
 const selectedPlatformGroup = computed(() =>
@@ -185,10 +210,29 @@ const selectedPlatformGroup = computed(() =>
   ) ?? null,
 )
 
-const selectedSystemPlatformConfig = computed(() =>
-  selectedPlatformGroup.value?.availableConfigs.find(
-    (config) => config.digitalRightConfigId === selectedPlatformConfigId.value,
-  ) ?? null,
+const selectedPlatformLabel = computed(
+  () => selectedPlatformGroup.value?.platformLabel ?? 'YouTube',
+)
+
+const selectedPlatformDefaultTemplate = computed(
+  () => selectedPlatformGroup.value?.defaultTemplate ?? null,
+)
+
+const selectedPricingModeLabel = computed(() =>
+  selectedPlatformMode.value === 'CUSTOM' ? 'Giá riêng' : 'Giá hệ thống',
+)
+
+const canSavePlatformConfiguration = computed(
+  () =>
+    !productPlatformLoading.value &&
+    !productPlatformSaving.value &&
+    !!selectedPlatformGroup.value,
+)
+
+const activePlatformModifiersPreview = computed(() =>
+  selectedPlatformMode.value === 'CUSTOM'
+    ? editablePlatformModifiers.value
+    : selectedPlatformDefaultTemplate.value?.modifiers ?? [],
 )
 
 const editDurationDisplay = computed(() => {
@@ -247,6 +291,10 @@ const navigateToSection = (section: ProductDetailSectionKey) => {
   })
 }
 
+const navigateToPlatform = (platformKey: ProductPlatformKey) => {
+  selectedPlatformKey.value = platformKey
+}
+
 const goBackToList = () => {
   void router.push({
     path: '/admin/products',
@@ -260,9 +308,6 @@ const formatDuration = (duration: number | null) => {
   const seconds = duration % 60
   return `${minutes}:${String(seconds).padStart(2, '0')}`
 }
-
-const formatPlatformDurationTypeLabel = (value: 'ONE_YEAR' | 'PERPETUAL') =>
-  value === 'ONE_YEAR' ? '1 năm' : 'Vĩnh viễn'
 
 const formatMultiplier = (value: number) => Number(value).toFixed(4).replace(/\.?0+$/, '')
 
@@ -358,6 +403,17 @@ const getOriginalAudioFileLabel = (track: Product) => {
   const parts = track.originalAudioKey.split('/')
   return parts[parts.length - 1] ?? track.originalAudioKey
 }
+
+const getTrackIdentityLabel = (track: Product) => {
+  const genreLabel = formatTrackGenresDisplay(track)
+  const useCaseLabel = formatTrackUseCasesDisplay(track)
+  return `${genreLabel} · ${useCaseLabel}`
+}
+
+const getTrackArtistLabel = (track: Product) =>
+  typeof track.authorName === 'string' && track.authorName.trim().length > 0
+    ? track.authorName.trim()
+    : 'Nghệ sĩ chưa cập nhật'
 
 const getEligibilityTotal = (track: Product, type: 'digital' | 'physical') =>
   type === 'digital'
@@ -686,12 +742,10 @@ const hydrateProductPlatformEditor = (settings: ProductPlatformSettings | null) 
     (platform) => platform.platformKey === selectedPlatformKey.value,
   ) ?? null
 
-  selectedPlatformConfigId.value = activeGroup?.selectedDigitalRightConfigId ?? null
-  selectedPlatformPricingMode.value = activeGroup?.pricingMode ?? 'GLOBAL'
-  customPlatformMultiplier.value =
-    activeGroup?.customPriceMultiplier === null || activeGroup?.customPriceMultiplier === undefined
-      ? ''
-      : String(activeGroup.customPriceMultiplier)
+  selectedPlatformMode.value = activeGroup?.mode ?? 'SYSTEM'
+  editablePlatformModifiers.value = buildCompletePlatformPricingModifiers(
+    activeGroup?.customTemplate?.modifiers ?? activeGroup?.defaultTemplate.modifiers ?? [],
+  )
 }
 
 const loadProductPlatformSettings = async () => {
@@ -718,21 +772,6 @@ const resetPlatformEditor = () => {
 const saveProductPlatformSettings = async () => {
   if (!productId.value || !selectedPlatformGroup.value) return
 
-  if (!selectedPlatformConfigId.value) {
-    productPlatformError.value = 'Bạn cần chọn một cấu hình hệ thống cho bài hát trước khi lưu'
-    return
-  }
-
-  let normalizedCustomMultiplier: number | null = null
-  if (selectedPlatformPricingMode.value === 'CUSTOM') {
-    const parsedValue = Number(customPlatformMultiplier.value)
-    if (!Number.isFinite(parsedValue) || parsedValue <= 0) {
-      productPlatformError.value = 'Hệ số giá riêng phải là số lớn hơn 0'
-      return
-    }
-    normalizedCustomMultiplier = parsedValue
-  }
-
   productPlatformSaving.value = true
   productPlatformError.value = null
   clearMessages()
@@ -740,9 +779,11 @@ const saveProductPlatformSettings = async () => {
   try {
     const { data } = await updateAdminProductPlatformSettings(productId.value, {
       platformKey: selectedPlatformKey.value,
-      selectedDigitalRightConfigId: selectedPlatformConfigId.value,
-      pricingMode: selectedPlatformPricingMode.value,
-      customPriceMultiplier: normalizedCustomMultiplier,
+      mode: selectedPlatformMode.value,
+      modifiers:
+        selectedPlatformMode.value === 'CUSTOM'
+          ? buildCompletePlatformPricingModifiers(editablePlatformModifiers.value)
+          : null,
     })
     productPlatformSettings.value = data
     hydrateProductPlatformEditor(data)
@@ -1228,9 +1269,8 @@ watch(
   () => {
     productPlatformSettings.value = null
     productPlatformError.value = null
-    selectedPlatformConfigId.value = null
-    selectedPlatformPricingMode.value = 'GLOBAL'
-    customPlatformMultiplier.value = ''
+    selectedPlatformMode.value = 'SYSTEM'
+    editablePlatformModifiers.value = []
     void fetchProductDetail()
   },
   { immediate: true },
@@ -1263,202 +1303,178 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="mx-auto flex min-h-[calc(100vh-3rem)] w-full max-w-[1560px] flex-col justify-center gap-4 px-4 py-8 sm:gap-5 sm:px-6 sm:py-10 lg:gap-6 lg:px-8 lg:py-12">
-    <div v-if="selectedTrack" class="grid gap-5 xl:grid-cols-[320px_minmax(0,1fr)] xl:items-start">
-      <ProductWorkspaceSidebar
-        :active-section="activeSection"
-        @back="goBackToList"
-        @navigate="navigateToSection"
-      />
+  <div class="flex min-h-[calc(100vh-3rem)] w-full bg-background">
+    <div v-if="selectedTrack" class="flex flex-col xl:flex-row w-full flex-1">
+      <div class="xl:w-[220px] flex-shrink-0 xl:sticky xl:top-0 h-auto xl:h-[calc(100vh-3rem)] z-10 hidden xl:block">
+        <ProductWorkspaceSidebar
+          :active-section="activeSection"
+          :active-platform-key="selectedPlatformKey"
+          @back="goBackToList"
+          @navigate="navigateToSection"
+          @navigate-platform="navigateToPlatform"
+        />
+      </div>
 
-      <div class="min-w-0 space-y-5 lg:space-y-6">
-        <section
-          v-if="activeSection === 'general'"
-          class="grid gap-4 xl:grid-cols-[minmax(0,1.12fr)_minmax(320px,0.88fr)]"
-        >
-          <div class="space-y-4">
-            <article class="rounded-[28px] border bg-[color:var(--admin-surface-0)] p-5 [border-color:var(--admin-border)]">
-              <div class="flex items-start gap-4">
-                <div
-                  class="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-[18px] bg-[color:var(--admin-primary-600)] text-xl font-bold text-white"
-                >
-                  <img
-                    v-if="thumbnailUrls[selectedTrack.id]"
-                    :src="thumbnailUrls[selectedTrack.id]"
-                    alt=""
-                    class="h-full w-full object-cover"
+            <div class="flex-1 min-w-0 flex flex-col">
+        
+        <main class="flex-1 overflow-y-auto">
+        <section v-if="activeSection === 'general'">
+          <!-- Massive Immersive Player Hero -->
+          <section class="min-h-[70vh] flex flex-col items-center justify-center py-12 px-6 bg-surface-container-low/30 relative overflow-hidden">
+            <div class="w-full max-w-5xl space-y-12 text-center mt-8">
+              <!-- Header Info -->
+              <div class="space-y-4">
+                <div class="inline-flex items-center gap-3">
+                  <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold" :class="selectedTrack.status === 'PUBLISHED' ? 'bg-info-bg text-info-text border border-info-bg shadow-sm' : selectedTrack.status === 'PENDING' ? 'bg-warning-bg text-warning-text border border-warning-bg shadow-sm' : 'bg-surface-dim text-text-tertiary border border-border-subtle'">
+                    <span class="w-2 h-2 rounded-full mr-2" :class="selectedTrack.status === 'PUBLISHED' ? 'bg-[#378ADD]' : selectedTrack.status === 'PENDING' ? 'bg-warning-text' : 'bg-text-tertiary'"></span>
+                    {{ formatProductStatusLabel(selectedTrack.status) }}
+                  </span>
+                  <span class="text-metadata text-text-tertiary font-code-mono uppercase tracking-tighter">MÃ SP: {{ selectedTrack.id.slice(0, 8) }}</span>
+                </div>
+                <h2 class="text-5xl md:text-[72px] font-page-title text-on-surface font-black tracking-tighter leading-none drop-shadow-sm">{{ selectedTrack.title }}</h2>
+                <div class="flex items-center justify-center gap-2 text-text-secondary">
+                  <span class="font-medium text-on-surface">{{ getTrackArtistLabel(selectedTrack) }}</span>
+                  <span class="text-border-subtle">•</span>
+                  <span class="font-code-mono text-sm uppercase">{{ formatTrackGenresDisplay(selectedTrack) }}</span>
+                </div>
+              </div>
+
+              <!-- The Massive Waveform -->
+              <div class="relative group py-8">
+                <div class="absolute inset-0 bg-primary/5 rounded-[40px] blur-3xl -z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+                <div class="flex items-center gap-10 mb-8 px-4">
+                  <ProductWavePreview
+                    hero
+                    :audio-url="originalAudioUrls[selectedTrack.id] ?? null"
+                    :disabled="!selectedTrack.originalAudioKey"
+                    :track-status="selectedTrack.status"
+                    :right-label="formatDuration(selectedTrack.duration)"
+                    class="w-full"
                   />
-                  <i v-else class="pi pi-music text-lg" />
                 </div>
-
-                <div class="min-w-0 flex-1">
-                  <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                    <div class="min-w-0">
-                      <div class="flex flex-wrap items-center gap-2 text-sm text-[color:var(--admin-text-muted)]">
-                        <button type="button" class="font-medium text-[color:var(--admin-text-muted)] transition hover:text-[color:var(--admin-text)]" @click="goBackToList">
-                          Quản lý bài hát
-                        </button>
-                        <i class="pi pi-angle-right text-[10px]" />
-                        <span class="truncate font-medium text-[color:var(--admin-text)]">{{ selectedTrack.title }}</span>
-                      </div>
-
-                      <h1 class="mt-2 text-[1.75rem] font-semibold leading-tight tracking-tight text-[color:var(--admin-text)] sm:text-[1.9rem]">
-                        {{ selectedTrack.title }}
-                      </h1>
-
-                      <div class="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-[color:var(--admin-text-muted)]">
-                        <span class="font-medium text-[color:var(--admin-text)]">{{ selectedTrack.id }}</span>
-                        <span class="text-[color:var(--admin-border)]">•</span>
-                        <span>{{ formatTrackGenresDisplay(selectedTrack) }}</span>
-                      </div>
-                    </div>
-
-                    <button
-                      type="button"
-                      :class="[metadataButtonClass, 'w-full lg:w-auto']"
-                      :disabled="isLoading"
-                      @click="openEditDialog"
-                    >
-                      <i class="pi pi-pencil" />
-                      Chỉnh sửa metadata
-                    </button>
-                  </div>
-
-                  <div class="mt-5 border-t pt-4 [border-color:var(--admin-border)]">
-                    <div class="text-sm font-medium text-[color:var(--admin-text-muted)]">Trạng thái</div>
-                    <div class="mt-2 flex flex-wrap gap-2">
-                      <span class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold" :class="getProductStatusClass(selectedTrack.status)">
-                        <span class="h-2 w-2 rounded-full bg-current opacity-70" />
-                        {{ formatProductStatusLabel(selectedTrack.status) }}
-                      </span>
-                      <span class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold" :class="getProductComplianceLegalStatusClassSafe(selectedTrack.complianceLegalStatus)">
-                        <span class="h-2 w-2 rounded-full bg-current opacity-70" />
-                        {{ formatComplianceLegalStatusLabel(selectedTrack.complianceLegalStatus) }}
-                      </span>
-                      <span class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold" :class="getProductComplianceReviewStatusClassSafe(selectedTrack.complianceReviewStatus)">
-                        <span class="h-2 w-2 rounded-full bg-current opacity-70" />
-                        {{ formatProductComplianceReviewStatusLabelSafe(selectedTrack.complianceReviewStatus) }}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div class="mt-4 flex flex-wrap gap-3">
-                    <button type="button" :class="[primaryButtonClass, 'gap-2 px-4 py-2.5']" :disabled="isLoading" @click="confirmTogglePublish(selectedTrack)">
-                      <i :class="selectedTrack.status === 'PUBLISHED' ? 'pi pi-eye-slash' : 'pi pi-eye'" class="text-sm" />
-                      {{ selectedTrack.status === 'PUBLISHED' ? 'Ẩn sản phẩm' : 'Phát hành sản phẩm' }}
-                    </button>
-                    <button type="button" :class="[secondaryButtonClass, 'gap-2 px-4 py-2.5']" @click="openUploadDialog">
-                      <i class="pi pi-download text-sm" />
-                      Tải bản gốc
-                    </button>
-                    <button type="button" :class="[secondaryButtonClass, 'gap-2 px-4 py-2.5']" :disabled="!selectedTrack.sheetMusicPdfKey" @click="openSheetMusicPdf(selectedTrack)">
-                      <i class="pi pi-file-pdf text-sm" />
-                      Mở PDF
-                    </button>
-                    <button type="button" :class="[secondaryButtonClass, 'gap-2 px-4 py-2.5']" @click="openComplianceDashboard(selectedTrack)">
-                      <i class="pi pi-verified text-sm" />
-                      Mở Compliance
-                    </button>
-                  </div>
+                <div class="flex items-center justify-center gap-2 mt-4 text-text-tertiary">
+                  <i class="pi pi-wave-pulse !text-sm"></i>
+                  <span class="text-metadata font-code-mono uppercase">{{ getOriginalAudioFileLabel(selectedTrack) }} • High Fidelity Lossless</span>
                 </div>
               </div>
-            </article>
 
-            <article class="rounded-[24px] border bg-[color:var(--admin-surface-0)] p-4 [border-color:var(--admin-border)]">
-              <div class="text-[11px] font-semibold uppercase tracking-[0.18em] text-[color:var(--admin-text-muted)]">
-                Nghe thử
-              </div>
-              <div class="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
-                <span class="font-semibold text-[color:var(--admin-text)]">{{ getOriginalAudioFileLabel(selectedTrack) }}</span>
-                <span class="text-[color:var(--admin-border)]">—</span>
-                <span class="text-[color:var(--admin-text-muted)]">{{ formatDuration(selectedTrack.duration) }}</span>
-              </div>
-              <div class="mt-4 rounded-[20px] border bg-[color:var(--admin-surface-1)] px-4 py-4 [border-color:var(--admin-border)]">
-                <ProductWavePreview
-                  :audio-url="originalAudioUrls[selectedTrack.id] ?? null"
-                  :disabled="!selectedTrack.originalAudioKey"
-                  :track-status="selectedTrack.status"
-                  :right-label="formatDuration(selectedTrack.duration)"
-                />
-              </div>
-            </article>
-
-            <article class="rounded-[24px] border bg-[color:var(--admin-surface-0)] p-4 [border-color:var(--admin-border)]">
-              <div class="text-[11px] font-semibold uppercase tracking-[0.18em] text-[color:var(--admin-text-muted)]">
-                Mô tả sản phẩm
-              </div>
-              <p class="mt-3 text-sm leading-7 text-[color:var(--admin-text)]">
-                {{ selectedTrack.description || 'Chưa có mô tả riêng cho sản phẩm.' }}
-              </p>
-            </article>
-          </div>
-
-          <div class="space-y-4">
-            <article class="rounded-[24px] border bg-[color:var(--admin-surface-0)] p-4 [border-color:var(--admin-border)]">
-              <div class="flex items-start justify-between gap-3">
-                <div class="text-sm font-semibold uppercase tracking-[0.18em] text-[color:var(--admin-text-muted)]">
-                  Thông tin chi tiết
-                </div>
+              <!-- Immediate Actions -->
+              <div class="flex flex-wrap justify-center items-center gap-4">
                 <button
                   type="button"
-                  class="inline-flex h-8 w-8 items-center justify-center rounded-xl border bg-[color:var(--admin-surface-1)] text-[color:var(--admin-text-muted)] transition hover:text-[color:var(--admin-text)] [border-color:var(--admin-border)]"
-                  @click="openEditDialog"
+                  class="bg-primary text-white px-8 py-4 rounded-xl font-body-md font-bold hover:shadow-lg hover:-translate-y-0.5 transition-all flex items-center gap-3 disabled:opacity-60"
+                  :disabled="isLoading"
+                  @click="confirmTogglePublish(selectedTrack)"
                 >
-                  <i class="pi pi-ellipsis-h text-sm" />
+                  <i :class="selectedTrack.status === 'PUBLISHED' ? 'pi pi-eye-slash' : 'pi pi-upload'"></i>
+                  {{ selectedTrack.status === 'PUBLISHED' ? 'Ẩn sản phẩm' : 'Phát hành bản mới' }}
+                </button>
+                <button type="button" class="bg-surface-container-highest text-on-surface px-6 py-4 rounded-xl font-body-md font-medium hover:bg-surface-dim transition-all flex items-center gap-2 border border-border-subtle" @click="openUploadDialog">
+                  <i class="pi pi-download"></i>
+                  Tải bản gốc
+                </button>
+                <button type="button" class="bg-surface-container-highest text-on-surface px-6 py-4 rounded-xl font-body-md font-medium hover:bg-surface-dim transition-all flex items-center gap-2 border border-border-subtle" :disabled="!selectedTrack.sheetMusicPdfKey" @click="openSheetMusicPdf(selectedTrack)">
+                  <i class="pi pi-file-pdf"></i>
+                  Mở PDF
+                </button>
+                <div class="w-[1px] h-10 bg-border-subtle/50 mx-2"></div>
+                <button type="button" class="bg-danger-bg/50 text-danger-text px-6 py-4 rounded-xl font-body-md font-medium hover:bg-danger-bg transition-all flex items-center gap-2 border border-[#F09595]/30" @click="openEditDialog">
+                  <i class="pi pi-pencil"></i>
+                  Sửa Metadata
                 </button>
               </div>
+            </div>
+          </section>
 
-              <div class="mt-4 grid gap-3 sm:grid-cols-2">
-                <div
-                  v-for="item in selectedTrackAttributeItems.slice(0, 2)"
-                  :key="`${selectedTrack.id}-${item.label}`"
-                  class="rounded-2xl bg-[color:var(--admin-surface-1)] px-4 py-4"
-                >
-                  <div class="text-[11px] font-semibold uppercase tracking-[0.18em] text-[color:var(--admin-text-muted)]">
-                    {{ item.label }}
-                  </div>
-                  <div class="mt-2 break-words text-sm font-semibold text-[color:var(--admin-text)]" :class="item.mono ? 'font-mono text-xs sm:text-sm' : ''">
-                    {{ item.value }}
-                  </div>
+
+
+          <!-- Dense Data Grid Below -->
+          <section class="max-w-6xl mx-auto px-6 pb-24 pt-12 w-full">
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+              <!-- Long Description -->
+              <div class="md:col-span-8 bg-surface-container-lowest border border-border-subtle p-8 rounded-2xl shadow-sm">
+                <div class="flex items-center gap-3 mb-6">
+                  <i class="pi pi-align-left text-primary"></i>
+                  <h3 class="text-section-heading font-section-heading text-on-surface font-bold uppercase tracking-widest">Mô tả sản phẩm</h3>
                 </div>
-                <div
-                  class="rounded-2xl bg-[color:var(--admin-surface-1)] px-4 py-4 sm:col-span-2"
-                >
-                  <div class="text-[11px] font-semibold uppercase tracking-[0.18em] text-[color:var(--admin-text-muted)]">
-                    {{ selectedTrackAttributeItems[2]?.label }}
-                  </div>
-                  <div class="mt-2 break-all font-mono text-xs font-semibold text-[color:var(--admin-text)] sm:text-sm">
-                    {{ selectedTrackAttributeItems[2]?.value }}
-                  </div>
+                <div class="prose prose-sm max-w-none text-on-surface-variant leading-relaxed text-base">
+                  <p class="mb-4">{{ selectedTrack.description || 'Chưa có mô tả riêng cho sản phẩm.' }}</p>
                 </div>
               </div>
-            </article>
 
-            <article class="rounded-[24px] border bg-[color:var(--admin-surface-0)] p-4 [border-color:var(--admin-border)]">
-              <div class="text-sm font-semibold uppercase tracking-[0.18em] text-[color:var(--admin-text-muted)]">
-                Tài liệu đính kèm
-              </div>
-              <div class="mt-4 rounded-2xl bg-[color:var(--admin-surface-1)] px-4 py-4">
-                <div class="text-base font-medium text-[color:var(--admin-text)]">
-                  {{ selectedTrack.sheetMusicPdfKey ? 'Đã có file khuông nhạc.' : 'Chưa có file khuông nhạc.' }}
-                </div>
-                <div class="mt-2 text-sm leading-6 text-[color:var(--admin-text-muted)]">
-                  {{ selectedTrack.sheetMusicPdfKey ? 'File PDF có thể mở trực tiếp từ thao tác bên dưới.' : 'Bạn có thể upload file PDF từ nhóm thao tác này.' }}
-                </div>
-                <div class="mt-4">
-                  <button
-                    type="button"
-                    :class="[secondaryButtonClass, 'gap-2 w-full justify-center']"
-                    @click="openUploadDialog"
-                  >
-                    <i class="pi pi-upload text-sm" />
-                    Upload file PDF
+              <!-- Rights Status -->
+              <div class="md:col-span-4 space-y-6">
+                <div class="bg-primary text-white p-8 rounded-2xl shadow-lg shadow-primary/10">
+                  <div class="flex justify-between items-start mb-6">
+                    <div>
+                      <h3 class="text-section-heading font-section-heading text-primary-fixed-dim font-bold uppercase tracking-widest mb-2">Quyền số</h3>
+                      <span class="text-3xl font-black">{{ digitalEligibilityProgress }}</span>
+                    </div>
+                    <span class="rounded-full bg-white/12 px-3 py-1 text-xs font-semibold text-white/80">
+                      {{ digitalEligibilityDescription }}
+                    </span>
+                  </div>
+                  <div class="space-y-4">
+                    <div v-for="registration in joinedPackageRegistrationPreview" :key="registration.registrationId" class="flex items-center gap-3">
+                      <i class="pi pi-check-circle text-success-text"></i>
+                      <span class="text-body-md font-medium truncate">{{ registration.title }}</span>
+                    </div>
+                    <div v-if="joinedPackageRegistrationPreview.length === 0" class="text-sm text-white/75">
+                      Chưa có gói quyền nào được đăng ký.
+                    </div>
+                  </div>
+                  <button type="button" class="w-full flex items-center justify-between mt-8 pt-4 border-t border-white/10 group cursor-pointer" @click="navigateToSection('rights-license')">
+                    <span class="text-metadata font-bold uppercase">Xem tất cả gói quyền</span>
+                    <i class="pi pi-arrow-right group-hover:translate-x-1 transition-transform"></i>
                   </button>
                 </div>
+
+                <div class="bg-surface-container-lowest border border-border-subtle p-6 rounded-2xl flex items-center justify-between group cursor-pointer hover:border-primary transition-colors" @click="selectedTrack.sheetMusicPdfKey ? openSheetMusicPdf(selectedTrack) : openUploadDialog()">
+                  <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-2xl flex items-center justify-center" :class="selectedTrack.sheetMusicPdfKey ? 'bg-success-bg text-success-text' : 'bg-surface-container-high text-text-tertiary'">
+                      <i class="text-lg" :class="selectedTrack.sheetMusicPdfKey ? 'pi pi-check-circle' : 'pi pi-file-pdf'"></i>
+                    </div>
+                    <div>
+                      <p class="text-body-sm font-bold text-on-surface">File khuông nhạc</p>
+                      <p class="text-metadata text-text-tertiary mt-1">{{ selectedTrack.sheetMusicPdfKey ? 'Sẵn sàng sử dụng' : 'Chưa có file PDF' }}</p>
+                    </div>
+                  </div>
+                  <i class="pi pi-external-link text-text-tertiary group-hover:text-primary"></i>
+                </div>
               </div>
-            </article>
-          </div>
+
+              <!-- Info Metadata Grid -->
+              <div class="md:col-span-12 grid grid-cols-2 md:grid-cols-4 gap-6">
+                <div class="bg-surface-container-lowest border border-border-subtle p-6 rounded-2xl">
+                  <span class="text-section-heading font-section-heading text-text-tertiary uppercase block mb-2">Thời lượng</span>
+                  <span class="text-2xl font-bold text-on-surface">{{ formatDuration(selectedTrack.duration) }}</span>
+                </div>
+                <div class="bg-surface-container-lowest border border-border-subtle p-6 rounded-2xl">
+                  <span class="text-section-heading font-section-heading text-text-tertiary uppercase block mb-2">Use-case</span>
+                  <span class="text-xl font-bold text-on-surface truncate block">{{ formatTrackUseCasesDisplay(selectedTrack) }}</span>
+                </div>
+                <div class="md:col-span-2 bg-surface-container-lowest border border-border-subtle p-6 rounded-2xl">
+                  <span class="text-section-heading font-section-heading text-text-tertiary uppercase block mb-2">Mã sản phẩm</span>
+                  <span class="text-code-mono font-code-mono text-on-surface truncate block">{{ selectedTrack.id }}</span>
+                </div>
+              </div>
+
+              <!-- Upload Zone -->
+              <div class="md:col-span-12">
+                <button type="button" class="w-full bg-surface-container-low border-2 border-dashed border-border-subtle rounded-3xl py-12 px-6 flex flex-col items-center justify-center gap-4 hover:bg-surface-container-high hover:border-primary transition-all group" @click="openUploadDialog">
+                  <div class="w-16 h-16 rounded-full bg-surface-container-lowest flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
+                    <i class="pi pi-upload text-primary !text-2xl"></i>
+                  </div>
+                  <div class="text-center">
+                    <span class="text-body-md font-bold text-on-surface block mb-1">Upload file PDF khuông nhạc mới</span>
+                    <span class="text-metadata text-text-tertiary">Chọn file PDF để cập nhật tài liệu đính kèm cho bài hát này.</span>
+                  </div>
+                </button>
+              </div>
+            </div>
+          </section>
         </section>
+
 
         <section v-else-if="activeSection === 'rights-license'" class="space-y-5 sm:space-y-6">
           <div class="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-[color:var(--admin-text-muted)]">
@@ -1762,10 +1778,18 @@ onBeforeUnmount(() => {
                 Quản lý nền tảng số
               </div>
               <div class="mt-3 text-xl font-semibold text-[color:var(--admin-text)]">
-                Cấu hình giá nền tảng riêng cho bài hát
+                {{ selectedPlatformLabel }} cho bài hát này
               </div>
-              <div class="mt-2 max-w-3xl text-sm leading-7 text-[color:var(--admin-text-muted)]">
-                Màn này dùng cùng mô hình với `Quản lý nền tảng số` ở trang chính, nhưng giá được lưu riêng cho bài hát hiện tại. Cấu hình hệ thống chỉ là chuẩn tham chiếu, còn tại đây bạn chỉnh hệ số giá áp dụng cho từng bài hát trên từng nền tảng và thời hạn.
+              <div class="mt-2 text-sm leading-7 text-[color:var(--admin-text-muted)]">
+                Nếu không tự cấu hình, bài hát sẽ dùng toàn bộ mẫu giá mặc định của hệ thống.
+              </div>
+              <div class="mt-4 flex flex-wrap gap-2">
+                <span class="inline-flex items-center rounded-full border bg-[color:var(--admin-surface-1)] px-3 py-1 text-xs font-semibold text-[color:var(--admin-text)] [border-color:var(--admin-border)]">
+                  1 bài hát · 1 cấu hình
+                </span>
+                <span class="inline-flex items-center rounded-full border bg-[color:var(--admin-primary-50)] px-3 py-1 text-xs font-semibold text-[color:var(--admin-primary-800)] [border-color:rgb(var(--admin-primary-rgb)/0.18)]">
+                  Chế độ: {{ selectedPricingModeLabel }}
+                </span>
               </div>
             </div>
 
@@ -1777,30 +1801,266 @@ onBeforeUnmount(() => {
             </div>
           </div>
 
-          <div class="mt-5 grid gap-4 xl:grid-cols-[280px_minmax(0,1fr)]">
-            <aside class="rounded-[24px] border bg-[color:var(--admin-surface-1)] p-4 [border-color:var(--admin-border)]">
-              <label class="block text-xs font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]">
-                Nền tảng áp dụng
-              </label>
-              <div class="relative mt-3">
-                <select v-model="selectedPlatformKey" :class="selectFieldClass" :disabled="productPlatformLoading || productPlatformSaving">
-                  <option
-                    v-for="platform in productPlatformSettings?.supportedPlatforms ?? [{ platformKey: 'YOUTUBE', platformLabel: 'YouTube', availableConfigs: [], selectedDigitalRightConfigId: null, pricingMode: 'GLOBAL', customPriceMultiplier: null, systemBaseMultiplier: null, effectiveMultiplier: null, updatedAt: null, updatedBy: null }]"
-                    :key="platform.platformKey"
-                    :value="platform.platformKey"
-                  >
-                    {{ platform.platformLabel }}
-                  </option>
-                </select>
-                <i class="pi pi-chevron-down pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[color:var(--admin-text-muted)]" />
+          <div class="mt-5 grid gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
+            <div class="space-y-4">
+              <div class="space-y-3">
+                <Message v-if="productPlatformError" severity="error">{{ productPlatformError }}</Message>
+                <Message v-if="productPlatformLoading" severity="info">Đang tải cấu hình nền tảng...</Message>
               </div>
 
-              <div class="mt-4 rounded-2xl border bg-[color:var(--admin-surface-0)] px-4 py-4 [border-color:var(--admin-border)]">
-                <div class="text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]">
-                  Cách dùng
+              <div v-if="selectedPlatformGroup" class="space-y-4">
+                <article class="rounded-[26px] border bg-[linear-gradient(180deg,var(--admin-surface-0),var(--admin-surface-1))] p-5 [border-color:var(--admin-border)]">
+                  <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div class="min-w-0">
+                      <div class="text-xs font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]">
+                        Cấu hình áp dụng
+                      </div>
+                      <div class="mt-2 text-base font-semibold text-[color:var(--admin-text)]">
+                        Chọn cách bài hát lấy giá
+                      </div>
+                      <div class="mt-1 text-sm text-[color:var(--admin-text-muted)]">
+                        Tất cả thuộc tính giá đều luôn có sẵn. Bạn chỉ chọn dùng mẫu mặc định hoặc tự cấu hình hệ số riêng.
+                      </div>
+                    </div>
+                    <span class="inline-flex items-center rounded-full border bg-[color:var(--admin-surface-0)] px-3 py-1 text-xs font-semibold text-[color:var(--admin-text)] [border-color:var(--admin-border)]">
+                      {{ selectedPlatformLabel }}
+                    </span>
+                  </div>
+
+                  <div class="mt-5">
+                    <div class="text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]">
+                      Chế độ áp dụng
+                    </div>
+                    <div class="mt-3 grid gap-3 sm:grid-cols-2">
+                      <button
+                        type="button"
+                        class="rounded-[22px] border px-4 py-4 text-left transition"
+                        :class="selectedPlatformMode === 'SYSTEM'
+                          ? 'border-[color:rgb(var(--admin-primary-rgb)/0.24)] bg-[linear-gradient(135deg,var(--admin-primary-50),var(--admin-accent-50))] text-[color:var(--admin-primary-900)]'
+                          : 'border-[color:var(--admin-border)] bg-[color:var(--admin-surface-0)] text-[color:var(--admin-text)]'"
+                        :disabled="productPlatformSaving"
+                        @click="selectedPlatformMode = 'SYSTEM'"
+                      >
+                        <div class="flex items-start justify-between gap-3">
+                          <div>
+                            <div class="text-sm font-semibold">Dùng gói mặc định của hệ thống</div>
+                            <div class="mt-2 text-sm leading-6 text-[color:var(--admin-text-muted)]">
+                              Bài hát dùng nguyên bộ hệ số giá mặc định của YouTube.
+                            </div>
+                          </div>
+                          <span
+                            class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs"
+                            :class="selectedPlatformMode === 'SYSTEM'
+                              ? 'border-[color:var(--admin-primary-600)] bg-[color:var(--admin-primary-600)] text-white'
+                              : 'border-[color:var(--admin-border)] bg-[color:var(--admin-surface-1)] text-transparent'"
+                          >
+                            <i class="pi pi-check text-[10px]" />
+                          </span>
+                        </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        class="rounded-[22px] border px-4 py-4 text-left transition"
+                        :class="selectedPlatformMode === 'CUSTOM'
+                          ? 'border-[color:rgb(var(--admin-primary-rgb)/0.24)] bg-[linear-gradient(135deg,var(--admin-primary-50),var(--admin-accent-50))] text-[color:var(--admin-primary-900)]'
+                          : 'border-[color:var(--admin-border)] bg-[color:var(--admin-surface-0)] text-[color:var(--admin-text)]'"
+                        :disabled="productPlatformSaving"
+                        @click="selectedPlatformMode = 'CUSTOM'"
+                      >
+                        <div class="flex items-start justify-between gap-3">
+                          <div>
+                            <div class="text-sm font-semibold">Tự cấu hình giá riêng</div>
+                            <div class="mt-2 text-sm leading-6 text-[color:var(--admin-text-muted)]">
+                              Clone toàn bộ dữ liệu mặc định rồi sửa từng hệ số giá cho bài hát này.
+                            </div>
+                          </div>
+                          <span
+                            class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs"
+                            :class="selectedPlatformMode === 'CUSTOM'
+                              ? 'border-[color:var(--admin-primary-600)] bg-[color:var(--admin-primary-600)] text-white'
+                              : 'border-[color:var(--admin-border)] bg-[color:var(--admin-surface-1)] text-transparent'"
+                          >
+                            <i class="pi pi-check text-[10px]" />
+                          </span>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+                </article>
+
+                <article class="rounded-[24px] border bg-[color:var(--admin-surface-1)] p-4 [border-color:var(--admin-border)]">
+                  <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="min-w-0">
+                      <div class="text-xs font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]">
+                        Dữ liệu mặc định của hệ thống
+                      </div>
+                      <div class="mt-2 text-sm text-[color:var(--admin-text-muted)]">
+                        Đây là bộ hệ số chuẩn của YouTube. Khi bật giá riêng, bài hát sẽ clone từ bộ dữ liệu này.
+                      </div>
+                    </div>
+                    <span class="inline-flex items-center rounded-full border bg-[color:var(--admin-surface-0)] px-3 py-1 text-xs font-semibold text-[color:var(--admin-text)] [border-color:var(--admin-border)]">
+                      {{ selectedPlatformDefaultTemplate?.modifiers.length ?? 0 }} thuộc tính
+                    </span>
+                  </div>
+
+                  <div class="mt-4">
+                    <PlatformPricingModifierEditor
+                      :model-value="selectedPlatformDefaultTemplate?.modifiers ?? []"
+                      readonly
+                    />
+                  </div>
+                </article>
+
+                <article
+                  v-if="selectedPlatformMode === 'CUSTOM'"
+                  class="rounded-[26px] border bg-[linear-gradient(180deg,var(--admin-surface-0),var(--admin-surface-1))] p-5 [border-color:var(--admin-border)]"
+                >
+                  <div class="flex items-center gap-3">
+                    <div class="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-[color:var(--admin-primary-50)] text-[color:var(--admin-primary-700)]">
+                      <i class="pi pi-pencil text-sm" />
+                    </div>
+                    <div>
+                      <div class="text-xs font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]">
+                        Form giá riêng
+                      </div>
+                      <div class="mt-1 text-base font-semibold text-[color:var(--admin-text)]">
+                        Cấu hình giá riêng
+                      </div>
+                      <div class="mt-1 text-sm text-[color:var(--admin-text-muted)]">
+                        Tất cả thuộc tính đều có sẵn, bạn chỉ sửa hệ số giá của bài hát này.
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="mt-5">
+                    <PlatformPricingModifierEditor
+                      v-model="editablePlatformModifiers"
+                      :disabled="productPlatformSaving"
+                    />
+                  </div>
+                </article>
+
+                <article class="rounded-[24px] border bg-[color:var(--admin-surface-1)] p-4 [border-color:var(--admin-border)]">
+                  <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="min-w-0">
+                      <div class="text-xs font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]">
+                        Xem trước kết quả
+                      </div>
+                      <div class="mt-2 text-sm text-[color:var(--admin-text-muted)]">
+                        Mức giá đang được preview trước khi lưu.
+                      </div>
+                    </div>
+                    <span class="inline-flex items-center rounded-full border bg-[color:var(--admin-surface-0)] px-3 py-1 text-xs font-semibold text-[color:var(--admin-text)] [border-color:var(--admin-border)]">
+                      {{ selectedPricingModeLabel }}
+                    </span>
+                  </div>
+
+                  <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                    <div class="rounded-2xl bg-[color:var(--admin-surface-0)] px-4 py-4">
+                      <div class="text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]">
+                        Cách áp dụng
+                      </div>
+                      <div class="mt-2 text-sm font-semibold text-[color:var(--admin-text)]">
+                        {{ selectedPricingModeLabel }}
+                      </div>
+                    </div>
+                    <div class="rounded-2xl bg-[color:var(--admin-surface-0)] px-4 py-4">
+                      <div class="text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]">
+                        Thuộc tính đang áp dụng
+                      </div>
+                      <div class="mt-2 text-sm font-semibold text-[color:var(--admin-text)]">
+                        {{ activePlatformModifiersPreview.length }}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                    <div
+                      v-for="modifier in activePlatformModifiersPreview"
+                      :key="modifier.key"
+                      class="rounded-2xl bg-[color:var(--admin-surface-0)] px-4 py-4"
+                    >
+                      <div class="text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]">
+                        {{ resolvePlatformPricingModifierLabel(modifier.key) }}
+                      </div>
+                      <div class="mt-2 text-sm font-semibold text-[color:var(--admin-text)]">
+                        {{ formatMultiplier(modifier.multiplier) }}
+                      </div>
+                    </div>
+                  </div>
+                </article>
+              </div>
+            </div>
+
+            <aside class="rounded-[24px] border bg-[color:var(--admin-surface-1)] p-4 [border-color:var(--admin-border)] xl:sticky xl:top-6">
+              <div class="rounded-[22px] border bg-[linear-gradient(135deg,var(--admin-primary-50),var(--admin-accent-50))] p-4 [border-color:rgb(var(--admin-primary-rgb)/0.12)]">
+                <div class="text-xs font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-primary-800)]">
+                  Áp dụng cho bài hát
                 </div>
-                <div class="mt-2 text-sm leading-6 text-[color:var(--admin-text-muted)]">
-                  Chọn 1 cấu hình giá từ hệ thống cho bài hát, sau đó quyết định dùng giá chung của hệ thống hoặc nhập giá riêng cho bài hát ở màn này.
+                <div class="mt-2 text-base font-semibold text-[color:var(--admin-text)]">
+                  {{ selectedTrack.title }}
+                </div>
+                <div class="mt-3 flex flex-wrap gap-2">
+                  <span class="inline-flex items-center rounded-full bg-white/80 px-3 py-1 text-xs font-semibold text-[color:var(--admin-text)]">
+                    {{ selectedPlatformLabel }}
+                  </span>
+                  <span class="inline-flex items-center rounded-full bg-white/80 px-3 py-1 text-xs font-semibold text-[color:var(--admin-text)]">
+                    {{ selectedPricingModeLabel }}
+                  </span>
+                </div>
+              </div>
+
+              <div class="mt-4 space-y-3 rounded-[22px] border bg-[color:var(--admin-surface-0)] p-4 [border-color:var(--admin-border)]">
+                <div class="text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]">
+                  Tóm tắt áp dụng
+                </div>
+
+                <div class="rounded-2xl bg-[color:var(--admin-surface-1)] px-4 py-4">
+                  <div class="text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]">
+                      Mẫu hệ thống
+                  </div>
+                  <div class="mt-2 text-sm font-semibold text-[color:var(--admin-text)]">
+                      {{ selectedPlatformDefaultTemplate?.name ?? 'Chưa có' }}
+                  </div>
+                </div>
+
+                <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+                  <div class="rounded-2xl bg-[color:var(--admin-surface-1)] px-4 py-4">
+                    <div class="text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]">
+                        Chế độ
+                    </div>
+                    <div class="mt-2 text-sm font-semibold text-[color:var(--admin-text)]">
+                        {{ selectedPricingModeLabel }}
+                    </div>
+                  </div>
+
+                  <div class="rounded-2xl bg-[color:var(--admin-surface-1)] px-4 py-4">
+                    <div class="text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]">
+                        Số thuộc tính giá
+                    </div>
+                    <div class="mt-2 text-sm font-semibold text-[color:var(--admin-text)]">
+                        {{ activePlatformModifiersPreview.length }}
+                    </div>
+                  </div>
+                </div>
+
+                <div class="rounded-2xl bg-[color:var(--admin-surface-1)] px-4 py-4">
+                  <div class="text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]">
+                      Ghi chú
+                  </div>
+                  <div class="mt-2 text-sm font-semibold text-[color:var(--admin-text)]">
+                      {{ selectedPlatformMode === 'CUSTOM' ? 'Dang dung snapshot rieng cua bai hat' : 'Dang dung mau gia mac dinh cua he thong' }}
+                  </div>
+                </div>
+
+                <div class="rounded-2xl bg-[color:var(--admin-surface-1)] px-4 py-4">
+                  <div class="text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]">
+                    Cập nhật gần nhất
+                  </div>
+                  <div class="mt-2 text-sm font-semibold text-[color:var(--admin-text)]">
+                    {{ selectedPlatformGroup?.updatedAt ? formatDateTime(selectedPlatformGroup.updatedAt) : 'Chưa có' }}
+                  </div>
                 </div>
               </div>
 
@@ -1816,175 +2076,19 @@ onBeforeUnmount(() => {
                 <button
                   type="button"
                   :class="[primaryButtonClass, 'w-full']"
-                  :disabled="productPlatformLoading || productPlatformSaving || !selectedPlatformGroup || selectedPlatformGroup.availableConfigs.length === 0"
+                  :disabled="!canSavePlatformConfiguration"
                   @click="saveProductPlatformSettings"
                 >
                   {{ productPlatformSaving ? 'Đang lưu cấu hình...' : 'Lưu cấu hình bài hát' }}
                 </button>
               </div>
+              <div class="mt-3 text-xs leading-6 text-[color:var(--admin-text-muted)]">
+                Lưu sẽ chỉ cập nhật cấu hình của bài hát hiện tại, không thay đổi cấu hình hệ thống.
+              </div>
             </aside>
-
-            <div class="rounded-[24px] border bg-[color:var(--admin-surface-0)] p-4 [border-color:var(--admin-border)]">
-              <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                <div class="min-w-0">
-                  <div class="text-xs font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]">
-                    Cấu hình áp dụng cho bài hát
-                  </div>
-                  <div class="mt-2 text-sm text-[color:var(--admin-text-muted)]">
-                    Chọn một cấu hình hệ thống của {{ selectedPlatformGroup?.platformLabel ?? 'nền tảng đã chọn' }} rồi quyết định dùng giá hệ thống hay cấu hình giá riêng.
-                  </div>
-                </div>
-                <div class="inline-flex items-center rounded-full border bg-[color:var(--admin-surface-1)] px-3 py-1 text-xs font-semibold text-[color:var(--admin-text)] [border-color:var(--admin-border)]">
-                  Mỗi bài hát chỉ có một cấu hình áp dụng cho mỗi nền tảng
-                </div>
-              </div>
-
-              <div class="mt-4 space-y-3">
-                <Message v-if="productPlatformError" severity="error">{{ productPlatformError }}</Message>
-                <Message v-if="productPlatformLoading" severity="info">Đang tải cấu hình nền tảng...</Message>
-              </div>
-
-              <div
-                v-if="!productPlatformLoading && selectedPlatformGroup && selectedPlatformGroup.availableConfigs.length === 0"
-                class="mt-4 rounded-2xl border border-dashed bg-[color:var(--admin-surface-1)] px-4 py-5 text-sm text-[color:var(--admin-text-muted)] [border-color:var(--admin-border)]"
-              >
-                Chưa có cấu hình nền tảng số `ACTIVE` nào để gán giá riêng cho bài hát ở nền tảng này.
-              </div>
-
-              <div v-else-if="selectedPlatformGroup" class="mt-4 space-y-4">
-                <article class="rounded-[24px] border bg-[color:var(--admin-surface-1)] p-4 [border-color:var(--admin-border)]">
-                  <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
-                    <div class="space-y-4">
-                      <div>
-                        <div class="text-sm font-semibold text-[color:var(--admin-text)]">
-                          Chọn cấu hình hệ thống cho bài hát
-                        </div>
-                        <div class="mt-2 text-sm leading-6 text-[color:var(--admin-text-muted)]">
-                          Cấu hình bạn chọn ở đây là cấu hình hệ thống được bài hát tham gia. Sau đó bạn có thể dùng nguyên giá chuẩn hoặc bật giá riêng cho bài hát này.
-                        </div>
-                      </div>
-
-                      <label class="block">
-                        <div class="text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]">
-                          Cấu hình hệ thống
-                        </div>
-                        <div class="relative mt-3">
-                          <select
-                            v-model="selectedPlatformConfigId"
-                            :class="selectFieldClass"
-                            :disabled="productPlatformLoading || productPlatformSaving"
-                          >
-                            <option :value="null">Chọn cấu hình hệ thống</option>
-                            <option
-                              v-for="config in selectedPlatformGroup.availableConfigs"
-                              :key="config.digitalRightConfigId"
-                              :value="config.digitalRightConfigId"
-                            >
-                              {{ config.title }}
-                            </option>
-                          </select>
-                          <i class="pi pi-chevron-down pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[color:var(--admin-text-muted)]" />
-                        </div>
-                      </label>
-
-                      <div class="grid gap-3 sm:grid-cols-2">
-                        <button
-                          type="button"
-                          class="rounded-2xl border px-4 py-4 text-left transition"
-                          :class="selectedPlatformPricingMode === 'GLOBAL'
-                            ? 'border-[color:rgb(var(--admin-primary-rgb)/0.24)] bg-[color:var(--admin-primary-50)] text-[color:var(--admin-primary-900)]'
-                            : 'border-[color:var(--admin-border)] bg-[color:var(--admin-surface-0)] text-[color:var(--admin-text)]'"
-                          :disabled="productPlatformSaving"
-                          @click="selectedPlatformPricingMode = 'GLOBAL'"
-                        >
-                          <div class="text-sm font-semibold">Dùng giá hệ thống</div>
-                          <div class="mt-2 text-sm leading-6 text-[color:var(--admin-text-muted)]">
-                            Bài hát sẽ dùng đúng hệ số giá của cấu hình hệ thống đang chọn.
-                          </div>
-                        </button>
-
-                        <button
-                          type="button"
-                          class="rounded-2xl border px-4 py-4 text-left transition"
-                          :class="selectedPlatformPricingMode === 'CUSTOM'
-                            ? 'border-[color:rgb(var(--admin-primary-rgb)/0.24)] bg-[color:var(--admin-primary-50)] text-[color:var(--admin-primary-900)]'
-                            : 'border-[color:var(--admin-border)] bg-[color:var(--admin-surface-0)] text-[color:var(--admin-text)]'"
-                          :disabled="productPlatformSaving"
-                          @click="selectedPlatformPricingMode = 'CUSTOM'"
-                        >
-                          <div class="text-sm font-semibold">Dùng giá riêng cho bài hát</div>
-                          <div class="mt-2 text-sm leading-6 text-[color:var(--admin-text-muted)]">
-                            Chỉ thay đổi hệ số giá của bài hát hiện tại, không ảnh hưởng cấu hình chung của hệ thống.
-                          </div>
-                        </button>
-                      </div>
-
-                      <label
-                        class="block rounded-[22px] border bg-[color:var(--admin-surface-0)] px-4 py-4 [border-color:var(--admin-border)]"
-                        :class="selectedPlatformPricingMode !== 'CUSTOM' ? 'opacity-60' : ''"
-                      >
-                        <div class="text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]">
-                          Hệ số giá riêng của bài hát
-                        </div>
-                        <div class="mt-2 text-sm leading-6 text-[color:var(--admin-text-muted)]">
-                          Chỉ cần nhập khi bạn bật chế độ dùng giá riêng cho bài hát.
-                        </div>
-                        <input
-                          v-model="customPlatformMultiplier"
-                          type="number"
-                          min="0.0001"
-                          step="0.0001"
-                          :class="[fieldClass, 'mt-3 h-11']"
-                          :disabled="productPlatformSaving || selectedPlatformPricingMode !== 'CUSTOM'"
-                          placeholder="Ví dụ: 1.2500"
-                        />
-                      </label>
-                    </div>
-
-                    <div class="space-y-3 rounded-[22px] border bg-[color:var(--admin-surface-0)] p-4 [border-color:var(--admin-border)]">
-                      <div class="text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]">
-                        Cấu hình đang áp dụng
-                      </div>
-
-                      <div class="rounded-2xl bg-[color:var(--admin-surface-1)] px-4 py-4">
-                        <div class="text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]">
-                          Cấu hình hệ thống đã chọn
-                        </div>
-                        <div class="mt-2 text-sm font-semibold text-[color:var(--admin-text)]">
-                          {{ selectedSystemPlatformConfig?.title ?? 'Chưa chọn cấu hình' }}
-                        </div>
-                      </div>
-
-                      <div class="rounded-2xl bg-[color:var(--admin-surface-1)] px-4 py-4">
-                        <div class="text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]">
-                          Giá chuẩn hệ thống
-                        </div>
-                        <div class="mt-2 text-sm font-semibold text-[color:var(--admin-text)]">
-                          {{ selectedSystemPlatformConfig ? formatMultiplier(selectedSystemPlatformConfig.globalBaseMultiplier) : 'Chưa có' }}
-                        </div>
-                      </div>
-
-                      <div class="rounded-2xl bg-[color:var(--admin-surface-1)] px-4 py-4">
-                        <div class="text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--admin-text-muted)]">
-                          Giá đang áp dụng
-                        </div>
-                        <div class="mt-2 text-sm font-semibold text-[color:var(--admin-text)]">
-                          {{
-                            selectedPlatformPricingMode === 'CUSTOM' && customPlatformMultiplier
-                              ? formatMultiplier(Number(customPlatformMultiplier))
-                              : selectedPlatformGroup.effectiveMultiplier !== null
-                                ? formatMultiplier(selectedPlatformGroup.effectiveMultiplier)
-                                : 'Chưa có'
-                          }}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </article>
-              </div>
-            </div>
           </div>
         </section>
+      </main>
       </div>
     </div>
 
